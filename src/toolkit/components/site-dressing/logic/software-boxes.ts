@@ -1,5 +1,6 @@
 import { FENESTRA_PROSPECT_BOX } from './fenestra-box';
 import { PANES_95_BOX } from './panes-95-box';
+import { THE_POOL_BOX } from './the-pool-box';
 
 /** A box's six faces. The front faces +z, the top +y, and left and right are the spines as seen from the front. */
 export type BoxFace = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
@@ -221,6 +222,7 @@ const standardRequirements: BoxRequirements = {
 export const SOFTWARE_TITLES: readonly SoftwareTitle[] = [
   PANES_95_BOX,
   FENESTRA_PROSPECT_BOX,
+  THE_POOL_BOX,
   {
     id: 'macrosoft-pool-simulator-97',
     title: 'Macrosoft Pool Simulator 97',

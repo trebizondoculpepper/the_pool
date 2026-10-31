@@ -34,7 +34,7 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-it('fits both new operating-system boxes beside the older titles on the shelf', () => {
+it('fits both operating-system boxes and The Pool beside the older titles on the shelf', () => {
   const built = createEngineersDesk(createPanelKit());
   const boxes = new Map<string, Box3>();
   built.group.updateMatrixWorld(true);
@@ -44,16 +44,18 @@ it('fits both new operating-system boxes beside the older titles on the shelf', 
   });
   const panes = boxes.get('panes-95')!;
   const fenestra = boxes.get('fenestra-prospect-embedded')!;
+  const pool = boxes.get('the-pool')!;
   const star = boxes.get('macrosoft-pool-simulator-97')!;
   const shelfLeft = SHELF.x - WALL_SHELF.w / 2;
   const shelfRight = SHELF.x + WALL_SHELF.w / 2;
-  for (const box of [panes, fenestra]) {
+  for (const box of [panes, fenestra, pool]) {
     expect(box.min.x).toBeGreaterThan(shelfLeft);
     expect(box.max.x).toBeLessThan(shelfRight);
     expect(box.min.y).toBeGreaterThanOrEqual(SHELF.top - 0.002);
   }
   expect(panes.max.x).toBeLessThan(fenestra.min.x);
-  expect(fenestra.max.x).toBeLessThan(star.min.x);
+  expect(fenestra.max.x).toBeLessThan(pool.min.x);
+  expect(pool.max.x).toBeLessThan(star.min.x);
 });
 
 /** The gap between two boxes on the floor, metres: negative where they overlap. */

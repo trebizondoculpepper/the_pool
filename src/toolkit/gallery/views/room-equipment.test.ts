@@ -91,15 +91,16 @@ describe('the engineer’s office’s boxed software', () => {
   const pickUp = (box: Object3D) =>
     (box.userData.portable as PortableObject).component.pickUp();
 
-  it('stands seven of its ten boxes on the shelf over the desk, Pool Simulator 97 face out to the room', () => {
+  it('stands eight of its eleven boxes on the shelf over the desk, Pool Simulator 97 face out to the room', () => {
     const { built, boxes, desk } = build();
-    expect(boxes.size).toBe(10);
+    expect(boxes.size).toBe(11);
     const onShelf = [...boxes].filter(
       ([, box]) => new Box3().setFromObject(box).min.y > 1.6,
     );
-    expect(onShelf).toHaveLength(7);
+    expect(onShelf).toHaveLength(8);
     expect(onShelf.map(([id]) => id)).toContain('panes-95');
     expect(onShelf.map(([id]) => id)).toContain('fenestra-prospect-embedded');
+    expect(onShelf.map(([id]) => id)).toContain('the-pool');
     const star = boxes.get('macrosoft-pool-simulator-97')!;
     expect(onShelf.map(([id]) => id)).toContain('macrosoft-pool-simulator-97');
     // Its front (+z) faces the way the desk's user faces, into the room.

@@ -11,11 +11,81 @@ import { kitPaint } from '../../core/views/eighties-controls';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import { createCanvasTexture } from '../../core/views/screens';
 import { BOX_FACES, boxSizeOf, faceCanvasSize } from '../logic/software-boxes';
-import type { SoftwareTitle } from '../logic/software-boxes';
+import type { BoxFace, SoftwareTitle } from '../logic/software-boxes';
 import { drawBoxFace } from './software-box-art';
 
 /** Pixels a metre of box art is drawn at: legible from the chair, cheap enough for a desk of them. */
 const PIXELS_PER_METRE = 1400;
+
+/** The owner's generated wrap art, kept with its source references and prompts. */
+const THE_POOL_ART: Partial<Record<BoxFace, { url: string; spine?: boolean }>> =
+  {
+    front: {
+      url: new URL(
+        '../../../../../doc/marketing/box-art/the-pool-game-box-front.png',
+        import.meta.url,
+      ).href,
+    },
+    back: {
+      url: new URL(
+        '../../../../../doc/marketing/box-art/the-pool-game-box-back.png',
+        import.meta.url,
+      ).href,
+    },
+    left: {
+      url: new URL(
+        '../../../../../doc/marketing/box-art/the-pool-game-box-spine.png',
+        import.meta.url,
+      ).href,
+      spine: true,
+    },
+    right: {
+      url: new URL(
+        '../../../../../doc/marketing/box-art/the-pool-game-box-spine.png',
+        import.meta.url,
+      ).href,
+      spine: true,
+    },
+  };
+
+function paintRaster(
+  context: CanvasRenderingContext2D,
+  image: HTMLImageElement,
+  w: number,
+  h: number,
+  spine: boolean,
+): void {
+  context.clearRect(0, 0, w, h);
+  // The generated spine is the central third of a portrait canvas, with
+  // the side thirds supplied as bleed for image generation.
+  if (spine)
+    context.drawImage(
+      image,
+      image.width / 3,
+      0,
+      image.width / 3,
+      image.height,
+      0,
+      0,
+      w,
+      h,
+    );
+  else context.drawImage(image, 0, 0, w, h);
+  if (!spine) return;
+  // Lettering is drawn by the game so the small box keeps its exact title.
+  context.save();
+  context.translate(w / 2, h * 0.48);
+  context.rotate(-Math.PI / 2);
+  context.textAlign = 'center';
+  context.textBaseline = 'middle';
+  context.font = `900 ${Math.round(w * 0.38)}px Arial, sans-serif`;
+  context.lineWidth = Math.max(2, w * 0.1);
+  context.strokeStyle = '#061c32';
+  context.fillStyle = '#f4f7f1';
+  context.strokeText('THE POOL', 0, 0, h * 0.4);
+  context.fillText('THE POOL', 0, 0, h * 0.4);
+  context.restore();
+}
 
 /** One printed card face, drawn once. */
 function faceMaterial(
@@ -23,10 +93,19 @@ function faceMaterial(
   draw: (context: CanvasRenderingContext2D, w: number, h: number) => void,
   w: number,
   h: number,
+  raster?: { url: string; spine?: boolean },
 ) {
   const { context, texture } = createCanvasTexture(w, h, 'printed');
   draw(context, w, h);
   texture.needsUpdate = true;
+  if (raster && typeof Image !== 'undefined') {
+    const image = new Image();
+    image.onload = () => {
+      paintRaster(context, image, w, h, Boolean(raster.spine));
+      texture.needsUpdate = true;
+    };
+    image.src = raster.url;
+  }
   kit.textures.push(texture);
   const material = createPs1Material({ map: texture, roughness: 0.7 });
   kit.materials.push(material);
@@ -48,6 +127,7 @@ export function createSoftwareBox(kit: PanelKit, title: SoftwareTitle) {
       (context, w, h) => drawBoxFace(context, title, face, w, h),
       px.w,
       px.h,
+      title.id === 'the-pool' ? THE_POOL_ART[face] : undefined,
     );
   });
   const geometry = new BoxGeometry(size.w, size.h, size.d);

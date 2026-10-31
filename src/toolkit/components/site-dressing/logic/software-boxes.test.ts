@@ -11,9 +11,10 @@ import {
 } from './software-boxes';
 
 describe('software boxes', () => {
-  it('has ten distinct fictional titles, including both operating systems', () => {
-    expect(SOFTWARE_TITLES).toHaveLength(10);
-    expect(new Set(SOFTWARE_TITLES.map((title) => title.id)).size).toBe(10);
+  it('has eleven distinct titles, including both operating systems and this game', () => {
+    expect(SOFTWARE_TITLES).toHaveLength(11);
+    expect(new Set(SOFTWARE_TITLES.map((title) => title.id)).size).toBe(11);
+    expect(SOFTWARE_TITLES.map((title) => title.id)).toContain('the-pool');
     expect(SOFTWARE_TITLES.map((title) => title.id)).toContain('panes-95');
     expect(SOFTWARE_TITLES.map((title) => title.id)).toContain(
       'fenestra-prospect-embedded',

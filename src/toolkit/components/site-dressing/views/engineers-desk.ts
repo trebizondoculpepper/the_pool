@@ -436,7 +436,7 @@ export function createEngineersDesk(
     );
     x += gap + size.d + 0.012;
   }
-  for (const id of ['panes-95', 'fenestra-prospect-embedded']) {
+  for (const id of ['panes-95', 'fenestra-prospect-embedded', 'the-pool']) {
     const t = byId(id);
     if (!t) continue;
     const size = softwareBoxSize(t);

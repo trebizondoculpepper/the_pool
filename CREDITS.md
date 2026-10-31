@@ -29,7 +29,7 @@ The goggles and the crisp packet, like Hall 5's own six finds, are the project's
 
 ## The engineer's desk: model
 
-The desk in the engineer's office (`resources/models/office/desk.glb`, loaded by `src/toolkit/components/site-dressing/views/engineers-desk.ts`) is [Desk](https://poly.pizza/m/YJyJam67hJ) by [CreativeTrio](https://poly.pizza/u/CreativeTrio), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), downloaded unchanged from [Poly Pizza](https://poly.pizza) on 2026-10-31 (SHA-256 `c3c85d0a0848030df3e6a5aa810066fcd8329e719726d1dbef14c9a33cef9717`); its licence is kept beside it (`LICENSE-desk.txt`). The game stretches it to a 1.6 × 0.8 m desk 0.73 m high and recolours its palette texture's dark wood to beech-effect laminate and its handles to aluminium as it loads. Everything on and around it (the Gateway 3000 PC, its carton, the boxed software and its art) is the project's own work, drawn in code.
+The desk in the engineer's office (`resources/models/office/desk.glb`, loaded by `src/toolkit/components/site-dressing/views/engineers-desk.ts`) is [Desk](https://poly.pizza/m/YJyJam67hJ) by [CreativeTrio](https://poly.pizza/u/CreativeTrio), [CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/), downloaded unchanged from [Poly Pizza](https://poly.pizza) on 2026-10-31 (SHA-256 `c3c85d0a0848030df3e6a5aa810066fcd8329e719726d1dbef14c9a33cef9717`); its licence is kept beside it (`LICENSE-desk.txt`). The game stretches it to a 1.6 × 0.8 m desk 0.73 m high and recolours its palette texture's dark wood to beech-effect laminate and its handles to aluminium as it loads. Everything on and around it (the Gateway 3000 PC, its carton and boxed software) is the project's own work. The other boxes' art is drawn in code; _The Pool_ box uses the generated images described below.
 
 ## The bridge's ambience: original synthesis
 
@@ -107,3 +107,5 @@ The thirty photographs in `resources/images/day-in-the-life/` (`<decade>-<mornin
 ## The title logo: after the owner's own
 
 The title screen's logo, `resources/images/title/the-pool-logo.svg`, is a vector drawing made by `scripts/title-logo.ts` (2026-10-29) after the owner's own roundel, `doc/marketing/logos/05-circle-notext.png` (kept there unchanged; see that folder's `README.md`). The same script writes `the-pool-logo-animated.svg` (the sight glass and gauges moving) and `the-pool-logo-titled.svg`, which embeds Antonio for its title (as the SIL Open Font Licence allows, the font unmodified); on the title screen the title is drawn live in Antonio (see Fonts).
+
+The boxed _The Pool_ front, back and spine at `doc/marketing/box-art/` were generated with OpenAI image generation on 2026-10-31 using the project's approved circular logo and the project's own game screenshots (`control_room.jpg`, `plant2.jpg`, `olympic_porthole.jpg` in `doc/screenshots/v0/`). Their prompts are kept beside the images. The spine's exact title lettering is drawn by the game over its generated artwork.
