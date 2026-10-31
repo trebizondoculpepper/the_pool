@@ -45,11 +45,23 @@ Read the root `CLAUDE.md` first: the model is the source of truth, so each chang
 
 6. **Console stand-ins**, where gameplay isn't designed yet: cylinder swaps, and a `co2` command showing the line, panels and detectors.
 
-## Decisions (on normal practice; the owner may overrule)
+## Decisions
 
-1. **The cage stays outdoors** in the goods yard against the loading bay's wall, as mission 109 placed it (BCGA CP 44 prefers cylinders outdoors). The line enters through the loading bay's wall.
-2. **The Lounge takes CO₂**, as the owner asked: Plants 1 and 2 both.
-3. **The panels stay as built:** the period solenoid-and-rotameter panel in the Lounge and the modern mass-flow controller in the Olympic, for the variety the brief asks for.
-4. **The Olympic's 2 kg/h is a base load,** with acid trimming the peaks. This is normal practice, and a bank of four couldn't supply 5 kg/h without a heater.
-5. **RESET clears the 8-hour average's A1** once the instantaneous reading is clear. An 8-hour time-weighted average is a personal-exposure measure; it should not hold a plant room shut after the leak has cleared. The 15-minute A2 still latches until it is reset.
-6. **A low alarm (A1)** shuts that room's dosing only. A high alarm (A2) trips the master valve for the whole building, as built.
+The owner, 2026-10-31, asked in turn:
+
+1. **The cage stays outdoors** in the goods yard against the loading bay's wall, as mission 109 placed it (BCGA CP 44 prefers cylinders outdoors). The line enters through the loading bay's wall to the emergency isolation valve and master valve just inside.
+2. **Plants 1 and 2 both take CO₂**, the Lounge as well as the Olympic.
+3. **The panels stay as built:** the period solenoid-and-rotameter panel in the Lounge, which the Trio pulses on and off over its 60 s cycle with a needle valve setting the flow, and the modern mass-flow controller in the Olympic, which the Trio sets from 0 to 2 kg/h. Two kinds of interface side by side.
+4. **CO₂ first, acid trims:** each Trio shares its pH demand CO₂ first, up to its valve's most, with acid taking the rest (as built). The experiment compares this with acid alone.
+5. **The cylinders run out for real:** BANK EMPTY, the manifold's changeover, CHANGE CYLINDERS and SUPPLY EXHAUSTED. A console stand-in, `co2 swap <bank>`, puts in a full bank until the delivery and carrying gameplay is designed.
+
+On normal practice (the owner may overrule):
+
+6. **The Olympic's 2 kg/h is a base load,** with acid trimming the peaks; a bank of four couldn't supply 5 kg/h without a heater.
+7. **RESET clears the 8-hour average's A1** once the instantaneous reading is clear. An 8-hour time-weighted average is a personal-exposure measure and should not hold a plant room shut after the leak has cleared. The 15-minute A2 still latches until it is reset.
+8. **A low alarm (A1)** shuts that room's dosing only. A high alarm (A2) trips the master valve for the whole building, as built.
+9. **Alarms** go to the plant rooms' annunciators and the old control room's, with the loading bay's detector panel local (mission 109).
+
+## Later, not this mission
+
+What a CO₂ leak does to the player in the room (breathlessness, a fading view), cylinder deliveries and swaps as gameplay, and the regulator's heater for higher draws.
