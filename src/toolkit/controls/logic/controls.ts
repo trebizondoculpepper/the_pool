@@ -181,10 +181,10 @@ export function controlsHelp(mode: InputMode) {
 
 /** How each input turns a carried thing over, in the help line while carrying. */
 const TURN_OVER: Record<InputMode, string> = {
-  keyboard: 'hold X: turn it over',
-  mouse: 'hold X: turn it over',
-  touch: 'hold INSPECT: turn it over',
-  gamepad: 'hold Y: turn it over',
+  keyboard: 'hold X: look closer and turn it, wheel: nearer',
+  mouse: 'hold X: look closer and turn it, wheel: nearer',
+  touch: 'hold INSPECT: look closer and turn it',
+  gamepad: 'hold Y: look closer and turn it',
 };
 
 /**

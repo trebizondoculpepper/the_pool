@@ -76,6 +76,9 @@ export interface DropPlacement {
   vz: number;
 }
 
+/** How far the wheel may bring a thing being inspected nearer, or take it further, than its fitted distance. */
+const INSPECT_SCALE = { min: 0.3, max: 2 } as const;
+
 /** Shared first-person use behaviour, with no input bindings of its own. */
 export function createObjectHandling(
   root: Object3D,
@@ -171,7 +174,14 @@ export function createObjectHandling(
     grab: Vector3;
     offset: Vector3;
     rotation: Quaternion;
+    /** Half the diagonal of its bounds, metres: how big it looks. */
+    radius: number;
   } | null = null;
+  // Held up close to look at (mission 117): while inspecting, the held
+  // thing swings to the middle of the view, at a distance that fits it,
+  // scaled by `inspectScale`, which the wheel changes.
+  let inspecting = false;
+  let inspectScale = 1;
   const cameraRotation = new Quaternion();
   const worldRotation = new Quaternion();
   const worldPosition = new Vector3();
@@ -387,7 +397,12 @@ export function createObjectHandling(
     held = null;
   };
   /** Into the hands, as if grabbed at `point` (world). */
-  const take = (object: Object3D, portable: PortableObject, point: Vector3) => {
+  const take = (
+    object: Object3D,
+    portable: PortableObject,
+    // Where it was grabbed: it is held by its middle whatever the point.
+    _point: Vector3,
+  ) => {
     if (!records.has(object))
       records.set(object, {
         parent: object.parent!,
@@ -404,15 +419,51 @@ export function createObjectHandling(
     falling.delete(object);
     object.updateMatrixWorld(true);
     camera.getWorldQuaternion(cameraRotation);
+    // Held, and turned, about its middle (mission 117): the middle of its
+    // bounds stands for its centre of gravity, so it turns as a thing
+    // turned in the hands does, not about the corner its origin is at.
+    const inverse = object.matrixWorld.clone().invert();
+    const local = new Box3();
+    object.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      child.geometry.computeBoundingBox();
+      if (child.geometry.boundingBox)
+        local.union(
+          child.geometry.boundingBox
+            .clone()
+            .applyMatrix4(
+              new Matrix4().multiplyMatrices(inverse, child.matrixWorld),
+            ),
+        );
+    });
+    const middle = local.isEmpty()
+      ? new Vector3()
+      : local.getCenter(new Vector3());
+    const size = local.isEmpty()
+      ? new Vector3()
+      : local.getSize(new Vector3()).multiply(object.scale);
+    inspectScale = 1;
     held = {
       object,
-      grab: camera.worldToLocal(point.clone()),
-      offset: object.worldToLocal(point.clone()),
+      grab: camera.worldToLocal(object.localToWorld(middle.clone())),
+      offset: middle,
       rotation: cameraRotation
         .clone()
         .invert()
         .multiply(object.getWorldQuaternion(new Quaternion())),
+      radius: size.length() / 2 / metre,
     };
+  };
+  /**
+   * How far in front of the eye a held thing of `radius` (metres) is held
+   * to be looked at: far enough that it fills about 70% of the view's
+   * height, scaled by the wheel, never nearer than the camera can draw.
+   */
+  const inspectionDistance = (radius: number) => {
+    const half = ((camera.fov / 2) * Math.PI) / 180;
+    const fit = radius / Math.tan(half * 0.7);
+    const nearest = camera.near / metre + radius + 0.02;
+    return Math.max(nearest, Math.min(1.5, fit * inspectScale));
   };
   const NOT_THE_HANDS: HandsResolution = { answer: 'use', run: () => false };
   /**
@@ -495,6 +546,22 @@ export function createObjectHandling(
       if (!answer || answer === 'use') return null;
       return answer.possible ? 'accept' : answer.refused ? 'reject' : null;
     },
+    /**
+     * Hold the held thing up to look at, or put it back in the right hand
+     * (mission 117): it swings to the middle of the view while `on`.
+     */
+    inspect(on: boolean) {
+      inspecting = on && held !== null;
+    },
+    /** Whether the held thing is being looked at close to. */
+    inspecting: () => inspecting && held !== null,
+    /** Bring the held thing nearer (a wheel's negative `deltaY`) or further while inspecting it. */
+    inspectNearer(deltaY: number) {
+      inspectScale = Math.min(
+        INSPECT_SCALE.max,
+        Math.max(INSPECT_SCALE.min, inspectScale * Math.exp(deltaY * 0.0015)),
+      );
+    },
     rotate(yaw: number, pitch: number) {
       if (!held) return;
       const previous = held.rotation.clone();
@@ -568,7 +635,9 @@ export function createObjectHandling(
         worldRotation.copy(cameraRotation).multiply(held.rotation);
         held.object.quaternion.copy(worldRotation);
         held.grab.lerp(
-          new Vector3(0.18 * metre, -0.18 * metre, -0.65 * metre),
+          inspecting
+            ? new Vector3(0, 0, -inspectionDistance(held.radius) * metre)
+            : new Vector3(0.18 * metre, -0.18 * metre, -0.65 * metre),
           Math.min(1, dt * 12),
         );
         worldPosition

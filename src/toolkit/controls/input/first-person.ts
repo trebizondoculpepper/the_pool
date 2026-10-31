@@ -1141,6 +1141,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
       );
       return;
     }
+    // Holding a thing up to look at, the wheel brings it nearer or takes
+    // it further (mission 117) instead of zooming the view.
+    if (handling?.inspecting()) {
+      handling.inspectNearer(event.deltaY * scale);
+      return;
+    }
     walker.zoom = wheelZoom(walker.zoom, event.deltaY, event.deltaMode);
   };
 
@@ -1783,6 +1789,11 @@ export function createFirstPerson(options: FirstPersonOptions) {
         { x: walker.x, y, z: walker.z },
         { yaw: walker.yaw, pitch: walker.pitch },
         delta,
+      );
+      // Hold X (touch's INSPECT, a pad's Y) to hold the carried thing up
+      // in the middle of the view; let go and it goes back to the hand.
+      handling?.inspect(
+        !flying && (keys.has('KeyX') || touchInspect || pad.inspect),
       );
       if (!flying) handling?.update(delta);
       const cursorAim =

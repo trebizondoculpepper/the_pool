@@ -141,15 +141,17 @@ it('keeps title navigation on unmodified bracket presses and out of keyboard hel
 describe('the help line while carrying', () => {
   it('names the thing and says how to turn it over on each input', () => {
     expect(carryingHelp('10 A fuse cartridge', 'mouse')).toBe(
-      '10 A fuse cartridge · hold X: turn it over',
+      '10 A fuse cartridge · hold X: look closer and turn it, wheel: nearer',
     );
     expect(carryingHelp('Card', 'keyboard')).toBe(
-      'Card · hold X: turn it over',
+      'Card · hold X: look closer and turn it, wheel: nearer',
     );
     expect(carryingHelp('Card', 'touch')).toBe(
-      'Card · hold INSPECT: turn it over',
+      'Card · hold INSPECT: look closer and turn it',
     );
-    expect(carryingHelp('Card', 'gamepad')).toBe('Card · hold Y: turn it over');
-    expect(carryingHelp('', 'gamepad')).toBe('hold Y: turn it over');
+    expect(carryingHelp('Card', 'gamepad')).toBe(
+      'Card · hold Y: look closer and turn it',
+    );
+    expect(carryingHelp('', 'gamepad')).toBe('hold Y: look closer and turn it');
   });
 });

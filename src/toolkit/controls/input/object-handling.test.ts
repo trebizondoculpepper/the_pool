@@ -302,3 +302,55 @@ it('refuses to give what cannot be picked up, and forgets on request', () => {
   expect(f.object.position.equals(at)).toBe(true);
   f.handling.dispose();
 });
+
+/** A box whose origin is at a corner, as a software box's is, to pick up. */
+function cornerFixture() {
+  const f = fixture();
+  f.object.geometry.translate(0, 0.125, 0.085);
+  f.object.position.set(0, 0.5, 0);
+  return f;
+}
+const middleOf = (object: Mesh) =>
+  new Box3().setFromObject(object).getCenter(new Vector3());
+
+it('turns a held thing about its middle, not the corner its origin is at', () => {
+  const f = cornerFixture();
+  expect(f.handling.use(0, 0)).toBe(true);
+  for (let i = 0; i < 60; i++) f.handling.update(1 / 60);
+  const before = middleOf(f.object);
+  f.handling.rotate(1.2, 0.7);
+  f.handling.update(1 / 60);
+  expect(middleOf(f.object).distanceTo(before)).toBeLessThan(0.002);
+  f.handling.dispose();
+});
+
+it('holds a thing up in the middle of the view while inspecting, wheel nearer, and back to the hand after', () => {
+  const f = cornerFixture();
+  expect(f.handling.use(0, 0)).toBe(true);
+  const settle = () => {
+    for (let i = 0; i < 90; i++) f.handling.update(1 / 60);
+  };
+  settle();
+  const inHand = f.camera.worldToLocal(middleOf(f.object));
+  expect(inHand.x).toBeGreaterThan(0.1);
+  f.handling.inspect(true);
+  expect(f.handling.inspecting()).toBe(true);
+  settle();
+  const held = f.camera.worldToLocal(middleOf(f.object));
+  expect(Math.abs(held.x)).toBeLessThan(0.01);
+  expect(Math.abs(held.y)).toBeLessThan(0.01);
+  expect(held.z).toBeLessThan(0);
+  // Fits the view: its bounds within the frustum's height.
+  const half = Math.tan(((f.camera.fov / 2) * Math.PI) / 180) * -held.z;
+  const size = new Box3().setFromObject(f.object).getSize(new Vector3());
+  expect(size.length() / 2).toBeLessThan(half);
+  f.handling.inspectNearer(-600);
+  settle();
+  expect(-f.camera.worldToLocal(middleOf(f.object)).z).toBeLessThan(-held.z);
+  f.handling.inspect(false);
+  settle();
+  expect(
+    f.camera.worldToLocal(middleOf(f.object)).distanceTo(inHand),
+  ).toBeLessThan(0.01);
+  f.handling.dispose();
+});

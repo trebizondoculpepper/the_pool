@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Close inspection of carried things (mission 117): a carried thing is held, and turned, about its middle, as if in the hands, not about a corner; hold X (INSPECT on touch, Y on a pad) and it swings to the middle of the view, sized to fit, where the wheel brings it nearer to read its small print; let go and it swings back to the right hand.
+
 ### Changed
 
 - The engineer's software boxes are put where they are let go (the owner, 2026-10-31): on the shelf they stand upright in a tidy row, the new one just left of the right-most and the rest closed up beside it, refused when the board is full; let go over the desk or the floor, they fall as anything carried does, landing on the desk's top or, with their middle past its edge, on the floor; the carton takes them as a bin does.
