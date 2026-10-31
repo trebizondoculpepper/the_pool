@@ -280,74 +280,91 @@ export function handDose(
   if (into === 'balance-tank')
     return { ...c, tank: dose(c.tank, added, v, pool.temperature) };
   const cells = [...c.pool];
-  cells[0] = dose(cells[0], added, v, pool.temperature);
-  return { ...c, pool: cells };
+  // CO₂ by hand is gassed in at the injection point, the return side.
+  if (chemical === 'co2') {
+    cells[0] = dose(cells[0], added, v, pool.temperature);
+    return { ...c, pool: cells };
+  }
+  // Anything else is spread over the pool's surface: every cell alike.
+  const whole = v / POOL_CELL_SHARES[0];
+  return {
+    ...c,
+    pool: cells.map((w) => dose(w, added, whole, pool.temperature)),
+  };
 }
 
-// ---- Going in gradually ------------------------------------------------------------
+// ---- Fed in at a rate --------------------------------------------------------------
 
 /**
- * How fast a hand dose goes in (`doc/plans/aqualis-advice-verification.md`,
- * Part 1; the owner, 2026-10-31). Normal practice: a solid is dissolved
- * and added a bucket at a time, about half an hour for a 25 kg sack,
- * so 50 kg an hour, and never less than 5 minutes for a small one; a
- * solution is poured in steadily, a 25 l drum in about 12 minutes (120 l
- * an hour), at least 2 minutes; CO₂ gassed in at the injection point at
- * 3 kg an hour; and a dilution's fresh water comes in at the make-up's
- * most (`poolMakeUpRate`: the Lounge's 9 m³/h, the Olympic's 30) as the
- * same volume goes to drain. A dose into the pool is spread over its
- * surface, all its cells by their shares, at the same rates.
+ * A hand dose fed in at `rate` (its unit a minute: `dose pool_01
+ * bicarbonate 17kg 1kg/min`; the owner, 2026-10-31) as a charge the
+ * world feeds a share of each chemistry tick until it is all in; null for
+ * an unknown chemical, no amount or no rate. Without a rate a dose goes
+ * in at once (`handDose`).
  */
-export const DISSOLVE = {
-  solidKgPerHour: 50,
-  solidLeast: 5 * 60,
-  solutionLPerHour: 120,
-  solutionLeast: 2 * 60,
-  co2GPerHour: 3000,
-  co2Least: 2 * 60,
-} as const;
-
-/** Seconds `amount` (in its unit) of a chemical takes to go in by hand. */
-export function dissolveSeconds(chemical: HandChemical, amount: number) {
-  const info = BY_ID.get(chemical);
-  if (!info) return 0;
-  const D = DISSOLVE;
-  if (chemical === 'co2')
-    return Math.max(D.co2Least, (amount / D.co2GPerHour) * 3600);
-  if (info.unit === 'l')
-    return Math.max(D.solutionLeast, (amount / D.solutionLPerHour) * 3600);
-  return Math.max(D.solidLeast, (amount / D.solidKgPerHour) * 3600);
-}
-
-/** A hand dose as a charge going in gradually; null for an unknown chemical or no amount. */
 export function handCharge(
   chemical: HandChemical,
   amount: number,
   into: DoseInto,
+  rate: number,
 ): DoseCharge | null {
   const info = BY_ID.get(chemical);
   if (!info || !(amount > 0) || !Number.isFinite(amount)) return null;
+  if (!(rate > 0) || !Number.isFinite(rate)) return null;
   return {
+    chemical,
+    amount,
+    rate,
     additions: info.additions(amount),
     fresh: 0,
     into,
-    seconds: dissolveSeconds(chemical, amount),
+    seconds: (amount / rate) * 60,
     left: 1,
   };
 }
 
 /**
  * A dilution as a charge (the console's `dilute`, a stand-in for a
- * partial drain-down and refill): `m3` of the circuit's water to drain
- * as the same of the mains' comes in at the pool's make-up rate.
+ * partial drain-down and refill): `m3` of the circuit's water drained as
+ * the same of the mains' comes in at the pool's make-up rate.
  */
 export function dilutionCharge(id: PoolId, m3: number): DoseCharge | null {
   if (!(m3 > 0) || !Number.isFinite(m3)) return null;
+  const rate = Math.max(0.1, poolMakeUpRate(id)) / 60;
   return {
+    chemical: 'dilution',
+    amount: m3,
+    rate,
     additions: {},
     fresh: m3,
     into: 'pool',
-    seconds: (m3 / Math.max(0.1, poolMakeUpRate(id))) * 3600,
+    seconds: (m3 / rate) * 60,
     left: 1,
   };
+}
+
+/** A rate as typed (`1kg/min`, `500 g/min`, `0.2l/min`), in the chemical's unit a minute; null if it is not a rate. */
+export function parseRate(
+  chemical: HandChemicalInfo,
+  text: string,
+): { rate: number } | { error: string } | null {
+  const m = /^(.+?)\s*\/\s*min$/i.exec(text.trim());
+  if (!m) return null;
+  const a = parseAmount(chemical, m[1]);
+  return 'error' in a ? { error: `the rate: ${a.error}` } : { rate: a.amount };
+}
+
+/** A rate as the log and Show dose say it, as `dose` takes it: `1kg/min`, `130g/min`, `250ml/min`. */
+export function rateText(chemical: HandChemicalInfo, rate: number) {
+  return `${amountText(chemical, rate).replace(' ', '')}/min`;
+}
+
+/** A feed's words for `doses`: what, where, how far through, and how long left. */
+export function chargeText(ch: DoseCharge): string {
+  const info = BY_ID.get(ch.chemical as HandChemical);
+  const left = Math.ceil((ch.left * ch.seconds) / 60);
+  const where = ch.into === 'pool' ? 'the pool' : 'the balance tank';
+  if (!info)
+    return `${Number(ch.amount.toPrecision(3))} m³ of fresh water for the pool, ${Math.round((1 - ch.left) * 100)} % in, ${left} min left`;
+  return `${amountText(info, ch.amount)} ${info.name} into ${where} at ${rateText(info, ch.rate)}, ${Math.round((1 - ch.left) * 100)} % in, ${left} min left`;
 }

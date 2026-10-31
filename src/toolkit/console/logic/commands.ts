@@ -12,10 +12,12 @@ import { POOL_IDS } from '../../../game/plant/pools';
 import {
   DOSE_MIN_VOLUME,
   HAND_CHEMICALS,
+  chargeText,
   chemicalNamed,
   doseVolume,
   isPoolId,
   parseAmount,
+  parseRate,
 } from '../../../game/plant/hand-dose';
 import type { DoseInto } from '../../../game/plant/hand-dose';
 import {
@@ -112,7 +114,8 @@ const INTO_WORDS: Record<string, DoseInto> = {
   pool: 'pool',
 };
 
-const DOSE_USAGE = '<pool> <chemical> <amount>[unit] [balance-tank|pool]';
+const DOSE_USAGE =
+  '<pool> <chemical> <amount>[unit] [<rate>/min] [balance-tank|pool]';
 
 /** A pool named by a command, or a failure listing them. */
 function poolNamed(command: string, word: string | undefined) {
@@ -516,7 +519,7 @@ export const COMMANDS: readonly ConsoleCommand[] = [
   {
     name: 'dose',
     usage: DOSE_USAGE,
-    help: 'tip a chemical in by hand, into its balance tank unless pool is said: dose pool_01 bicarbonate 18kg (chemicals lists them)',
+    help: 'a chemical in by hand, into its balance tank unless pool is said, all at once or fed at a rate: dose pool_01 bicarbonate 17kg 1kg/min (chemicals lists them, doses the feeds)',
     complete(_host, args) {
       if (args.length === 0) return POOL_IDS;
       if (args.length === 1) return HAND_CHEMICALS.flatMap((c) => c.aliases);
@@ -524,7 +527,11 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         const c = chemicalNamed(args[1]);
         return c ? [`1${c.unit}`] : [];
       }
-      return Object.keys(INTO_WORDS);
+      const c = chemicalNamed(args[1]);
+      const rate = c ? [`1${c.unit}/min`] : [];
+      return args.slice(3).some((a) => /\/min$/i.test(a))
+        ? Object.keys(INTO_WORDS)
+        : [...rate, ...Object.keys(INTO_WORDS)];
     },
     run(host, args) {
       if (!args.length)
@@ -542,11 +549,26 @@ export const COMMANDS: readonly ConsoleCommand[] = [
       if (
         rest[0] &&
         !(rest[0].toLowerCase() in INTO_WORDS) &&
+        !/\/min$/i.test(rest[0]) &&
         /^\d*\.?\d+$/.test(typed)
       )
         typed += rest.shift();
       const parsed = parseAmount(chemical, typed);
       if ('error' in parsed) return fail(`dose: ${parsed.error}`);
+      // A rate, anywhere after the amount: 1kg/min, or 1 kg/min.
+      let rate: number | undefined;
+      for (let i = 0; i < rest.length; i++) {
+        const joined =
+          i + 1 < rest.length && /^\d*\.?\d+$/.test(rest[i])
+            ? rest[i] + rest[i + 1]
+            : rest[i];
+        const r = parseRate(chemical, joined);
+        if (!r) continue;
+        if ('error' in r) return fail(`dose: ${r.error}`);
+        rate = r.rate;
+        rest.splice(i, joined === rest[i] ? 1 : 2);
+        break;
+      }
       let into = chemical.into;
       if (rest[0]) {
         const where = INTO_WORDS[rest[0].toLowerCase()];
@@ -568,7 +590,26 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         chemical: chemical.id,
         amount: parsed.amount,
         into,
+        ...(rate !== undefined ? { rate } : {}),
       });
+    },
+  },
+  {
+    name: 'doses',
+    usage: '[pool]',
+    help: 'the hand doses being fed in, each pool’s or one’s: what, where, at what rate, how far',
+    complete: (_host, args) => (args.length ? [] : POOL_IDS),
+    run(host, [word]) {
+      const pools = word ? [poolNamed('doses', word)] : POOL_IDS;
+      const w = host.world();
+      const lines = pools.flatMap((id) =>
+        (w.treatment.charges[id] ?? []).map(
+          (ch) => `  ${id}  ${chargeText(ch)}`,
+        ),
+      );
+      return lines.length
+        ? ['Hand doses being fed in:', ...lines]
+        : ['No hand dose is being fed in.'];
     },
   },
   {

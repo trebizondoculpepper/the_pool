@@ -256,6 +256,8 @@ export interface DoseAmount {
   visits: number;
   /** The first visit's amount, in `unit`. */
   first: number;
+  /** The rate to feed it in at by hand, `unit` a minute (as `dose` takes it); null where it is not fed by hand. */
+  rate: number | null;
 }
 
 /** Dr Aqualis's moods: his animations. */

@@ -70,7 +70,12 @@ describe('the Trios in AUTO, three days with bathers', () => {
     const { cl, ph } = seen.pool_02;
     expect(Math.abs(mean(cl) - OLD.pool_02.cl)).toBeLessThan(0.1);
     expect(Math.min(...cl)).toBeGreaterThan(0.6);
-    expect(Math.abs(mean(ph) - OLD.pool_02.ph)).toBeLessThan(0.05);
+    // Its pH nearer its set point than the old controller held it: the
+    // Trio's pH has an integral (`aqualis-controller.ts`, 2026-10-31).
+    expect(Math.abs(mean(ph) - 7.3)).toBeLessThan(0.05);
+    expect(Math.abs(mean(ph) - 7.3)).toBeLessThan(
+      Math.abs(OLD.pool_02.ph - 7.3),
+    );
     expect(Math.min(...ph)).toBeGreaterThan(7.2);
     expect(Math.max(...ph)).toBeLessThan(7.45);
   });

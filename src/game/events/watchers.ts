@@ -5,6 +5,16 @@ import { MOTOR_TAGS, MOTORS } from '../plant/motor-starters';
 import { POOL_IDS } from '../plant/pools';
 import { GAS_ZONE_IDS } from '../plant/gas';
 import { LIGHTING_ZONE_IDS } from '../plant/lighting';
+import { amountText, handChemical } from '../plant/hand-dose';
+import type { HandChemical } from '../plant/hand-dose';
+import type { DoseCharge } from '../plant/water-treatment';
+
+/** The same feed, a step on: what, where, how much, and when it was set going (its whole time). */
+const sameFeed = (a: DoseCharge, b: DoseCharge) =>
+  a.chemical === b.chemical &&
+  a.into === b.into &&
+  a.amount === b.amount &&
+  a.seconds === b.seconds;
 
 /**
  * What the plant does by itself (`doc/prompts/done/058-developer-console.md`):
@@ -28,6 +38,23 @@ interface Watcher<T> {
 const watch = <T>(w: Watcher<T>) => w as Watcher<unknown>;
 
 const WATCHERS: readonly Watcher<unknown>[] = [
+  // A hand dose being fed in (`dose … 1kg/min`): its finish (its start is the action's own line).
+  ...POOL_IDS.map((pool) =>
+    watch({
+      pick: (w) => w.treatment.charges?.[pool] ?? [],
+      say: (was: DoseCharge[], now: DoseCharge[]) => {
+        const done = was.find((c) => !now.some((n) => sameFeed(n, c)));
+        if (!done) return null;
+        const info = handChemical(done.chemical as HandChemical);
+        return {
+          subject: pool,
+          text: info
+            ? `${amountText(info, done.amount)} ${info.name}: feed finished, all in`
+            : `${Number(done.amount.toPrecision(3))} m³ of fresh water: dilution finished`,
+        };
+      },
+    }),
+  ),
   ...MOTOR_TAGS.map((tag) =>
     watch({
       pick: (w) => {

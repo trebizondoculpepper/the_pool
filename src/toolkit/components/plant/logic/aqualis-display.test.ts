@@ -51,6 +51,7 @@ const advice = (id: string, dose = true): Advice => ({
         how: '',
         visits: 1,
         first: 1,
+        rate: null,
       }
     : null,
   mood: 'pointing',

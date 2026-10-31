@@ -6,7 +6,7 @@ import type { GameEvent } from './game-event';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
 import { identifiedPart } from '../plant/identification';
 import { MOTORS } from '../plant/motor-starters';
-import { dissolveSeconds, amountText, handChemical } from '../plant/hand-dose';
+import { amountText, handChemical, rateText } from '../plant/hand-dose';
 import { diffWorld } from './event-sources';
 
 /**
@@ -197,9 +197,18 @@ function said(
           text: `no chemical "${action.chemical}"`,
         };
       const into = action.into ?? info.into;
+      const place =
+        into === 'balance-tank'
+          ? 'the balance tank'
+          : action.chemical === 'co2'
+            ? 'the pool, at the injection point'
+            : 'the pool';
       return {
         subject: action.pool,
-        text: `${amountText(info, action.amount)} ${info.name} added to ${into === 'balance-tank' ? 'the balance tank' : action.chemical === 'co2' ? 'the pool, at the injection point' : 'the pool, spread over its surface'}, going in over ${Math.round(dissolveSeconds(action.chemical, action.amount) / 60)} min`,
+        text:
+          action.rate === undefined
+            ? `${amountText(info, action.amount)} ${info.name} added to ${place}`
+            : `${amountText(info, action.amount)} ${info.name} being fed into ${place} at ${rateText(info, action.rate)} (${Math.ceil(action.amount / action.rate)} min)`,
         severity: 'notice',
       };
     }
@@ -341,7 +350,9 @@ function said(
                   ? `watchdog ${a.works ? 'works' : 'fails'}`
                   : a.act === 'crash'
                     ? `crashed (${a.kind})`
-                    : a.act;
+                    : a.act === 'pool'
+                      ? `pool ${a.open ? 'OPEN' : 'CLOSED'}`
+                      : a.act;
       return {
         subject: `${action.pool} Dr Aqualis`,
         text: `${action.pool} Dr Aqualis Trio: ${what}`,

@@ -94,6 +94,30 @@ function run(inp: ControllerInputs, n: number, dt = 10, deliver = true) {
   return { state: s, out };
 }
 
+describe('AUTO, pH’s integral', () => {
+  it('learns a steady acid demand: held above its set point, the acid climbs past the proportional part', () => {
+    const inp = inputs({}, { ph: 7.4 });
+    const first = step(inp).out.demands.acid;
+    const later = run(inp, 360).out.demands.acid; // an hour on
+    expect(later).toBeGreaterThan(first * 1.5);
+  });
+  it('holds what it has learnt inside the dead band, and unwinds below it', () => {
+    const learnt = run(inputs({}, { ph: 7.4 }), 360).state;
+    const at = stepController(learnt, inputs({}, { ph: 7.3 }), 10);
+    expect(at.state.phIntegral).toBeCloseTo(learnt.phIntegral, 9);
+    expect(at.out.demands.acid).toBeGreaterThan(0);
+    // Below its band it unwinds (here until the undelivering pump reads offline).
+    let s = learnt;
+    for (let i = 0; i < 60; i++)
+      s = stepController(s, inputs({}, { ph: 7.2 }), 10).state;
+    expect(s.phIntegral).toBeLessThan(learnt.phIntegral);
+  });
+  it('never winds while the acid pump is offline', () => {
+    const off = { ports: { ...PORTS, acid: pump(7.5, { mode: 'manual' }) } };
+    expect(run(inputs(off, { ph: 7.5 }), 360).state.phIntegral).toBe(0);
+  });
+});
+
 describe('AUTO', () => {
   it('doses hypochlorite when chlorine is low, more the lower it is', () => {
     const big = { ports: { ...PORTS, hypochlorite: pump(10) } };

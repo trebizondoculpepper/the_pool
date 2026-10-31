@@ -47,14 +47,19 @@ function adviceFor(
 }
 
 describe('Show dose says how the dose goes in', () => {
-  it('a solid: dissolved and added to the balance tank a bucket at a time', () => {
+  it('a solid: fed into the balance tank at a rate that can be typed into dose', () => {
     const a = adviceFor(
       'pool_01',
       { alkalinity: 100, hardness: 90 },
       'calcium-hardness-low',
     );
     expect(a.where).toBe('balance-tank');
-    expect(a.dose?.how).toMatch(/bucket at a time/);
+    expect(a.dose?.how).toMatch(/^Feed it into the balance tank at \d+g\/min/);
+    // Over a turnover: the visit's amount, a minute.
+    const s = trioSettings('pool_01').dynamics;
+    const perMin = (a.dose!.first * 1000) / ((s.volumeM3 / s.flowM3h) * 60);
+    expect(a.dose!.rate! * 1000).toBeLessThanOrEqual(perMin);
+    expect(a.dose!.rate! * 1000).toBeGreaterThan(perMin * 0.9);
   });
   it('the pumps’ own chemicals: leave them to work', () => {
     const a = adviceFor('pool_01', { ph: 7.5 }, 'ph-high');
@@ -81,7 +86,7 @@ describe('a dose too big for one visit is split', () => {
     const a = adviceFor('pool_01', { alkalinity: 30 }, 'alkalinity-low');
     expect(a.dose?.visits).toBe(2);
     expect(rel(a.dose!.first, (a.dose!.amount * 50) / 90)).toBeLessThan(0.02);
-    expect(a.dose?.how).toMatch(/Too much at once: add .* now/);
+    expect(a.dose?.how).toMatch(/Too much at once: .* now/);
   });
   it('the Olympic: its bicarbonate over 200 kg, split, the first visit 50 mg/l’s worth', () => {
     const a = adviceFor('pool_02', { alkalinity: 50 }, 'alkalinity-low');

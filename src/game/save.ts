@@ -3,8 +3,8 @@ import type { World } from './world';
 import { DAY_TANKS, newDayTank } from './plant/chemical-distribution';
 import { POOL_IDS, newPools } from './plant/pools';
 import type { PoolsState } from './plant/pools';
-import { newWaterTreatment } from './plant/water-treatment';
-import type { WaterTreatment } from './plant/water-treatment';
+import { newWaterTreatment, releaseCharges } from './plant/water-treatment';
+import type { DoseCharge, WaterTreatment } from './plant/water-treatment';
 import { TRIO_POOLS, triosFor } from './plant/aqualis-world';
 import {
   FOOTBATH,
@@ -280,6 +280,33 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   // 63 → 64: hand doses go in gradually: each pool's charges still going
   // in, none (`fillDefaults` adds them).
   63: (world) => world,
+  // 64 → 65: hand doses go in at once unless fed at a rate (the owner,
+  // 2026-10-31), so a dose 64 was still dissolving goes in now; each
+  // Trio's pool OPEN and its pH integral at nought (`fillDefaults`).
+  64: (world) => {
+    if (!isRecord(world) || !isRecord(world.treatment)) return world;
+    const t = world.treatment as Partial<WaterTreatment>;
+    if (!isRecord(t.charges) || !isRecord(t.circuits) || !isRecord(world.pools))
+      return world;
+    const pools = world.pools as PoolsState;
+    const circuits = { ...t.circuits };
+    for (const id of POOL_IDS) {
+      const old = (t.charges as Record<string, unknown>)[id];
+      if (!Array.isArray(old) || !old.length || !circuits[id] || !pools[id])
+        continue;
+      circuits[id] = releaseCharges(
+        circuits[id],
+        old as DoseCharge[],
+        id,
+        pools[id],
+        1e9,
+      ).circuit;
+    }
+    return {
+      ...world,
+      treatment: { ...t, circuits, charges: {} },
+    };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

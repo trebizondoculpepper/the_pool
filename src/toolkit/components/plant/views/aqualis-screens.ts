@@ -432,6 +432,16 @@ function drawSettings(ctx: Ctx, m: DisplayModel) {
       tint: 'grey',
       size: 17,
     });
+    drawGlossyButton(
+      ctx,
+      SETTINGS.pool,
+      m.settings.poolOpen ? 'Pool: OPEN' : 'Pool: CLOSED',
+      {
+        state: press(m, 'pool'),
+        tint: m.settings.poolOpen ? 'green' : 'red',
+        size: 17,
+      },
+    );
     drawText(
       ctx,
       'Doses are worked out from these: enter them as the pool is built.',

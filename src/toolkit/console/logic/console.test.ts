@@ -10,11 +10,19 @@ import {
 import { COMMANDS, candidates, jsName, readPath, runLine } from './commands';
 import { objectStatus } from './object-status';
 import type { ConsoleHost } from './commands';
-import { applyAction, newWorld } from '../../../game/world';
+import { advance, applyAction, newWorld } from '../../../game/world';
+import { watcherEvents } from '../../../game/events/watchers';
 import type { World, WorldAction } from '../../../game/world';
 import type { GameEvent } from '../../../game/events/game-event';
 import { actionEvents } from '../../../game/events/describe-action';
 import { isConsoleKey } from '../../controls/logic/controls';
+
+/** What the watchers say of the change from `before` to `after`. */
+function watcherLines(before: World, after: World) {
+  const out: GameEvent[] = [];
+  watcherEvents(before, after, undefined, out);
+  return out.map((e) => e.text);
+}
 
 /** A host on a world of its own, recording what the console asks of it. */
 function fakeHost() {
@@ -327,15 +335,53 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
     const f = fakeHost();
     const out = runLine(f.host, 'dose pool_01 bicarbonate 18kg');
     expect(out).toEqual([]);
-    // A charge going in gradually: about 22 minutes for 18 kg.
-    expect(f.world().treatment.charges.pool_01).toMatchObject([
-      { into: 'balance-tank', additions: { bicarbonate: 18000 }, left: 1 },
-    ]);
+    // All at once: no rate given.
+    expect(f.world().treatment.charges.pool_01).toEqual([]);
+    expect(
+      f.world().treatment.circuits.pool_01.tank.alkalinity,
+    ).toBeGreaterThan(1000);
     expect(f.events.at(-1)).toMatchObject({
       subject: 'pool_01',
-      text: '18 kg sodium bicarbonate added to the balance tank, going in over 22 min',
+      text: '18 kg sodium bicarbonate added to the balance tank',
       by: 'console',
     });
+  });
+
+  it('feeds a dose in at a rate, lists it under doses, and logs its finish', () => {
+    const f = fakeHost();
+    expect(runLine(f.host, 'dose pool_01 bicarbonate 17kg 1kg/min')).toEqual(
+      [],
+    );
+    expect(f.world().treatment.charges.pool_01).toMatchObject([
+      { chemical: 'bicarbonate', amount: 17, rate: 1, left: 1 },
+    ]);
+    expect(f.events.at(-1)?.text).toBe(
+      '17 kg sodium bicarbonate being fed into the balance tank at 1kg/min (17 min)',
+    );
+    // As words of their own, in grams, with the place after it.
+    runLine(f.host, 'dose pool_02 cacl2 5 kg 250 g/min pool');
+    expect(f.world().treatment.charges.pool_02).toMatchObject([
+      { chemical: 'calciumChloride', amount: 5, rate: 0.25, into: 'pool' },
+    ]);
+    expect(texts(runLine(f.host, 'doses'))).toEqual([
+      'Hand doses being fed in:',
+      '  pool_01  17 kg sodium bicarbonate into the balance tank at 1kg/min, 0 % in, 17 min left',
+      '  pool_02  5 kg calcium chloride into the pool at 250g/min, 0 % in, 20 min left',
+    ]);
+    expect(texts(runLine(f.host, 'dose pool_01 acid 2l 1kg/min'))[0]).toMatch(
+      /the rate: hydrochloric acid \(10 %\) is measured by volume/,
+    );
+    // Its finish, logged by the watchers as the world feeds it.
+    const before = f.world();
+    const after = advance(before, 18 * 60, 1);
+    const said = watcherLines(before, after);
+    expect(said).toContain('17 kg sodium bicarbonate: feed finished, all in');
+  });
+
+  it('says there is nothing being fed', () => {
+    expect(texts(runLine(fakeHost().host, 'doses'))).toEqual([
+      'No hand dose is being fed in.',
+    ]);
   });
 
   it('dilute: fresh water for a pool, at its make-up rate', () => {
@@ -353,19 +399,19 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
     const f = fakeHost();
     runLine(f.host, 'dose pool_02 hypo 500 ml pool');
     expect(f.events.at(-1)?.text).toBe(
-      '500 ml sodium hypochlorite (14 %) added to the pool, spread over its surface, going in over 2 min',
+      '500 ml sodium hypochlorite (14 %) added to the pool',
     );
     runLine(f.host, 'dose pool_02 hcl 2l tank');
     expect(f.events.at(-1)?.text).toBe(
-      '2 l hydrochloric acid (10 %) added to the balance tank, going in over 2 min',
+      '2 l hydrochloric acid (10 %) added to the balance tank',
     );
     runLine(f.host, 'dose pool_01 co2 1.5kg');
     expect(f.events.at(-1)?.text).toBe(
-      '1500 g CO₂ added to the pool, at the injection point, going in over 30 min',
+      '1500 g CO₂ added to the pool, at the injection point',
     );
     runLine(f.host, 'dose pool_01 cacl2 5');
     expect(f.events.at(-1)?.text).toBe(
-      '5 kg calcium chloride added to the balance tank, going in over 6 min',
+      '5 kg calcium chloride added to the balance tank',
     );
   });
 
@@ -467,8 +513,9 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
   it('help knows them', () => {
     const f = fakeHost();
     expect(texts(runLine(f.host, 'help dose'))[0]).toMatch(
-      /^dose <pool> <chemical> <amount>\[unit\] \[balance-tank\|pool\]/,
+      /^dose <pool> <chemical> <amount>\[unit\] \[<rate>\/min\] \[balance-tank\|pool\]/,
     );
+    expect(texts(runLine(f.host, 'help doses'))[0]).toMatch(/^doses \[pool\]/);
     expect(texts(runLine(f.host, 'help test_kit'))[0]).toMatch(
       /^test_kit <pool>/,
     );

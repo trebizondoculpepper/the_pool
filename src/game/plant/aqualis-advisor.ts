@@ -27,7 +27,7 @@ import type {
   Where,
 } from './aqualis-types';
 import { MAINS } from './water-treatment';
-import { dissolveSeconds } from './hand-dose';
+import { handChemical, rateText } from './hand-dose';
 import type { HandChemical } from './hand-dose';
 
 /**
@@ -196,7 +196,6 @@ export const HAND_CHEMICAL: Partial<Record<Additive, HandChemical>> = {
   thiosulphate: 'thiosulphate',
 };
 
-const minutesText = (s: number) => `${Math.max(1, Math.round(s / 60))} min`;
 const hoursText = (h: number) =>
   h >= 1.5 ? `${Math.round(h)} h` : `${Math.max(1, Math.round(h * 60))} min`;
 
@@ -205,12 +204,32 @@ const turnoverOf = (s: AqualisSettings) =>
   s.dynamics.flowM3h > 0 ? s.dynamics.volumeM3 / s.dynamics.flowM3h : 4;
 
 /** How a dose is put in, in Dr Aqualis's words. */
+/**
+ * The rate Dr Aqualis recommends for a hand feed, in the chemical's unit a
+ * minute, rounded down to two figures so it can be typed into `dose`
+ * (`dose pool_01 bicarbonate 12.6kg 130g/min`): into the balance tank,
+ * the visit's amount over one turnover, so the water the Trio samples
+ * from the tank rises no further than the whole circuit will once mixed;
+ * spread over a closed pool, which the Trio sees only mixed, over a
+ * quarter of a turnover (at least 10 minutes).
+ */
+export function feedRate(amount: number, where: Where, s: AqualisSettings) {
+  const turnover = turnoverOf(s) * 60;
+  const minutes = where === 'pool' ? Math.max(10, turnover / 4) : turnover;
+  const r = amount / Math.max(1, minutes);
+  if (!(r > 0)) return 0;
+  const p = 10 ** (Math.floor(Math.log10(r)) - 1);
+  return Math.floor(r / p + 1e-9) * p;
+}
+
+/** How a dose is put in, in Dr Aqualis's words. */
 function howOf(
   additive: Additive,
   where: Where | null,
   first: number,
   firstText: string,
   visits: number,
+  rate: number | null,
   c: Ctx | null,
 ): string {
   if (where === 'automatic') {
@@ -219,29 +238,27 @@ function howOf(
   }
   const again =
     visits > 1
-      ? ` Too much at once: add ${firstText} now, retest after a turnover (${hoursText(c ? turnoverOf(c.s) : 4)}) and repeat, ${visits} visits.`
+      ? ` Too much at once: ${firstText} now, retest after a turnover (${hoursText(c ? turnoverOf(c.s) : 4)}) and repeat, ${visits} visits.`
       : '';
   const closeFirst = c && c.open ? 'Close the pool first. ' : '';
   if (additive === 'dilution') {
-    const rate = c ? c.makeUp : 0;
+    const mu = c ? c.makeUp : 0;
     const time =
-      rate > 0
-        ? ` (about ${hoursText(first / rate)} at the make-up's rate)`
-        : '';
+      mu > 0 ? ` (about ${hoursText(first / mu)} at the make-up's rate)` : '';
     return `Drain it down to waste and refill with fresh water${time}.${again}`;
   }
   const hand = HAND_CHEMICAL[additive];
-  const takes = hand
-    ? ` (about ${minutesText(dissolveSeconds(hand, first))})`
-    : '';
+  const info = hand ? handChemical(hand) : undefined;
+  const at =
+    info && rate
+      ? ` at ${rateText(info, rate)} (about ${hoursText(first / rate / 60)})`
+      : '';
   if (additive === 'superchlorinate')
-    return `${closeFirst}Spread it across the pool${takes}, and keep the pool closed until the chlorine is back in its band.${again}`;
-  if (where === 'pool') return `Spread it across the pool${takes}.${again}`;
+    return `${closeFirst}Spread it across the pool${at}, and keep the pool closed until the chlorine is back in its band.${again}`;
+  if (where === 'pool') return `Spread it across the pool${at}.${again}`;
   if (additive === 'acid')
-    return `Pour it slowly into the balance tank, acid into water${takes}.${again}`;
-  if (additive === 'hypochlorite')
-    return `Pour it slowly into the balance tank${takes}.${again}`;
-  return `Dissolve it and add it to the balance tank a bucket at a time${takes}.${again}`;
+    return `Feed it into the balance tank${at}, acid into water.${again}`;
+  return `Feed it into the balance tank${at}.${again}`;
 }
 
 function nameOf(additive: Additive) {
@@ -270,20 +287,27 @@ function doseOf(
       ? Math.ceil(amount / perVisit - 1e-6)
       : 1;
   const first = visits > 1 ? sig3(perVisit) : a;
+  const where = whereOf(additive, c);
+  const rate =
+    c && where && where !== 'automatic' && HAND_CHEMICAL[additive]
+      ? feedRate(first, where, c.s)
+      : null;
   return {
     amount: a,
     unit,
     text: `${amountWords(a)} ${unit} of ${nameOf(additive)}`,
     how: howOf(
       additive,
-      whereOf(additive, c),
+      where,
       first,
       `${amountWords(first)} ${unit}`,
       visits,
+      rate,
       c,
     ),
     visits,
     first,
+    rate,
   };
 }
 
@@ -375,6 +399,61 @@ export function dilute(
 export interface AdviseOptions {
   /** The pool open to bathers (the default) or closed (`TrioState.poolOpen`). */
   open?: boolean;
+  /** The normal targets, for the reopening criteria, where First Aid's are worked to (default: the settings'). */
+  normal?: AqualisSettings['targets'];
+  /** A First Aid programme running that keeps the pool closed. */
+  closedByFirstAid?: boolean;
+}
+
+/**
+ * What must be true before a closed pool reopens (normal practice, after
+ * PWTAG's guidance on reopening after an incident or a shock): free
+ * chlorine back in its band, combined chlorine no higher than its limit,
+ * pH in its band, and no First Aid programme still running that needs it
+ * closed. Each criterion not yet met, in words; none, it may reopen.
+ */
+export function reopenUnmet(
+  r: AqualisReadings,
+  t: AqualisSettings['targets'],
+  closedByFirstAid = false,
+): string[] {
+  const out: string[] = [];
+  if (closedByFirstAid) out.push('First Aid to finish');
+  if (
+    r.freeChlorine < t.freeChlorine.low ||
+    r.freeChlorine > t.freeChlorine.high
+  )
+    out.push(
+      `free chlorine ${twoDp(t.freeChlorine.low)}–${twoDp(t.freeChlorine.high)} (now ${twoDp(r.freeChlorine)})`,
+    );
+  if (r.combinedChlorine > t.combinedChlorine.high)
+    out.push(
+      `combined chlorine at most ${twoDp(t.combinedChlorine.high)} (now ${twoDp(r.combinedChlorine)})`,
+    );
+  if (r.ph < t.ph.low || r.ph > t.ph.high)
+    out.push(`pH ${twoDp(t.ph.low)}–${twoDp(t.ph.high)} (now ${twoDp(r.ph)})`);
+  return out;
+}
+
+function reopenAdvice(c: Ctx, o: AdviseOptions): Draft {
+  const unmet = reopenUnmet(
+    c.r,
+    o.normal ?? c.s.targets,
+    o.closedByFirstAid ?? false,
+  );
+  return {
+    id: 'pool-closed',
+    reading: null,
+    severity: 'info',
+    problem: unmet.length
+      ? `The pool is closed. Before it reopens: ${unmet.join('; ')}.`
+      : 'The pool is closed, and the water is fit to swim in.',
+    direction: unmet.length
+      ? 'Keep it closed until then.'
+      : 'It may reopen (Settings › Pool dynamics).',
+    additive: null,
+    dose: null,
+  };
 }
 
 // ---- The rules ------------------------------------------------------------------------
@@ -431,12 +510,23 @@ function moodOf(severity: Severity, reading: ReadingId | null): Mood {
 
 type Draft = Omit<Advice, 'mood' | 'where'> & { where?: Where | null };
 
+/**
+ * Where an additive goes. The pumps' own chemicals are theirs while their
+ * channel is online. By hand, into the balance tank while the pool is
+ * open (PWTAG: never into the pool with bathers in it); closed, spread
+ * straight over the pool, which the Trio's tapping then sees only mixed.
+ * CO₂ by hand always at its injection point (the pool's return).
+ */
 function whereOf(additive: Additive | null, c: Ctx | null): Where | null {
   if (!additive) return null;
   if (additive === 'dilution' || additive === 'superchlorinate') return 'pool';
-  if (additive === 'hypochlorite' || additive === 'acid' || additive === 'co2')
-    return c?.online(additive) ? 'automatic' : 'balance-tank';
-  return 'balance-tank';
+  if (additive === 'co2') return c?.online('co2') ? 'automatic' : 'pool';
+  if (
+    (additive === 'hypochlorite' || additive === 'acid') &&
+    c?.online(additive)
+  )
+    return 'automatic';
+  return c && !c.open ? 'pool' : 'balance-tank';
 }
 
 function readingRules(c: Ctx): Draft[] {
@@ -472,13 +562,17 @@ function readingRules(c: Ctx): Draft[] {
       const g =
         (Math.max(0, c.w.freeChlorine - t.freeChlorine.set) * V) /
         thiosulphateStoichiometry().chlorinePerMg;
+      // Closed, high chlorine harms no bather: it only keeps the pool shut.
       add({
         id: 'free-chlorine-high',
         reading: 'freeChlorine',
-        severity: 'alarm',
-        problem: `Free chlorine far too high (${twoDp(fc)} mg/l): nobody should swim in that!`,
-        direction:
-          'Stop the hypochlorite and take it down with sodium thiosulphate.',
+        severity: c.open ? 'alarm' : 'warning',
+        problem: c.open
+          ? `Free chlorine far too high (${twoDp(fc)} mg/l): nobody should swim in that!`
+          : `Free chlorine far above its band (${twoDp(fc)} mg/l): the pool stays closed until it is under ${twoDp(t.freeChlorine.high)}.`,
+        direction: c.open
+          ? 'Stop the hypochlorite and take it down with sodium thiosulphate.'
+          : 'Let it fall, or take it down with sodium thiosulphate.',
         additive: 'thiosulphate',
         dose: doseOf('thiosulphate', g / 1000, 'kg', c),
       });
@@ -508,7 +602,9 @@ function readingRules(c: Ctx): Draft[] {
           ? 'alarm'
           : 'warning',
       problem: `Combined chlorine high (${twoDp(cc)} mg/l): that pong is chloramines.`,
-      direction: 'Superchlorinate the pool to burn them off, or dilute it.',
+      direction: c.open
+        ? 'Close the pool and superchlorinate it to burn them off, or dilute it.'
+        : 'Superchlorinate the pool to burn them off, or dilute it.',
       additive: 'superchlorinate',
       dose: doseOf(
         'superchlorinate',
@@ -900,6 +996,7 @@ export function advise(
       additive: null,
       dose: null,
     });
+  if (!c.open) drafts.push(reopenAdvice(c, options));
   drafts.push(...channelRules(channels, phHigh));
   const out = order(drafts, c);
   for (const a of out) if (a.id === 'all-well') a.mood = 'pleased';

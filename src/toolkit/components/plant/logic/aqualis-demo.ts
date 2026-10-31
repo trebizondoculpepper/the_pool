@@ -205,7 +205,15 @@ export function demoAdvice(scene: DemoScene): Advice[] {
       additive: null,
       where: null,
       dose: s.dose
-        ? { amount: 0, unit: 'kg', text: s.dose, how: '', visits: 1, first: 0 }
+        ? {
+            amount: 0,
+            unit: 'kg',
+            text: s.dose,
+            how: '',
+            visits: 1,
+            first: 0,
+            rate: null,
+          }
         : null,
       mood: s.mood,
     },

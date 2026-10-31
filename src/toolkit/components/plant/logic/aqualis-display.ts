@@ -155,6 +155,8 @@ export interface DisplayInputs {
   hand: Record<ChannelId, number>;
   /** The First Aid programme running, if any. */
   firstAid?: FirstAidState | null;
+  /** The pool open to bathers (the default) or closed. */
+  poolOpen?: boolean;
 }
 
 /** What a press asks of the cabinet beyond the display's own state. */
@@ -165,7 +167,9 @@ export type DisplayEffect =
   | { kind: 'restart' }
   /** Start a First Aid programme (its YES), or stop the one running (STOP). */
   | { kind: 'first-aid-start'; id: FirstAidId }
-  | { kind: 'first-aid-stop' };
+  | { kind: 'first-aid-stop' }
+  /** The pool opened or closed (Settings › Pool dynamics). */
+  | { kind: 'pool'; open: boolean };
 
 // ---- Time ------------------------------------------------------------------------------
 
@@ -304,6 +308,8 @@ export const SETTINGS = {
   demo: { x: 16, y: 372, w: 230, h: 46 } as Rect,
   /** Restart, beside it: the computer boots again. */
   restart: { x: 258, y: 372, w: 170, h: 46 } as Rect,
+  /** The pool OPEN or CLOSED, beside that: a press turns it over. */
+  pool: { x: 440, y: 372, w: 184, h: 46 } as Rect,
 };
 
 /** The First Aid page: its programmes' buttons, the confirm and the running panel. */
@@ -378,6 +384,7 @@ export function displayRegions(
       regions.push(
         { id: 'demo', rect: SETTINGS.demo },
         { id: 'restart', rect: SETTINGS.restart },
+        { id: 'pool', rect: SETTINGS.pool },
       );
     else {
       regions.push(
@@ -461,6 +468,8 @@ export function pressDisplay(
     state = { ...state, demo: 0 };
   } else if (verb === 'restart') {
     effect = { kind: 'restart' };
+  } else if (verb === 'pool') {
+    effect = { kind: 'pool', open: !(inputs.poolOpen ?? true) };
   } else if (verb === 'demo-exit') {
     state = {
       ...state,
@@ -657,6 +666,7 @@ export interface DisplayModel {
   };
   settings: {
     dynamics: { volumeM3: number; flowM3h: number; turnoverH: number };
+    poolOpen: boolean;
     row: number;
     targets: {
       id: ReadingId;
@@ -820,6 +830,7 @@ export function displayModel(
         flowM3h: d.flowM3h,
         turnoverH: d.flowM3h > 0 ? d.volumeM3 / d.flowM3h : Infinity,
       },
+      poolOpen: inputs.poolOpen ?? true,
       row: s.targetRow,
       targets: TARGET_IDS.map((id) => ({
         id,
@@ -862,6 +873,12 @@ function modelKey(m: Omit<DisplayModel, 'key'>): string {
                 m.firstAid.confirm?.id ?? null,
                 m.firstAid.running?.status ?? null,
               ]
-            : [m.tab, m.settings.row, m.settings.dynamics, m.settings.targets];
+            : [
+                m.tab,
+                m.settings.row,
+                m.settings.dynamics,
+                m.settings.poolOpen,
+                m.settings.targets,
+              ];
   return JSON.stringify([head, body]);
 }

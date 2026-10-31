@@ -14,8 +14,6 @@ import {
   HAND_CHEMICALS,
   amountText,
   chemicalNamed,
-  DISSOLVE,
-  dissolveSeconds,
   doseVolume,
   handChemical,
   parseAmount,
@@ -157,13 +155,22 @@ describe('a hand dose, against Dr Aqualis’s Show dose', () => {
     for (const r of rise) expect(r).toBeCloseTo(rise[0], 6);
   });
 
-  it('is a charge that goes in gradually, half an hour for a 25 kg sack', () => {
-    const { before, charged } = dosed('bicarbonate', 25);
+  it('given a rate, is fed in: 25 kg at 1 kg/min takes 25 minutes', () => {
+    const before = onSettledWater(newWorld());
+    const feed = (amount: number, w = before) =>
+      applyAction(w, {
+        type: 'hand/dose',
+        pool: 'pool_01',
+        chemical: 'bicarbonate',
+        amount,
+        rate: 1,
+      });
+    const charged = feed(25);
     expect(charged.treatment.circuits).toBe(before.treatment.circuits);
     const [ch] = charged.treatment.charges.pool_01;
-    expect(ch.seconds).toBeCloseTo(1800, 6);
+    expect(ch.seconds).toBeCloseTo(1500, 6);
     expect(ch.left).toBe(1);
-    // A minute in, a thirtieth has gone in.
+    // A minute in, a twenty-fifth has gone in.
     const r = releaseCharges(
       charged.treatment.circuits.pool_01,
       charged.treatment.charges.pool_01,
@@ -171,10 +178,25 @@ describe('a hand dose, against Dr Aqualis’s Show dose', () => {
       charged.pools.pool_01,
       60,
     );
-    expect(r.charges[0].left).toBeCloseTo(1 - 1 / 30, 9);
-    // Solutions go in faster; a small dose takes its few minutes.
-    expect(dissolveSeconds('acid', 25)).toBeCloseTo(750, 6);
-    expect(dissolveSeconds('bicarbonate', 1)).toBe(DISSOLVE.solidLeast);
+    expect(r.charges[0].left).toBeCloseTo(1 - 1 / 25, 9);
+    // A second feed of the same chemical into the same place waits its turn.
+    const two = feed(5, charged);
+    const r2 = releaseCharges(
+      two.treatment.circuits.pool_01,
+      two.treatment.charges.pool_01,
+      'pool_01',
+      two.pools.pool_01,
+      60,
+    );
+    expect(r2.charges.map((x) => x.left)).toEqual([r.charges[0].left, 1]);
+  });
+
+  it('without a rate, all of it at once', () => {
+    const { before, charged } = dosed('bicarbonate', 25);
+    expect(charged.treatment.charges.pool_01).toEqual([]);
+    expect(charged.treatment.circuits.pool_01.tank.alkalinity).toBeGreaterThan(
+      before.treatment.circuits.pool_01.tank.alkalinity + 1000,
+    );
   });
 });
 
@@ -340,13 +362,13 @@ describe('the log', () => {
       formatEvent,
     );
     expect(lines[0]).toMatch(
-      /pool_01 {7}18 kg sodium bicarbonate added to the balance tank, going in over 22 min \(by console\)$/,
+      /pool_01 {7}18 kg sodium bicarbonate added to the balance tank \(by console\)$/,
     );
   });
   it('CO₂ at the injection point', () => {
     const { before, after, action } = dosed('co2', 200);
     expect(actionEvents(before, action, after, 'console')[0].text).toBe(
-      '200 g CO₂ added to the pool, at the injection point, going in over 4 min',
+      '200 g CO₂ added to the pool, at the injection point',
     );
   });
 });

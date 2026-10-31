@@ -28,6 +28,7 @@ import {
 import type { PiezoOneShot } from '../../components/sound/logic/piezo-beeps';
 import { advise } from '../../../game/plant/aqualis-advisor';
 import {
+  FIRST_AID,
   firstAidSettings,
   withFirstAid,
 } from '../../../game/plant/aqualis-first-aid';
@@ -119,16 +120,25 @@ export function createTrioWorldHost(
       // Its advice on its readings alone: it knows the pool only by them.
       advice: osAdvice(
         t.os,
-        withFirstAid(advise(t.readings, working, t.channels), {
-          state: t.firstAid,
-          incident: null,
-          ended: null,
-        }),
+        withFirstAid(
+          advise(t.readings, working, t.channels, undefined, {
+            open: t.poolOpen,
+            normal: t.settings.targets,
+            closedByFirstAid:
+              !!t.firstAid && FIRST_AID[t.firstAid.id].closePool,
+          }),
+          {
+            state: t.firstAid,
+            incident: null,
+            ended: null,
+          },
+        ),
       ),
       alarms: trioAlarms(t),
       settings: t.settings,
       hand: t.hand,
       firstAid: t.firstAid,
+      poolOpen: t.poolOpen,
     };
     return cached;
   };
@@ -230,6 +240,7 @@ export function createTrioWorldHost(
       if (e?.kind === 'first-aid-stop')
         act({ act: 'firstAid', programme: null });
       if (e?.kind === 'restart') act({ act: 'restart' });
+      if (e?.kind === 'pool') act({ act: 'pool', open: e.open });
     },
     screenAimed: (x, y) =>
       running() && hitDisplay(display, inputs(), x, y) !== null,

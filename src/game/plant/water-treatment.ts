@@ -140,13 +140,20 @@ export interface PendingFlows {
 }
 
 /**
- * A hand dose still going in (`hand-dose.ts`, `doc/plans/aqualis-advice-verification.md`):
- * a chemical dissolving into the balance tank (or spread over the pool) a
- * share at a time, or fresh water replacing the circuit's (a dilution).
- * It goes in at an even rate over `seconds`; `left` is the share not yet
- * in, 1 to 0.
+ * A hand dose being fed in (`hand-dose.ts`, `doc/plans/aqualis-advice-verification.md`):
+ * a chemical fed into the balance tank (or spread over the pool) at the
+ * rate the operator chose (`dose … 1kg/min`), or fresh water replacing the
+ * circuit's (a dilution). It goes in at an even rate over `seconds`;
+ * `left` is the share not yet in, 1 to 0. A second feed of the same
+ * chemical into the same place waits behind the first, as a second batch
+ * does: one feed at a time per chemical and place.
  */
 export interface DoseCharge {
+  /** What is being fed: a hand chemical's id, or 'dilution'. */
+  chemical: string;
+  /** The whole amount, in the chemical's unit (m³ for a dilution), and the rate it goes in at, a minute. */
+  amount: number;
+  rate: number;
   /** What the whole charge adds, g (as `dose`'s additions). */
   additions: Additions;
   /** Fresh water, m³, to drain and replace with the mains' (a dilution). */
@@ -197,8 +204,15 @@ export function releaseCharges(
   let tank = c.tank;
   let cells = c.pool;
   const left: DoseCharge[] = [];
+  const feeding = new Set<string>();
   for (const ch of charges) {
-    const share = Math.min(ch.left, dt / Math.max(1e-9, ch.seconds));
+    // One feed at a time of each chemical into each place: the rest wait.
+    const key = `${ch.chemical}:${ch.into}`;
+    const waiting = feeding.has(key);
+    feeding.add(key);
+    const share = waiting
+      ? 0
+      : Math.min(ch.left, dt / Math.max(1e-9, ch.seconds));
     if (share > 0) {
       const added = scaled(ch.additions, share);
       const any = Object.values(added).some((v) => (v ?? 0) > 0);

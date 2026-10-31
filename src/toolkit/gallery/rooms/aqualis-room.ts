@@ -39,6 +39,7 @@ import type {
 } from '../../../game/plant/aqualis-controller';
 import { advise, alarms } from '../../../game/plant/aqualis-advisor';
 import {
+  FIRST_AID,
   INCIDENT_PROGRAMME,
   firstAidHolds,
   firstAidNoHypochlorite,
@@ -287,6 +288,8 @@ export function createAqualisRoomHost(
   let advice: Advice[] = [];
   let alarmsOn: Alarm[] = [];
   let firstAid: FirstAidState | null = null;
+  /** The rig's pool open or closed (Settings › Pool dynamics). */
+  let poolOpen = true;
   let ended: { e: FirstAidEnded; at: number } | null = null;
   let incident: Incident | null = RIG_SCENARIOS[scenario].incident ?? null;
   let display: DisplayState = newDisplay();
@@ -353,11 +356,18 @@ export function createAqualisRoomHost(
   /** Dr Aqualis's advice and the alarms on the controller's output now. */
   const adviseNow = () => {
     const w = working();
-    advice = withFirstAid(advise(readings, w, out!.channels, rig.water), {
-      state: firstAid,
-      incident,
-      ended: ended?.e ?? null,
-    });
+    advice = withFirstAid(
+      advise(readings, w, out!.channels, rig.water, {
+        open: poolOpen,
+        normal: settings.targets,
+        closedByFirstAid: !!firstAid && FIRST_AID[firstAid.id].closePool,
+      }),
+      {
+        state: firstAid,
+        incident,
+        ended: ended?.e ?? null,
+      },
+    );
     alarmsOn = alarms(readings, sample, out!.channels, w, sel);
   };
 
@@ -421,6 +431,7 @@ export function createAqualisRoomHost(
   const startProgramme = (id: FirstAidId) => {
     if (!running()) return;
     firstAid = startFirstAid(id, readings, settings);
+    if (FIRST_AID[id].closePool) poolOpen = false;
     ended = null;
     if (incident && INCIDENT_PROGRAMME[incident] === id) incident = null;
     lookNow();
@@ -447,6 +458,7 @@ export function createAqualisRoomHost(
     settings,
     hand,
     firstAid,
+    poolOpen,
   });
   const crashNow = (kind: CrashKind) => {
     if (os.phase !== 'running' && os.phase !== 'booting') return;
@@ -572,6 +584,13 @@ export function createAqualisRoomHost(
         hand = { ...hand, [r.effect.channel]: r.effect.demand };
       if (r.effect?.kind === 'first-aid-start') startProgramme(r.effect.id);
       if (r.effect?.kind === 'first-aid-stop') stopProgramme();
+      if (
+        r.effect?.kind === 'pool' &&
+        !(r.effect.open && firstAid && FIRST_AID[firstAid.id].closePool)
+      ) {
+        poolOpen = r.effect.open;
+        if (running()) lookNow();
+      }
       if (r.effect?.kind === 'restart') {
         os = restartOs(os);
         freshSoftware();

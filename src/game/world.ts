@@ -36,6 +36,7 @@ import {
   doseVolume,
   handCharge,
   handChemical,
+  handDose,
 } from './plant/hand-dose';
 import type { DoseInto, HandChemical } from './plant/hand-dose';
 import {
@@ -335,7 +336,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 64;
+export const WORLD_VERSION = 65;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -597,6 +598,12 @@ export type WorldAction =
       chemical: HandChemical;
       amount: number;
       into?: DoseInto;
+      /**
+       * Fed in at this much a minute, in its unit (`dose … 1kg/min`), the
+       * world feeding it until it is all in (`treatment.charges`); without
+       * a rate, all at once.
+       */
+      rate?: number;
     }
   /**
    * Fresh water for a pool (the console's `dilute`, a stand-in for a
@@ -795,7 +802,30 @@ export function applyAction(world: World, action: WorldAction): World {
           DOSE_MIN_VOLUME
         )
           return world;
-        charge = handCharge(action.chemical, action.amount, into);
+        // No rate: all of it at once, as tipped in.
+        if (action.rate === undefined) {
+          const dosed = handDose(
+            c,
+            action.pool,
+            world.pools[action.pool],
+            action.chemical,
+            action.amount,
+            into,
+          );
+          return dosed === c
+            ? world
+            : {
+                ...world,
+                treatment: {
+                  ...world.treatment,
+                  circuits: {
+                    ...world.treatment.circuits,
+                    [action.pool]: dosed,
+                  },
+                },
+              };
+        }
+        charge = handCharge(action.chemical, action.amount, into, action.rate);
       }
       if (!charge) return world;
       const charges = world.treatment.charges ?? {};

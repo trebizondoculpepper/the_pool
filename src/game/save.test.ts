@@ -33,7 +33,7 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.wetHall.pitPumps.boost).toBe(false);
   });
 
-  it('loads a save from before hand doses went in gradually with none going in, and keeps one that is', () => {
+  it('loads a save from before hand doses could be fed with none being fed, and keeps one that is', () => {
     const old = newWorld();
     const { charges: _, ...treatment } = old.treatment;
     const saved = JSON.stringify({
@@ -49,9 +49,40 @@ describe('a save', () => {
       pool: 'pool_01',
       chemical: 'bicarbonate',
       amount: 10,
+      rate: 0.5,
     });
     const again = deserialiseWorld(serialiseWorld(dosing, 5));
     expect(again.ok && again.world.treatment.charges.pool_01).toHaveLength(1);
+  });
+
+  it('puts in at once a dose a version 64 save was still dissolving', () => {
+    const old = newWorld();
+    const charge = {
+      additions: { bicarbonate: 10000 },
+      fresh: 0,
+      into: 'balance-tank',
+      seconds: 720,
+      left: 0.5,
+    };
+    const saved = JSON.stringify({
+      format: 'pool-plant-save',
+      version: 64,
+      savedAt: 5,
+      world: {
+        ...old,
+        treatment: {
+          ...old.treatment,
+          charges: { ...old.treatment.charges, pool_01: [charge] },
+        },
+      },
+    });
+    const loaded = deserialiseWorld(saved);
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.world.treatment.charges.pool_01).toEqual([]);
+    expect(
+      loaded.world.treatment.circuits.pool_01.tank.alkalinity,
+    ).toBeGreaterThan(old.treatment.circuits.pool_01.tank.alkalinity + 100);
   });
 
   it('refuses what is not a save of ours, and saves from a newer build', () => {

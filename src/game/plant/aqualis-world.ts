@@ -31,6 +31,7 @@ import {
 import type { ControllerState } from './aqualis-controller';
 import { alarms as advisorAlarms } from './aqualis-advisor';
 import {
+  FIRST_AID,
   firstAidHolds,
   firstAidNoHypochlorite,
   firstAidSettings,
@@ -130,6 +131,13 @@ export interface TrioState {
   alarms: Alarm[];
   settings: AqualisSettings;
   firstAid: FirstAidState | null;
+  /**
+   * The pool open to bathers or closed (its settings' OPEN · CLOSED; the
+   * owner, 2026-10-31): closed, Dr Aqualis may take larger corrections
+   * and says what must be true before it reopens. A First Aid programme
+   * that closes the pool closes it, and it cannot be opened while one runs.
+   */
+  poolOpen: boolean;
   selector: Selector;
   /** HAND's demands from its touch screen, 0 to 1. */
   hand: Record<ChannelId, number>;
@@ -230,6 +238,7 @@ export function newTrio(
     alarms: [],
     settings: trioSettings(id),
     firstAid: null,
+    poolOpen: true,
     selector: 'auto',
     hand: perChannel(() => 0),
     isolator: true,
@@ -369,6 +378,8 @@ export type TrioAction =
   | { act: 'hand'; channel: ChannelId; demand: number }
   | { act: 'settings'; settings: AqualisSettings }
   | { act: 'firstAid'; programme: FirstAidId | null }
+  /** Its settings' OPEN · CLOSED: the pool opened to bathers or closed. */
+  | { act: 'pool'; open: boolean }
   | { act: 'restart' }
   /** Its touch screen touched: an apology on it has been read. */
   | { act: 'touch' }
@@ -397,7 +408,15 @@ export function actOnTrio(t: TrioState, a: TrioAction): TrioState {
         firstAid: a.programme
           ? startFirstAid(a.programme, t.readings, t.settings)
           : null,
+        // A programme that wants the pool closed closes it.
+        poolOpen:
+          a.programme && FIRST_AID[a.programme].closePool ? false : t.poolOpen,
       };
+    case 'pool':
+      if (a.open === t.poolOpen) return t;
+      // Not opened while a programme that closes it runs.
+      if (a.open && t.firstAid && FIRST_AID[t.firstAid.id].closePool) return t;
+      return { ...t, poolOpen: a.open };
     case 'restart': {
       const os = restartOs(t.os);
       return os === t.os ? t : freshSoftware({ ...t, os });

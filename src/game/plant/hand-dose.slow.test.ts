@@ -2,14 +2,15 @@ import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import type { World } from '../world';
 import { onSettledWater } from '../world.test-support';
-import { handDose } from './hand-dose';
+import { advise } from './aqualis-advisor';
+import { trioAlarms } from './aqualis-world';
 
 /**
- * A hand dose into the balance tank goes in gradually
- * (`doc/plans/aqualis-advice-verification.md`, Part 1): the owner's
- * measurement, 17 kg of bicarbonate into the Lounge's tank, once
- * dissolved at once (the Trio, just downstream, read 820 mg/l and more),
- * now going in over about 21 minutes.
+ * A hand dose fed in at a rate (`doc/plans/aqualis-advice-verification.md`,
+ * Part 1; the owner, 2026-10-31): the owner's measurement, 17 kg of
+ * bicarbonate tipped into the Lounge's tank at once (the Trio, just
+ * downstream, read 820 mg/l and more and raised pH HIGH and WATER
+ * SCALING), against the same fed in at the rate Dr Aqualis recommends.
  */
 
 describe('a hand dose, carried round by the circulation', () => {
@@ -36,66 +37,64 @@ describe('a hand dose, carried round by the circulation', () => {
   });
 });
 
-/** The Lounge Trio's highest readings over `minutes`, a minute at a time. */
-function peaks(w0: World, minutes: number) {
+/** The Lounge Trio's alarms (minutes each was on) and highest pH and alkalinity over `minutes`. */
+function watch(w0: World, minutes: number) {
   let w = w0;
+  const on = new Map<string, number>();
+  let ph = 0;
   let alk = 0;
-  let tds = 0;
   for (let m = 0; m < minutes; m++) {
     w = advance(w, 60, 1);
+    for (const a of trioAlarms(w.aqualis.pool_01))
+      on.set(a.id, (on.get(a.id) ?? 0) + 1);
+    ph = Math.max(ph, w.aqualis.pool_01.readings.ph);
     alk = Math.max(alk, w.aqualis.pool_01.readings.alkalinity);
-    tds = Math.max(tds, w.aqualis.pool_01.readings.tds);
   }
-  return { alk, tds, end: w };
+  return { on, ph, alk, end: w };
 }
 
 describe('17 kg of bicarbonate into the Lounge’s balance tank', () => {
-  const base = advance(onSettledWater(newWorld()), 60, 1);
-  const kg = 17.4;
-  const instant: World = {
-    ...base,
-    treatment: {
-      ...base.treatment,
-      circuits: {
-        ...base.treatment.circuits,
-        pool_01: handDose(
-          base.treatment.circuits.pool_01,
-          'pool_01',
-          base.pools.pool_01,
-          'bicarbonate',
-          kg,
-          'balance-tank',
-        ),
-      },
-    },
-  };
-  const dose = (into?: 'pool') =>
+  // Its water as months of service leave it, alkalinity about 51.
+  const base = advance(onSettledWater(newWorld()), 120, 1);
+  const t = base.aqualis.pool_01;
+  const before = new Set<string>(trioAlarms(t).map((a) => a.id));
+  const advice = advise(t.readings, t.settings, t.channels, undefined, {
+    open: t.poolOpen,
+  }).find((a) => a.id === 'alkalinity-low');
+  const rate = advice!.dose!.rate!;
+  const dose = (r?: number) =>
     applyAction(base, {
       type: 'hand/dose',
       pool: 'pool_01',
       chemical: 'bicarbonate',
-      amount: kg,
-      into,
+      amount: 17,
+      ...(r ? { rate: r } : {}),
     });
-  const was = peaks(instant, 180);
-  const tank = peaks(dose(), 180);
-  const pool = peaks(dose('pool'), 180);
+  const dumped = watch(dose(), 240);
+  const fed = watch(dose(rate), 240);
+  const raised = (r: typeof fed) =>
+    [...r.on.keys()].filter((id) => !before.has(id));
 
-  it('dissolved at once, the Trio read over 900 mg/l (the brief’s problem)', () => {
-    expect(was.alk).toBeGreaterThan(900);
+  it('Dr Aqualis recommends a rate, as dose takes it', () => {
+    expect(advice?.dose?.how).toMatch(/at \d+g\/min/);
+    expect(rate).toBeGreaterThan(0.05);
+    expect(rate).toBeLessThan(0.5);
   });
-  it('going in over its 21 minutes, the Trio’s peak is under half that', () => {
-    expect(tank.alk).toBeLessThan(was.alk / 2);
-    expect(tank.tds).toBeLessThan(was.tds);
+  it('dumped at once, the sample point’s alarms come on: pH HIGH and WATER SCALING', () => {
+    expect(dumped.alk).toBeGreaterThan(800);
+    expect(raised(dumped)).toEqual(
+      expect.arrayContaining(['ph-high', 'balance-scaling']),
+    );
   });
-  it('spread over the pool, the Trio sees it only mixed', () => {
-    expect(pool.alk).toBeLessThan(140);
+  it('fed at his rate, no alarm comes on, and the pH stays inside its alarm limit', () => {
+    expect(raised(fed)).toEqual([]);
+    expect(fed.ph).toBeLessThan(7.6);
+    expect(fed.alk).toBeLessThan(160);
   });
-  it('every way, it is all in, and three hours on (two turnovers) the circuit is mixed near its 120', () => {
-    for (const r of [tank, pool]) {
+  it('either way it is all in by the end, the alkalinity back in its band', () => {
+    for (const r of [dumped, fed]) {
       expect(r.end.treatment.charges.pool_01).toHaveLength(0);
-      expect(r.end.aqualis.pool_01.readings.alkalinity).toBeGreaterThan(105);
-      expect(r.end.aqualis.pool_01.readings.alkalinity).toBeLessThan(135);
+      expect(r.end.aqualis.pool_01.readings.alkalinity).toBeGreaterThan(80);
     }
   });
 });
