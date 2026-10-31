@@ -1,9 +1,12 @@
 import {
   Box3,
+  BoxGeometry,
   CanvasTexture,
   Euler,
   Group,
+  Matrix4,
   Mesh,
+  MeshBasicMaterial,
   Quaternion,
   SRGBColorSpace,
   Vector3,
@@ -88,6 +91,12 @@ export function deskCartonFootprint() {
  * and where Macrosoft Pool Simulator 97 stands face out on it, metres.
  */
 export const SHELF = { x: 0.05, top: 1.65, star: 0.27 } as const;
+/** The gap between boxes stood in a row on the shelf. */
+const SHELF_GAP = 0.006;
+/** The layer of things only a held box's placing aim sees (the shelf's space). */
+export const PLACING_AIM_LAYER = 5;
+/** How far above the shelf's board a box aimed there is put on the shelf. */
+const SHELF_SPACE_H = 0.3;
 
 /** The opened box, Beige Accounting's ledger, on top of the desk's pile. */
 const LEDGER = 'beige-accounting-leisure-centre-ledger';
@@ -272,6 +281,21 @@ export function createEngineersDesk(
     })
     .catch(() => {});
 
+  // The desk's top, unseen, as a surface a dropped box lands on (the
+  // carrying's `boardSupport`): one let go over it lands there, one whose
+  // middle is past its edge falls to the floor (the owner, 2026-10-31).
+  const deskTop = new Mesh(
+    new BoxGeometry(DESK.w, 0.01, DESK.d),
+    new MeshBasicMaterial({ visible: false }),
+  );
+  kit.materials.push(deskTop.material);
+  deskTop.name = 'Desk top';
+  deskTop.position.set(0, top - 0.005, 0);
+  deskTop.layers.set(PLACING_AIM_LAYER);
+  deskTop.userData.boardSupport = true;
+  deskTop.userData.noCollision = true;
+  group.add(deskTop);
+
   const pc = createPeriodPc(kit, options);
   pc.monitor.position.set(-0.22, top, -0.02);
   pc.monitor.rotation.y = 0.08;
@@ -315,6 +339,21 @@ export function createEngineersDesk(
   shelf.position.set(SHELF.x, SHELF.top, -DESK.d / 2);
   group.add(shelf);
   const shelfBack = -DESK.d / 2 + WALL_SHELF_STANDOFF;
+  // The space over the board, unseen, so that a box aimed into it is put
+  // on the shelf: aimed there, a ray passes over the thin board to the
+  // wall, which is not the desk's, and the box went home instead.
+  const unseen = new MeshBasicMaterial({ visible: false });
+  kit.materials.push(unseen);
+  const shelfSpace = new Mesh(
+    new BoxGeometry(WALL_SHELF.w, SHELF_SPACE_H, WALL_SHELF.d),
+    unseen,
+  );
+  shelfSpace.name = 'Shelf space';
+  // Seen only by the aim that places a held box, never by the camera or
+  // by the aim that picks a box up, which it would otherwise block.
+  shelfSpace.layers.set(PLACING_AIM_LAYER);
+  shelfSpace.position.set(0, SHELF_SPACE_H / 2, WALL_SHELF.d / 2);
+  shelf.add(shelfSpace);
 
   // The PC's carton beside the desk's open end, empty, kept in case it
   // ever goes back, and used as a bin. It stands on the floor between the
@@ -477,6 +516,55 @@ export function createEngineersDesk(
     }
     return null;
   };
+  const boxOf = (id: string) => [...boxes].find(([, k]) => k === id)?.[0];
+  /** A box's extent along the shelf (x), in the desk's frame. */
+  const extentOf = (box: Object3D) => {
+    group.updateMatrixWorld(true);
+    const inverse = group.matrixWorld.clone().invert();
+    const bounds = new Box3();
+    box.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      child.geometry.computeBoundingBox();
+      if (child.geometry.boundingBox)
+        bounds.union(
+          child.geometry.boundingBox
+            .clone()
+            .applyMatrix4(
+              new Matrix4().multiplyMatrices(inverse, child.matrixWorld),
+            ),
+        );
+    });
+    return { left: bounds.min.x, right: bounds.max.x };
+  };
+  /**
+   * The shelf's row with the held `id` stood in it, tidily (the owner,
+   * 2026-10-31): the right-most box stays where it is, the new one stands
+   * just to its left, and the rest stand upright, spine out, closed up to
+   * its left in the order they stood; every box's new pose, or null if
+   * the row would not fit on the board.
+   */
+  const shelfRow = (id: string): Map<string, Pose> | null => {
+    const on = [...boxes]
+      .filter(([, k]) => {
+        if (k === id) return false;
+        const at = things.where(k);
+        return at === 'shelf' || (at === 'home' && shelfHomes.has(k));
+      })
+      .map(([box, k]) => ({ k, ...extentOf(box) }))
+      .sort((a, b) => a.left - b.left);
+    const leftEnd = SHELF.x - WALL_SHELF.w / 2 + 0.02;
+    const rightEnd = SHELF.x + WALL_SHELF.w / 2 - 0.02;
+    const row = new Map<string, Pose>();
+    const anchor = on.pop();
+    let cursor = anchor ? anchor.left : rightEnd + SHELF_GAP;
+    for (const k of [id, ...on.reverse().map((o) => o.k)]) {
+      const size = softwareBoxSize(byId(k)!);
+      cursor -= SHELF_GAP + size.d;
+      if (cursor < leftEnd) return null;
+      row.set(k, spineOut(size, cursor, SHELF.top, shelfBack, 0));
+    }
+    return row;
+  };
   const handling = {
     /** Null if `object` is not one of the desk's boxes, else whether it may be picked up now. */
     canPickUp(object: Object3D) {
@@ -497,34 +585,25 @@ export function createEngineersDesk(
         portable.component.reset();
         return true;
       }
-      if (place === 'desk') {
-        const slot = things.desk(id)!;
-        const below = things
-          .onDesk()
-          .slice(0, -1)
-          .reduce<number>(
-            (height, belowId) => height + softwareBoxSize(byId(belowId)!).d,
-            top,
-          );
-        group.add(object);
-        applyPose(object, flat(size, 0.66, below, 0.08, slot * 0.04));
-        portable.component.reset();
-        return true;
-      }
       if (place === 'shelf') {
-        const pose = things.shelf(id);
-        if (!pose) return 'refuse';
-        group.add(object);
-        applyPose(object, pose);
+        const row = shelfRow(id);
+        if (!row) return 'refuse';
+        things.shelve(
+          id,
+          [...row.keys()].filter((k) => k !== id),
+        );
+        for (const [k, pose] of row) {
+          const box = boxOf(k)!;
+          group.add(box);
+          applyPose(box, pose);
+        }
         portable.component.reset();
         return true;
       }
-      const pose = things.putBack(id);
-      if (!pose) return 'refuse';
-      group.add(object);
-      applyPose(object, pose);
-      portable.component.reset();
-      return true;
+      // Anywhere else (the desk, the floor): let go, it falls where it
+      // is, as anything carried does.
+      things.loosen(id);
+      return null;
     },
     /** What release would do at this target, for the crosshair's cue. */
     cue(object: Object3D, target?: Object3D): CarryAnswer | null {
@@ -532,14 +611,11 @@ export function createEngineersDesk(
       if (id === undefined || things.held() !== id) return null;
       const place = destination(target);
       if (place === 'carton') return { gesture: 'put-in', possible: true };
-      if (place === 'desk') return { gesture: 'put-down', possible: true };
       if (place === 'shelf')
-        return things.canShelf(id)
+        return shelfRow(id)
           ? { gesture: 'put-back', possible: true }
           : { gesture: 'put-back', possible: false, refused: true };
-      return things.canPutBack(id)
-        ? { gesture: 'put-back', possible: true }
-        : { gesture: 'put-back', possible: false, refused: true };
+      return null;
     },
     /** What is in the carton, bottom first, by title id. */
     binned: () => things.binned(),

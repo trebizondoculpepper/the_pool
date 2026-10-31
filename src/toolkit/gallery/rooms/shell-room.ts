@@ -1,4 +1,5 @@
 import { createYardDressing } from '../views/yard-dressing';
+import { PLACING_AIM_LAYER } from '../../components/site-dressing/views/engineers-desk';
 import { createCo2SupplyPart } from '../../components/plant/parts/co2-supply';
 import { createLpgCagePart } from '../../components/loading-dock/parts/lpg-cage';
 import { CO2_CAGE } from '../../components/plant/views/co2-cage';
@@ -711,9 +712,11 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
   /** What a release at a screen point is aimed at in the office, within reach. */
   const releaseAim = (x: number, y: number) => {
     raycaster.setFromCamera(pointer.set(x, y), camera);
+    raycaster.layers.enable(PLACING_AIM_LAYER);
     const hit = raycaster
       .intersectObject(machines.group, true)
       .find((candidate) => !isHeldPortableHit(candidate.object));
+    raycaster.layers.disable(PLACING_AIM_LAYER);
     return hit && hit.distance <= 3 * metre ? hit.object : undefined;
   };
   const walk = createFirstPerson({
@@ -829,6 +832,8 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     }),
     /** Stand up from a chair. */
     stand: () => walk.stand(),
+    /** The scene, for inspecting it from the console. */
+    scene,
   };
   (window as unknown as { shellRoom: unknown }).shellRoom = handle;
   const resize = () => {

@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The engineer's software boxes are put where they are let go (the owner, 2026-10-31): on the shelf they stand upright in a tidy row, the new one just left of the right-most and the rest closed up beside it, refused when the board is full; let go over the desk or the floor, they fall as anything carried does, landing on the desk's top or, with their middle past its edge, on the floor; the carton takes them as a bin does.
 - The engineer's shelf gains boxed PANES 95 and Fenestra Prospect Embedded 6.0. Software boxes can be set on the desk, put into the Gateway carton, and picked up from either place to return neatly to their shelf slots (the owner, 2026-10-31).
 - The developer console's `reset` command restores the simulation to New Game defaults and saves it without moving the player or replacing their Continue position (the owner, 2026-10-31).
 - Hall 5's skimmer gains a live snake, a dead bat and a skunk, each with its own model, reveal banner and caption (the owner, 2026-10-31).
@@ -25,6 +26,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The engineer's software boxes can be put on the wall shelf by aiming at the space over it: the aim used to pass over the thin board to the wall and send the box back to the desk.
 - A new game starts perfectly normal and stays so through its first hour (the owner, 2026-10-31; `doc/plans/new-game-normal.md`): the Lounge's and Olympic's alkalinity in band at 100 mg/l (it began at the 51 and 68 that months without bicarbonate leave, and Dr Aqualis asked for a hand dose at once), every pool at its pH set point of 7.3 (not the Trio band's edge), every filter bed clean, and every day tank part full with no line calling; the test kit and Dr Aqualis are checked through the hour by `new-game-normal.slow.test.ts`. Saves keep their water.
 
 ## [0.8.0] - 2026-10-31

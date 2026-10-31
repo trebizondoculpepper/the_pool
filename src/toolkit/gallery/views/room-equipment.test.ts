@@ -113,21 +113,17 @@ describe('the engineer’s office’s boxed software', () => {
     built.dispose();
   });
 
-  it('lets a box be picked up and put back exactly where it was', () => {
+  it('lets a box let go away from the shelf and carton fall where it is, as anything carried does', () => {
     const { built, boxes } = build();
     const box = boxes.get('macrosoft-pool-simulator-97')!;
-    const parent = box.parent;
-    const position = box.position.clone();
-    const quaternion = box.quaternion.clone();
     expect(built.canRemove(box)).toBe(true);
     pickUp(box);
     // In the hands, as the control scheme carries it.
     built.group.attach(box);
     box.position.set(0, 1.5, 0);
-    expect(built.release(box)).toBe(true);
-    expect(box.parent).toBe(parent);
-    expect(box.position.distanceTo(position)).toBeLessThan(1e-9);
-    expect(box.quaternion.angleTo(quaternion)).toBeLessThan(1e-6);
+    // Not the office's to place: the carrying drops it.
+    expect(built.release(box)).toBeNull();
+    expect(built.canRemove(box)).toBe(true);
     built.dispose();
   });
 

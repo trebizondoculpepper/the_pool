@@ -16,8 +16,14 @@ export interface Pose {
   readonly quaternion: readonly [number, number, number, number];
 }
 
-/** Where a thing is: at its original home, in the hands, or at a new place. */
-export type Whereabouts = 'home' | 'held' | 'binned' | 'desk' | 'shelf';
+/** Where a thing is: at its original home, in the hands, or at a new place ('loose': dropped wherever it fell). */
+export type Whereabouts =
+  | 'home'
+  | 'held'
+  | 'binned'
+  | 'desk'
+  | 'shelf'
+  | 'loose';
 
 export type HomeArea = 'desk' | 'shelf';
 
@@ -46,6 +52,14 @@ export interface PutBack<K> {
   canShelf(key: K): boolean;
   /** Set the held `key` neatly in its shelf slot: the pose there, or null. */
   shelf(key: K): Pose | null;
+  /**
+   * Stand the held `key` in the shelf's row, `tidied` being the others
+   * straightened up in the row with it: all on the shelf now, none
+   * leaning on another. Whether it was held.
+   */
+  shelve(key: K, tidied: readonly K[]): boolean;
+  /** Let the held `key` fall wherever it is let go: whether it was held. */
+  loosen(key: K): boolean;
   /** What is in the bin, bottom first. */
   binned(): readonly K[];
   /** What is in the desk's dump pile, bottom first. */
@@ -60,6 +74,7 @@ export function createPutBack<K>(): PutBack<K> {
   const inBin: K[] = [];
   const onDesk: K[] = [];
   const onShelf = new Set<K>();
+  const loose = new Set<K>();
   let held: K | null = null;
   const where = (key: K): Whereabouts | null =>
     !homes.has(key)
@@ -72,7 +87,9 @@ export function createPutBack<K>(): PutBack<K> {
             ? 'desk'
             : onShelf.has(key)
               ? 'shelf'
-              : 'home';
+              : loose.has(key)
+                ? 'loose'
+                : 'home';
   const supports = (key: K, area: HomeArea) => {
     const at = where(key);
     return area === 'shelf'
@@ -84,6 +101,7 @@ export function createPutBack<K>(): PutBack<K> {
     const at = where(key);
     if (at === 'binned') return inBin[inBin.length - 1] === key;
     if (at === 'desk') return onDesk[onDesk.length - 1] === key;
+    if (at === 'loose') return true;
     if (at !== 'home' && at !== 'shelf') return false;
     return ![...homes].some(
       ([other, { restsOn, area }]) => restsOn === key && supports(other, area),
@@ -112,6 +130,7 @@ export function createPutBack<K>(): PutBack<K> {
       if (where(key) === 'binned') inBin.pop();
       if (where(key) === 'desk') onDesk.pop();
       onShelf.delete(key);
+      loose.delete(key);
       held = key;
       return true;
     },
@@ -147,6 +166,23 @@ export function createPutBack<K>(): PutBack<K> {
       held = null;
       onShelf.add(key);
       return pose;
+    },
+    shelve(key, tidied) {
+      if (held === null || held !== key) return false;
+      held = null;
+      for (const k of [key, ...tidied]) {
+        loose.delete(k);
+        onShelf.add(k);
+        const home = homes.get(k);
+        if (home) homes.set(k, { ...home, restsOn: undefined });
+      }
+      return true;
+    },
+    loosen(key) {
+      if (held === null || held !== key) return false;
+      held = null;
+      loose.add(key);
+      return true;
     },
     binned: () => inBin,
     onDesk: () => onDesk,

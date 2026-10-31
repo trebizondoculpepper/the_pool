@@ -17,6 +17,10 @@ Keep the current right-hand carry pose. While X is held, ease the carried object
 
 The inspection centre should be based on the object's bounds, not its pivot or original grab point: software boxes, a fuse and an irregular skimmer find should each occupy the centre. Fit the full bounds inside a safe portion of the viewport at the default distance, allow a closer view without clipping the near plane, and prevent intersection with the walker's coarse carry solids. If an obstacle prevents the centred pose, stop at the nearest valid pose; do not move the world camera. The object remains the same portable object in the scene, with its existing state, placement and drop behaviour. While inspection is active, suppress placement cues and actions that would misleadingly target through the centred model; restore them on release.
 
+Turning, whether inspecting or not, is about the object's approximate centre of gravity (the centre of its bounds will do), never its pivot: a software box's origin is at a corner, so today it swings round that corner when turned with X held (the owner, 2026-10-31).
+
+A held object is drawn over the world, as a first-person game draws the hands and what they hold, so it never clips through a wall, shelf or desk it is carried against (the owner, 2026-10-31): drawn last, its depth test against the world off or cleared, while the carry solids still keep it physically clear.
+
 ## Why this approach
 
 Moving only the object follows the Amnesia-style direct-manipulation precedent and the existing X rotation behaviour. Tilting the camera down and right would move the world, crosshair and aiming ray; keeping attention at screen centre would then need a second target convention, and a sudden camera motion could feel like the player has lost control of their view. This is an inference from the current camera, targeting and carry code, not a claim that no game uses a camera tilt. A brief, reversible object motion is the simpler first prototype. The dedicated Resident Evil view is a useful fallback if readable labels and small parts still cannot be framed well in the world.
