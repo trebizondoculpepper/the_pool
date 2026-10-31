@@ -78,6 +78,8 @@ export interface DropPlacement {
 
 /** How far the wheel may bring a thing being inspected nearer, or take it further, than its fitted distance. */
 const INSPECT_SCALE = { min: 0.3, max: 2 } as const;
+/** A held thing's turn, in the eye's frame, that shows the eye its front (+z) with its top (+y) up. */
+const UPRIGHT_TO_EYE = new Quaternion();
 
 /** Shared first-person use behaviour, with no input bindings of its own. */
 export function createObjectHandling(
@@ -182,6 +184,10 @@ export function createObjectHandling(
   // scaled by `inspectScale`, which the wheel changes.
   let inspecting = false;
   let inspectScale = 1;
+  // Turning to show its front (mission 117): from X's press until the
+  // walker turns it, it eases to face the eye, upright. A portable's
+  // front is its own +z and its top its own +y.
+  let facing = false;
   const cameraRotation = new Quaternion();
   const worldRotation = new Quaternion();
   const worldPosition = new Vector3();
@@ -551,7 +557,10 @@ export function createObjectHandling(
      * (mission 117): it swings to the middle of the view while `on`.
      */
     inspect(on: boolean) {
-      inspecting = on && held !== null;
+      const now = on && held !== null;
+      if (now && !inspecting) facing = true;
+      if (!now) facing = false;
+      inspecting = now;
     },
     /** Whether the held thing is being looked at close to. */
     inspecting: () => inspecting && held !== null,
@@ -564,6 +573,8 @@ export function createObjectHandling(
     },
     rotate(yaw: number, pitch: number) {
       if (!held) return;
+      // Turned by hand: no longer easing to show its front.
+      if (yaw || pitch) facing = false;
       const previous = held.rotation.clone();
       held.rotation.premultiply(
         new Quaternion().setFromEuler(new Euler(-pitch, yaw, 0, 'YXZ')),
@@ -632,6 +643,8 @@ export function createObjectHandling(
       }
       if (held) {
         camera.getWorldQuaternion(cameraRotation);
+        // Its front to the eye, upright: its frame the camera's own.
+        if (facing) held.rotation.slerp(UPRIGHT_TO_EYE, Math.min(1, dt * 12));
         worldRotation.copy(cameraRotation).multiply(held.rotation);
         held.object.quaternion.copy(worldRotation);
         held.grab.lerp(

@@ -6,7 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
-- Close inspection of carried things (mission 117): a carried thing is held, and turned, about its middle, as if in the hands, not about a corner; hold X (INSPECT on touch, Y on a pad) and it swings to the middle of the view, sized to fit, where the wheel brings it nearer to read its small print; let go and it swings back to the right hand.
+- Close inspection of carried things (mission 117): a carried thing is held, and turned, about its middle, as if in the hands, not about a corner; hold X (INSPECT on touch, Y on a pad) and it swings to the middle of the view, sized to fit, where the wheel brings it nearer to read its small print; let go and it swings back to the right hand. As it swings up it turns to show its front, upright (a portable's own +z and +y), so a box or bottle is first seen face on, label readable; turning it by hand stops that.
 
 ### Changed
 

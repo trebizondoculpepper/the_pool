@@ -6,6 +6,7 @@ import {
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
+  Quaternion,
   Scene,
   Vector3,
 } from 'three';
@@ -352,5 +353,26 @@ it('holds a thing up in the middle of the view while inspecting, wheel nearer, a
   expect(
     f.camera.worldToLocal(middleOf(f.object)).distanceTo(inHand),
   ).toBeLessThan(0.01);
+  f.handling.dispose();
+});
+
+it('turns a thing held up to look at to show its front, upright, until it is turned by hand', () => {
+  const f = cornerFixture();
+  f.object.rotation.set(0.4, 2.1, -0.7);
+  expect(f.handling.use(0, 0)).toBe(true);
+  const settle = () => {
+    for (let i = 0; i < 90; i++) f.handling.update(1 / 60);
+  };
+  settle();
+  const eye = f.camera.getWorldQuaternion(new Quaternion());
+  const turn = () => f.object.getWorldQuaternion(new Quaternion()).angleTo(eye);
+  expect(turn()).toBeGreaterThan(0.3);
+  f.handling.inspect(true);
+  settle();
+  // Its front (+z) to the eye, its top (+y) up: its frame the eye's.
+  expect(turn()).toBeLessThan(0.01);
+  f.handling.rotate(0.8, 0);
+  settle();
+  expect(turn()).toBeGreaterThan(0.5);
   f.handling.dispose();
 });
