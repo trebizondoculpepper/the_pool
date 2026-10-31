@@ -112,4 +112,4 @@ The boxed _The Pool_ front, back and spine at `doc/marketing/box-art/` were gene
 
 ## VibeTopList's vote badge
 
-`resources/images/vibetoplist/vibetoplist-badge.svg` is VibeTopList's "Featured on VibeTopList" badge for the game (https://vibetoplist.com/badge/the-pool.svg), downloaded unchanged on 2026-10-31 and shown, as VibeTopList offers it to listed games, on the title screen and the pause menu, linked to the game's vote page. It is VibeTopList's, not covered by the game's licence.
+`resources/images/vibetoplist/vibetoplist-badge.svg` is VibeTopList's "Featured on VibeTopList" badge for the game (https://vibetoplist.com/badge/the-pool.svg), downloaded unchanged on 2026-10-31 and shown, as VibeTopList offers it to listed games, on the title screen and the pause menu, linked to the game's vote page. The robot (`vibetoplist-robot.png`) is the badge's own image, taken out of it unchanged; the pause menu's panel redraws the badge around it as a rectangular button. Both are VibeTopList's, not covered by the game's licence.

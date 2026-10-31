@@ -43,7 +43,7 @@ export const MODULE_UNITS: Record<
   switch: [12, 2],
   vfd: [8, 1],
   // The vote button in its bezel, a long, low badge.
-  vote: [10, 1],
+  vote: [12, 1],
 };
 
 /** The panel's margins and bands, metres. */

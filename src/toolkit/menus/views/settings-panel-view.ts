@@ -1,5 +1,5 @@
 import { VERSION } from '../../../game/version';
-import { VOTE_BADGE_URL, VOTE_URL } from '../../title/vote-badge';
+import { VOTE_ROBOT_URL, VOTE_URL } from '../../title/vote-badge';
 import { computed, effect, signal } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
 import {
@@ -858,8 +858,11 @@ function build_(
         // The whole plate striped round its edge, its title on top.
         const hazard = hazardPlate(kit, m.w - 0.001, m.h - 0.001);
         place(hazard, 0, 0).position.z = 0.0001;
-        place(vote.object, 0, centreY);
-        focusable(m, face, 0, centreY, 0.03, false, vote);
+        // Centred in its plate, its Dymo title stuck over the top tape.
+        title.position.y = m.h / 2 - 0.004;
+        title.position.z = 0.0003;
+        place(vote.object, 0, 0);
+        focusable(m, face, 0, 0, 0.03, false, vote);
         break;
       }
       case 'vfd': {
@@ -985,8 +988,8 @@ function build_(
 }
 
 /**
- * A plate's body in a safety border: black and yellow stripes round its
- * edge and brushed steel inside, a canvas on a plane `w` by `h` metres.
+ * Black and yellow safety tape round a plate's edge, `w` by `h` metres,
+ * clear inside so the plate shows through.
  */
 function hazardPlate(kit: PanelKit, w: number, h: number) {
   const perMetre = 4000;
@@ -1007,20 +1010,13 @@ function hazardPlate(kit: PanelKit, w: number, h: number) {
     c.closePath();
     c.fill();
   }
+  // Inside the tape, clear: the plate's own machined metal, as every
+  // other plate's (the owner, 2026-10-31).
   const border = Math.round(0.005 * perMetre);
-  const steel = c.createLinearGradient(0, border, 0, ph - border);
-  steel.addColorStop(0, '#c4c9cc');
-  steel.addColorStop(0.55, '#959ca1');
-  steel.addColorStop(1, '#b3b9bd');
-  c.fillStyle = steel;
-  c.fillRect(border, border, pw - 2 * border, ph - 2 * border);
-  // Brushed: fine horizontal streaks.
-  for (let y = border; y < ph - border; y += 2) {
-    c.fillStyle = `rgba(255,255,255,${0.03 + ((y * 7919) % 13) / 260})`;
-    c.fillRect(border, y, pw - 2 * border, 1);
-  }
+  c.clearRect(border, border, pw - 2 * border, ph - 2 * border);
   texture.needsUpdate = true;
   const material = createPs1Material({ map: texture, roughness: 0.45 });
+  material.transparent = true;
   kit.materials.push(material);
   const plane = new Mesh(new PlaneGeometry(w, h), material);
   plane.name = 'Hazard-bordered plate';
@@ -1029,15 +1025,16 @@ function hazardPlate(kit: PanelKit, w: number, h: number) {
 }
 
 /**
- * VibeTopList's purple vote button as a panel part: the badge on a cap
- * in a polished metal bezel, pressing in when used and opening the game's
- * vote page. `drawn` asks the panel to draw again once the badge's image
- * has loaded.
+ * VibeTopList's purple vote button as a panel part, its badge redrawn as
+ * a rectangular cap (the owner, 2026-10-31): their purple, their robot
+ * on the left and VOTE ON VibeTopList beside it, in a polished metal
+ * bezel. It presses in when used and opens the game's vote page. `drawn`
+ * asks the panel to draw again once the robot's image has loaded.
  */
 function voteButton(kit: PanelKit, name: string, drawn: () => void): Part {
   const a = beginPart(kit, name);
-  const w = 0.15;
-  const h = (w * 52) / 190;
+  const w = VOTE_CAP.w;
+  const h = VOTE_CAP.h;
   const bezel = new Mesh(
     new BoxGeometry(w + 0.008, h + 0.008, 0.004),
     kitPaint(kit, '#c9ced1', 0.85),
@@ -1052,24 +1049,47 @@ function voteButton(kit: PanelKit, name: string, drawn: () => void): Part {
   well.position.z = 0.0041;
   well.raycast = () => {};
   a.object.add(well);
-  const perMetre = 4000;
-  const { context: c, texture } = createCanvasTexture(
-    Math.round(w * perMetre),
-    Math.round(h * perMetre),
-    'printed',
-  );
+  const perMetre = 3200;
+  const pw = Math.round(w * perMetre);
+  const ph = Math.round(h * perMetre);
+  const { context: c, texture } = createCanvasTexture(pw, ph, 'printed');
   kit.textures.push(texture);
-  c.fillStyle = '#7c3aed';
-  c.fillRect(0, 0, c.canvas.width, c.canvas.height);
-  texture.needsUpdate = true;
-  const image = new Image();
-  image.onload = () => {
-    c.clearRect(0, 0, c.canvas.width, c.canvas.height);
-    c.drawImage(image, 0, 0, c.canvas.width, c.canvas.height);
+  const draw = (robot?: HTMLImageElement) => {
+    const purple = c.createLinearGradient(0, 0, pw, ph);
+    purple.addColorStop(0, '#6d28d9');
+    purple.addColorStop(1, '#a855f7');
+    c.fillStyle = purple;
+    c.fillRect(0, 0, pw, ph);
+    c.strokeStyle = '#5b21b6';
+    c.lineWidth = 4;
+    c.strokeRect(2, 2, pw - 4, ph - 4);
+    // The robot on a pale tile at the left.
+    const tile = ph * 0.72;
+    const tx = (ph - tile) / 2;
+    c.fillStyle = 'rgba(255,255,255,0.18)';
+    c.fillRect(tx, tx, tile, tile);
+    if (robot) {
+      c.imageSmoothingEnabled = true;
+      const r = tile * 0.8;
+      c.drawImage(robot, tx + (tile - r) / 2, tx + (tile - r) / 2, r, r);
+    }
+    const left = tx + tile + ph * 0.22;
+    c.fillStyle = 'rgba(255,255,255,0.85)';
+    c.textBaseline = 'alphabetic';
+    c.font = `700 ${Math.round(ph * 0.2)}px Helvetica, Arial, sans-serif`;
+    c.fillText('V O T E   O N', left, ph * 0.4);
+    c.fillStyle = '#ffffff';
+    c.font = `800 ${Math.round(ph * 0.42)}px Helvetica, Arial, sans-serif`;
+    c.fillText('VibeTopList', left, ph * 0.82, pw - left - ph * 0.15);
     texture.needsUpdate = true;
+  };
+  draw();
+  const robot = new Image();
+  robot.onload = () => {
+    draw(robot);
     drawn();
   };
-  image.src = VOTE_BADGE_URL;
+  robot.src = VOTE_ROBOT_URL;
   const material = createPs1Material({ map: texture, roughness: 0.35 });
   kit.materials.push(material);
   const cap = new Mesh(new BoxGeometry(w, h, 0.003), [
@@ -1096,3 +1116,6 @@ function voteButton(kit: PanelKit, name: string, drawn: () => void): Part {
   a.shows(() => 'Vote for The Pool on VibeTopList');
   return a.part();
 }
+
+/** The vote button's cap, metres. */
+const VOTE_CAP = { w: 0.19, h: 0.046 } as const;

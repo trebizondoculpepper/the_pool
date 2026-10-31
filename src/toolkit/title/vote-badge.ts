@@ -6,9 +6,10 @@
  */
 
 import badgeUrl from '../../../resources/images/vibetoplist/vibetoplist-badge.svg?url';
+import robotUrl from '../../../resources/images/vibetoplist/vibetoplist-robot.png?url';
 
-/** The badge's image. */
-export const VOTE_BADGE_URL = badgeUrl;
+/** The robot from the badge, for redrawing it as a panel's button. */
+export const VOTE_ROBOT_URL = robotUrl;
 
 /** Where a vote for the game is cast. */
 export const VOTE_URL = 'https://vibetoplist.com/vote/the-pool';
