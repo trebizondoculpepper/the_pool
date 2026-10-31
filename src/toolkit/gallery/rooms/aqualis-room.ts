@@ -37,7 +37,7 @@ import type {
   ControllerOutput,
   ControllerState,
 } from '../../../game/plant/aqualis-controller';
-import { advise, alarms } from '../../../game/plant/aqualis-advisor';
+import { advise, alarms, doseFor } from '../../../game/plant/aqualis-advisor';
 import {
   FIRST_AID,
   INCIDENT_PROGRAMME,
@@ -63,6 +63,7 @@ import {
   newDisplay,
   pressDisplay,
   tickDisplay,
+  withShownDose,
 } from '../../components/plant/logic/aqualis-display';
 import type {
   DisplayInputs,
@@ -235,7 +236,7 @@ export interface AqualisRoomHost {
   controllerFault(): boolean;
   /** Its alarm contacts now (to an annunciator). */
   alarms(): Alarm[];
-  /** Its advice now (Dr Aqualis's). */
+  /** Its advice now (Dr Aqualis's), each Show dose worked out as if asked for. */
   advice(): Advice[];
   /** What its control ports send each dosing unit now, 0 to 1. */
   outputs(): Outputs;
@@ -359,6 +360,8 @@ export function createAqualisRoomHost(
     const w = working();
     advice = withFirstAid(
       advise(readings, w, out!.channels, rig.water, {
+        // Show dose worked out only when asked (`inputs`).
+        doses: false,
         open: poolOpen,
         normal: settings.targets,
         closedByFirstAid: !!firstAid && FIRST_AID[firstAid.id].closePool,
@@ -449,13 +452,29 @@ export function createAqualisRoomHost(
     freshSoftware();
   }
 
+  // Show dose, worked out on the rig's own water when asked, kept until the reading changes.
+  let doseKey: unknown[] = [];
+  let doseValue: Advice['dose'] = null;
+  const doseOfShown = (a: Advice): Advice['dose'] => {
+    const key = [a.id, readings, settings, firstAid, poolOpen, out];
+    if (key.some((k, i) => k !== doseKey[i])) {
+      doseKey = key;
+      doseValue = doseFor(a.id, readings, working(), out!.channels, rig.water, {
+        open: poolOpen,
+        normal: settings.targets,
+        closedByFirstAid: !!firstAid && FIRST_AID[firstAid.id].closePool,
+        superchlorinating: superchlorinating(firstAid),
+      });
+    }
+    return doseValue;
+  };
   const inputs = (): DisplayInputs => ({
     readings,
     sample,
     selector: sel,
     channels: out!.channels,
     inhibit: out!.inhibit,
-    advice: osAdvice(os, advice),
+    advice: withShownDose(display, osAdvice(os, advice), doseOfShown),
     alarms: osAlarms(os, alarmsOn),
     settings,
     hand,
@@ -630,7 +649,10 @@ export function createAqualisRoomHost(
     },
     controllerFault: () => watchdogTripped(os),
     alarms: () => osAlarms(os, alarmsOn),
-    advice: () => osAdvice(os, advice),
+    advice: () =>
+      osAdvice(os, advice).map((a) =>
+        a.hasDose && !a.dose ? { ...a, dose: doseOfShown(a) } : a,
+      ),
     outputs: () => osOutputs(os, running() && out ? out.demands : NO_DEMAND),
     firstAid: () => firstAid,
     startFirstAid: startProgramme,

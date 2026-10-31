@@ -285,6 +285,8 @@ export interface Advice {
   where: Where | null;
   /** The exact amount, for Show dose; null where none can be given. */
   dose: DoseAmount | null;
+  /** Whether it has a Show dose: `dose` may be left null until it is asked for (`advise`'s `doses`). */
+  hasDose: boolean;
   mood: Mood;
 }
 

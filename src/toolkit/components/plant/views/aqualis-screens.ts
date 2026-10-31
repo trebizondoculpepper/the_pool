@@ -271,7 +271,7 @@ function drawDoctor(ctx: Ctx, m: DisplayModel, hooks: ScreenHooks) {
     );
   }
   drawGlossyButton(ctx, DOCTOR.dose, d.showDose ? 'Hide dose' : 'Show dose', {
-    state: !a?.dose ? 'disabled' : press(m, 'show-dose'),
+    state: !a || !(a.hasDose || a.dose) ? 'disabled' : press(m, 'show-dose'),
     tint: 'green',
     size: 18,
   });

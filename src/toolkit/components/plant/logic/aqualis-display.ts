@@ -353,7 +353,7 @@ export function displayRegions(
       {
         id: 'show-dose',
         rect: DOCTOR.dose,
-        enabled: !!inputs.advice[Math.min(s.advice, n - 1)]?.dose,
+        enabled: hasShowDose(inputs.advice[Math.min(s.advice, n - 1)]),
       },
     );
   }
@@ -422,6 +422,30 @@ export function hitDisplay(
   y: number,
 ): string | null {
   return hitRegion(displayRegions(s, inputs), x, y);
+}
+
+/** Whether an advice has a Show dose (worked out yet or not). */
+export const hasShowDose = (a: Advice | undefined) =>
+  !!a && (a.hasDose || !!a.dose);
+
+/**
+ * The advice with its Show dose worked out where the player is looking at
+ * it (the doctor's page, Show dose pressed, on that advice): `fill` is
+ * asked for it then only (`advise`'s `doses: false`, Part 5). The same
+ * list back otherwise.
+ */
+export function withShownDose(
+  s: DisplayState,
+  advice: readonly Advice[],
+  fill: (a: Advice) => Advice['dose'],
+): readonly Advice[] {
+  if (s.page !== 'doctor' || !s.showDose || !advice.length) return advice;
+  const i = Math.min(s.advice, advice.length - 1);
+  const a = advice[i];
+  if (a.dose || !a.hasDose) return advice;
+  const out = [...advice];
+  out[i] = { ...a, dose: fill(a) };
+  return out;
 }
 
 // ---- Presses ---------------------------------------------------------------------------

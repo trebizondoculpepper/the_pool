@@ -16,6 +16,7 @@ import {
   newDisplay,
   pressDisplay,
   tickDisplay,
+  withShownDose,
 } from '../../components/plant/logic/aqualis-display';
 import type {
   DisplayInputs,
@@ -26,7 +27,7 @@ import {
   bootStepAt,
 } from '../../components/core/logic/boot-sequence';
 import type { PiezoOneShot } from '../../components/sound/logic/piezo-beeps';
-import { advise } from '../../../game/plant/aqualis-advisor';
+import { advise, createDoseCache } from '../../../game/plant/aqualis-advisor';
 import {
   FIRST_AID,
   firstAidSettings,
@@ -123,6 +124,8 @@ export function createTrioWorldHost(
         t.os,
         withFirstAid(
           advise(t.readings, working, t.channels, undefined, {
+            // Show dose worked out only when asked (`shown`).
+            doses: false,
             open: t.poolOpen,
             normal: t.settings.targets,
             closedByFirstAid:
@@ -144,7 +147,28 @@ export function createTrioWorldHost(
     };
     return cached;
   };
-  const model = () => displayModel(display, inputs());
+  // Show dose, worked out once for each reading it is asked of.
+  const doses = createDoseCache();
+  const shown = (): DisplayInputs => {
+    const ins = inputs();
+    const t = trio();
+    const advice = withShownDose(display, ins.advice, (a) =>
+      doses(
+        a.id,
+        t.readings,
+        firstAidSettings(t.firstAid, t.settings),
+        t.channels,
+        {
+          open: t.poolOpen,
+          normal: t.settings.targets,
+          closedByFirstAid: !!t.firstAid && FIRST_AID[t.firstAid.id].closePool,
+          superchlorinating: superchlorinating(t.firstAid),
+        },
+      ),
+    );
+    return advice === ins.advice ? ins : { ...ins, advice };
+  };
+  const model = () => displayModel(display, shown());
   const running = () => osRunning(trio().os);
 
   return {

@@ -205,6 +205,7 @@ export function demoAdvice(scene: DemoScene): Advice[] {
       direction: s.direction,
       additive: null,
       where: null,
+      hasDose: !!s.dose,
       dose: s.dose
         ? {
             amount: 0,

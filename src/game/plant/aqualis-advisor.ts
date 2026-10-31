@@ -6,6 +6,7 @@ import {
   thiosulphateStoichiometry,
   waterFrom,
 } from '../water/pool-chemistry';
+import { MOLAR } from '../water/pool-chemistry';
 import type { Additions, PoolChemistry } from '../water/pool-chemistry';
 import { CHANNELS } from './aqualis-types';
 import type {
@@ -334,15 +335,6 @@ interface Ctx {
 const limit = (c: Ctx, k: keyof typeof PER_VISIT) =>
   PER_VISIT[k] * (c.open ? 1 : CLOSED_TIMES);
 
-/** Calcium chloride's most at a visit, kg, of `g` grams that raise the hardness to its set point or further. */
-const limitHardness = (c: Ctx, g: number) =>
-  (g / 1000) *
-  Math.min(
-    1,
-    limit(c, 'hardness') /
-      Math.max(1e-9, c.s.targets.calciumHardness.set - c.w.hardness),
-  );
-
 /** The grams of one addition that bring `measure` to `target`, by bisection (`measure` rising with the grams if `rising`). */
 function gramsFor(
   c: Ctx,
@@ -409,6 +401,8 @@ export interface AdviseOptions {
   closedByFirstAid?: boolean;
   /** A First Aid programme raising the chlorine, or bringing it down, on purpose: high chlorine is intended, not a tier-1 problem. */
   superchlorinating?: boolean;
+  /** Work out Show dose's amounts (the default), or leave them for `doseFor` (each advice's `hasDose` says whether it has one). */
+  doses?: boolean;
 }
 
 /**
@@ -458,7 +452,7 @@ function reopenAdvice(c: Ctx, o: AdviseOptions): Draft {
       ? 'Keep it closed until then.'
       : 'It may reopen (Settings › Pool dynamics).',
     additive: null,
-    dose: null,
+    prescribe: null,
   };
 }
 
@@ -508,7 +502,11 @@ function moodOf(severity: Severity, reading: ReadingId | null): Mood {
   return 'idle';
 }
 
-type Draft = Omit<Advice, 'mood' | 'where' | 'tier'> & { where?: Where | null };
+type Draft = Omit<Advice, 'mood' | 'where' | 'tier' | 'dose' | 'hasDose'> & {
+  where?: Where | null;
+  /** Its Show dose, worked out only when asked for (Part 5); null where it has none. */
+  prescribe: (() => DoseAmount | null) | null;
+};
 
 /**
  * Where an additive goes. The pumps' own chemicals are theirs while their
@@ -534,11 +532,11 @@ function readingRules(c: Ctx): Draft[] {
   const t = s.targets;
   const out: Draft[] = [];
   const add = (d: Draft) => out.push(d);
+  // Each dose is a closure, worked out only when Show dose asks (Part 5).
 
   // Free chlorine.
   const fc = r.freeChlorine;
   if (fc < t.freeChlorine.low) {
-    const g = Math.max(0, t.freeChlorine.set - c.w.freeChlorine) * V;
     add({
       id: 'free-chlorine-low',
       reading: 'freeChlorine',
@@ -549,19 +547,19 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Free chlorine low (${twoDp(fc)} mg/l): the germs are winning.`,
       direction: 'Raise it with sodium hypochlorite.',
       additive: 'hypochlorite',
-      dose: doseOf(
-        'hypochlorite',
-        g / CHANNELS.hypochlorite.gramsPerUnit,
-        'l',
-        c,
-      ),
+      prescribe: () => {
+        const g = Math.max(0, t.freeChlorine.set - c.w.freeChlorine) * V;
+        return doseOf(
+          'hypochlorite',
+          g / CHANNELS.hypochlorite.gramsPerUnit,
+          'l',
+          c,
+        );
+      },
     });
   } else if (fc > t.freeChlorine.high) {
     const veryHigh = fc > t.freeChlorine.high * ALARM_LIMITS.chlorineHighTimes;
     if (veryHigh) {
-      const g =
-        (Math.max(0, c.w.freeChlorine - t.freeChlorine.set) * V) /
-        thiosulphateStoichiometry().chlorinePerMg;
       // Closed, high chlorine harms no bather: it only keeps the pool shut.
       add({
         id: 'free-chlorine-high',
@@ -574,7 +572,12 @@ function readingRules(c: Ctx): Draft[] {
           ? 'Stop the hypochlorite and take it down with sodium thiosulphate.'
           : 'Let it fall, or take it down with sodium thiosulphate.',
         additive: 'thiosulphate',
-        dose: doseOf('thiosulphate', g / 1000, 'kg', c),
+        prescribe: () => {
+          const g =
+            (Math.max(0, c.w.freeChlorine - t.freeChlorine.set) * V) /
+            thiosulphateStoichiometry().chlorinePerMg;
+          return doseOf('thiosulphate', g / 1000, 'kg', c);
+        },
       });
     } else {
       add({
@@ -584,7 +587,7 @@ function readingRules(c: Ctx): Draft[] {
         problem: `Free chlorine rather high (${twoDp(fc)} mg/l): stinging eyes, I fear.`,
         direction: 'Turn the hypochlorite down; it will fall on its own.',
         additive: null,
-        dose: null,
+        prescribe: null,
       });
     }
   }
@@ -592,8 +595,6 @@ function readingRules(c: Ctx): Draft[] {
   // Combined chlorine.
   const cc = r.combinedChlorine;
   if (cc > t.combinedChlorine.high) {
-    const to = Math.max(t.freeChlorine.set, SUPERCHLORINATE_TIMES * cc);
-    const g = Math.max(0, to - c.w.freeChlorine) * V;
     add({
       id: 'combined-chlorine-high',
       reading: 'combinedChlorine',
@@ -606,25 +607,22 @@ function readingRules(c: Ctx): Draft[] {
         ? 'Close the pool and superchlorinate it to burn them off, or dilute it.'
         : 'Superchlorinate the pool to burn them off, or dilute it.',
       additive: 'superchlorinate',
-      dose: doseOf(
-        'superchlorinate',
-        g / CHANNELS.hypochlorite.gramsPerUnit,
-        'l',
-        c,
-      ),
+      prescribe: () => {
+        const to = Math.max(t.freeChlorine.set, SUPERCHLORINATE_TIMES * cc);
+        const g = Math.max(0, to - c.w.freeChlorine) * V;
+        return doseOf(
+          'superchlorinate',
+          g / CHANNELS.hypochlorite.gramsPerUnit,
+          'l',
+          c,
+        );
+      },
     });
   }
 
   // Alkalinity, before the pH it steadies.
   const alk = r.alkalinity;
   if (alk < t.alkalinity.low) {
-    const g = gramsFor(
-      c,
-      'bicarbonate',
-      (w) => w.alkalinity,
-      t.alkalinity.set,
-      1000 * V,
-    );
     add({
       id: 'alkalinity-low',
       reading: 'alkalinity',
@@ -639,26 +637,25 @@ function readingRules(c: Ctx): Draft[] {
             ? `Raise it with sodium bicarbonate. This will lift the pH a little; the ${c.online('co2') ? 'CO₂' : 'acid pump'} will bring it back down.`
             : 'Raise it with sodium bicarbonate, then lower the pH with acid by hand: the bicarbonate lifts it a little.',
       additive: 'bicarbonate',
-      dose: doseOf(
-        'bicarbonate',
-        g / 1000,
-        'kg',
-        c,
-        ((g / 1000) * limit(c, 'alkalinity')) /
-          Math.max(1e-9, t.alkalinity.set - c.w.alkalinity),
-      ),
+      prescribe: () => {
+        const g = gramsFor(
+          c,
+          'bicarbonate',
+          (w) => w.alkalinity,
+          t.alkalinity.set,
+          1000 * V,
+        );
+        return doseOf(
+          'bicarbonate',
+          g / 1000,
+          'kg',
+          c,
+          ((g / 1000) * limit(c, 'alkalinity')) /
+            Math.max(1e-9, t.alkalinity.set - c.w.alkalinity),
+        );
+      },
     });
   } else if (alk > t.alkalinity.high) {
-    const g = gramsFor(
-      c,
-      'hcl',
-      (w) => w.alkalinity,
-      t.alkalinity.set,
-      1000 * V,
-    );
-    const per =
-      (g * limit(c, 'alkalinity')) /
-      Math.max(1e-9, c.w.alkalinity - t.alkalinity.set);
     add({
       id: 'alkalinity-high',
       reading: 'alkalinity',
@@ -666,13 +663,25 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Alkalinity high (${whole(alk)} mg/l): the pH will keep creeping up.`,
       direction: 'Bring it down with hydrochloric acid, a little at a time.',
       additive: 'acid',
-      dose: doseOf(
-        'acid',
-        g / CHANNELS.acid.gramsPerUnit,
-        'l',
-        c,
-        per / CHANNELS.acid.gramsPerUnit,
-      ),
+      prescribe: () => {
+        const g = gramsFor(
+          c,
+          'hcl',
+          (w) => w.alkalinity,
+          t.alkalinity.set,
+          1000 * V,
+        );
+        const per =
+          (g * limit(c, 'alkalinity')) /
+          Math.max(1e-9, c.w.alkalinity - t.alkalinity.set);
+        return doseOf(
+          'acid',
+          g / CHANNELS.acid.gramsPerUnit,
+          'l',
+          c,
+          per / CHANNELS.acid.gramsPerUnit,
+        );
+      },
     });
   }
 
@@ -686,7 +695,6 @@ function readingRules(c: Ctx): Draft[] {
       ph > t.ph.high + ALARM_LIMITS.phMargin ? 'alarm' : 'warning';
     const problem = `pH high (${twoDp(ph)}): the chlorine is losing its bite.`;
     if (useCo2) {
-      const g = gramsFor(c, 'co2', (w) => w.ph, t.ph.set, 100 * V);
       add({
         id: 'ph-high',
         reading: 'ph',
@@ -694,16 +702,15 @@ function readingRules(c: Ctx): Draft[] {
         problem,
         direction: 'Bring it down with CO₂; it spares the alkalinity.',
         additive: 'co2',
-        dose: doseOf('co2', g, 'g', c),
+        prescribe: () =>
+          doseOf(
+            'co2',
+            gramsFor(c, 'co2', (w) => w.ph, t.ph.set, 100 * V),
+            'g',
+            c,
+          ),
       });
     } else {
-      const g = acidFor(c.w, t.ph.set, V, c.T);
-      const per = acidFor(
-        c.w,
-        Math.max(t.ph.set, c.w.ph - limit(c, 'ph')),
-        V,
-        c.T,
-      );
       add({
         id: 'ph-high',
         reading: 'ph',
@@ -711,24 +718,25 @@ function readingRules(c: Ctx): Draft[] {
         problem,
         direction: 'Bring it down with hydrochloric acid.',
         additive: 'acid',
-        dose: doseOf(
-          'acid',
-          g / CHANNELS.acid.gramsPerUnit,
-          'l',
-          c,
-          per / CHANNELS.acid.gramsPerUnit,
-        ),
+        prescribe: () => {
+          const g = acidFor(c.w, t.ph.set, V, c.T);
+          const per = acidFor(
+            c.w,
+            Math.max(t.ph.set, c.w.ph - limit(c, 'ph')),
+            V,
+            c.T,
+          );
+          return doseOf(
+            'acid',
+            g / CHANNELS.acid.gramsPerUnit,
+            'l',
+            c,
+            per / CHANNELS.acid.gramsPerUnit,
+          );
+        },
       });
     }
   } else if (ph < t.ph.low) {
-    const g = gramsFor(c, 'sodaAsh', (w) => w.ph, t.ph.set, 200 * V);
-    const per = gramsFor(
-      c,
-      'sodaAsh',
-      (w) => w.ph,
-      Math.min(t.ph.set, c.w.ph + limit(c, 'ph')),
-      200 * V,
-    );
     add({
       id: 'ph-low',
       reading: 'ph',
@@ -736,20 +744,23 @@ function readingRules(c: Ctx): Draft[] {
       problem: `pH low (${twoDp(ph)}): the water will sting and corrode.`,
       direction: 'Raise it gently with soda ash.',
       additive: 'sodaAsh',
-      dose: doseOf('sodaAsh', g / 1000, 'kg', c, per / 1000),
+      prescribe: () => {
+        const g = gramsFor(c, 'sodaAsh', (w) => w.ph, t.ph.set, 200 * V);
+        const per = gramsFor(
+          c,
+          'sodaAsh',
+          (w) => w.ph,
+          Math.min(t.ph.set, c.w.ph + limit(c, 'ph')),
+          200 * V,
+        );
+        return doseOf('sodaAsh', g / 1000, 'kg', c, per / 1000);
+      },
     });
   }
 
   // Calcium hardness.
   const ch = r.calciumHardness;
   if (ch < t.calciumHardness.low) {
-    const g = gramsFor(
-      c,
-      'calciumChloride',
-      (w) => w.hardness,
-      t.calciumHardness.set,
-      1000 * V,
-    );
     add({
       id: 'calcium-hardness-low',
       reading: 'calciumHardness',
@@ -757,14 +768,22 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Calcium hardness low (${whole(ch)} mg/l): the water will eat the grout.`,
       direction: 'Raise it with calcium chloride.',
       additive: 'calciumChloride',
-      dose: doseOf(
-        'calciumChloride',
-        g / 1000,
-        'kg',
-        c,
-        ((g / 1000) * limit(c, 'hardness')) /
-          Math.max(1e-9, t.calciumHardness.set - c.w.hardness),
-      ),
+      prescribe: () => {
+        const g = gramsFor(
+          c,
+          'calciumChloride',
+          (w) => w.hardness,
+          t.calciumHardness.set,
+          1000 * V,
+        );
+        return doseOf(
+          'calciumChloride',
+          g / 1000,
+          'kg',
+          c,
+          hardnessVisit(c, g),
+        );
+      },
     });
   } else if (ch > t.calciumHardness.high) {
     const m3 = dilutionFor(c, 'hardness', t.calciumHardness.set);
@@ -775,16 +794,7 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Calcium hardness high (${whole(ch)} mg/l): scale ahead, mark my words.`,
       direction: 'Dilute the pool with fresh water.',
       additive: 'dilution',
-      dose:
-        m3 === null
-          ? null
-          : doseOf(
-              'dilution',
-              m3,
-              'm³',
-              c,
-              c.makeUp * limit(c, 'dilutionHours'),
-            ),
+      prescribe: dilutionOf(c, m3),
     });
   }
 
@@ -793,9 +803,6 @@ function readingRules(c: Ctx): Draft[] {
   const has = (id: string) => out.some((d) => d.id === id);
   if (lsi < t.lsi.low) {
     const caused = has('ph-low') || has('alkalinity-low');
-    const g = caused
-      ? 0
-      : gramsFor(c, 'calciumChloride', lsiOf(c), lsiTarget(c), 5000 * V);
     add({
       id: 'balance-aggressive',
       reading: 'lsi',
@@ -805,14 +812,28 @@ function readingRules(c: Ctx): Draft[] {
         ? 'Put the pH and alkalinity right first, then look again.'
         : 'Raise the calcium hardness with calcium chloride.',
       additive: caused ? null : 'calciumChloride',
-      dose: caused
+      prescribe: caused
         ? null
-        : doseOf('calciumChloride', g / 1000, 'kg', c, limitHardness(c, g)),
+        : () => {
+            const g = gramsFor(
+              c,
+              'calciumChloride',
+              lsiOf(c),
+              lsiTarget(c),
+              5000 * V,
+            );
+            return doseOf(
+              'calciumChloride',
+              g / 1000,
+              'kg',
+              c,
+              hardnessVisit(c, g),
+            );
+          },
     });
   } else if (lsi > t.lsi.high) {
     const caused =
       has('ph-high') || has('alkalinity-high') || has('calcium-hardness-high');
-    const g = caused ? 0 : gramsFor(c, 'hcl', lsiOf(c), lsiTarget(c), 1000 * V);
     add({
       id: 'balance-scaling',
       reading: 'lsi',
@@ -822,15 +843,17 @@ function readingRules(c: Ctx): Draft[] {
         ? 'Put the pH, alkalinity and hardness right first, then look again.'
         : 'Lower the pH a touch with hydrochloric acid.',
       additive: caused ? null : 'acid',
-      dose: caused
+      prescribe: caused
         ? null
-        : doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l', c),
+        : () => {
+            const g = gramsFor(c, 'hcl', lsiOf(c), lsiTarget(c), 1000 * V);
+            return doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l', c);
+          },
     });
   }
 
   // What only fresh water takes away.
   if (r.tds > t.tds.high) {
-    const m3 = dilutionFor(c, 'tds', t.tds.set);
     add({
       id: 'tds-high',
       reading: 'tds',
@@ -838,20 +861,10 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Dissolved solids high (${whole(r.tds)} mg/l): this water is tired.`,
       direction: 'Dilute the pool with fresh water.',
       additive: 'dilution',
-      dose:
-        m3 === null
-          ? null
-          : doseOf(
-              'dilution',
-              m3,
-              'm³',
-              c,
-              c.makeUp * limit(c, 'dilutionHours'),
-            ),
+      prescribe: dilutionOf(c, dilutionFor(c, 'tds', t.tds.set)),
     });
   }
   if (r.sulphate > t.sulphate.high) {
-    const m3 = dilutionFor(c, 'sulphate', t.sulphate.set);
     add({
       id: 'sulphate-high',
       reading: 'sulphate',
@@ -859,19 +872,23 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Sulphate high (${whole(r.sulphate)} mg/l): it attacks cement grout.`,
       direction: 'Dilute the pool with fresh water.',
       additive: 'dilution',
-      dose:
-        m3 === null
-          ? null
-          : doseOf(
-              'dilution',
-              m3,
-              'm³',
-              c,
-              c.makeUp * limit(c, 'dilutionHours'),
-            ),
+      prescribe: dilutionOf(c, dilutionFor(c, 'sulphate', t.sulphate.set)),
     });
   }
   return out;
+}
+
+/** A dilution's Show dose, or none where the mains cannot do it. */
+const dilutionOf = (c: Ctx, m3: number | null) =>
+  m3 === null
+    ? null
+    : () =>
+        doseOf('dilution', m3, 'm³', c, c.makeUp * limit(c, 'dilutionHours'));
+
+/** Calcium chloride's most at a visit, kg, of `g` grams: the hardness it adds no more than its limit. */
+function hardnessVisit(c: Ctx, g: number) {
+  const rise = ((g / c.V) * MOLAR.CaCO3) / MOLAR.CaCl2;
+  return (g / 1000) * Math.min(1, limit(c, 'hardness') / Math.max(1e-9, rise));
 }
 
 function channelRules(
@@ -893,7 +910,7 @@ function channelRules(
         problem: `The ${DEVICE[ch.id]} is offline (${why}): ${EFFECT[ch.id]}.`,
         direction: fixFor(ch.id, st.reason),
         additive: null,
-        dose: null,
+        prescribe: null,
       });
     } else if (st.kind === 'unconnected' && (ch.id !== 'co2' || phHigh)) {
       out.push({
@@ -909,7 +926,7 @@ function channelRules(
             ? 'That is quite all right; acid will manage.'
             : `Dose ${CHANNELS[ch.id].name.toLowerCase()} by hand.`,
         additive: null,
-        dose: null,
+        prescribe: null,
       });
     }
   }
@@ -980,7 +997,7 @@ const BEFORE: Record<string, readonly string[]> = {
  * before (`BEFORE`), taking its tier and its size (a hair over) where
  * those are greater; ties by `RANK`.
  */
-function order(drafts: Draft[], c: Ctx | null): Advice[] {
+function order(drafts: Draft[], c: Ctx | null, doses = true): Advice[] {
   const ids = new Set(drafts.map((d) => d.id));
   const has = (id: string) => ids.has(id);
   const own = new Map(
@@ -1016,43 +1033,30 @@ function order(drafts: Draft[], c: Ctx | null): Advice[] {
         b.k.size - a.k.size ||
         rank(a.d.id) - rank(b.d.id),
     )
-    .map(({ d, k }) => ({
-      ...d,
-      tier: k.tier,
-      where: d.where !== undefined ? d.where : whereOf(d.additive, c),
-      mood: moodOf(d.severity, d.reading),
-    }));
+    .map(({ d, k }) => {
+      const { prescribe, ...rest } = d;
+      const dose = doses && prescribe ? prescribe() : null;
+      return {
+        ...rest,
+        tier: k.tier,
+        where: d.where !== undefined ? d.where : whereOf(d.additive, c),
+        dose,
+        hasDose: doses ? dose !== null : prescribe !== null,
+        mood: moodOf(d.severity, d.reading),
+      };
+    });
 }
 
-/**
- * Dr Aqualis's advice, most urgent first: every reading outside its band
- * (null readings: none yet), every channel offline, and a pleased word
- * when the readings are all in band. `water`, the pool's own, is what Show
- * dose is worked on; without it, a water rebuilt from the readings.
- */
-export function advise(
-  readings: AqualisReadings | null,
+/** The context and the drafts, unordered, their doses not worked out. */
+function draftsOf(
+  readings: AqualisReadings,
   settings: AqualisSettings,
-  channelsIn: Channels,
-  water?: PoolChemistry,
-  options: AdviseOptions = {},
-): Advice[] {
-  const channels = listOf(channelsIn);
+  channels: readonly ChannelView[],
+  water: PoolChemistry | undefined,
+  options: AdviseOptions,
+): { c: Ctx; drafts: Draft[] } {
   const statusOf = (id: ChannelId) =>
     channels.find((ch) => ch.id === id)?.status.kind ?? 'unconnected';
-  if (!readings) {
-    const drafts = channelRules(channels, false);
-    drafts.push({
-      id: 'no-readings',
-      reading: null,
-      severity: 'info',
-      problem: 'No readings yet: the sample is still settling.',
-      direction: 'Give me a moment, if you please.',
-      additive: null,
-      dose: null,
-    });
-    return order(drafts, null);
-  }
   const T = readings.temperature;
   const c: Ctx = {
     r: readings,
@@ -1085,13 +1089,95 @@ export function advise(
       problem: 'Splendid! Every reading is in its band.',
       direction: 'Carry on just as you are.',
       additive: null,
-      dose: null,
+      prescribe: null,
     });
   if (!c.open) drafts.push(reopenAdvice(c, options));
   drafts.push(...channelRules(channels, phHigh));
-  const out = order(drafts, c);
+  return { c, drafts };
+}
+
+/**
+ * Dr Aqualis's advice, most urgent first (`order`): every reading outside
+ * its band (null readings: none yet), every channel offline, a pleased
+ * word when the readings are all in band, and, the pool closed, what it
+ * needs to reopen. `water`, the pool's own, is what Show dose is worked
+ * on; without it, a water rebuilt from the readings. Show dose's amounts
+ * are the costly part (a bisection over `dose()` for most): with
+ * `options.doses` false they are left out, each advice's `hasDose` saying
+ * whether it has one, for `doseFor` to work out when the player asks.
+ */
+export function advise(
+  readings: AqualisReadings | null,
+  settings: AqualisSettings,
+  channelsIn: Channels,
+  water?: PoolChemistry,
+  options: AdviseOptions = {},
+): Advice[] {
+  const channels = listOf(channelsIn);
+  const doses = options.doses ?? true;
+  if (!readings) {
+    const drafts = channelRules(channels, false);
+    drafts.push({
+      id: 'no-readings',
+      reading: null,
+      severity: 'info',
+      problem: 'No readings yet: the sample is still settling.',
+      direction: 'Give me a moment, if you please.',
+      additive: null,
+      prescribe: null,
+    });
+    return order(drafts, null, doses);
+  }
+  const { c, drafts } = draftsOf(readings, settings, channels, water, options);
+  const out = order(drafts, c, doses);
   for (const a of out) if (a.id === 'all-well') a.mood = 'pleased';
   return out;
+}
+
+/** One advice's Show dose, worked out alone (as `advise` with doses would give it); null if it has none. */
+export function doseFor(
+  id: string,
+  readings: AqualisReadings | null,
+  settings: AqualisSettings,
+  channelsIn: Channels,
+  water?: PoolChemistry,
+  options: AdviseOptions = {},
+): DoseAmount | null {
+  if (!readings) return null;
+  const { drafts } = draftsOf(
+    readings,
+    settings,
+    listOf(channelsIn),
+    water,
+    options,
+  );
+  return drafts.find((d) => d.id === id)?.prescribe?.() ?? null;
+}
+
+/**
+ * A Show dose cache: `doseFor`, kept against the readings, settings,
+ * channels and options it was worked out for, so a screen asking every
+ * frame works it out once for each new reading (the analyser's tick, 10
+ * s) and not again.
+ */
+export function createDoseCache() {
+  let key = '';
+  let value: DoseAmount | null = null;
+  return (
+    id: string,
+    readings: AqualisReadings | null,
+    settings: AqualisSettings,
+    channelsIn: Channels,
+    options: AdviseOptions = {},
+  ): DoseAmount | null => {
+    const kinds = listOf(channelsIn).map((ch) => ch.status.kind);
+    const k = JSON.stringify([id, readings, settings, kinds, options]);
+    if (k !== key) {
+      key = k;
+      value = doseFor(id, readings, settings, channelsIn, undefined, options);
+    }
+    return value;
+  };
 }
 
 // ---- Alarms -----------------------------------------------------------------------------

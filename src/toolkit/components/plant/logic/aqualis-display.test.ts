@@ -44,6 +44,7 @@ const advice = (id: string, dose = true): Advice => ({
   direction: `${id} direction`,
   additive: 'acid',
   where: 'automatic',
+  hasDose: dose,
   dose: dose
     ? {
         amount: 1,

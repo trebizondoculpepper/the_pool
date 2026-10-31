@@ -290,6 +290,7 @@ export function incidentAdvice(incident: Incident): Advice {
     additive: null,
     where: null,
     dose: null,
+    hasDose: false,
     mood: 'alarmed',
   };
 }
@@ -309,6 +310,7 @@ export function runningAdvice(s: FirstAidState): Advice {
     additive: null,
     where: null,
     dose: null,
+    hasDose: false,
     mood: 'concerned',
   };
 }
@@ -356,6 +358,7 @@ export function endedAdvice(e: FirstAidEnded): Advice {
     additive: null,
     where: null,
     dose: null,
+    hasDose: false,
     mood: 'pleased',
   };
 }

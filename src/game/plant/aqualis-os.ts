@@ -281,6 +281,7 @@ export const APOLOGY: Advice = {
   additive: null,
   where: null,
   dose: null,
+  hasDose: false,
   mood: 'concerned',
 };
 
