@@ -1,0 +1,55 @@
+# 118: CO₂ into Plant 1 and Plant 2, under the Trios
+
+The owner, 2026-10-31: "start plumbing in the carbon dioxide lines from the outside world, which will lead into the plants 1 and 2 only. And then there would need to be some kind of valve that links into the injection point and some kind of control system that allows the Aqualis trio to control that valve on or off … we want to see if that improves the situation now that the system has a milder acid to work with." It follows the advisor verification (`doc/plans/aqualis-advice-verification.md`), whose worked chemistry it builds on, and is started once that has merged.
+
+Read the root `CLAUDE.md` first: the model is the source of truth, so each change goes into the graph first, then the plumbing, and then the scene binds. Also read `doc/plant-model.md`, `doc/room-layout-guide.md`, `doc/prompts/109-co2-supply.md`, `doc/plans/co2-system.md` (the pure logic, already built and tested), `doc/plans/114/placement.md` ("The CO₂ channel until CO₂ exists") and `doc/plans/new-game-normal.md` (the Lounge's pH drift and the spas, both put down to CO₂ loss and acid control).
+
+## What exists
+
+- **The supply logic** (`toolkit/components/plant/logic/co2-supply.ts`): the cylinder banks, the changeover and the regulator.
+- **The supply's drawing**: `co2-cage.ts`, a mesh cage with two banks of four cylinders.
+- **The rest of the pure logic**:
+  - `co2-distribution.ts`: the master valve, the building line and the wall ports;
+  - `co2-dosing.ts`: the Lounge's solenoid-and-rotameter panel, the Olympic's mass-flow panel, and their `ChannelFeedback` for the Trio;
+  - `co2-detection.ts`: the NDIR detectors, A1 and A2, and their interlocks;
+  - `co2-plant.ts`: the world's seam, `Co2Plant` and `stepCo2Plant`.
+- **The test rig**: `co2-loop.test.ts` closes the loop around the Trio's controller on the rig.
+- **The Trios**: each has a `co2` control port that is declared and not linked, a blanking plug in its CO₂ gland, and `ChannelPorts.co2 = null`.
+
+## The mission
+
+1. **The model first.** Add the CO₂ system to the schematics as nodes, fittings and links, each with its function, normal state and tag, all derived:
+   - the cage and manifold;
+   - the emergency isolation valve;
+   - the master valve and its panel;
+   - the loading bay's detector;
+   - each plant room's wall port and its isolating valve;
+   - each room's CO₂ valve controller;
+   - its injection point into the circulation (a nozzle or diffuser with its check valve, and the booster it needs, as `co2-dosing.ts` assumes);
+   - each room's detector.
+
+   The building line between the loading bay and the plant rooms is not modelled pipe by pipe, as `co2-system.md` already decided. Model it as one link through the wall.
+
+2. **The Trio's CO₂ port.** Link the port to its room's valve controller: the 4–20 mA and the release contact out, and `ChannelFeedback` back. The CO₂ gland's blanking plug becomes a gland with its cable. The Trio's sharing (CO₂ first at `CO2_PER_HCL`, acid trimming the rest) then works as designed.
+3. **The world.** Add `Co2Plant` to the world state. Bump `WORLD_VERSION` and add a migration that gives existing saves the system in its normal state. Step it each world step with each room's Trio demand and its water flow, and feed its grams into each pool's `Additions.co2`. Local controls stay local, under the CLAUDE.md rule: the master valve's panel and RESET in the loading bay, each panel's REMOTE · MANUAL · OFF selector in its plant room. Alarms go to the plant rooms' annunciators and the loading bay's detector panel.
+4. **Drawn and placed.** Stand the cage where the decision below says. Plumb the line in light-grey-banded copper labelled "CO₂", from the regulator to the wall inlet in the loading bay's external wall, with the emergency isolation valve beside it, and then the master valve. In each plant room draw the wall port, the dosing panel (Chlorella Chemicals), the injection point in its line, and the detector head at 0.3 m off the floor, all following `co2-system.md`'s "How it will be drawn". Each item is a real, working component, bound to its node.
+5. **The experiment the owner asked for.** Using `new-game-normal.slow.test.ts` and the advisor verification suite, measure with CO₂ against acid alone on both pools:
+   - pH held against its set point;
+   - acid used;
+   - TDS and chloride rise;
+   - alkalinity drift;
+   - how long the Lounge stays in band;
+   - the advice-following results.
+
+   Report it as a table in `doc/plans/co2-system.md`, and say plainly whether the milder acid helps. If it shows that the CO₂-loss formula is still the real cause, say so.
+
+6. **Console stand-ins**, where gameplay isn't designed yet: cylinder swaps, and a `co2` command showing the line, panels and detectors.
+
+## Decisions (on normal practice; the owner may overrule)
+
+1. **The cage stays outdoors** in the goods yard against the loading bay's wall, as mission 109 placed it (BCGA CP 44 prefers cylinders outdoors). The line enters through the loading bay's wall.
+2. **The Lounge takes CO₂**, as the owner asked: Plants 1 and 2 both.
+3. **The panels stay as built:** the period solenoid-and-rotameter panel in the Lounge and the modern mass-flow controller in the Olympic, for the variety the brief asks for.
+4. **The Olympic's 2 kg/h is a base load,** with acid trimming the peaks. This is normal practice, and a bank of four couldn't supply 5 kg/h without a heater.
+5. **RESET clears the 8-hour average's A1** once the instantaneous reading is clear. An 8-hour time-weighted average is a personal-exposure measure; it should not hold a plant room shut after the leak has cleared. The 15-minute A2 still latches until it is reset.
+6. **A low alarm (A1)** shuts that room's dosing only. A high alarm (A2) trips the master valve for the whole building, as built.
