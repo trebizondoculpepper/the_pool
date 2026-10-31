@@ -34,8 +34,8 @@ describe('the dosing chemicals in the world', () => {
     // Mission 101: the chlorine is used up by the bathers, the UV and the
     // light; the acid controller doses only while pH is over its setpoint,
     // so it holds pH rather than driving it down as the old model did.
-    let world = newWorld();
-    world = runOut(world, 'hypochlorite');
+    const start = newWorld();
+    let world = runOut(start, 'hypochlorite');
     for (let hour = 1; hour <= 12; hour++) {
       const before = world.pools;
       world = advance(world, 3600, 10);
@@ -50,8 +50,10 @@ describe('the dosing chemicals in the world', () => {
       expect(world.pools[id].ph, id).toBeGreaterThan(7.2);
       expect(world.pools[id].ph, id).toBeLessThan(7.45);
     }
-    // The acid has gone on giving: its store sent the lounge's day tank
-    // its fill.
-    expect(world.chemicals.acid).toBeLessThan(4000);
+    // The acid has gone on giving: its day tanks drawn down.
+    const acidLeft = (w: typeof world) =>
+      w.distribution.acid.tanks.reduce((t, k) => t + k.litres, 0) +
+      w.chemicals.acid;
+    expect(acidLeft(world)).toBeLessThan(acidLeft(start));
   }, 20_000);
 });

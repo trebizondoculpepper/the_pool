@@ -23,6 +23,7 @@ import {
 } from './component-status';
 import { INSTALLED_VALVES } from './installed-valves';
 import { newWorld } from '../world';
+import { midSeasonFilters } from '../world.test-support';
 import type { World } from '../world';
 import type { MotorTag } from './motor-starters';
 
@@ -284,8 +285,11 @@ describe('descriptions of the plant', () => {
   });
 
   it('says what a sand filter’s tank is doing, and how it seems', () => {
-    // The Olympic's beds start mid-season, loaded; the lounge's lightly.
+    // A new game's beds start clean; mid-season, the Olympic's are loaded.
     expect(describeForWorld(newWorld(), 'PL2-F1')).toBe(
+      'The 1st sand filter in Plant Room 2: the tank is filtering, and seems clean',
+    );
+    expect(describeForWorld(midSeasonFilters(newWorld()), 'PL2-F1')).toBe(
       'The 1st sand filter in Plant Room 2: the tank is filtering, but seems dirty',
     );
     expect(describeForWorld(newWorld(), 'PL1-F1')).toMatch(

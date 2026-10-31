@@ -1,5 +1,6 @@
 import type { LoungeFlows } from './lounge-valves';
 import {
+  CLEAN_BED_SHARE,
   LOUNGE_SIZE,
   bedPasses,
   filterSizing,
@@ -45,12 +46,12 @@ export const loungeBed = (
 });
 
 /**
- * A new game's beds: lightly loaded, settled and sound, 0.54 bar at design
- * flow, under the 0.7 bar alarm (`FILTER_DP_LIMIT`), which they reach in
- * the first day's service: a backwash falls due as maintenance.
+ * A new game's beds: clean (`CLEAN_BED_SHARE`), settled and sound, just
+ * backwashed (`doc/plans/new-game-normal.md`; until 2026-10-31 they began
+ * lightly loaded, 0.54 bar, reaching the 0.7 bar alarm in the first day).
  */
 export const newLoungeFilters = (): LoungeFiltersState => ({
-  dirt: [0.6 * LOUNGE_DIRT_REF, 0.6 * LOUNGE_DIRT_REF],
+  dirt: [CLEAN_BED_SHARE * LOUNGE_DIRT_REF, CLEAN_BED_SHARE * LOUNGE_DIRT_REF],
   fissuring: [0, 0],
   unsettled: [0, 0],
 });

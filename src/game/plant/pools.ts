@@ -111,7 +111,8 @@ export function newPools(): PoolsState {
               : 0.68,
         temperature: POOL_TARGET[id].temp,
         setpoint: POOL_TARGET[id].temp,
-        ph: 7.4,
+        // At its controller's set point (`water-treatment.ts` `CONTROLLER`, the Trio's).
+        ph: 7.3,
         freeChlorine: 1.4,
         combinedChlorine: 0.12,
         redox: 720,

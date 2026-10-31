@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
+import { midSeasonFilters } from '../world.test-support';
 import type { World } from '../world';
 import { BALANCE_TANK } from './balance-tank';
 import { installedValveByCommandId } from './installed-valves';
@@ -80,7 +81,11 @@ describe('the Olympic’s balance tank in the world', () => {
   it('runs down with its make-up OFF and a backwash drawing on it, until LOW LOW trips the pumps', () => {
     // One filter backwashing; the pit kept empty (an ideal pit: this is
     // the balance tank's test, not the pit's, which fills and inhibits).
-    let w = applyAction(newWorld(), { type: 'olympic/makeup', mode: 'off' });
+    // Its beds mid-season, as the draw-down was timed.
+    let w = applyAction(midSeasonFilters(newWorld()), {
+      type: 'olympic/makeup',
+      mode: 'off',
+    });
     w = backwashOne(w);
     let low = -1;
     let tripped = -1;

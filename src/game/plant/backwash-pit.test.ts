@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import type { World } from '../world';
+import { midSeasonFilters } from '../world.test-support';
 import { installedValveByCommandId } from './installed-valves';
 import {
   OLYMPIC_DIRT_REF,
@@ -41,7 +42,7 @@ const lounge = (w: World, tag: string, verb: 'open' | 'shut') =>
 
 /** Two Olympic filters and one lounge filter, washed together as an operator would: until clean, then rinsed. */
 function washTwoAndOne() {
-  let w = advance(newWorld(), 10, 1);
+  let w = advance(midSeasonFilters(newWorld()), 10, 1);
   w = olympic(olympic(w, 1, BACKWASH), 2, BACKWASH);
   w = lounge(lounge(w, 'PL1-F1-IV1', 'shut'), 'PL1-F1-BV1', 'open');
   let peak = 0;

@@ -1,4 +1,9 @@
-import { bedPasses, filterSizing, stepFilter } from './ideal-filter';
+import {
+  CLEAN_BED_SHARE,
+  bedPasses,
+  filterSizing,
+  stepFilter,
+} from './ideal-filter';
 import type {
   FilterPorts,
   IdealFilterSpec,
@@ -68,9 +73,12 @@ export const olympicBed = (
   unsettled: b.unsettled?.[i] ?? 0,
 });
 
-/** Mid-season: each bed loaded to 1.6 times its dirt reference, settled and sound. */
+/** A new game's: each bed clean (`CLEAN_BED_SHARE`), settled and sound. */
 export const newOlympicBattery = (): OlympicBatteryState => ({
-  dirt: Array.from({ length: FILTERS }, () => 1.6 * OLYMPIC_DIRT_REF),
+  dirt: Array.from(
+    { length: FILTERS },
+    () => CLEAN_BED_SHARE * OLYMPIC_DIRT_REF,
+  ),
   fissuring: Array.from({ length: FILTERS }, () => 0),
   unsettled: Array.from({ length: FILTERS }, () => 0),
 });

@@ -88,6 +88,8 @@ describe('the annunciator’s gas windows', () => {
 it('lights a window for each Olympic filter over its DP limit, and the Wash-O-Tron out of AUTO', async () => {
   const { newWorld } = await import('../../../game/world');
   const { plantReadingOf } = await import('./world-reading');
+  const { OLYMPIC_DIRT_REF } =
+    await import('../../../game/plant/olympic-battery');
   const w = newWorld();
   const manual = {
     ...w,
@@ -105,7 +107,9 @@ it('lights a window for each Olympic filter over its DP limit, and the Wash-O-Tr
     ...w,
     olympic: {
       ...w.olympic,
-      dirt: w.olympic.dirt.map((d, i) => (i === 3 ? d * 6 : d)),
+      dirt: w.olympic.dirt.map((d, i) =>
+        i === 3 ? 9.6 * OLYMPIC_DIRT_REF : d,
+      ),
     },
   };
   const alarms = plantReadingOf(dirty, 'pool_02').alarms;

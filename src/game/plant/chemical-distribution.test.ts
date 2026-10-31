@@ -59,10 +59,27 @@ const withLevel = (
 });
 
 describe('the chemical distribution: store, transfer pump, selector, day tanks', () => {
-  it('starts with each line calling for one day tank, the Olympic’s hypochlorite and the lounge’s acid', () => {
+  it('starts with every day tank between its low and high, no line calling', () => {
     const d = newChemicalDistribution();
     expect(d.hypochlorite.tanks).toHaveLength(4);
     expect(d.acid.tanks).toHaveLength(4);
+    for (const c of ['hypochlorite', 'acid'] as const)
+      for (const t of d[c].tanks) {
+        expect(t.litres).toBeGreaterThan(t.lowL);
+        expect(t.litres).toBeLessThan(t.highL);
+      }
+    const r0 = stepDistribution(d, CAP, CAP, {}, 1);
+    expect(r0.distribution.hypochlorite.serving).toBe(null);
+    expect(r0.distribution.acid.serving).toBe(null);
+  });
+
+  it('serves a day tank below its low on each line: the Olympic’s hypochlorite, the lounge’s acid', () => {
+    const d = withLevel(
+      withLevel(newChemicalDistribution(), 'hypochlorite', 1, 0.18),
+      'acid',
+      0,
+      0.18,
+    );
     const r = stepDistribution(d, CAP, CAP, {}, 1);
     expect(r.distribution.hypochlorite.serving).toBe(1);
     expect(r.distribution.acid.serving).toBe(0);

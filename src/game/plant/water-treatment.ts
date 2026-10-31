@@ -225,11 +225,12 @@ export function nominalCircuit(
     combinedChlorine: number;
     temperature: number;
   },
+  alkalinity: number = SETTLED[id].alkalinity,
 ): CircuitWater {
   const water: PoolChemistry = {
     ...waterFrom({
       ph: r.ph,
-      alkalinity: SETTLED[id].alkalinity,
+      alkalinity,
       hardness: SETTLED[id].hardness,
       tds: SETTLED[id].tds,
       temperature: r.temperature,
@@ -254,12 +255,43 @@ export function nominalCircuit(
   };
 }
 
-/** Every pool's circuit, nominal, with its present readings. */
-export function newWaterTreatment(pools: PoolsState): WaterTreatment {
+/**
+ * The total alkalinity a new game's pools are kept at, mg/l as CaCO₃
+ * (`doc/plans/new-game-normal.md`): the Trio pools' inside PWTAG's and
+ * the Trio's 80–200 band, as their operators keep it with sodium
+ * bicarbonate. `SETTLED`'s alkalinities are what months of acid dosing
+ * leave with none added, below the band, and Dr Aqualis would ask for a
+ * hand dose at once. 100, not the Trio's 120 set point: the model's CO₂
+ * loss is fast at these pools' turnovers (Wojtowicz's fit taken past its
+ * range), so the higher the alkalinity the harder the acid works and the
+ * further the Trio's proportional pH control sits above its set point;
+ * at 100 the Lounge holds inside its band through the first hour. The
+ * spas keep their settled water: their acid pumps cannot hold the pH of
+ * any water in the band (`TODO.md`).
+ */
+export const MAINTAINED_ALKALINITY: Partial<Record<PoolId, number>> = {
+  pool_01: 100,
+  pool_02: 100,
+};
+
+/**
+ * Every pool's circuit, nominal, with its present readings: its settled
+ * water, or (`maintained`, a new game) that water with its alkalinity
+ * kept at `MAINTAINED_ALKALINITY` where a pool has one.
+ */
+export function newWaterTreatment(
+  pools: PoolsState,
+  maintained = false,
+): WaterTreatment {
   const circuits = {} as Record<PoolId, CircuitWater>;
   const pending = {} as Record<PoolId, PendingFlows>;
   for (const id of POOL_IDS) {
-    circuits[id] = nominalCircuit(id, pools[id]);
+    circuits[id] = nominalCircuit(
+      id,
+      pools[id],
+      (maintained ? MAINTAINED_ALKALINITY[id] : undefined) ??
+        SETTLED[id].alkalinity,
+    );
     pending[id] = nothingPending();
   }
   return { circuits, pending };

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../../../game/world';
 import type { World } from '../../../game/world';
 import { OLYMPIC_DIRT_REF } from '../../../game/plant/olympic-battery';
+import { CLEAN_BED_SHARE } from '../../../game/plant/ideal-filter';
 import {
   BACKWASH_DUE_LOADING,
   OLYMPIC_FILTER_WASHING,
@@ -39,8 +40,10 @@ describe('OLYMPIC FILTER WASHING (mission 095)', () => {
     expect(at(0)).toBe(0);
     expect(at(BACKWASH_DUE_LOADING)).toBeCloseTo(100);
     expect(at(BACKWASH_DUE_LOADING / 2)).toBeCloseTo(50);
-    // A new game's beds, mid-season at 1.6 times their reference: 80 %.
-    expect(dirtPercent(w, 0)).toBeCloseTo(80);
+    // A new game's beds, clean (`CLEAN_BED_SHARE` of their reference).
+    expect(dirtPercent(w, 0)).toBeCloseTo(
+      (100 * CLEAN_BED_SHARE) / BACKWASH_DUE_LOADING,
+    );
   });
 
   it('shows every filter in service with its pressure difference and flow', () => {
@@ -55,7 +58,9 @@ describe('OLYMPIC FILTER WASHING (mission 095)', () => {
     ]);
     for (const t of tiles) {
       expect(t.state).toBe('IN SERVICE');
-      expect(t.dp).toBeGreaterThan(0.2);
+      // Clean beds: some 0.16 bar each.
+      expect(t.dp).toBeGreaterThan(0.1);
+      expect(t.dp).toBeLessThan(0.3);
       expect(t.flow).toBeGreaterThan(100);
       expect(t.progress).toBe(null);
     }

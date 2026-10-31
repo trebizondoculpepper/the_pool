@@ -493,7 +493,7 @@ const newLifts = () =>
   ) as Record<LiftId, LiftState>;
 
 export function newWorld(): World {
-  const treatment = newWaterTreatment(newPools());
+  const treatment = newWaterTreatment(newPools(), true);
   return {
     time: 0,
     demo: { on: false, presses: 0 },

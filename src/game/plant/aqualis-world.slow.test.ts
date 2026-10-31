@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import type { World } from '../world';
-import { runOut } from '../world.test-support';
+import { onSettledWater, runOut } from '../world.test-support';
 import { trioAlarms, trioSignals } from './aqualis-world';
 import type { TrioAction, TrioPool } from './aqualis-world';
 import type { DosingPumpAction } from './dosing-pumps';
@@ -29,9 +29,14 @@ const OLD = {
   pool_02: { cl: 1.048, clMin: 0.733, clMax: 1.405, ph: 7.358 },
 } as const;
 
-/** The world run from new, a step of 10 s, each pool's far side sampled every ten minutes after the first day. */
+/**
+ * The world run from new, on its settled water as the old controller's
+ * numbers were (a new game's alkalinity is now kept in band, and the
+ * Trio's proportional pH runs higher on it: `TODO.md`), a step of 10 s,
+ * each pool's far side sampled every ten minutes after the first day.
+ */
 function days(n: number) {
-  let w = newWorld();
+  let w = onSettledWater(newWorld());
   const seen = {
     pool_01: { cl: [] as number[], ph: [] as number[] },
     pool_02: { cl: [] as number[], ph: [] as number[] },

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { applyAction, newWorld } from '../world';
+import { onSettledWater } from '../world.test-support';
 import type { World } from '../world';
 import { actionEvents } from '../events/describe-action';
 import { formatEvent } from '../events/game-event';
@@ -41,7 +42,8 @@ const dosed = (
   into?: 'balance-tank' | 'pool',
   id: PoolId = 'pool_01',
 ) => {
-  const before = newWorld();
+  // Its water as months of service leave it, its alkalinity low.
+  const before = onSettledWater(newWorld());
   const action = {
     type: 'hand/dose' as const,
     pool: id,
@@ -81,7 +83,8 @@ const ONLINE: ChannelView[] = (['hypochlorite', 'acid', 'co2'] as const).map(
 );
 
 describe('a hand dose, against Dr Aqualis’s Show dose', () => {
-  const world = newWorld();
+  // A new game's water is maintained, its alkalinity in band: a worn one's is not.
+  const world = onSettledWater(newWorld());
   const tank = world.treatment.circuits.pool_01.tank;
   const T = world.pools.pool_01.temperature;
   const advice = advise(
@@ -92,7 +95,7 @@ describe('a hand dose, against Dr Aqualis’s Show dose', () => {
   ).find((a) => a.id === 'alkalinity-low');
   const set = trioSettings('pool_01').targets.alkalinity.set;
 
-  it('the Lounge starts with its alkalinity low, and he says how much bicarbonate', () => {
+  it('the Lounge on its settled water has its alkalinity low, and he says how much bicarbonate', () => {
     expect(advice?.dose?.unit).toBe('kg');
     // 50.7 to 120 mg/l in his 150 m³: about 17.4 kg.
     expect(advice?.dose?.amount).toBeCloseTo(17.4, 1);

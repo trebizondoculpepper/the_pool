@@ -16,14 +16,15 @@ const press = (w: World, tag: string, verb: 'open' | 'shut') =>
 const dp = (w: World) => loungeFilterDp(w.loungeFilters, loungeFlowsOf(w));
 
 describe('the lounge’s filter cycle, from its panel', () => {
-  it('starts a new game under the filter alarm, loading through the day', () => {
+  it('starts a new game clean, well under the filter alarm, loading through the day', () => {
     const w = newWorld();
-    for (const d of dp(advance(w, 60, 1))) expect(d).toBeLessThan(0.7);
+    const first = dp(advance(w, 60, 1));
+    for (const d of first) expect(d).toBeLessThan(0.7 * 0.8);
     const later = advance(w, 16 * 3600, 30);
     expect(later.loungeFilters.dirt[0]).toBeGreaterThan(
       w.loungeFilters.dirt[0],
     );
-    expect(Math.max(...dp(later))).toBeGreaterThan(0.7);
+    expect(Math.max(...dp(later))).toBeGreaterThan(Math.max(...first));
   });
 
   it('backwashes each filter in turn and leaves both cleaner', () => {

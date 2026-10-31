@@ -22,7 +22,7 @@ describe('the default new game', () => {
       expect(pool.temperature, id).toBe(POOL_TARGET[id].temp);
       expect(pool.setpoint, id).toBe(POOL_TARGET[id].temp);
       expect(pool.hallAir, id).toBe(HALL_AIR[id]);
-      expect(pool.ph, id).toBe(7.4);
+      expect(pool.ph, id).toBe(7.3);
       expect(pool.freeChlorine, id).toBe(1.4);
       expect(pool.combinedChlorine, id).toBe(0.12);
       expect(pool.flow, id).toBe(POOL_TARGET[id].flow);

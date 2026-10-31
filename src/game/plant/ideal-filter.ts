@@ -102,6 +102,14 @@ export const FILTER_PHYSICS = {
   leastSand: 0.2,
 } as const;
 
+/**
+ * A clean bed's dirt, a share of its dirt reference: as a full backwash
+ * leaves it and a few hours' service settles it (a 300 s wash at the ideal
+ * filter's 60 s time constant leaves under 1 %), its head loss within 5 %
+ * of a new bed's (`doc/plans/new-game-normal.md`).
+ */
+export const CLEAN_BED_SHARE = 0.05;
+
 /** A Ø1.2 m filter, as the lounge's. */
 export const LOUNGE_SIZE: IdealFilterSpec = { diameter: 1.2 };
 

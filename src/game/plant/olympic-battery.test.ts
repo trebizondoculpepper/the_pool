@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import type { World } from '../world';
+import { midSeasonFilters } from '../world.test-support';
 import { POOL_TARGET } from './pools';
 import { installedValveByCommandId } from './installed-valves';
 import {
@@ -41,7 +42,8 @@ const BACKWASH_2 = {
 
 describe('the Olympic battery, from its valves in the world', () => {
   it('gives the pool its design circulation through all five in service, mid-season', () => {
-    const b = olympicBatteryFlows(newWorld().installedValves);
+    const w = midSeasonFilters(newWorld());
+    const b = olympicBatteryFlows(w.installedValves, w.olympic);
     expect(b.pumping).toBe(true);
     expect(b.returning).toBe(true);
     expect(b.toPool).toBeGreaterThan(POOL_TARGET.pool_02.flow * 0.95);
@@ -49,6 +51,13 @@ describe('the Olympic battery, from its valves in the world', () => {
     expect(b.toWaste).toBe(0);
     for (const f of b.filters) expect(f.riser).toBeGreaterThan(100);
     expect(b.discharge).toBeCloseTo(b.toPool, 0);
+  });
+
+  it('gives a little more through a new game’s clean beds, the pumps unregulated', () => {
+    const w = newWorld();
+    const b = olympicBatteryFlows(w.installedValves, w.olympic);
+    expect(b.toPool).toBeGreaterThan(POOL_TARGET.pool_02.flow * 1.05);
+    expect(b.toPool).toBeLessThan(POOL_TARGET.pool_02.flow * 1.12);
   });
 
   it('backwashes a filter whose V3 and V4 are open and V1 and V2 shut: down its riser, out to waste', () => {

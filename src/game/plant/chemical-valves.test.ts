@@ -126,9 +126,19 @@ describe('the chemical valves, in the model (plan 085)', () => {
     const outlet = selectorValves('acid', 0).isolation.id;
     expect(distributionPaths({ [outlet]: false }).acid.outlets[0]).toBe(false);
 
-    // The Olympic's hypochlorite calls at the start; with its pump's
+    // The Olympic's hypochlorite below its low calls; with its pump's
     // discharge shut it gets nothing, with it open it fills.
-    let d = newChemicalDistribution();
+    const low = DAY_TANKS.hypochlorite.findIndex((t) => t.site === 'pool_02');
+    const d0 = newChemicalDistribution();
+    let d = {
+      ...d0,
+      hypochlorite: {
+        ...d0.hypochlorite,
+        tanks: d0.hypochlorite.tanks.map((t, k) =>
+          k === low ? { ...t, litres: t.lowL * 0.9 } : t,
+        ),
+      },
+    };
     const stores = { ...STORE_CAPACITY };
     const step = (valves: Record<string, boolean>) => {
       const r = stepDistribution(

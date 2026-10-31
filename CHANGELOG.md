@@ -19,6 +19,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - The engineer's office: a software box picked up is held in the hands, as anything carried is (it had been posed nine times too far away, the room passing a scaled group for the carrying's root); the Gateway 3000 carton no longer clips the wall, desk or cupboard.
 - The README opens with what The Pool is and how to play it, then how to build it and how to set up an AI agent to contribute (the owner, 2026-10-31).
 
+### Fixed
+
+- A new game starts perfectly normal and stays so through its first hour (the owner, 2026-10-31; `doc/plans/new-game-normal.md`): the Lounge's and Olympic's alkalinity in band at 100 mg/l (it began at the 51 and 68 that months without bicarbonate leave, and Dr Aqualis asked for a hand dose at once), every pool at its pH set point of 7.3 (not the Trio band's edge), every filter bed clean, and every day tank part full with no line calling; the test kit and Dr Aqualis are checked through the hour by `new-game-normal.slow.test.ts`. Saves keep their water.
+
 ## [0.8.0] - 2026-10-31
 
 - The crosshair says how a thing is used: an arrow into the screen to push (buttons, keypads, resets), out of it to pull (an emergency stop pushed in, a pull cord), the turn arrow for knobs (now also the overload dial, dimmers and dial thermostats), and a plain green ring for anything used another way; red wherever the use would have no effect (no power, latched, an overload not tripped or still hot). Toggles, doors, valves and pick-ups keep the plain ring for now.
