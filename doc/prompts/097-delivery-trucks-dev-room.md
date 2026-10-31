@@ -1,6 +1,6 @@
 # 097: Dev50, the delivery trucks: a chemical tanker and a containerised generator
 
-Status: designed with the owner 2026-10-27; not started. A dev room to mock up the trucks before they go to the loading dock.
+Status: designed with the owner 2026-10-27; begun (`447f5e61`: the yard, the Haulmark rigs, a working ISO tank, Hazchem plates). The CO₂ cylinder lorry added 2026-10-31, below. A dev room to mock up the trucks before they go to the loading dock.
 
 You are working on "The Pool", a browser game in TypeScript and Three.js simulating a leisure centre's pool plant (this repository). Read `CLAUDE.md` first; its rules apply: engineering items are real, working, branded and bound to a model; set decoration may be static; new equipment is modelled in a dev room before it goes into the leisure centre; all input through `src/toolkit/controls/`. Markdown is one paragraph per line.
 
@@ -36,6 +36,35 @@ Owner's answers (2026-10-27):
 
 **The containerised generator** (engineering, working): a 20 ft container genset after a hire fleet's (about 300 kVA, 400 V, three phase), louvred intake and exhaust ends, an exhaust stack and rain cap on its roof, side doors to its control compartment and its cable compartment, a fuel tank inside (about 1,000 L, a gauge and a filler), an emergency stop on its outside, earthing point, and Voltara's livery and fleet number. Its control panel behind its door, period-appropriate (a 2000s genset controller after a DSE or ComAp unit): a key switch or STOP · MAN · AUTO, START, a small LCD and moving-coil meters for volts, amps, frequency and kW, fuel level, hours run, engine temperature and oil pressure lamps, a main breaker (the output, OFF / ON). It starts (cranks, runs up, its sound and exhaust), runs at 50 Hz, burns fuel by load, stops, and trips on an emergency stop, low fuel or overload. Its output terminals in the cable compartment, where the cable to the building's connection cabinet will land; in the dev room its load is a dial on a load bank or nothing connected. Pure logic in a `logic/` file with tests.
 
+## The third rig: Arncliffe Gases' CO₂ cylinder lorry (added 2026-10-31)
+
+The owner, 2026-10-31: the CO₂ supply (mission 118, `doc/prompts/118-co2-into-the-plant-rooms.md`) keeps a left and a right rack of cylinders in the cage outside the loading bay, counted in grams. A delivery replaces whichever rack is spent and not in service. "I imagine it's another articulated lorry, but this one is carrying on its back a cage of cylinders of bottled gases." The owner asked for it to follow the British standard.
+
+**What the real ones are** (checked 2026-10-31):
+
+- **The fleet.** The UK's industrial gas companies carry cylinders on articulated flatbed trailers loaded with cylinder pallets. BOC's Tiger Trailers flatbeds, for example, carry up to 26 "pintle pallets", in rows either side of a central aisle closed by a portable safety gate. The cylinders stand upright, strapped or caged, and a pallet that isn't strapped properly is the known spill risk.
+- **The rules.** Carriage in the UK is under ADR (the Carriage of Dangerous Goods Regulations). BCGA Code of Practice 50, _The carriage of gas cylinders on vehicles_ (2023), replaces GN 27 and was written with the Department for Transport.
+- **The goods.** Carbon dioxide is UN 1013, class 2.2 (non-flammable, non-toxic gas), and carries the green 2.2 diamond. A full lorry load is far over ADR's small-load threshold, so the vehicle carries plain orange plates front and rear, and the driver carries the transport documents and the instructions in writing.
+- **The cylinders.** They are coloured to BS EN 1089-3, with CO₂'s grey shoulder, as `gas-cylinder.ts` already does.
+
+**The rig:**
+
+- **The unit** is the same Haulmark tractor unit as the other two, in Arncliffe Gases' livery (blue, grey and near-black, the cylinder mark; `brands.ts`).
+- **The trailer** is a 13.6 m flatbed, not the skeletal container chassis: a deck with steel side rails and stanchions, and an aisle down the middle with a safety gate at its rear, carrying rows of cylinder pallets.
+- **Each pallet** is a galvanised mesh cage with fork pockets, holding one rack's worth of cylinders, four upright 34 kg CO₂ cylinders (`CO2_CYLINDER`). It matches what the cage at the loading bay holds, so a delivery is a pallet off and a pallet on. The other pallets carry other gases from Arncliffe's range (nitrogen, argon, oxygen), coloured to BS EN 1089-3, as set decoration since only CO₂ is delivered here.
+- **Unloading.** A truck-mounted forklift rides on the trailer's rear on its own mounting, after the Moffett and Palfinger kind gas and builders' merchants use. The yard is tarmac at ground level, with no dock leveller where the cage stands.
+- **Markings:** the orange plates front and rear; the 2.2 diamonds on the pallets, as the cylinders carry them; Arncliffe's name and "COMPRESSED GASES" on the headboard; and a document holder in the cab.
+
+**Working parts.** The pallets are engineering: each knows its gas and its grams and is bound to the delivery's model. The forklift is drawn and set decoration for now, with its forks raised and lowered by the delivery's animation, not by the player. The unit and trailer are set decoration, with cab doors that open and lights, like the other two.
+
+**The delivery, later** (mission 118's "Later"): the lorry pulls up in the goods yard beside the cage. The forklift comes off the back, lifts the spent rack's pallet out of the cage and onto the trailer, and sets a full one in its place. It is the same world action as `co2 swap`, animated. Dev50 shows the rig parked, with one pallet's space empty at the rear, the forklift mounted, and the safety gate shut.
+
+**Decided on normal practice** (the owner may overrule):
+
+- a flatbed trailer and a truck-mounted forklift, rather than a curtainsider or a crane;
+- one rack per pallet;
+- the other gases' pallets as decoration.
+
 ## Steps
 
 1. Dev50's yard: the tarmac disc and fade, the sky, the dock line and bays, the title card, collisions round the rigs.
@@ -46,4 +75,4 @@ Owner's answers (2026-10-27):
 
 ## Later, not in this mission
 
-The trucks at the dock's bays, backing up; the tank's coupling to the fill cabinet and a delivery that fills a store; the generator's cable to the connection cabinet and the changeover switch's position II powered by it (TODO "A hired generator"); an acid tanker as a second instance.
+The trucks at the dock's bays, backing up; the tank's coupling to the fill cabinet and a delivery that fills a store; the generator's cable to the connection cabinet and the changeover switch's position II powered by it (TODO "A hired generator"); an acid tanker as a second instance; the CO₂ lorry's delivery animated in the goods yard (mission 118).
