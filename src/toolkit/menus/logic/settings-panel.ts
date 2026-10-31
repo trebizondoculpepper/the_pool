@@ -106,7 +106,13 @@ export type PanelItem =
   /** A vacuum fluorescent message line across its zone. */
   | { kind: 'vfd'; id: 'status'; columns: number }
   /** The printed, laminated instruction card: the bindings and touch help. */
-  | { kind: 'card'; id: 'bindings'; legend: string };
+  | { kind: 'card'; id: 'bindings'; legend: string }
+  /**
+   * VibeTopList's purple vote button (`title/vote-badge.ts`), set in a
+   * metal bezel on a plate in a hazard border, its title on Dymo tape:
+   * pressed, it opens the game's vote page.
+   */
+  | { kind: 'vote'; id: 'vote'; legend: string; dymo: true };
 
 export interface PanelZone {
   id: string;
@@ -377,6 +383,13 @@ export function settingsPanel(offers: PanelOffers): PanelZone[] {
           legend: 'LIGHTING',
           switches: [{ id: 'aoMode', legend: 'AMBIENT OCCLUSION' }],
         },
+      ],
+    },
+    {
+      id: 'vote',
+      title: 'VOTE',
+      items: [
+        { kind: 'vote', id: 'vote', legend: 'VOTE FOR THIS GAME', dymo: true },
       ],
     },
     {

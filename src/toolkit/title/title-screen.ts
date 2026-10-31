@@ -11,6 +11,7 @@ import { createTitleMusic } from './title-music';
 import { listenMenu } from '../controls/input/menu-input';
 import { createTitleLogo } from './title-logo';
 import { REPOSITORY } from '../../game/version';
+import { createVoteBadge } from './vote-badge';
 
 export interface TitleActions {
   newGame(): void;
@@ -91,6 +92,8 @@ export function createTitleScreen(actions: TitleActions) {
     notes.rel = 'noopener noreferrer';
     build.append(' · ', notes);
   }
+  // VibeTopList's vote button, in the corner above the build.
+  root.append(createVoteBadge('title-vote'));
   root.append(build);
 
   const items = () =>

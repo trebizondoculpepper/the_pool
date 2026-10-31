@@ -1,4 +1,5 @@
 import { VERSION } from '../../../game/version';
+import { VOTE_BADGE_URL, VOTE_URL } from '../../title/vote-badge';
 import { computed, effect, signal } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
 import {
@@ -14,6 +15,7 @@ import {
 } from 'three';
 import type { Object3D } from 'three';
 import {
+  beginPart,
   createPartSet,
   keySwitch,
   ledPushbutton,
@@ -851,6 +853,15 @@ function build_(
         });
         break;
       }
+      case 'vote': {
+        const vote = parts.add(voteButton(kit, item.legend, onChange));
+        // The whole plate striped round its edge, its title on top.
+        const hazard = hazardPlate(kit, m.w - 0.001, m.h - 0.001);
+        place(hazard, 0, 0).position.z = 0.0001;
+        place(vote.object, 0, centreY);
+        focusable(m, face, 0, centreY, 0.03, false, vote);
+        break;
+      }
       case 'vfd': {
         const vfd = createVfd(kit, {
           columns: item.columns,
@@ -971,4 +982,117 @@ function build_(
       for (const t of kit.textures) t.dispose();
     },
   };
+}
+
+/**
+ * A plate's body in a safety border: black and yellow stripes round its
+ * edge and brushed steel inside, a canvas on a plane `w` by `h` metres.
+ */
+function hazardPlate(kit: PanelKit, w: number, h: number) {
+  const perMetre = 4000;
+  const pw = Math.round(w * perMetre);
+  const ph = Math.round(h * perMetre);
+  const { context: c, texture } = createCanvasTexture(pw, ph, 'printed');
+  kit.textures.push(texture);
+  const stripe = Math.round(0.004 * perMetre);
+  c.fillStyle = '#141414';
+  c.fillRect(0, 0, pw, ph);
+  c.fillStyle = '#f6c324';
+  for (let x = -ph; x < pw + ph; x += stripe * 2) {
+    c.beginPath();
+    c.moveTo(x, ph);
+    c.lineTo(x + stripe, ph);
+    c.lineTo(x + stripe + ph, 0);
+    c.lineTo(x + ph, 0);
+    c.closePath();
+    c.fill();
+  }
+  const border = Math.round(0.005 * perMetre);
+  const steel = c.createLinearGradient(0, border, 0, ph - border);
+  steel.addColorStop(0, '#c4c9cc');
+  steel.addColorStop(0.55, '#959ca1');
+  steel.addColorStop(1, '#b3b9bd');
+  c.fillStyle = steel;
+  c.fillRect(border, border, pw - 2 * border, ph - 2 * border);
+  // Brushed: fine horizontal streaks.
+  for (let y = border; y < ph - border; y += 2) {
+    c.fillStyle = `rgba(255,255,255,${0.03 + ((y * 7919) % 13) / 260})`;
+    c.fillRect(border, y, pw - 2 * border, 1);
+  }
+  texture.needsUpdate = true;
+  const material = createPs1Material({ map: texture, roughness: 0.45 });
+  kit.materials.push(material);
+  const plane = new Mesh(new PlaneGeometry(w, h), material);
+  plane.name = 'Hazard-bordered plate';
+  plane.raycast = () => {};
+  return plane;
+}
+
+/**
+ * VibeTopList's purple vote button as a panel part: the badge on a cap
+ * in a polished metal bezel, pressing in when used and opening the game's
+ * vote page. `drawn` asks the panel to draw again once the badge's image
+ * has loaded.
+ */
+function voteButton(kit: PanelKit, name: string, drawn: () => void): Part {
+  const a = beginPart(kit, name);
+  const w = 0.15;
+  const h = (w * 52) / 190;
+  const bezel = new Mesh(
+    new BoxGeometry(w + 0.008, h + 0.008, 0.004),
+    kitPaint(kit, '#c9ced1', 0.85),
+  );
+  bezel.position.z = 0.002;
+  bezel.raycast = () => {};
+  a.object.add(bezel);
+  const well = new Mesh(
+    new BoxGeometry(w + 0.002, h + 0.002, 0.0002),
+    kitPaint(kit, '#141518'),
+  );
+  well.position.z = 0.0041;
+  well.raycast = () => {};
+  a.object.add(well);
+  const perMetre = 4000;
+  const { context: c, texture } = createCanvasTexture(
+    Math.round(w * perMetre),
+    Math.round(h * perMetre),
+    'printed',
+  );
+  kit.textures.push(texture);
+  c.fillStyle = '#7c3aed';
+  c.fillRect(0, 0, c.canvas.width, c.canvas.height);
+  texture.needsUpdate = true;
+  const image = new Image();
+  image.onload = () => {
+    c.clearRect(0, 0, c.canvas.width, c.canvas.height);
+    c.drawImage(image, 0, 0, c.canvas.width, c.canvas.height);
+    texture.needsUpdate = true;
+    drawn();
+  };
+  image.src = VOTE_BADGE_URL;
+  const material = createPs1Material({ map: texture, roughness: 0.35 });
+  kit.materials.push(material);
+  const cap = new Mesh(new BoxGeometry(w, h, 0.003), [
+    kitPaint(kit, '#5b21b6'),
+    kitPaint(kit, '#5b21b6'),
+    kitPaint(kit, '#8b5cf6'),
+    kitPaint(kit, '#3b1580'),
+    material,
+    kitPaint(kit, '#3b1580'),
+  ]);
+  const out = 0.0058;
+  cap.position.z = out;
+  cap.name = 'Vote button';
+  a.object.add(cap);
+  let pressed = 0;
+  a.uses.set(cap, () => {
+    pressed = 0.12;
+    window.open(VOTE_URL, '_blank', 'noopener,noreferrer');
+  });
+  a.updates.push((delta) => {
+    pressed = Math.max(0, pressed - delta);
+    cap.position.z = out - (pressed > 0 ? 0.0018 : 0);
+  });
+  a.shows(() => 'Vote for The Pool on VibeTopList');
+  return a.part();
 }

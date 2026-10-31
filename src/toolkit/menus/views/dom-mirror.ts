@@ -1,4 +1,5 @@
 import { effect } from '@preact/signals-core';
+import { createVoteBadge } from '../../title/vote-badge';
 import type { ReadonlySignal } from '@preact/signals-core';
 import type { Readable } from '../../components/core/logic/world/components';
 import { settings, updateSettings } from '../../settings/settings-store';
@@ -151,6 +152,11 @@ export function createSettingsMirror({
             }),
           );
           section.append(track(id, select));
+          break;
+        }
+        case 'vote': {
+          const link = createVoteBadge('vote-button');
+          section.append(track(id, link));
           break;
         }
         case 'vfd': {

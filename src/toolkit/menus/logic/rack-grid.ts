@@ -415,11 +415,16 @@ function plans<T, G>(
     ...sizes.map(([w], i) => w + (fixed[i]?.[0] ?? 0)),
   );
   const all = sizes.reduce((n, [w]) => n + w, 0);
+  // No narrower than its `minColumns`, where it has one (and room).
+  const least = Math.min(
+    Math.max(widest, node.minColumns ?? 0),
+    Math.max(widest, Math.min(maxColumns, all)),
+  );
   const widths = node.columns
     ? [node.columns]
     : Array.from(
-        { length: Math.max(1, Math.min(maxColumns, all) - widest + 1) },
-        (_, k) => widest + k,
+        { length: Math.max(1, Math.min(maxColumns, all) - least + 1) },
+        (_, k) => least + k,
       );
   const options = widths.map((width): Plan<T, G> => {
     const { places, rows: used } = packGrid(sizes, width, fixed);

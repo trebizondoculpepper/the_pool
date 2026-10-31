@@ -42,6 +42,8 @@ export const MODULE_UNITS: Record<
   // Two rotary switches side by side, an LCD under each.
   switch: [12, 2],
   vfd: [8, 1],
+  // The vote button in its bezel, a long, low badge.
+  vote: [10, 1],
 };
 
 /** The panel's margins and bands, metres. */
@@ -144,32 +146,27 @@ export function panelGrid(
   room: number,
   cardLines: number,
 ): Grid<PanelItem, PanelZone | null> {
+  // One dense field of modules (the owner, 2026-10-31: pack it, no rows
+  // with hardly anything on them): every module, zone by zone in reading
+  // order, in the first place it fits, so small ones fill the gaps beside
+  // big ones; what is left is blanked off.
   return {
     grid: null,
-    flow: 'shelf',
-    gap: 0,
-    band: SPACING.legend,
-    shelfGap: SPACING.shelfGap,
-    justify: 'start',
-    // Fitted to waste least, but no narrower than three fifths of the room,
-    // so the panel stays wider than tall on a wide screen.
-    minColumns: Math.floor(room * 0.6),
-    // Every rack position filled: what the groups leave at a shelf's end is blanked off too.
+    flow: 'dense',
+    // As wide as the room allows, so it stays wider than tall on a wide
+    // screen and as few rows as it can.
+    minColumns: Math.floor(room * 0.9),
     blank: true,
-    stretch: true,
     columns: undefined,
-    children: zones.map((zone) => ({
-      grid: zone,
-      flow: 'dense',
-      blank: true,
-      children: zone.items.map((item) => ({
+    children: zones.flatMap((zone) =>
+      zone.items.map((item) => ({
         item,
         span:
           item.kind === 'card'
             ? cardUnits(cardLines, room)
             : MODULE_UNITS[item.kind],
       })),
-    })),
+    ),
   };
 }
 

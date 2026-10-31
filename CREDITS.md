@@ -109,3 +109,7 @@ The thirty photographs in `resources/images/day-in-the-life/` (`<decade>-<mornin
 The title screen's logo, `resources/images/title/the-pool-logo.svg`, is a vector drawing made by `scripts/title-logo.ts` (2026-10-29) after the owner's own roundel, `doc/marketing/logos/05-circle-notext.png` (kept there unchanged; see that folder's `README.md`). The same script writes `the-pool-logo-animated.svg` (the sight glass and gauges moving) and `the-pool-logo-titled.svg`, which embeds Antonio for its title (as the SIL Open Font Licence allows, the font unmodified); on the title screen the title is drawn live in Antonio (see Fonts).
 
 The boxed _The Pool_ front, back and spine at `doc/marketing/box-art/` were generated with OpenAI image generation on 2026-10-31 using the project's approved circular logo and the project's own game screenshots (`control_room.jpg`, `plant2.jpg`, `olympic_porthole.jpg` in `doc/screenshots/v0/`). Their prompts are kept beside the images. The spine's exact title lettering is drawn by the game over its generated artwork.
+
+## VibeTopList's vote badge
+
+`resources/images/vibetoplist/vibetoplist-badge.svg` is VibeTopList's "Featured on VibeTopList" badge for the game (https://vibetoplist.com/badge/the-pool.svg), downloaded unchanged on 2026-10-31 and shown, as VibeTopList offers it to listed games, on the title screen and the pause menu, linked to the game's vote page. It is VibeTopList's, not covered by the game's licence.

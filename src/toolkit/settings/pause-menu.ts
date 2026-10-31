@@ -15,6 +15,7 @@ import {
 import type { GraphicsPreset } from './logic/graphics';
 import type { Settings } from './logic/settings';
 import { settings, updateSettings } from './settings-store';
+import { createVoteBadge } from '../title/vote-badge';
 
 /**
  * The pause menu (`doc/plans/title-screen.md`): tabs for the Game (resume,
@@ -256,6 +257,18 @@ export function createPauseMenu(actions: PauseMenuActions) {
         saved.textContent = message;
       });
     });
+  // A panel for VibeTopList's vote button, set into the menu's control
+  // panel like one of its own: a brushed steel plate in a hazard border,
+  // the purple button in a metal bezel, and a Dymo label over it.
+  const vote = document.createElement('div');
+  vote.className = 'vote-panel';
+  const label = document.createElement('span');
+  label.className = 'dymo-label';
+  label.textContent = 'Vote for this game';
+  const bezel = document.createElement('div');
+  bezel.className = 'vote-bezel';
+  bezel.append(createVoteBadge('vote-button'));
+  vote.append(label, bezel);
   button('Game', 'Quit to Title', () => {
     close();
     actions.quitToTitle();
@@ -267,7 +280,7 @@ export function createPauseMenu(actions: PauseMenuActions) {
   follower.className = 'settings-note';
   follower.textContent =
     'The game is open in another tab, which saves it. This tab is a follower: it shows the same game but does not save.';
-  pages.get('Game')!.append(saved, follower);
+  pages.get('Game')!.append(saved, follower, vote);
   effect(() => {
     const holds = actions.holding?.value ?? true;
     saveButton.disabled = !holds;
