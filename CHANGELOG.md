@@ -13,6 +13,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - The developer console's log now records pumps and alarms as it does valves: each pool's circulation pumps and the wet hall's make-up booster set STARTED and STOPPED, with who did it (you, the console, its starter, or the make-up's demand), and every annunciator window, on the control room's board and each location's, as its alarm comes in, is accepted, clears and is reset, each line naming the board by its tag and name and the window by its engraving, all taken from the model.
 
 - The balance tank hall's doors carry their own warning signs, current UK style after ISO 7010, on both faces of both leaves: Authorised Personnel Only, Danger Deep Water (risk of drowning), Danger Confined Space (tank entry by permit only), Caution Slippery Surface and Fire Door Keep Shut (a new `tank-hall` door warning preset), in the Olympic tank hall and on any plant room shell's tank doors.
+- Dr Aqualis's advice verified against hand-worked trade and textbook rules (`doc/plans/aqualis-advice-verification.md`, `aqualis-reference.test.ts`): bicarbonate, soda ash, calcium chloride, hydrochloric acid at several alkalinities, hypochlorite, thiosulphate, the Langelier index of textbook waters, the pH rise from bicarbonate and the dilution arithmetic, each checked in the chemistry and in Show dose within a stated tolerance. All agree.
 
 ### Changed
 
