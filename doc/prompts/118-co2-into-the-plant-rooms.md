@@ -53,7 +53,7 @@ The owner, 2026-10-31, asked in turn:
 2. **Plants 1 and 2 both take CO₂**, the Lounge as well as the Olympic.
 3. **The panels stay as built:** the period solenoid-and-rotameter panel in the Lounge, which the Trio pulses on and off over its 60 s cycle with a needle valve setting the flow, and the modern mass-flow controller in the Olympic, which the Trio sets from 0 to 2 kg/h. Two kinds of interface side by side.
 4. **CO₂ first, acid trims:** each Trio shares its pH demand CO₂ first, up to its valve's most, with acid taking the rest (as built). The experiment compares this with acid alone.
-5. **The cylinders run out for real:** BANK EMPTY, the manifold's changeover, CHANGE CYLINDERS and SUPPLY EXHAUSTED. A console stand-in, `co2 swap <bank>`, puts in a full bank until the delivery and carrying gameplay is designed.
+5. **The cylinders run out for real:** BANK EMPTY, the manifold's changeover, CHANGE CYLINDERS, SUPPLY EXHAUSTED and LINE PRESSURE LOW. Putting it right means one of two things. Either go out to the cage and work it there: throw the manifold's changeover lever (`throwLever`), and swap the spent bank for a full one with a use on the bank, which stands in for carrying cylinders until deliveries exist. Or use the console stand-in, `co2 swap <bank>`, through the same world action. Both are logged.
 
 On normal practice (the owner may overrule):
 
@@ -62,6 +62,8 @@ On normal practice (the owner may overrule):
 8. **A low alarm (A1)** shuts that room's dosing only. A high alarm (A2) trips the master valve for the whole building, as built.
 9. **Alarms** go to the plant rooms' annunciators and the old control room's, with the loading bay's detector panel local (mission 109).
 
+10. **The mimics warn** (the owner, 2026-10-31): the Lounge's and the Olympic's water-treatment mimics, in their plant rooms and the old control room, gain a CO₂ section. It has a CO₂ PRESSURE LOW warning lamp, lit from the line's LINE PRESSURE LOW and a wall port's NO SUPPLY PRESSURE, and a CHANGE CYLINDERS lamp lit from the manifold's flags. Both follow the mimics' existing lamp conventions; try them on dev39 first, as CLAUDE.md asks. The control-room mimic shows them but cannot reset anything: the swap is done at the cage, which is a local control.
+
 ## Later, not this mission
 
-What a CO₂ leak does to the player in the room (breathlessness, a fading view), cylinder deliveries and swaps as gameplay, and the regulator's heater for higher draws.
+What a CO₂ leak does to the player in the room (breathlessness, a fading view), cylinder deliveries as gameplay (a delivery lorry, carrying cylinders on a trolley, and animating the swap), and the regulator's heater for higher draws.
