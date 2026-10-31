@@ -39,6 +39,7 @@ const advice = (id: string, dose = true): Advice => ({
   id,
   reading: 'ph',
   severity: 'warning',
+  tier: 2,
   problem: `${id} problem`,
   direction: `${id} direction`,
   additive: 'acid',

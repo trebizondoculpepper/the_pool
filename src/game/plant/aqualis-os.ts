@@ -274,6 +274,7 @@ export const APOLOGY: Advice = {
   id: 'funny-turn',
   reading: null,
   severity: 'info',
+  tier: 3,
   problem: 'Terribly sorry: I seem to have had a funny turn.',
   direction:
     'Do check what the dosing did while I was away: the water, and each pump’s own selector.',

@@ -176,6 +176,10 @@ export function firstAidSettings(
   };
 }
 
+/** Whether it raises the chlorine, or is bringing it down, on purpose: high chlorine intended (`advise`'s ranking). */
+export const superchlorinating = (s: FirstAidState | null) =>
+  !!s && s.id !== 'dosing-pause';
+
 /** Whether it holds every output off. */
 export const firstAidHolds = (s: FirstAidState | null) =>
   s?.id === 'dosing-pause';
@@ -277,6 +281,7 @@ export function incidentAdvice(incident: Incident): Advice {
     id: 'incident',
     reading: null,
     severity: 'alarm',
+    tier: 1,
     problem:
       incident === 'diarrhoea'
         ? 'A diarrhoeal faecal incident has been reported!'
@@ -296,6 +301,7 @@ export function runningAdvice(s: FirstAidState): Advice {
     id: 'first-aid',
     reading: null,
     severity: 'warning',
+    tier: 1,
     problem: `First Aid: ${firstAidStatus(s)}.`,
     direction: p.closePool
       ? 'Keep the pool closed.'
@@ -344,6 +350,7 @@ export function endedAdvice(e: FirstAidEnded): Advice {
     id: 'first-aid-ended',
     reading: null,
     severity: 'info',
+    tier: 3,
     problem,
     direction,
     additive: null,

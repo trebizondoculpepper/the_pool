@@ -30,6 +30,7 @@ import { advise } from '../../../game/plant/aqualis-advisor';
 import {
   FIRST_AID,
   firstAidSettings,
+  superchlorinating,
   withFirstAid,
 } from '../../../game/plant/aqualis-first-aid';
 import {
@@ -126,6 +127,7 @@ export function createTrioWorldHost(
             normal: t.settings.targets,
             closedByFirstAid:
               !!t.firstAid && FIRST_AID[t.firstAid.id].closePool,
+            superchlorinating: superchlorinating(t.firstAid),
           }),
           {
             state: t.firstAid,

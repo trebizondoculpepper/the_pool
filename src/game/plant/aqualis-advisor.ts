@@ -24,6 +24,8 @@ import type {
   SampleStatus,
   Selector,
   Severity,
+  Target,
+  Tier,
   Where,
 } from './aqualis-types';
 import { MAINS } from './water-treatment';
@@ -324,6 +326,8 @@ interface Ctx {
   open: boolean;
   /** Fresh water's rate for a dilution, m³/h (the make-up's: about a tenth of the circulation). */
   makeUp: number;
+  /** A First Aid programme raising (or bringing down) the chlorine on purpose. */
+  superchlorinating: boolean;
 }
 
 /** A visit's limit on a reading's change: open, or (closed) `CLOSED_TIMES` as much. */
@@ -403,6 +407,8 @@ export interface AdviseOptions {
   normal?: AqualisSettings['targets'];
   /** A First Aid programme running that keeps the pool closed. */
   closedByFirstAid?: boolean;
+  /** A First Aid programme raising the chlorine, or bringing it down, on purpose: high chlorine is intended, not a tier-1 problem. */
+  superchlorinating?: boolean;
 }
 
 /**
@@ -496,19 +502,13 @@ const CAUSES: Record<string, readonly string[]> = {
   'calcium-hardness-high': ['balance-scaling'],
 };
 
-const SEVERITY_ORDER: Record<Severity, number> = {
-  alarm: 0,
-  warning: 1,
-  info: 2,
-};
-
 function moodOf(severity: Severity, reading: ReadingId | null): Mood {
   if (severity === 'alarm') return 'alarmed';
   if (severity === 'warning') return reading ? 'pointing' : 'concerned';
   return 'idle';
 }
 
-type Draft = Omit<Advice, 'mood' | 'where'> & { where?: Where | null };
+type Draft = Omit<Advice, 'mood' | 'where' | 'tier'> & { where?: Where | null };
 
 /**
  * Where an additive goes. The pumps' own chemicals are theirs while their
@@ -630,7 +630,14 @@ function readingRules(c: Ctx): Draft[] {
       reading: 'alkalinity',
       severity: 'warning',
       problem: `Alkalinity low (${whole(alk)} mg/l): the pH will be unstable.`,
-      direction: 'Raise the alkalinity with sodium bicarbonate.',
+      // Normal practice: the alkalinity first, then the pH. Bicarbonate
+      // nudges the pH up (towards 8.3), so say so where it is already high.
+      direction:
+        r.ph < t.ph.set
+          ? 'Raise the alkalinity with sodium bicarbonate.'
+          : c.online('acid') || c.online('co2')
+            ? `Raise it with sodium bicarbonate. This will lift the pH a little; the ${c.online('co2') ? 'CO₂' : 'acid pump'} will bring it back down.`
+            : 'Raise it with sodium bicarbonate, then lower the pH with acid by hand: the bicarbonate lifts it a little.',
       additive: 'bicarbonate',
       dose: doseOf(
         'bicarbonate',
@@ -909,26 +916,109 @@ function channelRules(
   return out;
 }
 
-/** Sort most urgent first, each cause lifted to the worst severity it causes. */
+/**
+ * Each advice's tier (`doc/plans/aqualis-advice-verification.md`, Part 3;
+ * the owner, 2026-10-31): 1, health and safety; 2, water balance and
+ * comfort; 3, information. Tier 1 is chlorine too low to disinfect, a
+ * chlorine dangerously high or a pH far out (beyond `ALARM_LIMITS`) while
+ * the pool is open, the hypochlorite offline, and the acid or CO₂ offline
+ * while the pH is already high (its chlorine losing its bite). A closed
+ * pool relaxes the bather-safety tier (the high chlorine and the far pH
+ * are tier 2 then); in superchlorination high chlorine is intended, so
+ * it is never tier 1.
+ */
+function tierOf(d: Draft, c: Ctx | null, has: (id: string) => boolean): Tier {
+  const open = c?.open ?? true;
+  switch (d.id) {
+    case 'free-chlorine-low':
+    case 'hypochlorite-offline':
+      return 1;
+    case 'free-chlorine-high':
+      return open && d.severity === 'alarm' && !c?.superchlorinating ? 1 : 2;
+    case 'ph-high':
+    case 'ph-low':
+      return open && d.severity === 'alarm' ? 1 : 2;
+    case 'acid-offline':
+    case 'co2-offline':
+      return has('ph-high') ? 1 : 2;
+  }
+  return d.severity === 'info' ? 3 : 2;
+}
+
+/**
+ * How much difference an advice's correction makes: its reading's distance
+ * from its set point in its half-band (the side it is on), so a reading
+ * at its band's edge is 1 and twice as far 2 (`deviation`). Advice about
+ * the cabinet itself counts nought of its own.
+ */
+function sizeOf(d: Draft, c: Ctx | null): number {
+  if (!c || !d.reading || d.reading === 'temperature') return 0;
+  return deviation(c.r[d.reading], c.s.targets[d.reading]);
+}
+
+/** A reading's distance from its set point, in the half-band on its side: 1 at the band's edge. */
+export function deviation(v: number, t: Target): number {
+  const half = v >= t.set ? t.high - t.set : t.set - t.low;
+  return half > 0 ? Math.abs(v - t.set) / half : v === t.set ? 0 : 1;
+}
+
+/**
+ * What must come before what, whatever its size: a cause before what it
+ * causes (`CAUSES`), and, normal practice (PWTAG; every trade guide),
+ * alkalinity before pH, since it is the pH's buffer: the pH is put right
+ * once the alkalinity is.
+ */
+const BEFORE: Record<string, readonly string[]> = {
+  ...CAUSES,
+  'alkalinity-low': [...CAUSES['alkalinity-low'], 'ph-high'],
+  'alkalinity-high': [...CAUSES['alkalinity-high'], 'ph-low'],
+};
+
+/**
+ * Sort: safety first, by tier; within a tier, the biggest difference
+ * first (`sizeOf`); but a cause, and alkalinity, before what they come
+ * before (`BEFORE`), taking its tier and its size (a hair over) where
+ * those are greater; ties by `RANK`.
+ */
 function order(drafts: Draft[], c: Ctx | null): Advice[] {
-  const sev = new Map(drafts.map((d) => [d.id, SEVERITY_ORDER[d.severity]]));
-  const effective = (id: string, seen: Set<string> = new Set()): number => {
-    if (seen.has(id)) return sev.get(id) ?? 3;
+  const ids = new Set(drafts.map((d) => d.id));
+  const has = (id: string) => ids.has(id);
+  const own = new Map(
+    drafts.map((d) => [d.id, { tier: tierOf(d, c, has), size: sizeOf(d, c) }]),
+  );
+  const lifted = (
+    id: string,
+    seen: Set<string> = new Set(),
+  ): { tier: Tier; size: number } => {
+    const o = own.get(id) ?? { tier: 3 as Tier, size: 0 };
+    if (seen.has(id)) return o;
     seen.add(id);
-    let best = sev.get(id) ?? 3;
-    for (const e of CAUSES[id] ?? [])
-      if (sev.has(e)) best = Math.min(best, effective(e, seen));
-    return best;
+    let { tier, size } = o;
+    for (const e of BEFORE[id] ?? []) {
+      if (!has(e)) continue;
+      const l = lifted(e, seen);
+      if (l.tier < tier || (l.tier === tier && l.size >= size)) {
+        size = l.tier < tier ? l.size + 1e-6 : Math.max(size, l.size + 1e-6);
+        tier = l.tier;
+      }
+    }
+    return { tier, size };
   };
   const rank = (id: string) => {
     const i = RANK.indexOf(id);
     return i < 0 ? RANK.length : i;
   };
   return drafts
-    .map((d) => ({ d, e: effective(d.id) }))
-    .sort((a, b) => a.e - b.e || rank(a.d.id) - rank(b.d.id))
-    .map(({ d }) => ({
+    .map((d) => ({ d, k: lifted(d.id) }))
+    .sort(
+      (a, b) =>
+        a.k.tier - b.k.tier ||
+        b.k.size - a.k.size ||
+        rank(a.d.id) - rank(b.d.id),
+    )
+    .map(({ d, k }) => ({
       ...d,
+      tier: k.tier,
       where: d.where !== undefined ? d.where : whereOf(d.additive, c),
       mood: moodOf(d.severity, d.reading),
     }));
@@ -983,6 +1073,7 @@ export function advise(
     online: (id) => statusOf(id) === 'online',
     open: options.open ?? true,
     makeUp: Math.max(0.1, settings.dynamics.flowM3h * 0.1),
+    superchlorinating: options.superchlorinating ?? false,
   };
   const drafts = readingRules(c);
   const phHigh = readings.ph > settings.targets.ph.high;

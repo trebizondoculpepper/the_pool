@@ -265,6 +265,9 @@ export type Mood = 'idle' | 'concerned' | 'alarmed' | 'pleased' | 'pointing';
 
 export type Severity = 'info' | 'warning' | 'alarm';
 
+/** An advice's tier: 1 health and safety, 2 water balance and comfort, 3 information (`aqualis-advisor.ts` `order`). */
+export type Tier = 1 | 2 | 3;
+
 /** One piece of Dr Aqualis's advice: what is wrong and what puts it right, not how much (Show dose has that). */
 export interface Advice {
   /** Stable id, for the display to keep its place ("alkalinity-low"). */
@@ -272,6 +275,8 @@ export interface Advice {
   /** The reading it is about, which he points at; null for advice about the cabinet itself. */
   reading: ReadingId | null;
   severity: Severity;
+  /** Its tier: what it is ranked by, safety first. */
+  tier: Tier;
   /** What is wrong, with the number ("Alkalinity low (62 mg/l): the pH will be unstable."). */
   problem: string;
   /** What puts it right, with no amount ("Raise the alkalinity with sodium bicarbonate."). */

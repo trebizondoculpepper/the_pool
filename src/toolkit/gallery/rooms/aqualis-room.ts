@@ -46,6 +46,7 @@ import {
   firstAidSettings,
   startFirstAid,
   stepFirstAid,
+  superchlorinating,
   withFirstAid,
 } from '../../../game/plant/aqualis-first-aid';
 import type {
@@ -361,6 +362,7 @@ export function createAqualisRoomHost(
         open: poolOpen,
         normal: settings.targets,
         closedByFirstAid: !!firstAid && FIRST_AID[firstAid.id].closePool,
+        superchlorinating: superchlorinating(firstAid),
       }),
       {
         state: firstAid,

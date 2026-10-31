@@ -200,6 +200,7 @@ export function demoAdvice(scene: DemoScene): Advice[] {
       id: `demo:${s.problem}`,
       reading: null,
       severity: s.mood === 'alarmed' ? 'alarm' : 'info',
+      tier: s.mood === 'alarmed' ? 1 : 3,
       problem: s.problem,
       direction: s.direction,
       additive: null,

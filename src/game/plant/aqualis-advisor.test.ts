@@ -161,7 +161,10 @@ describe('advise: each rule', () => {
     expect(x.problem).toBe(
       'Alkalinity low (62 mg/l): the pH will be unstable.',
     );
-    expect(x.direction).toBe('Raise the alkalinity with sodium bicarbonate.');
+    // pH at its set point: he says what the bicarbonate does to it.
+    expect(x.direction).toBe(
+      'Raise it with sodium bicarbonate. This will lift the pH a little; the CO₂ will bring it back down.',
+    );
     expect(x.additive).toBe('bicarbonate');
     expect(x.where).toBe('balance-tank');
     expect(x.mood).toBe('pointing');
