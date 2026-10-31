@@ -27,6 +27,8 @@ import type {
   Where,
 } from './aqualis-types';
 import { MAINS } from './water-treatment';
+import { dissolveSeconds } from './hand-dose';
+import type { HandChemical } from './hand-dose';
 
 /**
  * Dr Aqualis's diagnosis (mission 114, `doc/prompts/114-aqualis-dosing-controller.md`,
@@ -165,20 +167,124 @@ function amountWords(v: number) {
   return v.toPrecision(2);
 }
 
+/**
+ * How much may go in at one visit (`doc/plans/aqualis-advice-verification.md`,
+ * "Per visit"): normal practice is to correct the balance in stages, a
+ * turnover and a retest between, so that no one addition clouds the
+ * water, overshoots or swings the pH under the bathers. While the pool is
+ * open: alkalinity moved at most 50 mg/l, calcium hardness 150 mg/l and the
+ * pH 0.2 by hand at a visit; fresh water at most a working day's make-up
+ * (8 hours of it). Closed, twice as much (`CLOSED_TIMES`).
+ */
+export const PER_VISIT = {
+  alkalinity: 50,
+  hardness: 150,
+  ph: 0.2,
+  dilutionHours: 8,
+} as const;
+export const CLOSED_TIMES = 2;
+
+/** Each hand additive as the hand-dose stand-in knows it (`hand-dose.ts`). */
+export const HAND_CHEMICAL: Partial<Record<Additive, HandChemical>> = {
+  hypochlorite: 'hypochlorite',
+  superchlorinate: 'hypochlorite',
+  acid: 'acid',
+  co2: 'co2',
+  bicarbonate: 'bicarbonate',
+  sodaAsh: 'sodaAsh',
+  calciumChloride: 'calciumChloride',
+  thiosulphate: 'thiosulphate',
+};
+
+const minutesText = (s: number) => `${Math.max(1, Math.round(s / 60))} min`;
+const hoursText = (h: number) =>
+  h >= 1.5 ? `${Math.round(h)} h` : `${Math.max(1, Math.round(h * 60))} min`;
+
+/** The water's turnover, h, as entered. */
+const turnoverOf = (s: AqualisSettings) =>
+  s.dynamics.flowM3h > 0 ? s.dynamics.volumeM3 / s.dynamics.flowM3h : 4;
+
+/** How a dose is put in, in Dr Aqualis's words. */
+function howOf(
+  additive: Additive,
+  where: Where | null,
+  first: number,
+  firstText: string,
+  visits: number,
+  c: Ctx | null,
+): string {
+  if (where === 'automatic') {
+    const device = DEVICE[additive as ChannelId] ?? 'pump';
+    return `The ${device} is doing this; leave it to work.`;
+  }
+  const again =
+    visits > 1
+      ? ` Too much at once: add ${firstText} now, retest after a turnover (${hoursText(c ? turnoverOf(c.s) : 4)}) and repeat, ${visits} visits.`
+      : '';
+  const closeFirst = c && c.open ? 'Close the pool first. ' : '';
+  if (additive === 'dilution') {
+    const rate = c ? c.makeUp : 0;
+    const time =
+      rate > 0
+        ? ` (about ${hoursText(first / rate)} at the make-up's rate)`
+        : '';
+    return `Drain it down to waste and refill with fresh water${time}.${again}`;
+  }
+  const hand = HAND_CHEMICAL[additive];
+  const takes = hand
+    ? ` (about ${minutesText(dissolveSeconds(hand, first))})`
+    : '';
+  if (additive === 'superchlorinate')
+    return `${closeFirst}Spread it across the pool${takes}, and keep the pool closed until the chlorine is back in its band.${again}`;
+  if (where === 'pool') return `Spread it across the pool${takes}.${again}`;
+  if (additive === 'acid')
+    return `Pour it slowly into the balance tank, acid into water${takes}.${again}`;
+  if (additive === 'hypochlorite')
+    return `Pour it slowly into the balance tank${takes}.${again}`;
+  return `Dissolve it and add it to the balance tank a bucket at a time${takes}.${again}`;
+}
+
+function nameOf(additive: Additive) {
+  return additive === 'hypochlorite' || additive === 'superchlorinate'
+    ? 'sodium hypochlorite (14 %)'
+    : additive === 'acid'
+      ? 'hydrochloric acid (10 %)'
+      : ADDITIVE_NAMES[additive];
+}
+
+/**
+ * A Show dose: the whole correction `amount`, the most one visit may put
+ * in (`perVisit`; all of it at once if that is no less), and how it goes in.
+ */
 function doseOf(
   additive: Additive,
   amount: number,
   unit: DoseAmount['unit'],
+  c: Ctx | null = null,
+  perVisit = Infinity,
 ): DoseAmount | null {
   const a = sig3(amount);
   if (!(a > 0)) return null;
-  const name =
-    additive === 'hypochlorite' || additive === 'superchlorinate'
-      ? 'sodium hypochlorite (14 %)'
-      : additive === 'acid'
-        ? 'hydrochloric acid (10 %)'
-        : ADDITIVE_NAMES[additive];
-  return { amount: a, unit, text: `${amountWords(a)} ${unit} of ${name}` };
+  const visits =
+    perVisit > 0 && amount > perVisit * 1.0001
+      ? Math.ceil(amount / perVisit - 1e-6)
+      : 1;
+  const first = visits > 1 ? sig3(perVisit) : a;
+  return {
+    amount: a,
+    unit,
+    text: `${amountWords(a)} ${unit} of ${nameOf(additive)}`,
+    how: howOf(
+      additive,
+      whereOf(additive, c),
+      first,
+      `${amountWords(first)} ${unit}`,
+      visits,
+      c,
+    ),
+    visits,
+    first,
+  };
 }
 
 // ---- Show dose arithmetic ------------------------------------------------------------
@@ -190,7 +296,24 @@ interface Ctx {
   V: number;
   T: number;
   online: (id: ChannelId) => boolean;
+  /** The pool open to bathers: bather safety bounds every instruction. */
+  open: boolean;
+  /** Fresh water's rate for a dilution, m³/h (the make-up's: about a tenth of the circulation). */
+  makeUp: number;
 }
+
+/** A visit's limit on a reading's change: open, or (closed) `CLOSED_TIMES` as much. */
+const limit = (c: Ctx, k: keyof typeof PER_VISIT) =>
+  PER_VISIT[k] * (c.open ? 1 : CLOSED_TIMES);
+
+/** Calcium chloride's most at a visit, kg, of `g` grams that raise the hardness to its set point or further. */
+const limitHardness = (c: Ctx, g: number) =>
+  (g / 1000) *
+  Math.min(
+    1,
+    limit(c, 'hardness') /
+      Math.max(1e-9, c.s.targets.calciumHardness.set - c.w.hardness),
+  );
 
 /** The grams of one addition that bring `measure` to `target`, by bisection (`measure` rising with the grams if `rising`). */
 function gramsFor(
@@ -246,6 +369,12 @@ export function dilute(
     ],
     T,
   );
+}
+
+/** What else the advice depends on. */
+export interface AdviseOptions {
+  /** The pool open to bathers (the default) or closed (`TrioState.poolOpen`). */
+  open?: boolean;
 }
 
 // ---- The rules ------------------------------------------------------------------------
@@ -330,7 +459,12 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Free chlorine low (${twoDp(fc)} mg/l): the germs are winning.`,
       direction: 'Raise it with sodium hypochlorite.',
       additive: 'hypochlorite',
-      dose: doseOf('hypochlorite', g / CHANNELS.hypochlorite.gramsPerUnit, 'l'),
+      dose: doseOf(
+        'hypochlorite',
+        g / CHANNELS.hypochlorite.gramsPerUnit,
+        'l',
+        c,
+      ),
     });
   } else if (fc > t.freeChlorine.high) {
     const veryHigh = fc > t.freeChlorine.high * ALARM_LIMITS.chlorineHighTimes;
@@ -346,7 +480,7 @@ function readingRules(c: Ctx): Draft[] {
         direction:
           'Stop the hypochlorite and take it down with sodium thiosulphate.',
         additive: 'thiosulphate',
-        dose: doseOf('thiosulphate', g / 1000, 'kg'),
+        dose: doseOf('thiosulphate', g / 1000, 'kg', c),
       });
     } else {
       add({
@@ -380,6 +514,7 @@ function readingRules(c: Ctx): Draft[] {
         'superchlorinate',
         g / CHANNELS.hypochlorite.gramsPerUnit,
         'l',
+        c,
       ),
     });
   }
@@ -401,7 +536,14 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Alkalinity low (${whole(alk)} mg/l): the pH will be unstable.`,
       direction: 'Raise the alkalinity with sodium bicarbonate.',
       additive: 'bicarbonate',
-      dose: doseOf('bicarbonate', g / 1000, 'kg'),
+      dose: doseOf(
+        'bicarbonate',
+        g / 1000,
+        'kg',
+        c,
+        ((g / 1000) * limit(c, 'alkalinity')) /
+          Math.max(1e-9, t.alkalinity.set - c.w.alkalinity),
+      ),
     });
   } else if (alk > t.alkalinity.high) {
     const g = gramsFor(
@@ -411,6 +553,9 @@ function readingRules(c: Ctx): Draft[] {
       t.alkalinity.set,
       1000 * V,
     );
+    const per =
+      (g * limit(c, 'alkalinity')) /
+      Math.max(1e-9, c.w.alkalinity - t.alkalinity.set);
     add({
       id: 'alkalinity-high',
       reading: 'alkalinity',
@@ -418,7 +563,13 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Alkalinity high (${whole(alk)} mg/l): the pH will keep creeping up.`,
       direction: 'Bring it down with hydrochloric acid, a little at a time.',
       additive: 'acid',
-      dose: doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l'),
+      dose: doseOf(
+        'acid',
+        g / CHANNELS.acid.gramsPerUnit,
+        'l',
+        c,
+        per / CHANNELS.acid.gramsPerUnit,
+      ),
     });
   }
 
@@ -440,10 +591,16 @@ function readingRules(c: Ctx): Draft[] {
         problem,
         direction: 'Bring it down with CO₂; it spares the alkalinity.',
         additive: 'co2',
-        dose: doseOf('co2', g, 'g'),
+        dose: doseOf('co2', g, 'g', c),
       });
     } else {
       const g = acidFor(c.w, t.ph.set, V, c.T);
+      const per = acidFor(
+        c.w,
+        Math.max(t.ph.set, c.w.ph - limit(c, 'ph')),
+        V,
+        c.T,
+      );
       add({
         id: 'ph-high',
         reading: 'ph',
@@ -451,11 +608,24 @@ function readingRules(c: Ctx): Draft[] {
         problem,
         direction: 'Bring it down with hydrochloric acid.',
         additive: 'acid',
-        dose: doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l'),
+        dose: doseOf(
+          'acid',
+          g / CHANNELS.acid.gramsPerUnit,
+          'l',
+          c,
+          per / CHANNELS.acid.gramsPerUnit,
+        ),
       });
     }
   } else if (ph < t.ph.low) {
     const g = gramsFor(c, 'sodaAsh', (w) => w.ph, t.ph.set, 200 * V);
+    const per = gramsFor(
+      c,
+      'sodaAsh',
+      (w) => w.ph,
+      Math.min(t.ph.set, c.w.ph + limit(c, 'ph')),
+      200 * V,
+    );
     add({
       id: 'ph-low',
       reading: 'ph',
@@ -463,7 +633,7 @@ function readingRules(c: Ctx): Draft[] {
       problem: `pH low (${twoDp(ph)}): the water will sting and corrode.`,
       direction: 'Raise it gently with soda ash.',
       additive: 'sodaAsh',
-      dose: doseOf('sodaAsh', g / 1000, 'kg'),
+      dose: doseOf('sodaAsh', g / 1000, 'kg', c, per / 1000),
     });
   }
 
@@ -484,7 +654,14 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Calcium hardness low (${whole(ch)} mg/l): the water will eat the grout.`,
       direction: 'Raise it with calcium chloride.',
       additive: 'calciumChloride',
-      dose: doseOf('calciumChloride', g / 1000, 'kg'),
+      dose: doseOf(
+        'calciumChloride',
+        g / 1000,
+        'kg',
+        c,
+        ((g / 1000) * limit(c, 'hardness')) /
+          Math.max(1e-9, t.calciumHardness.set - c.w.hardness),
+      ),
     });
   } else if (ch > t.calciumHardness.high) {
     const m3 = dilutionFor(c, 'hardness', t.calciumHardness.set);
@@ -495,7 +672,16 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Calcium hardness high (${whole(ch)} mg/l): scale ahead, mark my words.`,
       direction: 'Dilute the pool with fresh water.',
       additive: 'dilution',
-      dose: m3 === null ? null : doseOf('dilution', m3, 'm³'),
+      dose:
+        m3 === null
+          ? null
+          : doseOf(
+              'dilution',
+              m3,
+              'm³',
+              c,
+              c.makeUp * limit(c, 'dilutionHours'),
+            ),
     });
   }
 
@@ -516,7 +702,9 @@ function readingRules(c: Ctx): Draft[] {
         ? 'Put the pH and alkalinity right first, then look again.'
         : 'Raise the calcium hardness with calcium chloride.',
       additive: caused ? null : 'calciumChloride',
-      dose: caused ? null : doseOf('calciumChloride', g / 1000, 'kg'),
+      dose: caused
+        ? null
+        : doseOf('calciumChloride', g / 1000, 'kg', c, limitHardness(c, g)),
     });
   } else if (lsi > t.lsi.high) {
     const caused =
@@ -531,7 +719,9 @@ function readingRules(c: Ctx): Draft[] {
         ? 'Put the pH, alkalinity and hardness right first, then look again.'
         : 'Lower the pH a touch with hydrochloric acid.',
       additive: caused ? null : 'acid',
-      dose: caused ? null : doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l'),
+      dose: caused
+        ? null
+        : doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l', c),
     });
   }
 
@@ -545,7 +735,16 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Dissolved solids high (${whole(r.tds)} mg/l): this water is tired.`,
       direction: 'Dilute the pool with fresh water.',
       additive: 'dilution',
-      dose: m3 === null ? null : doseOf('dilution', m3, 'm³'),
+      dose:
+        m3 === null
+          ? null
+          : doseOf(
+              'dilution',
+              m3,
+              'm³',
+              c,
+              c.makeUp * limit(c, 'dilutionHours'),
+            ),
     });
   }
   if (r.sulphate > t.sulphate.high) {
@@ -557,7 +756,16 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Sulphate high (${whole(r.sulphate)} mg/l): it attacks cement grout.`,
       direction: 'Dilute the pool with fresh water.',
       additive: 'dilution',
-      dose: m3 === null ? null : doseOf('dilution', m3, 'm³'),
+      dose:
+        m3 === null
+          ? null
+          : doseOf(
+              'dilution',
+              m3,
+              'm³',
+              c,
+              c.makeUp * limit(c, 'dilutionHours'),
+            ),
     });
   }
   return out;
@@ -641,6 +849,7 @@ export function advise(
   settings: AqualisSettings,
   channelsIn: Channels,
   water?: PoolChemistry,
+  options: AdviseOptions = {},
 ): Advice[] {
   const channels = listOf(channelsIn);
   const statusOf = (id: ChannelId) =>
@@ -676,6 +885,8 @@ export function advise(
     V: Math.max(1e-6, settings.dynamics.volumeM3),
     T,
     online: (id) => statusOf(id) === 'online',
+    open: options.open ?? true,
+    makeUp: Math.max(0.1, settings.dynamics.flowM3h * 0.1),
   };
   const drafts = readingRules(c);
   const phHigh = readings.ph > settings.targets.ph.high;

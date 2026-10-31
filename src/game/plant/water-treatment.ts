@@ -1,5 +1,6 @@
 import {
   CONSERVED,
+  dose,
   mixWaters,
   readings,
   stepChemistry,
@@ -138,9 +139,101 @@ export interface PendingFlows {
   acid: number;
 }
 
+/**
+ * A hand dose still going in (`hand-dose.ts`, `doc/plans/aqualis-advice-verification.md`):
+ * a chemical dissolving into the balance tank (or spread over the pool) a
+ * share at a time, or fresh water replacing the circuit's (a dilution).
+ * It goes in at an even rate over `seconds`; `left` is the share not yet
+ * in, 1 to 0.
+ */
+export interface DoseCharge {
+  /** What the whole charge adds, g (as `dose`'s additions). */
+  additions: Additions;
+  /** Fresh water, m³, to drain and replace with the mains' (a dilution). */
+  fresh: number;
+  /** Where it goes: the tank's water, or the pool's (all its cells, by their shares). */
+  into: 'balance-tank' | 'pool';
+  /** Seconds the whole charge takes to go in. */
+  seconds: number;
+  left: number;
+}
+
 export interface WaterTreatment {
   circuits: Record<PoolId, CircuitWater>;
   pending: Record<PoolId, PendingFlows>;
+  /** Each pool's hand doses still going in, oldest first. */
+  charges: Record<PoolId, DoseCharge[]>;
+}
+
+const noCharges = (): Record<PoolId, DoseCharge[]> =>
+  Object.fromEntries(POOL_IDS.map((id) => [id, []])) as unknown as Record<
+    PoolId,
+    DoseCharge[]
+  >;
+
+const scaled = (a: Additions, k: number): Additions =>
+  Object.fromEntries(
+    Object.entries(a).map(([key, v]) => [key, (v ?? 0) * k]),
+  ) as Additions;
+
+/**
+ * A circuit with `dt` seconds of its charges gone in: each its share
+ * (`dt / seconds`, at most what is left) dosed into its zone's water, or
+ * (a dilution) that much of every zone's water replaced with the mains'
+ * by volume; the charges still going in after.
+ */
+export function releaseCharges(
+  c: CircuitWater,
+  charges: readonly DoseCharge[],
+  id: PoolId,
+  pool: Pick<PoolWaterState, 'level' | 'balance' | 'temperature'>,
+  dt: number,
+): { circuit: CircuitWater; charges: DoseCharge[] } {
+  if (!charges.length || !(dt > 0))
+    return { circuit: c, charges: [...charges] };
+  const T = pool.temperature;
+  const vPool = Math.max(0, poolVolume(id) + pool.level * poolArea(id));
+  const vTank = Math.max(0, pool.balance * poolTankCapacity(id));
+  let tank = c.tank;
+  let cells = c.pool;
+  const left: DoseCharge[] = [];
+  for (const ch of charges) {
+    const share = Math.min(ch.left, dt / Math.max(1e-9, ch.seconds));
+    if (share > 0) {
+      const added = scaled(ch.additions, share);
+      const any = Object.values(added).some((v) => (v ?? 0) > 0);
+      if (any && ch.into === 'balance-tank' && vTank > EMPTY)
+        tank = dose(tank, added, vTank, T);
+      else if (any && vPool > EMPTY)
+        cells = cells.map((w, i) =>
+          dose(
+            w,
+            scaled(added, POOL_CELL_SHARES[i]),
+            vPool * POOL_CELL_SHARES[i],
+            T,
+          ),
+        );
+      const fresh = ch.fresh * share;
+      const total = vTank + vPool;
+      if (fresh > 0 && total > EMPTY) {
+        const f = Math.min(1, fresh / total);
+        const mains = waterFrom(MAINS);
+        const mix = (w: PoolChemistry) =>
+          mixWaters(
+            [
+              { water: w, volume: 1 - f },
+              { water: mains, volume: f },
+            ],
+            T,
+          );
+        tank = mix(tank);
+        cells = cells.map(mix);
+      }
+    }
+    const rest = ch.left - share;
+    if (rest > 1e-9) left.push({ ...ch, left: rest });
+  }
+  return { circuit: { ...c, tank, pool: cells }, charges: left };
 }
 
 const nothingPending = (): PendingFlows => ({
@@ -294,7 +387,7 @@ export function newWaterTreatment(
     );
     pending[id] = nothingPending();
   }
-  return { circuits, pending };
+  return { circuits, pending, charges: noCharges() };
 }
 
 /** A pool's water as bathers meet it and a poolside test reads it: its far cell's. */
@@ -578,16 +671,24 @@ export function stepWaterTreatment(
 ): WaterTreatment {
   const circuits = { ...t.circuits };
   const pending = { ...t.pending };
+  const charges = { ...(t.charges ?? noCharges()) };
   for (const id of POOL_IDS) {
     const p = accumulate(t.pending[id] ?? nothingPending(), flows[id], dt);
     if (p.seconds + 1e-9 < CHEMISTRY_TICK) {
       pending[id] = p;
       continue;
     }
-    circuits[id] = stepCircuit(t.circuits[id], id, p, pools[id]);
+    let c = t.circuits[id];
+    // Hand doses going in over the tick, then the tick's chemistry.
+    if (charges[id]?.length) {
+      const r = releaseCharges(c, charges[id], id, pools[id], p.seconds);
+      c = r.circuit;
+      charges[id] = r.charges;
+    }
+    circuits[id] = stepCircuit(c, id, p, pools[id]);
     pending[id] = nothingPending();
   }
-  return { circuits, pending };
+  return { circuits, pending, charges };
 }
 
 /** What each pool's pumps draw from its day tanks, litres a second, from their rates in l/h. */

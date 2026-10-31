@@ -6,7 +6,7 @@ import type { GameEvent } from './game-event';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
 import { identifiedPart } from '../plant/identification';
 import { MOTORS } from '../plant/motor-starters';
-import { amountText, handChemical } from '../plant/hand-dose';
+import { dissolveSeconds, amountText, handChemical } from '../plant/hand-dose';
 import { diffWorld } from './event-sources';
 
 /**
@@ -199,10 +199,16 @@ function said(
       const into = action.into ?? info.into;
       return {
         subject: action.pool,
-        text: `${amountText(info, action.amount)} ${info.name} added to ${into === 'balance-tank' ? 'the balance tank' : action.chemical === 'co2' ? 'the pool, at the injection point' : 'the pool'}`,
+        text: `${amountText(info, action.amount)} ${info.name} added to ${into === 'balance-tank' ? 'the balance tank' : action.chemical === 'co2' ? 'the pool, at the injection point' : 'the pool, spread over its surface'}, going in over ${Math.round(dissolveSeconds(action.chemical, action.amount) / 60)} min`,
         severity: 'notice',
       };
     }
+    case 'hand/dilute':
+      return {
+        subject: action.pool,
+        text: `${Number(action.m3.toPrecision(3))} m³ of fresh water to replace the pool's, at its make-up's rate`,
+        severity: 'notice',
+      };
     case 'time/skip':
       return { subject: 'TIME', text: `skipped ${action.seconds} s on` };
     case 'air/unit': {

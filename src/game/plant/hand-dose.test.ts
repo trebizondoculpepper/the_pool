@@ -14,13 +14,34 @@ import {
   HAND_CHEMICALS,
   amountText,
   chemicalNamed,
+  DISSOLVE,
+  dissolveSeconds,
   doseVolume,
   handChemical,
   parseAmount,
 } from './hand-dose';
 import type { HandChemical } from './hand-dose';
-import { poolArea, poolVolume } from './pools';
+import { POOL_IDS, poolArea, poolVolume } from './pools';
 import type { PoolId } from './pools';
+import { releaseCharges } from './water-treatment';
+
+/** Every charge going in put in at once: the dose's whole effect, as a jar test shows it. */
+function settle(world: World): World {
+  const circuits = { ...world.treatment.circuits };
+  const charges = { ...world.treatment.charges };
+  for (const id of POOL_IDS) {
+    const r = releaseCharges(
+      circuits[id],
+      charges[id],
+      id,
+      world.pools[id],
+      1e9,
+    );
+    circuits[id] = r.circuit;
+    charges[id] = r.charges;
+  }
+  return { ...world, treatment: { ...world.treatment, circuits, charges } };
+}
 
 type Species = (typeof CONSERVED)[number];
 
@@ -51,8 +72,8 @@ const dosed = (
     amount,
     into,
   };
-  const after = applyAction(before, action);
-  return { before, after, action };
+  const charged = applyAction(before, action);
+  return { before, after: settle(charged), charged, action };
 };
 
 /** The readings an ideal analyser gives of a water. */
@@ -126,14 +147,34 @@ describe('a hand dose, against Dr Aqualis’s Show dose', () => {
     expect(after.pools.pool_01.ph).toBe(before.pools.pool_01.ph);
   });
 
-  it('or into the pool’s return side, its first cell, when told', () => {
+  it('or spread over the pool’s surface, every cell alike, when told', () => {
     const { before, after } = dosed('bicarbonate', 18, 'pool');
     const b = before.treatment.circuits.pool_01;
     const a = after.treatment.circuits.pool_01;
     expect(a.tank).toBe(b.tank);
-    expect(a.pool[0].alkalinity).toBeGreaterThan(b.pool[0].alkalinity + 100);
-    expect(a.pool[1]).toBe(b.pool[1]);
-    expect(a.pool[2]).toBe(b.pool[2]);
+    const rise = a.pool.map((w, i) => w.alkalinity - b.pool[i].alkalinity);
+    expect(rise[0]).toBeGreaterThan(50);
+    for (const r of rise) expect(r).toBeCloseTo(rise[0], 6);
+  });
+
+  it('is a charge that goes in gradually, half an hour for a 25 kg sack', () => {
+    const { before, charged } = dosed('bicarbonate', 25);
+    expect(charged.treatment.circuits).toBe(before.treatment.circuits);
+    const [ch] = charged.treatment.charges.pool_01;
+    expect(ch.seconds).toBeCloseTo(1800, 6);
+    expect(ch.left).toBe(1);
+    // A minute in, a thirtieth has gone in.
+    const r = releaseCharges(
+      charged.treatment.circuits.pool_01,
+      charged.treatment.charges.pool_01,
+      'pool_01',
+      charged.pools.pool_01,
+      60,
+    );
+    expect(r.charges[0].left).toBeCloseTo(1 - 1 / 30, 9);
+    // Solutions go in faster; a small dose takes its few minutes.
+    expect(dissolveSeconds('acid', 25)).toBeCloseTo(750, 6);
+    expect(dissolveSeconds('bicarbonate', 1)).toBe(DISSOLVE.solidLeast);
   });
 });
 
@@ -144,6 +185,7 @@ describe('each chemical moves its own parameter', () => {
   };
   const tankPh = (chemical: HandChemical, amount: number, into?: 'pool') => {
     const { before, after } = dosed(chemical, amount, into);
+    // Spread over the pool, the dose's rise in a cell is its share of the whole.
     const zone = (w: World) =>
       into
         ? w.treatment.circuits.pool_01.pool[0]
@@ -200,7 +242,7 @@ describe('each chemical moves its own parameter', () => {
     expect(tankPh('acid', 1)).toBeLessThan(-0.1);
   });
   it('CO₂: the pH down, the alkalinity unchanged, at the injection point by default', () => {
-    const { before, after } = dosed('co2', 200);
+    const { before, after } = dosed('co2', 600);
     const b = before.treatment.circuits.pool_01;
     const a = after.treatment.circuits.pool_01;
     expect(a.tank).toBe(b.tank);
@@ -298,13 +340,13 @@ describe('the log', () => {
       formatEvent,
     );
     expect(lines[0]).toMatch(
-      /pool_01 {7}18 kg sodium bicarbonate added to the balance tank \(by console\)$/,
+      /pool_01 {7}18 kg sodium bicarbonate added to the balance tank, going in over 22 min \(by console\)$/,
     );
   });
   it('CO₂ at the injection point', () => {
     const { before, after, action } = dosed('co2', 200);
     expect(actionEvents(before, action, after, 'console')[0].text).toBe(
-      '200 g CO₂ added to the pool, at the injection point',
+      '200 g CO₂ added to the pool, at the injection point, going in over 4 min',
     );
   });
 });

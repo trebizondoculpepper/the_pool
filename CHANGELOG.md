@@ -14,6 +14,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 - The balance tank hall's doors carry their own warning signs, current UK style after ISO 7010, on both faces of both leaves: Authorised Personnel Only, Danger Deep Water (risk of drowning), Danger Confined Space (tank entry by permit only), Caution Slippery Surface and Fire Door Keep Shut (a new `tank-hall` door warning preset), in the Olympic tank hall and on any plant room shell's tank doors.
 - Dr Aqualis's advice verified against hand-worked trade and textbook rules (`doc/plans/aqualis-advice-verification.md`, `aqualis-reference.test.ts`): bicarbonate, soda ash, calcium chloride, hydrochloric acid at several alkalinities, hypochlorite, thiosulphate, the Langelier index of textbook waters, the pH rise from bicarbonate and the dilution arithmetic, each checked in the chemistry and in Show dose within a stated tolerance. All agree.
+- A console stand-in, `dilute <pool> <m³>` (world action `hand/dilute`): the circuit's water drained to waste and replaced with the mains' at the pool's make-up rate, until a drain-and-refill is designed.
 
 ### Changed
 
@@ -36,6 +37,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 - The Esc menu's SP-1 panel is packed tighter (the owner, 2026-10-31): its modules are one dense field, each in the first place it fits, as wide as the screen allows, so small modules fill the gaps beside big ones and no row is left nearly empty.
 - The engineer's software boxes are put where they are let go (the owner, 2026-10-31): on the shelf they stand upright in a tidy row, the new one just left of the right-most and the rest closed up beside it, refused when the board is full; let go over the desk or the floor, they fall as anything carried does, landing on the desk's top or, with their middle past its edge, on the floor; the carton takes them as a bin does.
+- Hand doses go in gradually (`WORLD_VERSION` 64, saves migrated): a solid into the balance tank is dissolved a bucket at a time, about half an hour for a 25 kg sack; solutions are poured in faster; a dose into the pool is spread over its surface. The owner's 17 kg of bicarbonate into the Lounge's tank, which the Trio read at 980 mg/l, now peaks at 372. Dr Aqualis's Show dose says how each dose goes in, and splits one too big for a single visit, giving the first visit's amount.
 - The engineer's shelf gains boxed PANES 95 and Fenestra Prospect Embedded 6.0. Software boxes can be set on the desk, put into the Gateway carton, and picked up from either place to return neatly to their shelf slots (the owner, 2026-10-31).
 - The developer console's `reset` command restores the simulation to New Game defaults and saves it without moving the player or replacing their Continue position (the owner, 2026-10-31).
 - Hall 5's skimmer gains a live snake, a dead bat and a skunk, each with its own model, reveal banner and caption (the owner, 2026-10-31).

@@ -325,36 +325,47 @@ describe('JavaScript at the console', () => {
 describe('the stand-ins: dose, chemicals and test_kit', () => {
   it('doses a chemical into the balance tank, and logs it', () => {
     const f = fakeHost();
-    const before = f.world().treatment.circuits.pool_01.tank.alkalinity;
     const out = runLine(f.host, 'dose pool_01 bicarbonate 18kg');
     expect(out).toEqual([]);
-    expect(
-      f.world().treatment.circuits.pool_01.tank.alkalinity - before,
-    ).toBeGreaterThan(1000);
+    // A charge going in gradually: about 22 minutes for 18 kg.
+    expect(f.world().treatment.charges.pool_01).toMatchObject([
+      { into: 'balance-tank', additions: { bicarbonate: 18000 }, left: 1 },
+    ]);
     expect(f.events.at(-1)).toMatchObject({
       subject: 'pool_01',
-      text: '18 kg sodium bicarbonate added to the balance tank',
+      text: '18 kg sodium bicarbonate added to the balance tank, going in over 22 min',
       by: 'console',
     });
+  });
+
+  it('dilute: fresh water for a pool, at its make-up rate', () => {
+    const f = fakeHost();
+    expect(runLine(f.host, 'dilute pool_01 18')).toEqual([]);
+    expect(f.world().treatment.charges.pool_01).toMatchObject([
+      { fresh: 18, left: 1 },
+    ]);
+    expect(texts(runLine(f.host, 'dilute pool_01 lots'))[0]).toMatch(
+      /how many m³/,
+    );
   });
 
   it('takes aliases, units as words, and where it goes', () => {
     const f = fakeHost();
     runLine(f.host, 'dose pool_02 hypo 500 ml pool');
     expect(f.events.at(-1)?.text).toBe(
-      '500 ml sodium hypochlorite (14 %) added to the pool',
+      '500 ml sodium hypochlorite (14 %) added to the pool, spread over its surface, going in over 2 min',
     );
     runLine(f.host, 'dose pool_02 hcl 2l tank');
     expect(f.events.at(-1)?.text).toBe(
-      '2 l hydrochloric acid (10 %) added to the balance tank',
+      '2 l hydrochloric acid (10 %) added to the balance tank, going in over 2 min',
     );
     runLine(f.host, 'dose pool_01 co2 1.5kg');
     expect(f.events.at(-1)?.text).toBe(
-      '1500 g CO₂ added to the pool, at the injection point',
+      '1500 g CO₂ added to the pool, at the injection point, going in over 30 min',
     );
     runLine(f.host, 'dose pool_01 cacl2 5');
     expect(f.events.at(-1)?.text).toBe(
-      '5 kg calcium chloride added to the balance tank',
+      '5 kg calcium chloride added to the balance tank, going in over 6 min',
     );
   });
 

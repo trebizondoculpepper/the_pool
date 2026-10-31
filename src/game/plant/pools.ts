@@ -227,6 +227,9 @@ export const poolMakeUpCalling = (
   id: PoolId,
   pool: Pick<PoolWaterState, 'balance'>,
 ) => pool.balance < WATER[id].float;
+/** Each pool's make-up's most, m³/h: what a dilution's fresh water comes in at. */
+export const poolMakeUpRate = (id: PoolId) => WATER[id].makeUpRate;
+
 /** Each pool's volume brimming, m³, and its surface's area, m². */
 export const poolVolume = (id: PoolId) => WATER[id].volume;
 export const poolArea = (id: PoolId) => WATER[id].area;

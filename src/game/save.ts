@@ -277,6 +277,9 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   61: (world) => world,
   // 62 → 63: the pit pumps' one-shot BOOST starts off (`fillDefaults`).
   62: (world) => world,
+  // 63 → 64: hand doses go in gradually: each pool's charges still going
+  // in, none (`fillDefaults` adds them).
+  63: (world) => world,
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

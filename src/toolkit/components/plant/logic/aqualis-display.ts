@@ -855,6 +855,7 @@ function modelKey(m: Omit<DisplayModel, 'key'>): string {
               m.doctor.count,
               m.doctor.showDose,
               m.doctor.advice?.dose?.text,
+              m.doctor.advice?.dose?.how,
             ]
           : m.page === 'firstAid'
             ? [

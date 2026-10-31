@@ -232,7 +232,8 @@ function drawDoctor(ctx: Ctx, m: DisplayModel, hooks: ScreenHooks) {
   let text = a
     ? `${a.problem}\n${a.direction}`
     : 'Let me have a look at the water…';
-  if (a && d.showDose && a.dose) text += `\n\nDose: ${a.dose.text}.`;
+  if (a && d.showDose && a.dose)
+    text += `\n\nDose: ${a.dose.text}.${a.dose.how ? ` ${a.dose.how}` : ''}`;
   const tail = { x: DOCTOR.him.x + DOCTOR.him.w * 0.8, y: DOCTOR.him.y + 70 };
   if (hooks.bubble) hooks.bubble(ctx, text, DOCTOR.bubble, tail);
   else {

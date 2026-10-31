@@ -30,7 +30,13 @@ import {
   withWaterReadings,
 } from './plant/water-treatment';
 import type { StepFlows, WaterTreatment } from './plant/water-treatment';
-import { handDose, handChemical } from './plant/hand-dose';
+import {
+  DOSE_MIN_VOLUME,
+  dilutionCharge,
+  doseVolume,
+  handCharge,
+  handChemical,
+} from './plant/hand-dose';
 import type { DoseInto, HandChemical } from './plant/hand-dose';
 import {
   actOnIntake,
@@ -329,7 +335,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 63;
+export const WORLD_VERSION = 64;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -592,6 +598,12 @@ export type WorldAction =
       amount: number;
       into?: DoseInto;
     }
+  /**
+   * Fresh water for a pool (the console's `dilute`, a stand-in for a
+   * partial drain-down and refill): `m3` of its circuit's water to drain
+   * as the mains' comes in at its make-up rate (`hand-dose.ts`).
+   */
+  | { type: 'hand/dilute'; pool: PoolId; m3: number }
   /** The world run on at once, a second at a time: for trying things out. */
   | { type: 'time/skip'; seconds: number }
   /** An air handling unit's controls worked, on its controller. */
@@ -767,28 +779,36 @@ export function applyAction(world: World, action: WorldAction): World {
             },
           };
     }
-    case 'hand/dose': {
+    case 'hand/dose':
+    case 'hand/dilute': {
       const c = world.treatment.circuits[action.pool];
-      const info = handChemical(action.chemical);
-      if (!c || !info) return world;
-      const into = action.into ?? info.into;
-      const dosed = handDose(
-        c,
-        action.pool,
-        world.pools[action.pool],
-        action.chemical,
-        action.amount,
-        into,
-      );
-      return dosed === c
-        ? world
-        : {
-            ...world,
-            treatment: {
-              ...world.treatment,
-              circuits: { ...world.treatment.circuits, [action.pool]: dosed },
-            },
-          };
+      if (!c) return world;
+      let charge;
+      if (action.type === 'hand/dilute')
+        charge = dilutionCharge(action.pool, action.m3);
+      else {
+        const info = handChemical(action.chemical);
+        if (!info) return world;
+        const into = action.into ?? info.into;
+        if (
+          doseVolume(action.pool, world.pools[action.pool], into) <
+          DOSE_MIN_VOLUME
+        )
+          return world;
+        charge = handCharge(action.chemical, action.amount, into);
+      }
+      if (!charge) return world;
+      const charges = world.treatment.charges ?? {};
+      return {
+        ...world,
+        treatment: {
+          ...world.treatment,
+          charges: {
+            ...charges,
+            [action.pool]: [...(charges[action.pool] ?? []), charge],
+          } as World['treatment']['charges'],
+        },
+      };
     }
     case 'pool/drain-down':
     case 'pool/make-up': {

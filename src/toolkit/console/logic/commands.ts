@@ -572,6 +572,19 @@ export const COMMANDS: readonly ConsoleCommand[] = [
     },
   },
   {
+    name: 'dilute',
+    usage: '<pool> <m³>',
+    help: 'fresh water for a pool, a stand-in for a partial drain-down and refill: dilute pool_01 20 (m³ drained and replaced at its make-up rate)',
+    complete: (_host, args) => (args.length ? [] : POOL_IDS),
+    run(host, args) {
+      const pool = poolNamed('dilute', args[0]);
+      const m3 = Number((args[1] ?? '').replace(/m3|m³$/i, ''));
+      if (!(m3 > 0) || !Number.isFinite(m3))
+        return fail('dilute: how many m³? (dilute pool_01 20)');
+      host.dispatch({ type: 'hand/dilute', pool, m3 });
+    },
+  },
+  {
     name: 'test_kit',
     usage: '<pool>',
     help: 'test the pool’s water at its far side, as a poolside kit reads it: test_kit pool_01',

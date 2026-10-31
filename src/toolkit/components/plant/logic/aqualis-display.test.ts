@@ -43,7 +43,16 @@ const advice = (id: string, dose = true): Advice => ({
   direction: `${id} direction`,
   additive: 'acid',
   where: 'automatic',
-  dose: dose ? { amount: 1, unit: 'l', text: '1 l of acid' } : null,
+  dose: dose
+    ? {
+        amount: 1,
+        unit: 'l',
+        text: '1 l of acid',
+        how: '',
+        visits: 1,
+        first: 1,
+      }
+    : null,
   mood: 'pointing',
 });
 

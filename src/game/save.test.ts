@@ -33,6 +33,27 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.wetHall.pitPumps.boost).toBe(false);
   });
 
+  it('loads a save from before hand doses went in gradually with none going in, and keeps one that is', () => {
+    const old = newWorld();
+    const { charges: _, ...treatment } = old.treatment;
+    const saved = JSON.stringify({
+      format: 'pool-plant-save',
+      version: 63,
+      savedAt: 5,
+      world: { ...old, treatment },
+    });
+    const loaded = deserialiseWorld(saved);
+    expect(loaded.ok && loaded.world.treatment.charges.pool_01).toEqual([]);
+    const dosing = applyAction(old, {
+      type: 'hand/dose',
+      pool: 'pool_01',
+      chemical: 'bicarbonate',
+      amount: 10,
+    });
+    const again = deserialiseWorld(serialiseWorld(dosing, 5));
+    expect(again.ok && again.world.treatment.charges.pool_01).toHaveLength(1);
+  });
+
   it('refuses what is not a save of ours, and saves from a newer build', () => {
     expect(deserialiseWorld('{not json').ok).toBe(false);
     expect(deserialiseWorld('{"format":"other"}').ok).toBe(false);

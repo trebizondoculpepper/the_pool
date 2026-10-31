@@ -40,3 +40,29 @@ The owner's mission (2026-10-31): tests that tell us whether the Trio's water ad
 - Thiosulphate: the model is fitted to PWTAG TN23's 5 g/m³ per mg/l (`CHEMISTRY.thiosulphateToSulphate`, 0.057). That is far above the stoichiometry to sulphate alone (0.875 g/m³) and above US trade figures (1.2 to 2 g/m³): PWTAG's figure allows for tetrathionate and a margin. UK practice is followed; recorded, not changed.
 - Calcium chloride is dosed as anhydrous (100 %) in the model and in Show dose; the commoner flake (77 to 80 %) would want about 1.3 times the weight. Show dose names "calcium chloride" without a strength. Recorded.
 - Show dose rounds to three significant figures (10.07 shows as 10.1 kg).
+
+## Part 1: hand doses go in gradually
+
+**The problem.** A `hand/dose` into the balance tank dissolved at once. The owner measured it (2026-10-31): 17 kg of bicarbonate into the Lounge's tank, about 9 m³ of the circuit's 146, took the tank to 1,150 mg/l alkalinity and pH 8.07 within a minute; the Trio, whose sample tapping is just downstream, read 820 mg/l, pH 7.82 and TDS 2,057, and raised pH HIGH and WATER SCALING for 10 to 20 minutes.
+
+**What changed.** A hand dose is now a charge (`DoseCharge`, `water-treatment.ts`), kept in the world (`treatment.charges`, by pool; `WORLD_VERSION` 64, a save from before has none going in), that goes in at an even rate and is released into the water at each chemistry tick before its reactions (`releaseCharges`). The rates follow normal practice (`DISSOLVE`, `hand-dose.ts`):
+
+- A solid (bicarbonate, soda ash, calcium chloride, thiosulphate, bisulphate) is dissolved and added a bucket at a time: about half an hour for a 25 kg sack, the owner's figure, so 50 kg an hour, linear in its weight (a dose is that many sacks' work), and never under 5 minutes.
+- A solution (hypochlorite, acid) is poured in steadily, faster: a 25 l drum in about 12 minutes, 120 l an hour, at least 2 minutes.
+- CO₂ by hand is gassed in at the injection point at 3 kg an hour, at least 2 minutes.
+- A dose into the pool is spread over its surface: into all three of its cells by their shares, at the same rates, not only its return side as before.
+- Dilution is a new stand-in world action, `hand/dilute` (the console's `dilute <pool> <m³>`), the CLAUDE.md rule for undesigned features: there is a `pool/drain-down` action, but it stops the circulation and drains the pool to the sewer, so no world action could carry out "replace this much water". The charge drains the circuit's water to waste and replaces it with the mains' at the pool's make-up rate (`poolMakeUpRate`: the Lounge's 9 m³/h, the Olympic's 30), every zone by its volume. It does not move the water levels, the meters or the sewer's record; a designed drain-and-refill would.
+
+**The measurement again** (`hand-dose.slow.test.ts`, the Lounge on its settled water, 17.4 kg, the Trio's peaks over three hours):
+
+| The dose                     | Peak alkalinity | Peak pH | Peak TDS | Minutes in alarm (first 90) |
+| ---------------------------- | --------------- | ------- | -------- | --------------------------- |
+| At once (before)             | 980             | 8.02    | 2,319    | 17                          |
+| Into the tank over 21 min    | 372             | 7.94    | 1,308    | 29                          |
+| Spread over the pool, 21 min | 122             | 7.64    | 889      | 59 (pH HIGH only)           |
+
+The spike at the sample falls by more than half but does not go: how high it goes is set by the rate the dose goes in against the tank's throughflow (50 kg an hour into 90 m³/h is about 330 mg/l of alkalinity), not by the size of the dose, and the alarms last as long as it is going in. That is what a real controller on a balance-tank tapping sees too. Spread over the pool, the Trio sees the dose only once mixed. In every case the pH settles near 7.58 afterwards, which is not the dose going in but the bicarbonate itself (closed-system arithmetic: alkalinity 51 → 120 at pH 7.3 takes the pH to about 7.65) with the Trio's proportional-only acid control unable to bring it back: see Part 4.
+
+**Show dose says how** (`DoseAmount.how`, `visits`, `first`): "Dissolve it and add it to the balance tank a bucket at a time (about 21 min)", "Pour it slowly into the balance tank, acid into water", "Spread it across the pool", "Drain it down to waste and refill with fresh water (about 6 h at the make-up's rate)", and for the pumps' own chemicals while they are online, "The acid pump is doing this; leave it to work." The doctor's page shows it after the amount.
+
+**Per visit** (`PER_VISIT`, `aqualis-advisor.ts`). Normal practice (PWTAG's Code of Practice and the trade's guidance) is to correct the balance by hand in stages, into the balance tank, with a turnover and a retest between, so that no one addition clouds the water, overshoots, or swings the pH under bathers; it gives no single figure, and no citable one was found, so these are this plan's, chosen so that a water just out of band is put right in one visit and anything further is split: with the pool open, alkalinity moved at most 50 mg/l at a visit, calcium hardness 150 mg/l, the pH 0.2 by hand, and fresh water at most a working day's make-up (8 hours of it); closed, twice as much (Part 2). A dose over the limit says so and gives the first visit's amount: "Too much at once: add 111 kg now, retest after a turnover (4 h) and repeat, 2 visits." The Olympic's bicarbonate from 50 to 120 mg/l, over 200 kg, is two visits.

@@ -1,10 +1,16 @@
 import { dose } from '../water/pool-chemistry';
 import type { Additions } from '../water/pool-chemistry';
 import { POOL_CELL_SHARES } from '../water/circuit';
-import { POOL_IDS, poolArea, poolTankCapacity, poolVolume } from './pools';
+import {
+  POOL_IDS,
+  poolArea,
+  poolMakeUpRate,
+  poolTankCapacity,
+  poolVolume,
+} from './pools';
 import type { PoolId, PoolWaterState } from './pools';
 import { STRENGTH } from './water-treatment';
-import type { CircuitWater } from './water-treatment';
+import type { CircuitWater, DoseCharge } from './water-treatment';
 
 /**
  * A chemical tipped into a pool's water by hand (the owner, 2026-10-31):
@@ -276,4 +282,72 @@ export function handDose(
   const cells = [...c.pool];
   cells[0] = dose(cells[0], added, v, pool.temperature);
   return { ...c, pool: cells };
+}
+
+// ---- Going in gradually ------------------------------------------------------------
+
+/**
+ * How fast a hand dose goes in (`doc/plans/aqualis-advice-verification.md`,
+ * Part 1; the owner, 2026-10-31). Normal practice: a solid is dissolved
+ * and added a bucket at a time, about half an hour for a 25 kg sack,
+ * so 50 kg an hour, and never less than 5 minutes for a small one; a
+ * solution is poured in steadily, a 25 l drum in about 12 minutes (120 l
+ * an hour), at least 2 minutes; CO₂ gassed in at the injection point at
+ * 3 kg an hour; and a dilution's fresh water comes in at the make-up's
+ * most (`poolMakeUpRate`: the Lounge's 9 m³/h, the Olympic's 30) as the
+ * same volume goes to drain. A dose into the pool is spread over its
+ * surface, all its cells by their shares, at the same rates.
+ */
+export const DISSOLVE = {
+  solidKgPerHour: 50,
+  solidLeast: 5 * 60,
+  solutionLPerHour: 120,
+  solutionLeast: 2 * 60,
+  co2GPerHour: 3000,
+  co2Least: 2 * 60,
+} as const;
+
+/** Seconds `amount` (in its unit) of a chemical takes to go in by hand. */
+export function dissolveSeconds(chemical: HandChemical, amount: number) {
+  const info = BY_ID.get(chemical);
+  if (!info) return 0;
+  const D = DISSOLVE;
+  if (chemical === 'co2')
+    return Math.max(D.co2Least, (amount / D.co2GPerHour) * 3600);
+  if (info.unit === 'l')
+    return Math.max(D.solutionLeast, (amount / D.solutionLPerHour) * 3600);
+  return Math.max(D.solidLeast, (amount / D.solidKgPerHour) * 3600);
+}
+
+/** A hand dose as a charge going in gradually; null for an unknown chemical or no amount. */
+export function handCharge(
+  chemical: HandChemical,
+  amount: number,
+  into: DoseInto,
+): DoseCharge | null {
+  const info = BY_ID.get(chemical);
+  if (!info || !(amount > 0) || !Number.isFinite(amount)) return null;
+  return {
+    additions: info.additions(amount),
+    fresh: 0,
+    into,
+    seconds: dissolveSeconds(chemical, amount),
+    left: 1,
+  };
+}
+
+/**
+ * A dilution as a charge (the console's `dilute`, a stand-in for a
+ * partial drain-down and refill): `m3` of the circuit's water to drain
+ * as the same of the mains' comes in at the pool's make-up rate.
+ */
+export function dilutionCharge(id: PoolId, m3: number): DoseCharge | null {
+  if (!(m3 > 0) || !Number.isFinite(m3)) return null;
+  return {
+    additions: {},
+    fresh: m3,
+    into: 'pool',
+    seconds: (m3 / Math.max(0.1, poolMakeUpRate(id))) * 3600,
+    left: 1,
+  };
 }

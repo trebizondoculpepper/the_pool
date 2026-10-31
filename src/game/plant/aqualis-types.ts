@@ -245,10 +245,17 @@ export type Where = 'automatic' | 'balance-tank' | 'pool';
 
 /** A Show dose amount, in the additive's own unit. */
 export interface DoseAmount {
+  /** The whole correction, to the set point. */
   amount: number;
   unit: 'kg' | 'g' | 'l' | 'm³';
   /** Its words, ready to show ("12.5 kg of sodium bicarbonate"). */
   text: string;
+  /** How it is put in, with the first visit's amount where it takes more than one ("Dissolve it and add it to the balance tank a bucket at a time…"). */
+  how: string;
+  /** Visits it takes, each no more than normal practice allows at once (1: all at once). */
+  visits: number;
+  /** The first visit's amount, in `unit`. */
+  first: number;
 }
 
 /** Dr Aqualis's moods: his animations. */
