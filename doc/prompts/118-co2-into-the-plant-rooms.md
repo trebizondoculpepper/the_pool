@@ -53,7 +53,7 @@ The owner, 2026-10-31, asked in turn:
 2. **Plants 1 and 2 both take CO₂**, the Lounge as well as the Olympic.
 3. **The panels stay as built:** the period solenoid-and-rotameter panel in the Lounge, which the Trio pulses on and off over its 60 s cycle with a needle valve setting the flow, and the modern mass-flow controller in the Olympic, which the Trio sets from 0 to 2 kg/h. Two kinds of interface side by side.
 4. **CO₂ first, acid trims:** each Trio shares its pH demand CO₂ first, up to its valve's most, with acid taking the rest (as built). The experiment compares this with acid alone.
-5. **The cylinders run out for real:** BANK EMPTY, the manifold's changeover, CHANGE CYLINDERS, SUPPLY EXHAUSTED and LINE PRESSURE LOW. Putting it right means one of two things. Either go out to the cage and work it there: throw the manifold's changeover lever (`throwLever`), and swap the spent bank for a full one with a use on the bank, which stands in for carrying cylinders until deliveries exist. Or use the console stand-in, `co2 swap <bank>`, through the same world action. Both are logged.
+5. **Two racks, counted in grams** (the owner, 2026-10-31): the world keeps no cylinder-by-cylinder state. It keeps a left rack and a right rack, each with its grams of CO₂ left, and which rack is in service. The service rack is drawn from until it is spent. The manifold then changes over automatically, as built, and draws from the other. The spent rack's flag goes red, and BANK EMPTY and CHANGE CYLINDERS are called; with both spent, SUPPLY EXHAUSTED and, soon after, LINE PRESSURE LOW. The pressure is derived from the rack in service: CO₂'s vapour pressure while its liquid lasts, then falling with the gas left, as `co2-supply.ts` works it today. Simplify `Co2Supply` to the two racks' grams; the cage still draws four cylinders a rack. The fix is a swap, which refills whichever rack is spent and not in service. It is one world action, made from either of two places: a use on the spent rack at the cage, standing in for a delivery, or the console stand-in `co2 swap`, which needs no argument because it picks that rack itself. Both are logged; a swap with nothing spent is refused, and says why.
 
 On normal practice (the owner may overrule):
 
@@ -66,4 +66,4 @@ On normal practice (the owner may overrule):
 
 ## Later, not this mission
 
-What a CO₂ leak does to the player in the room (breathlessness, a fading view), cylinder deliveries as gameplay (a delivery lorry, carrying cylinders on a trolley, and animating the swap), and the regulator's heater for higher draws.
+What a CO₂ leak does to the player in the room (breathlessness, a fading view), cylinder deliveries as gameplay: a delivery lorry pulls up in the goods yard and its crew replace the spent, inactive rack, animated; the same swap action underneath, and the regulator's heater for higher draws.
