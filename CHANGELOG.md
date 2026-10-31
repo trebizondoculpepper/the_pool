@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-31
+
 ### Added
 
 - A vote button for the game on VibeTopList: VibeTopList's purple badge in the title screen's bottom right-hand corner, and on the Esc menu's SP-1 panel a module of its own, the badge redrawn as a rectangular purple button with VibeTopList's robot on its left, set in a metal bezel on a plate in a black and yellow hazard border under a Dymo label, VOTE FOR THIS GAME; either opens the game's vote page.
@@ -1053,7 +1055,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.5.0...v0.6.0
