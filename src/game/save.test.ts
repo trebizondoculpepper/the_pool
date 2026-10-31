@@ -17,6 +17,22 @@ describe('a save', () => {
     expect(loaded).toEqual({ ok: true, world, savedAt: 1000 });
   });
 
+  it('loads an older pit-pump save with BOOST off', () => {
+    const old = newWorld();
+    const pitPumps = { ...old.wetHall.pitPumps } as Partial<
+      typeof old.wetHall.pitPumps
+    >;
+    delete pitPumps.boost;
+    const saved = JSON.stringify({
+      format: 'pool-plant-save',
+      version: 62,
+      savedAt: 5,
+      world: { ...old, wetHall: { ...old.wetHall, pitPumps } },
+    });
+    const loaded = deserialiseWorld(saved);
+    expect(loaded.ok && loaded.world.wetHall.pitPumps.boost).toBe(false);
+  });
+
   it('refuses what is not a save of ours, and saves from a newer build', () => {
     expect(deserialiseWorld('{not json').ok).toBe(false);
     expect(deserialiseWorld('{"format":"other"}').ok).toBe(false);

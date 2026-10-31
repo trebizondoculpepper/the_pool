@@ -206,7 +206,7 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
   // ---- The finds: Hall 5's, one at random each time ------------------------
   // Each film's is a fresh one (`hall-5-finds.ts`), shown turning, then
   // handed over: a portable thing, to be carried off or dropped.
-  // Hall 5's six and the further finds on trial (`skimmer-extras.ts`),
+  // Hall 5's nine and the further finds on trial (`skimmer-extras.ts`),
   // these from models still loading at first.
   const propOf = createFindProps(t, kit.materials);
   const extras = createExtraFinds(t);

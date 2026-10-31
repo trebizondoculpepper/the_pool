@@ -1,4 +1,4 @@
-import { Mesh } from 'three';
+import { Box3, Mesh } from 'three';
 import type { Object3D } from 'three';
 import { afterEach, beforeEach, expect, it, vi } from 'vite-plus/test';
 import { createPanelKit } from '../../core/views/eighties-controls';
@@ -86,4 +86,64 @@ it('cannot lift a box with another resting on it', () => {
   const d = desk();
   const stuck = d.boxes.filter((box) => d.handling.canPickUp(box) === false);
   expect(stuck.length).toBeGreaterThan(0);
+});
+
+it('moves boxes from shelf to desk to carton and back to their shelf slots', () => {
+  const d = desk();
+  const named = (id: string) =>
+    d.boxes.find((box) => box.userData.softwareBox === id)!;
+  const panes = named('panes-95');
+  const deskBox = named('doseright-gold-2-1');
+  const shelfBox = named('macrosoft-pool-simulator-97');
+
+  portableOf(panes).component.pickUp();
+  expect(d.handling.cue(panes, deskBox)).toEqual({
+    gesture: 'put-down',
+    possible: true,
+  });
+  expect(d.handling.release(panes, deskBox)).toBe(true);
+  expect(panes.position.y).toBeLessThan(1);
+
+  portableOf(panes).component.pickUp();
+  expect(d.handling.cue(panes, d.cartonMesh)).toEqual({
+    gesture: 'put-in',
+    possible: true,
+  });
+  expect(d.handling.release(panes, d.cartonMesh)).toBe(true);
+  expect(d.handling.binned()).toContain('panes-95');
+
+  portableOf(panes).component.pickUp();
+  expect(d.handling.cue(panes, shelfBox)).toEqual({
+    gesture: 'put-back',
+    possible: true,
+  });
+  expect(d.handling.release(panes, shelfBox)).toBe(true);
+  expect(panes.position.y).toBeGreaterThan(1.6);
+  expect(d.handling.binned()).not.toContain('panes-95');
+
+  portableOf(deskBox).component.pickUp();
+  expect(d.handling.release(deskBox, shelfBox)).toBe(true);
+  expect(deskBox.position.y).toBeGreaterThan(1.6);
+});
+
+it('gives every original desk box a separate, tidy shelf slot', () => {
+  const d = desk();
+  const named = (id: string) =>
+    d.boxes.find((box) => box.userData.softwareBox === id)!;
+  const shelfTarget = named('macrosoft-pool-simulator-97');
+  const moved = [
+    named('beige-accounting-leisure-centre-ledger'),
+    named('coshh-manager-95'),
+    named('doseright-gold-2-1'),
+  ];
+  for (const box of moved) {
+    portableOf(box).component.pickUp();
+    expect(d.handling.release(box, shelfTarget)).toBe(true);
+  }
+  const bounds = moved.map((box) => new Box3().setFromObject(box));
+  for (let i = 0; i < bounds.length; i += 1) {
+    expect(bounds[i].min.y).toBeGreaterThan(1.6);
+    for (let j = i + 1; j < bounds.length; j += 1)
+      expect(bounds[i].intersectsBox(bounds[j])).toBe(false);
+  }
 });

@@ -80,13 +80,16 @@ describe('Hall 5: what’s in the skimmer', () => {
     expect(g.said).toBe(CLEARED_LINE(g.order.length));
   });
 
-  it('holds the six finds in their order, hair first and last', () => {
+  it('holds the nine finds in their order, hair first and last', () => {
     expect(newSkimmerGame().order).toEqual([
       'hair-clump',
       'leaves',
       'dead-rat',
       'dildo',
       'butt-plug',
+      'live-snake',
+      'dead-bat',
+      'skunk',
       'more-hair',
     ]);
     expect(newSkimmerGame().order[0]).toBe(FIRST_FIND);

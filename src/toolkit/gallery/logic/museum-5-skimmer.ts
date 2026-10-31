@@ -14,6 +14,9 @@ export type FindId =
   | 'dead-rat'
   | 'dildo'
   | 'butt-plug'
+  | 'live-snake'
+  | 'dead-bat'
+  | 'skunk'
   | 'more-hair';
 
 export interface Find {
@@ -67,6 +70,24 @@ export const FINDS: readonly Find[] = [
     got: 'a BUTT PLUG',
     caption:
       'A butt plug. How it got into the skimmer is a question for the CCTV, and nobody wants to ask the CCTV.',
+  },
+  {
+    id: 'live-snake',
+    name: 'a live snake',
+    got: 'a LIVE SNAKE',
+    caption: 'A live snake. Fast and bulbous, the mascara snake!',
+  },
+  {
+    id: 'dead-bat',
+    name: 'a dead bat',
+    got: 'a DEAD BAT',
+    caption: 'A dead bat. Just what the joker ordered.',
+  },
+  {
+    id: 'skunk',
+    name: 'a skunk',
+    got: 'a SKUNK',
+    caption: 'A skunk. It appears to have taken a wrong turn at the stream.',
   },
   {
     id: 'more-hair',

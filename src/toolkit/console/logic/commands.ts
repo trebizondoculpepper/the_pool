@@ -48,6 +48,8 @@ export interface ConsoleHost {
   world(): World;
   /** Do an action to the player's world, logged as the console's. */
   dispatch(action: WorldAction): void;
+  /** Save the present pose, then reset the simulation without moving the player. */
+  resetSimulation(): void;
   /** The log, and lines added to it. */
   events(): readonly GameEvent[];
   log(event: GameEvent): void;
@@ -246,6 +248,16 @@ export const COMMANDS: readonly ConsoleCommand[] = [
     help: 'clear the screen (the log is kept)',
     run(host) {
       host.clear();
+    },
+  },
+  {
+    name: 'reset',
+    usage: '',
+    help: 'restore all simulation state to New Game defaults without moving the player',
+    run(host, args) {
+      if (args.length) return fail('reset: takes no arguments');
+      host.resetSimulation();
+      return 'simulation reset; player position kept';
     },
   },
   {

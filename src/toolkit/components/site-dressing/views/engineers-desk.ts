@@ -247,6 +247,7 @@ export function createEngineersDesk(
   const group = new Group();
   group.name = 'Engineer’s desk';
   const top = DESK.h;
+  let deskModel: Object3D | null = null;
   // The desk itself, once its model is in.
   const ready = new GLTFLoader()
     .loadAsync(deskUrl)
@@ -267,6 +268,7 @@ export function createEngineersDesk(
       const desk = fitTo(scene, new Vector3(DESK.w, DESK.h, DESK.d));
       desk.name = 'Desk';
       group.add(desk);
+      deskModel = desk;
     })
     .catch(() => {});
 
@@ -321,22 +323,24 @@ export function createEngineersDesk(
   const carton = createDeskCarton(kit);
   group.add(carton);
 
-  // The boxed software: three on the shelf, spines out, and a fourth
-  // leaning on them; Macrosoft Pool Simulator 97 face out on the shelf's
-  // right, leaning back on the wall, the first thing seen; and on the
-  // desk's far end, a pile of two lying flat, the top one opened, and one
-  // standing by the monitor. Each can be picked up, turned over and put
-  // back, or thrown in the carton (`logic/put-back.ts`).
+  // Three older boxes stand spine out, Chlorine Quest leans on them, and
+  // PANES 95 and Fenestra Prospect stand beside it. Pool Simulator 97
+  // faces the room at the shelf's right. The three desk boxes also have
+  // reserved shelf slots. Every box can move among shelf, desk and carton.
   const wanted = options.titles ?? SOFTWARE_TITLES.map((t) => t.id);
   const titles = SOFTWARE_TITLES.filter((t) => wanted.includes(t.id));
   const byId = (id: string) => titles.find((t) => t.id === id);
   const things = createPutBack<string>();
   const boxes = new Map<Object3D, string>();
+  const shelfHomes = new Set<string>();
+  const deskHomes = new Set<string>();
   /** Set a title's box out on the desk at `pose`, resting on `restsOn`. */
   const setOut = (
     t: SoftwareTitle | undefined,
     pose: Pose,
     restsOn?: string,
+    area: 'shelf' | 'desk' = 'shelf',
+    shelfPose?: Pose,
   ) => {
     if (!t) return;
     const box = createSoftwareBox(kit, t);
@@ -355,7 +359,14 @@ export function createEngineersDesk(
     applyPose(box, pose);
     group.add(box);
     boxes.set(box, t.id);
-    things.home(t.id, pose, restsOn && byId(restsOn) ? restsOn : undefined);
+    things.home(
+      t.id,
+      pose,
+      restsOn && byId(restsOn) ? restsOn : undefined,
+      area,
+    );
+    if (shelfPose) things.shelfPose(t.id, shelfPose);
+    (area === 'shelf' ? shelfHomes : deskHomes).add(t.id);
   };
   // The shelf: books standing from its left end, the last leaning.
   let x = SHELF.x - WALL_SHELF.w / 2 + 0.04;
@@ -384,6 +395,22 @@ export function createEngineersDesk(
       spineOut(size, x + gap, SHELF.top, shelfBack, last ? lean : 0),
       last?.id,
     );
+    x += gap + size.d + 0.012;
+  }
+  for (const id of ['panes-95', 'fenestra-prospect-embedded']) {
+    const t = byId(id);
+    if (!t) continue;
+    const size = softwareBoxSize(t);
+    setOut(t, spineOut(size, x, SHELF.top, shelfBack, 0));
+    x += size.d + 0.006;
+  }
+  const spareShelf = new Map<string, Pose>();
+  for (const id of ['coshh-manager-95', LEDGER, 'doseright-gold-2-1']) {
+    const t = byId(id);
+    if (!t) continue;
+    const size = softwareBoxSize(t);
+    spareShelf.set(id, spineOut(size, x, SHELF.top, shelfBack, 0));
+    x += size.d + 0.006;
   }
   const star = byId('macrosoft-pool-simulator-97');
   if (star)
@@ -396,7 +423,13 @@ export function createEngineersDesk(
   const coshh = byId('coshh-manager-95');
   let y: number = top;
   if (coshh) {
-    setOut(coshh, flat(softwareBoxSize(coshh), pile.x, y, pile.z, 0.05));
+    setOut(
+      coshh,
+      flat(softwareBoxSize(coshh), pile.x, y, pile.z, 0.05),
+      undefined,
+      'desk',
+      spareShelf.get(coshh.id),
+    );
     y += softwareBoxSize(coshh).d;
   }
   const opened = byId(LEDGER);
@@ -405,12 +438,17 @@ export function createEngineersDesk(
       opened,
       flat(softwareBoxSize(opened), pile.x, y, pile.z - 0.01, -0.12),
       coshh?.id,
+      'desk',
+      spareShelf.get(opened.id),
     );
   const standing = byId('doseright-gold-2-1');
   if (standing)
     setOut(
       standing,
       faceOut(softwareBoxSize(standing), 0.24, top, -DESK.d / 2, 0.08, -0.06),
+      undefined,
+      'desk',
+      spareShelf.get(standing.id),
     );
   // The opened one's manual and disks out in front.
   if (opened) {
@@ -420,11 +458,24 @@ export function createEngineersDesk(
     group.add(contents);
   }
 
-  /** Whether `target` is the carton, or part of it. */
-  const inCarton = (target: Object3D) => {
-    for (let o: Object3D | null = target; o; o = o.parent)
-      if (o === carton) return true;
-    return false;
+  /** The aimed piece of furniture, including a box already resting on it. */
+  const destination = (
+    target?: Object3D,
+  ): 'carton' | 'shelf' | 'desk' | null => {
+    for (let o: Object3D | null = target ?? null; o; o = o.parent) {
+      if (o === carton) return 'carton';
+      if (o === shelf) return 'shelf';
+      if (o === deskModel) return 'desk';
+      const id = boxes.get(o);
+      if (!id) continue;
+      const where = things.where(id);
+      if (where === 'binned') return 'carton';
+      if (where === 'shelf' || (where === 'home' && shelfHomes.has(id)))
+        return 'shelf';
+      if (where === 'desk' || (where === 'home' && deskHomes.has(id)))
+        return 'desk';
+    }
+    return null;
   };
   const handling = {
     /** Null if `object` is not one of the desk's boxes, else whether it may be picked up now. */
@@ -432,20 +483,39 @@ export function createEngineersDesk(
       const id = boxes.get(object);
       return id === undefined ? null : things.canPickUp(id);
     },
-    /**
-     * Let go of a held box: aimed at the carton (`target`), into it, to
-     * rest on what is in it; otherwise back where it was. Null if it is
-     * not one of the desk's boxes; 'refuse' if it has nowhere to go back to.
-     */
+    /** Put a held box in the aimed carton, desk or shelf; otherwise return it home. */
     release(object: Object3D, target?: Object3D): boolean | 'refuse' | null {
       const id = boxes.get(object);
       if (id === undefined || things.held() !== id) return null;
       const portable = object.userData.portable as PortableObject;
       const size = softwareBoxSize(byId(id)!);
-      if (target && inCarton(target)) {
+      const place = destination(target);
+      if (place === 'carton') {
         const slot = things.bin(id)!;
         carton.add(object);
         applyPose(object, inBin(size, slot));
+        portable.component.reset();
+        return true;
+      }
+      if (place === 'desk') {
+        const slot = things.desk(id)!;
+        const below = things
+          .onDesk()
+          .slice(0, -1)
+          .reduce<number>(
+            (height, belowId) => height + softwareBoxSize(byId(belowId)!).d,
+            top,
+          );
+        group.add(object);
+        applyPose(object, flat(size, 0.66, below, 0.08, slot * 0.04));
+        portable.component.reset();
+        return true;
+      }
+      if (place === 'shelf') {
+        const pose = things.shelf(id);
+        if (!pose) return 'refuse';
+        group.add(object);
+        applyPose(object, pose);
         portable.component.reset();
         return true;
       }
@@ -456,17 +526,17 @@ export function createEngineersDesk(
       portable.component.reset();
       return true;
     },
-    /**
-     * What `release` would do with a held box, for the crosshair's cue
-     * (mission 116), changing nothing: aimed at the carton, into it;
-     * otherwise back where it was, refused if its support is away. Null
-     * if it is not one of the desk's boxes, or not held.
-     */
+    /** What release would do at this target, for the crosshair's cue. */
     cue(object: Object3D, target?: Object3D): CarryAnswer | null {
       const id = boxes.get(object);
       if (id === undefined || things.held() !== id) return null;
-      if (target && inCarton(target))
-        return { gesture: 'put-in', possible: true };
+      const place = destination(target);
+      if (place === 'carton') return { gesture: 'put-in', possible: true };
+      if (place === 'desk') return { gesture: 'put-down', possible: true };
+      if (place === 'shelf')
+        return things.canShelf(id)
+          ? { gesture: 'put-back', possible: true }
+          : { gesture: 'put-back', possible: false, refused: true };
       return things.canPutBack(id)
         ? { gesture: 'put-back', possible: true }
         : { gesture: 'put-back', possible: false, refused: true };

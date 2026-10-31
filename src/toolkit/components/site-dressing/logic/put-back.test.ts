@@ -121,6 +121,76 @@ describe('picking a thing up to look at it, and putting it back', () => {
     expect(things.held()).toBe('stray');
   });
 
+  it('moves a shelf box to the desk and returns it to its own neat shelf slot', () => {
+    const things = createPutBack<string>();
+    things.home('panes', at(0.1));
+    expect(things.canShelf('panes')).toBe(false);
+    expect(things.desk('panes')).toBeNull();
+    expect(things.pickUp('panes')).toBe(true);
+    expect(things.desk('panes')).toBe(0);
+    expect(things.where('panes')).toBe('desk');
+    expect(things.onDesk()).toEqual(['panes']);
+    expect(things.pickUp('panes')).toBe(true);
+    expect(things.canShelf('panes')).toBe(true);
+    expect(things.shelf('panes')).toEqual(at(0.1));
+    expect(things.where('panes')).toBe('shelf');
+    expect(things.onDesk()).toEqual([]);
+  });
+
+  it('moves an original desk box or a carton box into a registered shelf slot', () => {
+    const things = createPutBack<string>();
+    things.home('ledger', at(0.6), undefined, 'desk');
+    expect(things.pickUp('ledger')).toBe(true);
+    expect(things.canShelf('ledger')).toBe(false);
+    expect(things.shelf('ledger')).toBeNull();
+    expect(things.held()).toBe('ledger');
+    things.shelfPose('ledger', at(-0.2));
+    expect(things.shelf('ledger')).toEqual(at(-0.2));
+    expect(things.where('ledger')).toBe('shelf');
+    expect(things.pickUp('ledger')).toBe(true);
+    expect(things.bin('ledger')).toBe(0);
+    expect(things.pickUp('ledger')).toBe(true);
+    expect(things.shelf('ledger')).toEqual(at(-0.2));
+    expect(things.binned()).toEqual([]);
+  });
+
+  it('keeps a leaning shelf box supported after it is returned to the shelf', () => {
+    const things = createPutBack<string>();
+    things.home('book', at(0.1));
+    things.home('leaning', at(0.2), 'book');
+    expect(things.pickUp('book')).toBe(false);
+    expect(things.pickUp('leaning')).toBe(true);
+    expect(things.desk('leaning')).toBe(0);
+    expect(things.pickUp('book')).toBe(true);
+    expect(things.bin('book')).toBe(0);
+    expect(things.pickUp('leaning')).toBe(true);
+    expect(things.canShelf('leaning')).toBe(false);
+    expect(things.shelf('leaning')).toBeNull();
+    expect(things.desk('leaning')).toBe(0);
+    expect(things.pickUp('book')).toBe(true);
+    expect(things.shelf('book')).toEqual(at(0.1));
+    expect(things.pickUp('leaning')).toBe(true);
+    expect(things.shelf('leaning')).toEqual(at(0.2));
+    expect(things.pickUp('book')).toBe(false);
+  });
+
+  it('takes only the top of the desk pile and does not move a supported original pile bottom', () => {
+    const things = createPutBack<string>();
+    things.home('bottom', at(0), undefined, 'desk');
+    things.home('top', at(0), 'bottom', 'desk');
+    expect(things.pickUp('bottom')).toBe(false);
+    expect(things.pickUp('top')).toBe(true);
+    expect(things.desk('top')).toBe(0);
+    expect(things.pickUp('bottom')).toBe(true);
+    expect(things.desk('bottom')).toBe(1);
+    expect(things.onDesk()).toEqual(['top', 'bottom']);
+    expect(things.canPickUp('top')).toBe(false);
+    expect(things.pickUp('bottom')).toBe(true);
+    expect(things.onDesk()).toEqual(['top']);
+    expect(things.putBack('bottom')).toEqual(at(0));
+    expect(things.pickUp('top')).toBe(true);
+  });
+
   it('knows nothing of what it was never given', () => {
     const things = createPutBack<string>();
     expect(things.has('stapler')).toBe(false);

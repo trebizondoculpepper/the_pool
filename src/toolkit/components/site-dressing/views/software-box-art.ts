@@ -2,6 +2,8 @@ import { drawGameBoxFace } from './software-box-game-art';
 import type { GameBoxFurniture } from './software-box-game-art';
 import { drawQuestBoxFace } from './software-box-quest-art';
 import { drawPeriodBoxFace } from './software-box-period-art';
+import { drawFenestraBoxFront } from './fenestra-box-art';
+import { drawPanes95CoverScene } from './panes-95-box-art';
 import type {
   BoxArtStyle,
   BoxFace,
@@ -472,7 +474,8 @@ function chemicalScene(ctx: Paint, style: BoxArtStyle, accent: string): void {
 
 function coverScene(ctx: Paint, title: SoftwareTitle): void {
   const { style, palette } = title;
-  if (style === 'spreadsheet') gridScene(ctx, title);
+  if (title.id === 'panes-95') drawPanes95CoverScene(ctx);
+  else if (style === 'spreadsheet') gridScene(ctx, title);
   else if (style === 'calendar') calendarScene(ctx, title);
   else chemicalScene(ctx, style, palette.accent);
 }
@@ -828,7 +831,9 @@ export function drawBoxFace(
   const baseH = shallow ? 110 : 520;
   context.save();
   context.scale(width / baseW, height / baseH);
-  if (title.questArt) {
+  if (title.id === 'fenestra-prospect-embedded' && face === 'front') {
+    drawFenestraBoxFront(context);
+  } else if (title.questArt) {
     drawQuestBoxFace(context, title, face, {
       barcode: (ctx, item, x, y, w, h) =>
         barcode(ctx, item.barcode, x, y, w, h),

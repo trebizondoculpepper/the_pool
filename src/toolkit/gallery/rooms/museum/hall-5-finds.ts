@@ -23,7 +23,7 @@ type Tools = ReturnType<typeof toolsOf>;
 /**
  * Hall 5's skimmer finds (the owner, 2026-10-29: "all the objects are
  * modelled and disgusting"): a clump of hair, rotting leaves, a dead rat,
- * a dildo, a butt plug and more hair, each modelled at about its true
+ * a dildo, a butt plug, a live snake, a dead bat, a skunk and more hair, each modelled at about its true
  * size, wet, matted and grimy, the adult ones plain rather than graphic.
  * Each is revealed above the walker, turning, so is seen from all round.
  * Origin at the middle of its underside, so it lies on the deck at y = 0.
@@ -408,6 +408,127 @@ export function createFindProps(t: Tools, materials: Material[]) {
       );
       leaf.rotation.set(-Math.PI / 2 + 0.3, 0, 0.6);
       blob(g, p('#7c8268', 0.3), 0.03, 0.004, 0.018, 0.01, 0.04, -0.008);
+    },
+    'live-snake': (g) => {
+      const scales = p('#48472a', 0.55);
+      strand(
+        g,
+        scales,
+        [
+          [-0.12, 0.015, 0.01],
+          [-0.08, 0.015, -0.055],
+          [0.015, 0.018, -0.065],
+          [0.08, 0.02, -0.015],
+          [0.035, 0.022, 0.045],
+          [-0.045, 0.025, 0.025],
+          [-0.035, 0.035, -0.015],
+          [0.06, 0.05, 0.035],
+        ],
+        0.012,
+      );
+      blob(g, scales, 0.045, 0.028, 0.032, 0.075, 0.05, 0.038);
+      for (const side of [-1, 1]) {
+        blob(
+          g,
+          p('#d5bb65', 0.3),
+          0.006,
+          0.006,
+          0.005,
+          0.09,
+          0.057,
+          0.038 + side * 0.012,
+        );
+        blob(
+          g,
+          p('#161511', 0.2),
+          0.003,
+          0.004,
+          0.003,
+          0.092,
+          0.058,
+          0.038 + side * 0.012,
+        );
+      }
+      // Forked tongue: a small sign that this one is alive.
+      const tongue = p('#a94e51', 0.4);
+      strand(
+        g,
+        tongue,
+        [
+          [0.095, 0.045, 0.038],
+          [0.12, 0.044, 0.038],
+        ],
+        0.0015,
+      );
+      for (const side of [-1, 1])
+        strand(
+          g,
+          tongue,
+          [
+            [0.12, 0.044, 0.038],
+            [0.133, 0.042, 0.038 + side * 0.008],
+          ],
+          0.001,
+        );
+    },
+    'dead-bat': (g) => {
+      const fur = p('#39312c', 0.9);
+      const membrane = p('#272322', 0.7, 0, true);
+      blob(g, fur, 0.045, 0.026, 0.065, 0, 0.02, 0);
+      blob(g, fur, 0.035, 0.028, 0.03, 0, 0.022, 0.043);
+      for (const side of [-1, 1]) {
+        const wing = new Shape();
+        wing.moveTo(side * 0.015, 0.018);
+        wing.lineTo(side * 0.05, 0.07);
+        wing.lineTo(side * 0.13, 0.06);
+        wing.quadraticCurveTo(side * 0.11, 0.025, side * 0.095, 0.03);
+        wing.quadraticCurveTo(side * 0.075, -0.015, side * 0.06, 0.015);
+        wing.quadraticCurveTo(side * 0.035, -0.025, side * 0.015, 0.018);
+        const sheet = mesh(
+          g,
+          new ShapeGeometry(wing, 6),
+          membrane,
+          0,
+          0.014,
+          0,
+        );
+        sheet.rotation.x = -Math.PI / 2;
+        blob(g, fur, 0.025, 0.025, 0.009, side * 0.015, 0.039, 0.05);
+        strand(
+          g,
+          fur,
+          [
+            [side * 0.014, 0.015, -0.02],
+            [side * 0.04, 0.006, -0.05],
+          ],
+          0.003,
+        );
+      }
+    },
+    skunk: (g) => {
+      const fur = p('#17191a', 0.95);
+      const stripe = p('#e0ded5', 0.9);
+      blob(g, fur, 0.2, 0.09, 0.085, 0, 0.055, 0);
+      blob(g, stripe, 0.16, 0.018, 0.026, -0.015, 0.101, 0);
+      blob(g, fur, 0.075, 0.06, 0.065, 0.125, 0.057, 0);
+      blob(g, stripe, 0.03, 0.018, 0.03, 0.15, 0.075, 0);
+      blob(g, fur, 0.018, 0.015, 0.025, 0.164, 0.042, 0);
+      // Raised black-and-white tail, the skunk's unmistakable silhouette.
+      blob(g, fur, 0.08, 0.16, 0.075, -0.115, 0.105, 0);
+      blob(g, stripe, 0.038, 0.12, 0.03, -0.13, 0.14, 0);
+      for (const side of [-1, 1]) {
+        blob(g, fur, 0.035, 0.045, 0.025, 0.07, 0.025, side * 0.036);
+        blob(
+          g,
+          p('#090b0c', 0.3),
+          0.007,
+          0.007,
+          0.006,
+          0.15,
+          0.065,
+          side * 0.024,
+        );
+      }
     },
   };
 

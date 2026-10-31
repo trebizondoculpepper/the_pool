@@ -133,13 +133,17 @@ export interface PitPumps {
   modes: [PitPumpMode, PitPumpMode];
   duty: 0 | 1;
   running: [boolean, boolean];
+  /** A one-shot override, released by the pit's low STOP float. */
+  boost: boolean;
 }
 
 export type PitPumpAction =
   | { act: 'mode'; pump: 0 | 1; mode: PitPumpMode }
-  | { act: 'duty'; pump: 0 | 1 };
+  | { act: 'duty'; pump: 0 | 1 }
+  | { act: 'boost' };
 
 export function actOnPitPumps(p: PitPumps, a: PitPumpAction): PitPumps {
+  if (a.act === 'boost') return { ...p, boost: true };
   if (a.act === 'duty') return { ...p, duty: a.pump };
   const modes: [PitPumpMode, PitPumpMode] = [...p.modes];
   modes[a.pump] = a.mode;
@@ -148,8 +152,8 @@ export function actOnPitPumps(p: PitPumps, a: PitPumpAction): PitPumps {
 
 /**
  * Which pumps run: in HAND always; in AUTO, while the floats call, the
- * duty pump, or the standby if the duty pump is not in AUTO. None
- * without power.
+ * duty pump or its standby. BOOST runs both available pumps while the
+ * pit is above its low float. None run without power.
  */
 export function pitPumpsRunning(
   p: PitPumps,
@@ -157,6 +161,7 @@ export function pitPumpsRunning(
   power: boolean,
 ): [boolean, boolean] {
   if (!power) return [false, false];
+  if (p.boost && called) return [p.modes[0] !== 'off', p.modes[1] !== 'off'];
   const auto = (k: 0 | 1) => p.modes[k] === 'auto';
   const other = (1 - p.duty) as 0 | 1;
   const answering = auto(p.duty) ? p.duty : auto(other) ? other : null;
@@ -168,14 +173,10 @@ export function pitPumpsRunning(
   return wanted[0] && wanted[1] ? [p.duty === 0, p.duty === 1] : wanted;
 }
 
-/**
- * What its sump pumps put down the sewer, m³/h: the running pump's (one at
- * a time, interlocked), the consented rate, while the discharge's
- * isolating valve stands open; none against it shut.
- */
+/** The running sump pumps' combined discharge to sewer, while its valve is open. */
 export const pitDischargeRate = (s: WetHallState, valveOpen = true) =>
-  valveOpen && s.pitPumps.running.some(Boolean)
-    ? WET_HALL_PLANT.dischargeRate
+  valveOpen
+    ? s.pitPumps.running.filter(Boolean).length * WET_HALL_PLANT.dischargeRate
     : 0;
 
 export interface WetHallState {
@@ -234,7 +235,12 @@ export function newWetHall(): WetHallState {
     backwashTank: 0,
     pitInflow: 0,
     discharging: false,
-    pitPumps: { modes: ['auto', 'auto'], duty: 0, running: [false, false] },
+    pitPumps: {
+      modes: ['auto', 'auto'],
+      duty: 0,
+      running: [false, false],
+      boost: false,
+    },
     spilt: 0,
     inhibit: false,
   };
@@ -304,12 +310,15 @@ export function stepWetHall(
   // Its pump on its floats (`pitFloats`): started by START tilting up,
   // run on until STOP drops.
   const now = pitFloats(filled);
-  const discharging = powered(plant) && (s.discharging ? now.stop : now.start);
+  const boost = s.pitPumps.boost && now.stop;
+  const discharging =
+    powered(plant) && (boost || (s.discharging ? now.stop : now.start));
   // Its pumps on their selectors and its floats; the duty passed to the
   // other pump after each pump-down (the owner, 2026-10-26).
   const running = pitPumpsRunning(s.pitPumps, discharging, powered(plant));
   const pitPumps: PitPumps = {
     ...s.pitPumps,
+    boost,
     running,
     duty:
       s.discharging && !discharging
@@ -318,8 +327,9 @@ export function stepWetHall(
   };
   // Pumped through the discharge's isolating valve (WH-DR1-DV1), none
   // with it shut: no gravity path, 3.75 m down (Codex's review).
-  const pumped =
-    drains.discharge && running.some(Boolean) ? P.dischargeRate : 0;
+  const pumped = drains.discharge
+    ? running.filter(Boolean).length * P.dischargeRate
+    : 0;
   const backwashTank = Math.max(0, filled - pumped * hours);
   const spilt = Math.max(0, backwashTank - P.backwashTank);
   // The booster set: started by any draw and run on after the last, as

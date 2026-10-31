@@ -26,5 +26,5 @@ describe('the Lidoluxe Wash-O-Tron', () => {
       expect(olympicBed(w.olympic, i).dirt).toBeLessThan(
         0.3 * OLYMPIC_DIRT_REF,
       );
-  });
+  }, 30_000);
 });

@@ -329,7 +329,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 62;
+export const WORLD_VERSION = 63;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -545,6 +545,8 @@ export function newWorld(): World {
 
 /** What a room may do to the world. */
 export type WorldAction =
+  /** Restore every simulation node to its New Game default; player position is separate. */
+  | { type: 'simulation/reset' }
   | { type: 'demo/set'; on: boolean }
   | { type: 'demo/reset' }
   | { type: 'plant/source'; utility: Utility; on: boolean }
@@ -671,6 +673,8 @@ const jacuzziDrainDown = (world: World, open: boolean): World => ({
 
 export function applyAction(world: World, action: WorldAction): World {
   switch (action.type) {
+    case 'simulation/reset':
+      return newWorld();
     case 'demo/set':
       if (world.demo.on === action.on) return world;
       return {

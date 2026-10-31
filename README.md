@@ -52,6 +52,8 @@ The skimmer reveal film (Hall 5, `?room=museum5`, and its trial room dev53) can 
 
 In a room, the key left of 1 (`on a UK or US keyboard, § on a UK Mac) drops down a Quake-style console ([prompt 058](doc/prompts/done/058-developer-console.md)). It logs every action done to the world and what the plant does by itself (pumps starting, stopping and tripping, alarms, lights). Type`help`for its commands, such as`room`, `goto pool_02`, `noclip on`, `valves PL1`, `close PL1-F1-IV1`, `starter P-201B hand`, `get pools.pool_02`, `act {...}`and`condump`. Game features not yet designed are stood in for by console commands (the owner, 2026-10-31): `dose pool_01 bicarbonate 18kg`tips a chemical into a pool's balance tank (or`pool`) by hand, `chemicals`lists what it knows, and`test_kit pool_01`reads the pool's water as a poolside test kit would. Any line that does not start with a command is run as JavaScript, with the commands as functions and`world`and`act`in scope. Tab completes, Up and Down recall,`;` separates commands, and the same key or Esc puts it away.
 
+The console's `reset` command restores every simulation node to its New Game default without moving the player. The current room and view remain the Continue position.
+
 The proposed definition of a healthy New Game and its repeatable audit are in [Healthy New Game](doc/healthy-start.md); [mission 067](doc/prompts/done/067-healthy-new-game.md) plans the executable contract and its maintenance as the model evolves.
 
 ### Development rooms

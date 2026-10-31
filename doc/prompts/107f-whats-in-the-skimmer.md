@@ -188,7 +188,7 @@ About twenty, keeping the brief's ids and adding a few. A plausible basis is giv
 | `contact-lens`   | a contact lens              | "A contact lens. Very hard to spot. Well found!"                                              | _indicative_                                                                                                                            |
 | `false-teeth`    | false teeth (the rare find) | "FALSE TEETH! The rarest find of all. Somebody laughed too hard on the flume."                | _indicative_ (a classic of pool lore, not sourced)                                                                                      |
 
-Left out on purpose: the snakes, skunk and drowned squirrels of the American stories (too sad), and anything bodily beyond hair and plasters.
+Original scope left out the snakes, skunk and drowned squirrels of the American stories (too sad), and anything bodily beyond hair and plasters. The owner added a live snake, a dead bat and a skunk to the game on 2026-10-31.
 
 ### Research conflicts
 

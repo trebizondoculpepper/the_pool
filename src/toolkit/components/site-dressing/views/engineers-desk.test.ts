@@ -2,7 +2,14 @@ import { Box3, Vector3 } from 'three';
 import { afterEach, beforeEach, expect, it, vi } from 'vite-plus/test';
 import { layoutRoom } from '../../../gallery/logic/room-equipment';
 import { createPanelKit } from '../../core/views/eighties-controls';
-import { DESK, createDeskCarton, deskCartonFootprint } from './engineers-desk';
+import {
+  DESK,
+  SHELF,
+  createDeskCarton,
+  createEngineersDesk,
+  deskCartonFootprint,
+} from './engineers-desk';
+import { WALL_SHELF } from './office-wall-shelf';
 import { createOfficeChair } from './office-chair';
 
 beforeEach(() => {
@@ -26,6 +33,28 @@ beforeEach(() => {
   });
 });
 afterEach(() => vi.unstubAllGlobals());
+
+it('fits both new operating-system boxes beside the older titles on the shelf', () => {
+  const built = createEngineersDesk(createPanelKit());
+  const boxes = new Map<string, Box3>();
+  built.group.updateMatrixWorld(true);
+  built.group.traverse((object) => {
+    const id = object.userData.softwareBox as string | undefined;
+    if (id) boxes.set(id, new Box3().setFromObject(object));
+  });
+  const panes = boxes.get('panes-95')!;
+  const fenestra = boxes.get('fenestra-prospect-embedded')!;
+  const star = boxes.get('macrosoft-pool-simulator-97')!;
+  const shelfLeft = SHELF.x - WALL_SHELF.w / 2;
+  const shelfRight = SHELF.x + WALL_SHELF.w / 2;
+  for (const box of [panes, fenestra]) {
+    expect(box.min.x).toBeGreaterThan(shelfLeft);
+    expect(box.max.x).toBeLessThan(shelfRight);
+    expect(box.min.y).toBeGreaterThanOrEqual(SHELF.top - 0.002);
+  }
+  expect(panes.max.x).toBeLessThan(fenestra.min.x);
+  expect(fenestra.max.x).toBeLessThan(star.min.x);
+});
 
 /** The gap between two boxes on the floor, metres: negative where they overlap. */
 const gap = (

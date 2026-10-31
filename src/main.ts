@@ -793,6 +793,10 @@ createConsole({
   host: {
     world: () => worldStore('dev').world.value,
     dispatch: (action) => worldStore('dev').dispatch(action, 'console'),
+    resetSimulation: () => {
+      rememberPlayer();
+      worldStore('dev').dispatch({ type: 'simulation/reset' }, 'console');
+    },
     events: () => worldStore('dev').events.value,
     log: (event) => worldStore('dev').log(event),
     rooms: () => ROOMS.map((id) => ({ id, name: DEV_ROOM_NAMES[id] })),

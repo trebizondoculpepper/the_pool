@@ -54,4 +54,14 @@ describe('the sewer outfall, in the world', () => {
     expect(overConsent(w.sewer, P.sewerConsent)).toBe(false);
     expect(w.sewer.flow).toBeCloseTo(P.dischargeRate);
   });
+
+  it('records BOOST at twice the normal discharge and over the sewer consent', () => {
+    let w = newWorld();
+    w = { ...w, wetHall: { ...w.wetHall, backwashTank: 50 } };
+    w = applyAction(w, { type: 'pit-pumps', action: { act: 'boost' } });
+    w = advance(w, 60, 1);
+    expect(w.wetHall.pitPumps.running).toEqual([true, true]);
+    expect(w.sewer.flow).toBeCloseTo(P.dischargeRate * 2);
+    expect(overConsent(w.sewer, P.sewerConsent)).toBe(true);
+  });
 });

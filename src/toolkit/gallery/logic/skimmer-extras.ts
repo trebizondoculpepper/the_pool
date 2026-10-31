@@ -1,6 +1,6 @@
 /**
  * More things found in a skimmer (the owner, 2026-10-29), tried in dev53
- * beside Hall 5's six (`museum-5-skimmer.ts`) before the hall takes any:
+ * beside Hall 5's nine (`museum-5-skimmer.ts`) before the hall takes any:
  * each with its banner's words and its caption, in the hall's deadpan
  * voice, and its true size. Four are made from other people's models
  * (`resources/models/skimmer/`, credited in `CREDITS.md`); the goggles

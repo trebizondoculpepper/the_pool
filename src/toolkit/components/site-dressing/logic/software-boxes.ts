@@ -1,3 +1,6 @@
+import { FENESTRA_PROSPECT_BOX } from './fenestra-box';
+import { PANES_95_BOX } from './panes-95-box';
+
 /** A box's six faces. The front faces +z, the top +y, and left and right are the spines as seen from the front. */
 export type BoxFace = 'front' | 'back' | 'left' | 'right' | 'top' | 'bottom';
 
@@ -134,7 +137,9 @@ export interface SoftwareTitle {
   compatibility:
     | 'Designed for PANES 95'
     | 'PANES 3.11 compatible'
-    | 'PC-DOZE 5.0 compatible';
+    | 'PC-DOZE 5.0 compatible'
+    | 'PC compatible'
+    | 'Fenestra Prospect Embedded';
   /** Copy for the airbrushed simulation box (Macrosoft Pool Simulator 97). */
   gameArt?: {
     /** Main chrome lettering without the publisher name. */
@@ -212,8 +217,10 @@ const standardRequirements: BoxRequirements = {
   drive: 'Double-speed CD-ROM drive',
 };
 
-/** Eight wholly fictional desk-bound relics of the 1990s, from a 1991 adventure to 1999 workgroup software. */
+/** Fictional software boxes from the early 1990s to the Trio's service era. */
 export const SOFTWARE_TITLES: readonly SoftwareTitle[] = [
+  PANES_95_BOX,
+  FENESTRA_PROSPECT_BOX,
   {
     id: 'macrosoft-pool-simulator-97',
     title: 'Macrosoft Pool Simulator 97',

@@ -11,9 +11,13 @@ import {
 } from './software-boxes';
 
 describe('software boxes', () => {
-  it('has eight distinct fictional titles', () => {
-    expect(SOFTWARE_TITLES).toHaveLength(8);
-    expect(new Set(SOFTWARE_TITLES.map((title) => title.id)).size).toBe(8);
+  it('has ten distinct fictional titles, including both operating systems', () => {
+    expect(SOFTWARE_TITLES).toHaveLength(10);
+    expect(new Set(SOFTWARE_TITLES.map((title) => title.id)).size).toBe(10);
+    expect(SOFTWARE_TITLES.map((title) => title.id)).toContain('panes-95');
+    expect(SOFTWARE_TITLES.map((title) => title.id)).toContain(
+      'fenestra-prospect-embedded',
+    );
     for (const title of SOFTWARE_TITLES) {
       expect(title.id).toMatch(/^[a-z0-9]+(?:-[a-z0-9]+)*$/);
       expect(title.title + title.publisher).not.toMatch(

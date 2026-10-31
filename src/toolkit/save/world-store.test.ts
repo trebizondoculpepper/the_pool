@@ -47,6 +47,31 @@ it('Continue preserves a saved fault and position; New Game resets and saves a n
   expect(createGameSession(store, storage).resume()).toBe('?room=pool_04');
 });
 
+it('a console simulation reset saves defaults without replacing the Continue position', () => {
+  vi.useFakeTimers();
+  const data = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => data.set(key, value),
+    removeItem: (key: string) => data.delete(key),
+  };
+  vi.stubGlobal('window', { localStorage: storage, addEventListener: vi.fn() });
+  vi.stubGlobal('document', { addEventListener: vi.fn() });
+  vi.stubGlobal('navigator', {});
+  const store = worldStore('console-reset-test');
+  const session = createGameSession(store, storage);
+  const position = '?room=plant_pool_03&x=1&y=2&z=3&yaw=90&pitch=-10';
+  session.remember(position);
+  store.dispatch({ type: 'plant/full-off' }, 'console');
+  store.dispatch({ type: 'simulation/reset' }, 'console');
+  expect(store.world.value).toEqual(newWorld());
+  expect(createGameSession(store, storage).resume()).toBe(position);
+  const saved = deserialiseWorld(
+    storage.getItem('pool-plant:console-reset-test')!,
+  );
+  expect(saved.ok && saved.world).toEqual(newWorld());
+});
+
 it('does not replay scenario parameters or bad coordinates on Continue', () => {
   const reset = vi.fn();
   const session = createGameSession({ reset }, null);

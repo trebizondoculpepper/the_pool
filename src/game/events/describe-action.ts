@@ -48,6 +48,11 @@ function said(
   after: World,
 ): { subject: string; text: string; severity?: GameEvent['severity'] } {
   switch (action.type) {
+    case 'simulation/reset':
+      return {
+        subject: 'SIMULATION',
+        text: 'all systems reset to initial conditions',
+      };
     case 'demo/set':
       return {
         subject: 'dev14',
@@ -409,9 +414,11 @@ function said(
       return {
         subject: 'PIT PUMPS',
         text:
-          action.action.act === 'duty'
-            ? `pump ${action.action.pump + 1} selected duty`
-            : `pump ${action.action.pump + 1} switched to ${action.action.mode.toUpperCase()}`,
+          action.action.act === 'boost'
+            ? 'BOOST button pressed'
+            : action.action.act === 'duty'
+              ? `pump ${action.action.pump + 1} selected duty`
+              : `pump ${action.action.pump + 1} switched to ${action.action.mode.toUpperCase()}`,
       };
     case 'fire-alarm':
       return {
@@ -557,6 +564,10 @@ export function actionEvents(
   after: World,
   by: 'you' | 'console' = 'you',
 ): GameEvent[] {
+  // A reset is one deliberate command, not a cascade of apparent valve
+  // operations and alarms from comparing the old world with a fresh one.
+  if (action.type === 'simulation/reset')
+    return [describeAction(before, action, after, by)];
   const seen = diffWorld(before, after, { by });
   const own = describeAction(before, action, after, by);
   if (

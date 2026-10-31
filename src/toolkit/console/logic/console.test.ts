@@ -31,6 +31,12 @@ function fakeHost() {
       world = applyAction(world, action);
       events.push(...actionEvents(before, action, world, 'console'));
     },
+    resetSimulation() {
+      const before = world;
+      const action = { type: 'simulation/reset' } as const;
+      world = applyAction(world, action);
+      events.push(...actionEvents(before, action, world, 'console'));
+    },
     events: () => events,
     log: (e) => events.push(e),
     rooms: () => [
@@ -176,6 +182,26 @@ describe('the commands', () => {
     expect(texts(runLine(t.host, 'goto nowhere'))[0]).toMatch(/no room/);
     expect(texts(runLine(t.host, 'cam'))).toEqual(['?room=pool_02&x=0']);
     expect(texts(runLine(t.host, 'noclip maybe'))[0]).toMatch(/on or off/);
+  });
+
+  it('resets every simulation node without moving rooms or changing the camera', () => {
+    const t = fakeHost();
+    runLine(t.host, 'act {"type":"plant/full-off"}');
+    runLine(t.host, 'act {"type":"demo/set","on":true}');
+    expect(t.world()).not.toEqual(newWorld());
+    expect(texts(runLine(t.host, 'reset'))).toEqual([
+      'simulation reset; player position kept',
+    ]);
+    expect(t.world()).toEqual(newWorld());
+    expect(t.went).toEqual([]);
+    expect(t.host.cameraLink()).toBe('?room=pool_02&x=0');
+    expect(t.events.at(-1)).toMatchObject({
+      subject: 'SIMULATION',
+      by: 'console',
+    });
+    expect(texts(runLine(t.host, 'reset now'))).toEqual([
+      'reset: takes no arguments',
+    ]);
   });
 
   it('reads the world by a path, and does any action as JSON', () => {

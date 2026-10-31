@@ -785,11 +785,11 @@ Source: `toolkit/gallery/logic/museum-5-gallery.ts:352` (`BIN_SIGN`), drawn at `
 - Headline: For things found in the skimmer
 - Body: Lined with a bin bag, emptied daily, and never, ever reached into.
 - Count: In the bin: 0 (live)
-- When the skimmer is empty, the sign turns yellow: SKIMMER CLEARED! / You took out 6 things. Lovely. (`CLEARED_LINE`, `toolkit/gallery/logic/museum-5-skimmer.ts`; the number is the count of finds, 6)
+- When the skimmer is empty, the sign turns yellow: SKIMMER CLEARED! / You took out 9 things. Lovely. (`CLEARED_LINE`, `toolkit/gallery/logic/museum-5-skimmer.ts`; the number is the count of finds, 9)
 
 ### What’s in the Skimmer? The finds (reveal banner, caption card and voice clip)
 
-Source: `toolkit/gallery/logic/museum-5-skimmer.ts` (`FINDS`). The six come out in this order, every time (the owner, 2026-10-29). Each is revealed in the skimmer's film (`logic/skimmer-cinematic.ts`, tried in dev53): the lid comes off with gold caustics, the camera orbits the skimmer through the suspense, then whips up to the find turning above with the big-item cue or the fanfare by turns (`logic/skimmer-reveal.ts`), and the lid goes back on with the find in hand, to be thrown in the waste bin; the banner reads "You got <Banner>!" over its caption; the caption is also the script for its voice clip `resources/sound/voice/skimmer/<id>.mp3` (none recorded yet; `../../../resources/sound/voice/skimmer/index.md`). The Name column is used in the overlay.
+Source: `toolkit/gallery/logic/museum-5-skimmer.ts` (`FINDS`). The nine come out in this order, every time (the owner, 2026-10-29; three added 2026-10-31). Each is revealed in the skimmer's film (`logic/skimmer-cinematic.ts`, tried in dev53): the lid comes off with gold caustics, the camera orbits the skimmer through the suspense, then whips up to the find turning above with the big-item cue or the fanfare by turns (`logic/skimmer-reveal.ts`), and the lid goes back on with the find in hand, to be thrown in the waste bin; the banner reads "You got <Banner>!" over its caption; the caption is also the script for its voice clip `resources/sound/voice/skimmer/<id>.mp3` (none recorded yet; `../../../resources/sound/voice/skimmer/index.md`). The Name column is used in the overlay.
 
 | Id         | Name                        | Banner          | Caption                                                                                                |
 | ---------- | --------------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |
@@ -798,6 +798,9 @@ Source: `toolkit/gallery/logic/museum-5-skimmer.ts` (`FINDS`). The six come out 
 | dead-rat   | a dead rat                  | a DEAD RAT      | A dead rat. It came up through the drains, and the drains won. Hold it by the tail.                    |
 | dildo      | a dildo                     | a DILDO         | A dildo. Waterproof, as advertised. Nobody has asked at lost property.                                 |
 | butt-plug  | a butt plug                 | a BUTT PLUG     | A butt plug. How it got into the skimmer is a question for the CCTV, and nobody wants to ask the CCTV. |
+| live-snake | a live snake                | a LIVE SNAKE    | A live snake. Fast and bulbous, the mascara snake!                                                     |
+| dead-bat   | a dead bat                  | a DEAD BAT      | A dead bat. Just what the joker ordered.                                                               |
+| skunk      | a skunk                     | a SKUNK         | A skunk. It appears to have taken a wrong turn at the stream.                                          |
 | more-hair  | more hair                   | MORE HAIR       | More hair. There is always more hair.                                                                  |
 
 ### The skimmer's other spoken lines
@@ -813,7 +816,7 @@ Source: `toolkit/gallery/logic/museum-5-skimmer.ts:324` (`actOnSkimmer`), shown 
 | `:339`                  | Lift the lid off first.                                               |
 | `:342`                  | The basket is empty.                                                  |
 | `:350`                  | The skip takes only what came out of the skimmer. The lid stays here. |
-| `:310` (`CLEARED_LINE`) | SKIMMER CLEARED! You took out 6 things. Lovely.                       |
+| `:310` (`CLEARED_LINE`) | SKIMMER CLEARED! You took out 9 things. Lovely.                       |
 
 The voice clip list (`../../../resources/sound/voice/skimmer/index.md`) also names an optional `intro` clip, played the first time the lid is lifted, with no script yet.
 

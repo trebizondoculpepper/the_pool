@@ -63,6 +63,7 @@ export interface PitPumpControls {
     modes: readonly PitPumpMode[];
     duty: 0 | 1;
     running: readonly boolean[];
+    boost: boolean;
     /** Its HIGH float tilted up. */
     high: boolean;
     /** Its water's depth over its floor, metres, and its share full. */
@@ -891,9 +892,8 @@ export function createBackwashPit(kit: PanelKit, p: BackwashPitSpec) {
     panel.rotation.y = Math.PI / 2;
     group.add(panel);
     const PW = 0.46;
-    // Taller, for its depth display and float lamps (the owner,
-    // 2026-10-26).
-    const PH = 0.72;
+    // Room for the depth display, floats and the one-shot BOOST button.
+    const PH = 0.9;
     t.box(panel, grey, PW, PH, 0.12, 0, 0, -0.06);
     panelMakerMark(kit, panel, { width: PW, height: PH, z: 0.001 });
     const name = createMicroLabel(kit, 'PIT PUMPS P-601 / P-602', {
@@ -914,6 +914,7 @@ export function createBackwashPit(kit: PanelKit, p: BackwashPitSpec) {
     const MODES: PitPumpMode[] = ['hand', 'off', 'auto'];
     const runLit = [signal(false), signal(false)];
     const dutyLit = [signal(false), signal(false)];
+    const boostLit = signal(false);
     const highLit = signal(false);
     ([0, 1] as const).forEach((k) => {
       const x = k === 0 ? -0.11 : 0.11;
@@ -971,6 +972,18 @@ export function createBackwashPit(kit: PanelKit, p: BackwashPitSpec) {
       0,
       -0.15,
     );
+    mount(
+      pushButton(kit, {
+        colour: 'yellow',
+        legend: 'BOOST',
+        head: 'illuminated',
+        lamp: boostLit,
+        name: 'Pit pumps boost',
+        action: () => c?.act({ act: 'boost' }),
+      }),
+      0,
+      -0.36,
+    );
     // Its water's depth on a backlit display, and each float switch's
     // lamp: lit while it is tilted up (the owner, 2026-10-26).
     const screen = createCharacterLcd(kit, {
@@ -1008,6 +1021,7 @@ export function createBackwashPit(kit: PanelKit, p: BackwashPitSpec) {
         dutyLit[k].value = s.duty === k;
       }
       highLit.value = s.high;
+      boostLit.value = s.boost;
       s.floats.forEach((up, i) => (floatLit[i].value = up));
       screen.show([
         `DEPTH ${s.depth.toFixed(2)} m`.padEnd(16).slice(0, 16),
