@@ -1,0 +1,43 @@
+<html>
+  <head>
+    <style>
+      html,
+      body {
+        margin: 0;
+        background: transparent;
+      }
+      #i {
+        width: 256px;
+        height: 256px;
+        position: relative;
+        overflow: hidden;
+        background: #02213a url(the-pool-background-caustics-2560x1600.jpg) 50%
+          50%/700px auto;
+      }
+      #i .g {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          circle at 50% 50%,
+          #02213ab0 30%,
+          #02213a40 75%
+        );
+      }
+      #i img {
+        position: absolute;
+        left: 6px;
+        top: 6px;
+        width: 244px;
+        height: 244px;
+        object-fit: contain;
+        filter: drop-shadow(0 4px 8px #000a);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="i">
+      <div class="g"></div>
+      <img src="the-pool-logo.svg" />
+    </div>
+  </body>
+</html>
