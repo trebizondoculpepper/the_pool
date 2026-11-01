@@ -16,8 +16,22 @@ The owner, 2026-11-01: "everything is real … if we're faking heat demand, whic
    - the return: `T_return = T_flow − ΣQ / (1.163 × ring flow, m³/h)`; the ring's circulating pumps give its flow (none with them stopped: no heat delivered, and the boilers' own flow switches matter in 121);
    - kW is already energy per second (kJ/s); work in kW and seconds throughout.
 2. **Each consumer:** each plant room's pool heat exchanger (the Lounge, the Olympic, the Jacuzzi, the Footbath, as `HEAT[id]`'s water heaters) and each hall's air-handling heating coils (its air heaters). Each draws `Q_i = min(demand_i, k_i × max(0, T_flow − T_secondary_i))`, where `demand_i` is its thermostat's ask as today, `T_secondary_i` the water or air it heats, and `k_i` set so that at the design flow temperature it can deliver its design load with its existing warm-up headroom. With the ring hot every pool gets what it asks, as now (keep the existing tests green); with the ring cooling each gets less and drifts. `stepThermal` takes the delivered heat, not the asked; keep it pure.
-3. **The supply, for this mission:** one capacity-limited source standing in for the cascade: up to the plant's total (the boiler house's boilers × their rated kW; read the real figures from `boiler-house-schematic.ts` / `boiler-house.ts`), modulating to hold `T_flow` at its set point, zero with the gas cut (`boilerGasOn`). Keep it behind one function so mission 121 can swap in the sequencer.
-4. **Readings:** `world-reading.ts` reads the ring: `lthw` becomes `T_flow`, add `T_return` and the total demand and supply kW, and stop deriving `boilersFiring` from `heat > 1` (give it the source's firing state for now). Mimics and the bridge that show LTHW temperatures and heat then show real numbers. Don't redesign the boiler room here (that is 121), but if its cascade can read the real demand in place of `boilersFiring` and the sine, with a one-line change, note it for 121 rather than doing it.
+3. **The other facilities on the ring** (the owner, 2026-11-01). Each is a consumer with its own demand and draw, as the pools are:
+   - **the museum's heating:** the museum halls' space heating, from the boiler house. Give it a design load and a simple thermostat and heat-loss model sized to the museum's floor area and normal practice, and record the figures;
+   - **reception, and the changing area:** not built yet, so consumers with zero demand for now;
+   - **future areas:** the model takes a list of consumers, so a new area adds one entry with its design load and thermostat. Don't hard-code the set.
+4. **The energy mimic** (the owner, 2026-11-01): a Penfold mimic board in the old control room that shows how much heat each facility is using. One row a facility, with its kW (and optionally its share of the total):
+   - the Lounge, Olympic, Jacuzzi and Footbath, each pool's water and hall air, or the two summed;
+   - the museum;
+   - reception;
+   - changing;
+   - the total;
+   - the ring's flow and return temperatures, and the supply's kW.
+
+   Readouts come from the world state, and redraw only when a rounded value changes. Try it in dev39 first, as `CLAUDE.md` asks, then install it in the old control room and list it on the bridge. Its tags are derived; run the component benchmark.
+
+5. **The supply, for this mission:** one capacity-limited source standing in for the cascade: up to the plant's total (the boiler house's boilers × their rated kW; read the real figures from `boiler-house-schematic.ts` / `boiler-house.ts`), modulating to hold `T_flow` at its set point, zero with the gas cut (`boilerGasOn`). Keep it behind one function so mission 121 can swap in the sequencer.
+6. **Readings:** `world-reading.ts` reads the ring: `lthw` becomes `T_flow`, add `T_return` and the total demand and supply kW, and stop deriving `boilersFiring` from `heat > 1` (give it the source's firing state for now). Mimics and the bridge that show LTHW temperatures and heat then show real numbers. Don't redesign the boiler room here (that is 121), but if its cascade can read the real demand in place of `boilersFiring` and the sine, with a one-line change, note it for 121 rather than doing it.
 
 ## Gameplay it must produce (tests)
 
@@ -26,6 +40,10 @@ The owner, 2026-11-01: "everything is real … if we're faking heat demand, whic
 - Demand above supply (a cold day, `ambient` low, all pools heating): the ring sags below set point and the pools share what there is.
 - Ring pumps stopped: no heat delivered, even with the boilers able.
 - Energy balance: over a long run, supplied heat = delivered + losses + the ring's stored change, to tolerance.
+
+## In charge
+
+The owner has put `nicole_buruaah` in charge of both heat missions, this one and 121 (2026-11-01).
 
 ## World state, coordination
 
