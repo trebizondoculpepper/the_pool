@@ -158,6 +158,8 @@ export interface TrioPlant {
   supply: boolean;
   sample: SampleInput;
   ports: ChannelPorts;
+  /** A hand dose being fed into its pool's circuit (`treatment.charges`): its pH integral held (`ControllerInputs.feeding`). */
+  feeding?: boolean;
 }
 
 const NO_DEMAND: Outputs = { hypochlorite: 0, acid: 0, co2: 0 };
@@ -299,6 +301,7 @@ function tick(t: TrioState, plant: TrioPlant, dt: number): TrioState {
       hand: t.hand,
       pause: firstAidHolds(firstAid),
       noHypochlorite: firstAidNoHypochlorite(firstAid),
+      feeding: plant.feeding,
     },
     dt,
   );

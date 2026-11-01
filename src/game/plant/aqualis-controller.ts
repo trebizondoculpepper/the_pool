@@ -44,9 +44,13 @@ import { CONTROLLER } from './water-treatment';
  *   (`PH_INTEGRAL_HOURS` at the reference turnover, stretched with it like
  *   chlorine's) learns the steady acid demand of a pool that degasses or is
  *   fed bicarbonate, so the pH comes back to its set point rather than
- *   sitting above it (`doc/plans/aqualis-advice-verification.md`, Part 4),
- *   up to `PH_INTEGRAL_REACH` bands, held while the acid is pinned at its
- *   pump's most, offline or inhibited, and never below nought. **Sharing**: CO₂ first, up to
+ *   sitting above it (`doc/plans/aqualis-advice-verification.md`, Part 4).
+ *   Its anti-windup: bounded to nought and to what the acid and CO₂
+ *   online can carry (`PH_INTEGRAL_REACH` bands at most); not wound up
+ *   while their demand is past that (conditional integration), nor while
+ *   a hand dose is fed and `PH_HOLD_TURNOVERS` after (an operator dosing
+ *   by hand holds the controller: the sample sees the feed before it is
+ *   mixed); held with nothing online, outside AUTO or inhibited. **Sharing**: CO₂ first, up to
  *   its valve's most, and acid for the remainder. CO₂ lowers pH without
  *   eating the alkalinity (acid destroys it), so it is the better base
  *   load, and acid, the stronger and quicker, trims the peaks. CO₂'s share
@@ -96,6 +100,13 @@ export const ACID_G_PER_M3 = 1.5;
 export const PH_INTEGRAL_HOURS = 1;
 /** How far pH's integral may climb, in bands (its steady demand up to this many full scales, the pump's own most permitting). */
 export const PH_INTEGRAL_REACH = 4;
+/**
+ * pH's integral is held from winding up while a hand dose is fed, and for
+ * this many turnovers after: about the balance tank's own time, for the
+ * feed's last to clear the sample. A whole turnover was tried and starved
+ * the integral, the pool sitting at the top of its band for hours.
+ */
+export const PH_HOLD_TURNOVERS = 0.1;
 /** Grams of CO₂ that do a gram of HCl's work on the pH. */
 export const CO2_PER_HCL = 44.01 / 36.46;
 /** How far the dead band reaches toward each edge of its target's band. */
@@ -110,8 +121,10 @@ export const NOT_DELIVERING_AFTER = 180;
 export interface ControllerState {
   /** Chlorine's integral, mg/l, bounded below by its band and above by `INTEGRAL_REACH` bands. */
   integral: number;
-  /** pH's integral, pH, from nought to `PH_INTEGRAL_REACH` bands. */
+  /** pH's integral, pH, from nought to `PH_INTEGRAL_REACH` bands (or what the acid and CO₂ online can carry, if less). */
   phIntegral: number;
+  /** Seconds left of pH's integral hold after a hand dose's feed (`ControllerInputs.feeding`, `PH_HOLD_TURNOVERS`). */
+  phHold: number;
   /** Each channel's demand sent last step, 0 to 1. */
   demands: Record<ChannelId, number>;
   /** Each channel's seconds asked for a dose and delivering none. */
@@ -130,6 +143,13 @@ export interface ControllerInputs {
   pause?: boolean;
   /** A First Aid programme forbidding hypochlorite (`firstAidNoHypochlorite`): its demand held at nought. */
   noHypochlorite?: boolean;
+  /**
+   * A hand dose's chemical being fed into this pool's circuit (the
+   * world's `treatment.charges`): a known disturbance at the sample, so
+   * pH's integral is not wound up while it runs, nor for
+   * `PH_HOLD_TURNOVERS` after (it may still unwind).
+   */
+  feeding?: boolean;
 }
 
 export interface ControllerOutput {
@@ -155,6 +175,7 @@ export function newController(): ControllerState {
   return {
     integral: 0,
     phIntegral: 0,
+    phHold: 0,
     demands: perChannel(() => 0),
     starved: perChannel(() => 0),
   };
@@ -233,6 +254,15 @@ export function stepController(
 
   let integral = s.integral;
   let phIntegral = s.phIntegral ?? 0;
+  // A feed's hold: `PH_HOLD_TURNOVERS` of a turnover (the entered volume
+  // over its flow) from the feed's end, as an operator dosing by hand
+  // would hold the controller.
+  const { volumeM3: v0, flowM3h: q0 } = settings.dynamics;
+  const holdS =
+    3600 * (q0 > 0 ? Math.max(0, v0) / q0 : REFERENCE_TURNOVER_HOURS);
+  const phHold = inp.feeding
+    ? holdS * PH_HOLD_TURNOVERS
+    : Math.max(0, (s.phHold ?? 0) - dt);
   let lockout = false;
   let wanted: Record<ChannelId, number>;
 
@@ -282,22 +312,31 @@ export function stepController(
     const fullHcl = (volume * ACID_G_PER_M3) / CORRECTION_HOURS;
     const hcl =
       (clamp01(above / phBand) + Math.max(0, phIntegral) / phBand) * fullHcl;
-    const acidOnline = online('acid') || online('co2');
-    const acidPinned =
-      above > 0 &&
-      !!ports.acid &&
-      toDemand('acid', hcl, ports.acid) >= 1 &&
-      !online('co2');
-    if (acidOnline && above !== 0 && !acidPinned)
-      phIntegral = clamp(
-        phIntegral +
+    // Anti-windup: what acid and CO₂ online can give between them, in HCl
+    // g/h; the integral bounded to what that can carry, not integrated
+    // further up while the demand is past it, and not wound up at all
+    // while a hand dose is fed (and `PH_HOLD_TURNOVERS` after). With
+    // nothing online it is held as it is.
+    const capacity =
+      (online('acid') && ports.acid
+        ? ports.acid.most * CHANNELS.acid.gramsPerUnit
+        : 0) + (online('co2') && ports.co2 ? ports.co2.most / CO2_PER_HCL : 0);
+    const reach =
+      phBand *
+      (fullHcl > 0
+        ? Math.min(PH_INTEGRAL_REACH, capacity / fullHcl)
+        : PH_INTEGRAL_REACH);
+    const acidPinned = above > 0 && hcl >= capacity;
+    const held = above > 0 && (!!inp.feeding || phHold > 0);
+    if (capacity > 0) {
+      if (above !== 0 && !acidPinned && !held)
+        phIntegral +=
           (above * dt) /
-            3600 /
-            (PH_INTEGRAL_HOURS *
-              Math.max(0.25, turnover / REFERENCE_TURNOVER_HOURS)),
-        0,
-        phBand * PH_INTEGRAL_REACH,
-      );
+          3600 /
+          (PH_INTEGRAL_HOURS *
+            Math.max(0.25, turnover / REFERENCE_TURNOVER_HOURS));
+      phIntegral = clamp(phIntegral, 0, reach);
+    }
     const co2Most = ports.co2 ? ports.co2.most : 0;
     const co2Gh = Math.min(hcl * CO2_PER_HCL, Math.max(0, co2Most));
     const acidGh = Math.max(0, hcl - (online('co2') ? co2Gh / CO2_PER_HCL : 0));
@@ -323,7 +362,7 @@ export function stepController(
   });
   const demands = perChannel((id) => channels[id].demand);
   return {
-    state: { integral, phIntegral, demands, starved },
+    state: { integral, phIntegral, phHold, demands, starved },
     out: { demands, channels, inhibit, lockout },
   };
 }

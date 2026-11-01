@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { applyAction, newWorld } from '../world';
+import { advance, applyAction, newWorld } from '../world';
 import { onSettledWater } from '../world.test-support';
 import type { World } from '../world';
 import { actionEvents } from '../events/describe-action';
@@ -190,6 +190,30 @@ describe('a hand dose, against Dr Aqualis’s Show dose', () => {
       60,
     );
     expect(r2.charges.map((x) => x.left)).toEqual([r.charges[0].left, 1]);
+  });
+
+  it('while it is fed, the Trio holds its pH integral, and a dilution does not', () => {
+    const before = onSettledWater(newWorld());
+    const fed = advance(
+      applyAction(before, {
+        type: 'hand/dose',
+        pool: 'pool_01',
+        chemical: 'bicarbonate',
+        amount: 25,
+        rate: 1,
+      }),
+      60,
+      10,
+    );
+    expect(fed.aqualis.pool_01.controller.phHold).toBeGreaterThan(0);
+    expect(fed.aqualis.pool_02.controller.phHold).toBe(0);
+    const diluted = advance(
+      applyAction(before, { type: 'hand/dilute', pool: 'pool_01', m3: 10 }),
+      60,
+      10,
+    );
+    expect(diluted.treatment.charges.pool_01.length).toBe(1);
+    expect(diluted.aqualis.pool_01.controller.phHold).toBe(0);
   });
 
   it('without a rate, all of it at once', () => {

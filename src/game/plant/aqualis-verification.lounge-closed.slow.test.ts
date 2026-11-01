@@ -14,7 +14,5 @@ verificationSuite('pool_01', false, {
   'accuracy:aggressive': WHY.acidTakesAlkalinity,
   'loop:alkalinity-high': WHY.alkalinityHighSlow,
   'twin:combined-high': WHY.shockCaustic,
-  'twin:alkalinity-low': WHY.bicarbIntegralUndershoot,
-  'twin:aggressive': WHY.bicarbIntegralUndershoot,
   'loop:scaling': WHY.phIntegralUndershoot,
 });

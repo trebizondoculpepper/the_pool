@@ -7,6 +7,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 ### Fixed
 
 - The macOS desktop build reaches the release again: the Release workflow's upload step used `mapfile`, which the macOS runners' bash 3.2 lacks, so v0.11.0's job failed after packaging; it now reads the file list with a loop, and `gh workflow run release.yml -f tag=vX.Y.Z -f desktop_only=true` rebuilds and attaches only a release's desktop files and checksums, leaving the GitHub release and itch.io alone.
+- Dr Aqualis's bicarbonate no longer leaves the Lounge's pH low for hours: the Trio's pH integral has anti-windup. It is bounded by what its acid and CO₂ can deliver, stops integrating while they are flat out, and holds while a hand dose is being fed (and for a tenth of a turnover after), as an operator dosing by hand would hold the controller. The sample, at the balance tank, sees the feed before it is mixed, and the integral used to wind the acid up against it.
 
 ## [0.11.0] - 2026-11-01
 

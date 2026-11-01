@@ -1462,6 +1462,11 @@ function stepTrios(
           acid: pumpFeedback(pumps.acid, pumpModel(id, 'acid'), pumpsPowered),
           co2: co2Feedback(world.co2.dosers[room], world.co2.connected[room]),
         },
+        // A hand dose's chemical being fed: a known disturbance, the
+        // Trio's pH integral held. Not a dilution, the water's lasting change.
+        feeding: (world.treatment.charges?.[id] ?? []).some(
+          (c) => c.chemical !== 'dilution',
+        ),
       },
       delta,
     );

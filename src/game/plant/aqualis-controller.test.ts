@@ -118,6 +118,88 @@ describe('AUTO, pH’s integral', () => {
   });
 });
 
+describe('AUTO, pH’s anti-windup', () => {
+  // 500 m³ at 166.7 m³/h: a three-hour turnover, so the hold runs on 1080 s.
+  const tail = 0.1 * 3 * 3600;
+  /** `n` steps of 10 s from `s`, the acid delivered as asked. */
+  const steps = (s0: ControllerState, inp: ControllerInputs, n: number) => {
+    let s = s0;
+    let out = stepController(s, inp, 10).out;
+    for (let i = 0; i < n; i++) {
+      const acid = inp.ports.acid && {
+        ...inp.ports.acid,
+        delivering: s.demands.acid * inp.ports.acid.most,
+      };
+      const r = stepController(
+        s,
+        { ...inp, ports: { ...inp.ports, acid } },
+        10,
+      );
+      s = r.state;
+      out = r.out;
+    }
+    return { state: s, out };
+  };
+
+  it('is not wound up while a hand dose is fed, though its proportional part doses', () => {
+    const fed = steps(
+      newController(),
+      inputs({ feeding: true }, { ph: 7.4 }),
+      360,
+    );
+    expect(fed.state.phIntegral).toBe(0);
+    expect(fed.out.demands.acid).toBeGreaterThan(0);
+  });
+
+  it('holds on for a tenth of a turnover after the feed ends, then learns again', () => {
+    const fed = steps(
+      newController(),
+      inputs({ feeding: true }, { ph: 7.4 }),
+      6,
+    );
+    expect(fed.state.phHold).toBeCloseTo(tail, 6);
+    const inTail = steps(fed.state, inputs({}, { ph: 7.4 }), tail / 10 - 2);
+    expect(inTail.state.phIntegral).toBe(0);
+    const after = steps(inTail.state, inputs({}, { ph: 7.4 }), 60);
+    expect(after.state.phHold).toBe(0);
+    expect(after.state.phIntegral).toBeGreaterThan(0);
+  });
+
+  it('may still unwind while held', () => {
+    const learnt = steps(newController(), inputs({}, { ph: 7.4 }), 360).state;
+    const s = steps(learnt, inputs({ feeding: true }, { ph: 7.2 }), 30).state;
+    expect(s.phIntegral).toBeLessThan(learnt.phIntegral);
+  });
+
+  it('is bounded by what the acid online can carry, and not wound past it', () => {
+    // A 2 l/h pump gives 210 g/h; full scale is 750 g/h, a band of 0.3.
+    const small = { ports: { ...PORTS, acid: pump(2) } };
+    const r = steps(newController(), inputs(small, { ph: 7.4 }), 2000);
+    expect(r.state.phIntegral).toBeLessThanOrEqual((0.3 * 210) / 750 + 1e-9);
+    expect(r.out.demands.acid).toBe(1);
+    // Back in band it is not left asking for more than the pump can give.
+    const back = stepController(r.state, inputs(small, { ph: 7.3 }), 10).out;
+    expect(back.demands.acid).toBeLessThanOrEqual(1);
+  });
+
+  it('counts CO₂ online with the acid: it winds on past the acid pump’s most', () => {
+    const acidOnly = { ports: { ...PORTS, acid: pump(2) } };
+    const withCo2 = {
+      ports: { ...PORTS, acid: pump(2), co2: pump(1000, { pulsed: true }) },
+    };
+    const a = steps(newController(), inputs(acidOnly, { ph: 7.4 }), 2000);
+    const b = steps(newController(), inputs(withCo2, { ph: 7.4 }), 2000);
+    expect(b.state.phIntegral).toBeGreaterThan(a.state.phIntegral);
+  });
+
+  it('keeps what it learnt while nothing that lowers the pH is online', () => {
+    const learnt = steps(newController(), inputs({}, { ph: 7.4 }), 360).state;
+    const off = { ports: { ...PORTS, acid: pump(7.5, { mode: 'manual' }) } };
+    const s = steps(learnt, inputs(off, { ph: 7.5 }), 60).state;
+    expect(s.phIntegral).toBe(learnt.phIntegral);
+  });
+});
+
 describe('AUTO', () => {
   it('doses hypochlorite when chlorine is low, more the lower it is', () => {
     const big = { ports: { ...PORTS, hypochlorite: pump(10) } };

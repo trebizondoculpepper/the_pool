@@ -13,9 +13,9 @@ export const WHY = {
   thioAccuracy:
     'the chlorine falls on its own as well, so followed less not, a turnover after the feed, is off the thiosulphate’s aim',
   acidTakesAlkalinity:
-    'the acid pump takes back a quarter or more of the bicarbonate’s alkalinity: fed into the balance tank, the bicarbonate lifts the Trio’s sample, and its pH integral doses acid against it',
-  bicarbIntegralUndershoot:
-    'the bicarbonate fed into the balance tank lifts the Trio’s sample, its pH integral winds up the acid, and with the CO₂ now leaving at a real pool’s pace (mission 118) the pool’s pH sits below its band for hours (7.09 at the least), so it scores worse than not following',
+    'the acid pump takes back a sixth to a fifth of the bicarbonate’s alkalinity: its pH integral is held while a hand dose is fed, but its proportional part doses acid against the pH the bicarbonate lifts at the sample',
+  sampleSeesFeed:
+    'the Trio’s sample, at the balance tank, reads the bicarbonate fed there before it is mixed (pH 7.50, just past the half-band limit), while the pool’s far side stays in band (7.40 at most); the pH integral, held through the feed, no longer pulls the sample down at the cost of the pool afterwards',
   alkalinityHighSlow:
     'left to the acid pump, which works to the pH: the alkalinity comes down only as the CO₂ the acid makes leaves, a round’s score rising as the pH does',
   alkalinityHighOlympic:
@@ -27,7 +27,7 @@ export const WHY = {
   bicarbLiftsPh:
     'the bicarbonate, straight into the closed Olympic, takes a low pH up past the top of its band, and the pH swings back',
   phIntegralUndershoot:
-    'the acid pump’s integral, wound up bringing the pH down, takes it below its band before it unwinds',
+    'the acid pump’s integral, built up bringing the pH down while the pump is not flat out (so no anti-windup acts), takes it below its band before it unwinds: its integral time against the turnover, a tuning decision',
   phHighOlympicSlow:
     'the Olympic’s undersized acid pump takes the pH down too slowly for the bicarbonate to follow within ten rounds',
   dilutionThinsChlorine:
