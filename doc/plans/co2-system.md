@@ -45,7 +45,7 @@ Both take, from the Trio's CO₂ port, its 4–20 mA (4 mA nothing, 20 its most;
 
 The Trio's pH channel asks, at full scale, for 1.5 g of HCl an hour for each m³ entered (`ACID_G_PER_M3`), and shares it CO₂ first, at `CO2_PER_HCL` (44.01 / 36.46, 1.21 g of CO₂ a gram of HCl), up to the CO₂ valve's most, acid taking the rest.
 
-- **The Lounge**: 139 m³ and its tank, about 150 m³: 270 g/h at full scale, so the 300 g/h rotameter takes all of it, the same as the rig's ideal valve (`RIG_DEVICE_MOST.co2`).
+- **The Lounge**: 139 m³ and its tank, about 150 m³: 270 g/h at full scale. Its panel was the 300 g/h solenoid and rotameter (the rig's ideal valve's, `RIG_DEVICE_MOST.co2`); since 2026-11-01 (the owner: "these new designs are much nicer than our old ones, can you replace the CO₂ dosing system in plant 1 & 2") it is the same MF-245C body as the Olympic's on its 0–500 g/h range, order code MF-245C-RG5, the standard range next above 270 g/h (about 4.5 standard l/min of CO₂; Alicat's 5 SLPM and Bronkhorst's g/h ranges are of that order). Its face, rating plate and LCD give its range; its ▲ ▼ step 10 g/h. `WORLD_VERSION` 70 rewrites a save's Lounge doser to it. The solenoid panel stays in the model (`CO2_SOLENOID_PANEL`) and dev58 shows two MFCs, matching the plant rooms.
 - **The Olympic**: 2,500 m³ (not the 150–600 m³ of the brief: `poolVolume('pool_02')`), about 4.9 kg/h at full scale but some 15 kg a day, 0.6 kg/h, on average (mission 109's estimate); the 2 kg/h mass flow controller carries the base load three times over and acid trims the peaks, as the Trio's sharing intends. At 2 kg/h flat out one bank of four lasts some 64 hours before it changes over.
 
 ## The mass flow controller (the owner, 2026-11-01)
