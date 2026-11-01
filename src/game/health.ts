@@ -537,4 +537,9 @@ export const KIND_HEALTH_COVERAGE = {
 export const INFORMATIONAL_INDICATIONS = {
   'makeup-running':
     'the booster set meeting ordinary make-up demand: automatic and expected',
+  // Mission 118: the manifold changing over to its full rack is how a CO₂
+  // supply runs; the spent rack's swap is routine stock, not a fault.
+  // SUPPLY EXHAUSTED, with neither rack left, is the fault.
+  'co2-bank-empty':
+    'a CO₂ rack spent and the manifold changed over to the full one: routine, a delivery is due',
 } as const;

@@ -140,9 +140,9 @@ describe('the Lounge’s Trio’s place', () => {
 });
 
 describe('the Trios’ windows on their annunciators', () => {
-  it('grows the Lounge’s board to 24 windows and the Olympic’s to 30', () => {
-    expect(LOCATION_ANNUNCIATORS.pool_01.alarms).toHaveLength(24);
-    expect(LOCATION_ANNUNCIATORS.pool_02.alarms).toHaveLength(30);
+  it('grows the Lounge’s board to 24 windows and the Olympic’s to 30, and with CO₂ (mission 118) to 32 and 36', () => {
+    expect(LOCATION_ANNUNCIATORS.pool_01.alarms).toHaveLength(32);
+    expect(LOCATION_ANNUNCIATORS.pool_02.alarms).toHaveLength(36);
     for (const w of TRIO_WINDOWS.pool_01)
       expect(LOCATION_ANNUNCIATORS.pool_01.alarms).toContain(w);
     for (const w of [...TRIO_WINDOWS.pool_02, 'dosing-inhibit'])

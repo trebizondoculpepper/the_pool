@@ -1,3 +1,5 @@
+import { CO2_MIMIC_LAMPS, co2MimicState } from './pool-mimics';
+import { co2MimicLamps } from '../../../game/plant/co2-annunciator';
 import type {
   MimicSpec,
   MimicState,
@@ -254,7 +256,11 @@ export const LOUNGE_FILTER_MIMIC: MimicSpec = {
     { text: '+ SERVICE  − BACKWASH', at: [F[1] + 0.3, -0.12], size: 0.45 },
     { text: '+ SERVICE  − BACKWASH', at: [F[2] + 0.3, -0.12], size: 0.45 },
   ],
-  lamps: pumps.flatMap((p) => p.lamps),
+  lamps: [
+    ...pumps.flatMap((p) => p.lamps),
+    // Its CO₂ section, top right (mission 118, decision 10): warnings only.
+    ...CO2_MIMIC_LAMPS([1.0, 0.44]),
+  ],
   readouts: [
     { id: 'f1-flow', at: [F[1] + 0.3, 0.04] },
     { id: 'f2-flow', at: [F[2] + 0.3, 0.04] },
@@ -385,7 +391,7 @@ function loungeFilterMimicStateOf(world: World): MimicState {
     const s = world.motors.starters[tag];
     return { running: s.running, tripped: s.tripped, mode: s.mode };
   };
-  return loungeFilterMimicState(
+  const state = loungeFilterMimicState(
     world.loungeValvePositions,
     loungeFlowsOf(world),
     {
@@ -393,6 +399,13 @@ function loungeFilterMimicStateOf(world: World): MimicState {
       p2: shown(LOUNGE_PUMP_TAGS.p2),
     },
   );
+  return {
+    ...state,
+    lamps: {
+      ...state.lamps,
+      ...co2MimicState({ co2: co2MimicLamps(world.co2, 'plant_pool_01') }),
+    },
+  };
 }
 
 /**
@@ -418,6 +431,22 @@ export function loungeFilterMimicCommand(button: string): WorldAction | null {
   return null;
 }
 
+/** The CO₂ section's lamps, as the overlay names them. */
+const CO2_LAMP_CONDITIONS: Record<
+  string,
+  { label: string; condition: string }
+> = {
+  'co2-pressure-low': {
+    label: 'CO₂ PRESS LOW',
+    condition:
+      'the CO₂ line’s pressure low, or the room’s wall port giving its panel too little (its NO SUPPLY PRESSURE)',
+  },
+  'co2-change-cylinders': {
+    label: 'CHANGE CYLS',
+    condition: 'a CO₂ rack spent at the manifold: its flag red, a swap due',
+  },
+};
+
 /**
  * What each of the board's parts is, for the information overlay (prompt
  * 068): a button by the action its press sends (`loungeFilterMimicCommand`,
@@ -433,6 +462,14 @@ export const LOUNGE_FILTER_MIMIC_PARTS = {
     return action && label ? { kind: 'command', label, action } : undefined;
   },
   lamp(lamp: string): PartDescription | undefined {
+    const co2 = CO2_LAMP_CONDITIONS[lamp];
+    if (co2)
+      return {
+        kind: 'indicator',
+        label: co2.label,
+        condition: co2.condition,
+        lit: (w) => loungeFilterMimicOf(w).lamps[lamp] ?? false,
+      };
     const valve = /^(.*)-(open|shut)$/.exec(lamp);
     const pump = /^(p[12])-(run|trip|local)$/.exec(lamp);
     const condition = valve

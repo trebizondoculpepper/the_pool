@@ -6,6 +6,7 @@ import {
   trioWindows,
 } from './aqualis-annunciator';
 import type { PoolId } from './pools';
+import { CO2_WINDOWS, CO2_WINDOW_TEXT, co2Windows } from './co2-annunciator';
 import { serviceAvailable } from './services';
 import { loungeFlowsOf } from './lounge-valves';
 import { loungeFilterDp } from './lounge-filters';
@@ -54,8 +55,12 @@ export const LOUNGE_ALARMS = [
   // Its Dr Aqualis Trio's (mission 114, `aqualis-annunciator.ts`), the
   // board grown from 16 windows to 24, two of them spare ways.
   ...TRIO_WINDOWS.pool_01,
+  // Its CO₂ system's (mission 118, `co2-annunciator.ts`), the board grown
+  // from 24 windows to 32, three of them spare ways.
+  ...CO2_WINDOWS,
   'spare-1',
   'spare-2',
+  'spare-3',
 ] as const;
 export type LoungeAlarmId = (typeof LOUNGE_ALARMS)[number];
 
@@ -78,8 +83,10 @@ export const LOUNGE_ALARM_TEXT: Record<LoungeAlarmId, string> = {
   'day-tank-low': 'DAY TANK\nLOW',
   'power-fail': 'ROOM POWER\nFAIL',
   ...TRIO_WINDOW_TEXT,
+  ...CO2_WINDOW_TEXT,
   'spare-1': '',
   'spare-2': '',
+  'spare-3': '',
 };
 
 /** The balance tank's low alarm, a share of its float level's volume. */
@@ -155,6 +162,7 @@ export function loungeAlarms(world: World): LoungeAlarmId[] {
   if (low) alarms.push('day-tank-low');
   if (!powered) alarms.push('power-fail');
   alarms.push(...trioWindows(world.aqualis, 'pool_01'));
+  alarms.push(...co2Windows(world.co2, 'plant_pool_01'));
   return alarms;
 }
 

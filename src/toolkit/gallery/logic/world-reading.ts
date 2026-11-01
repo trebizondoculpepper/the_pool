@@ -1,3 +1,4 @@
+import { co2MimicLamps } from '../../../game/plant/co2-annunciator';
 import { withIntake } from '../../../game/plant/site-intake';
 import { loungeFilterDp } from '../../../game/plant/lounge-filters';
 import { loungeFlowsOf } from '../../../game/plant/lounge-valves';
@@ -180,6 +181,9 @@ function readPlant(world: World, pool: PoolId): PlantReading {
       boilers: boilersFiring ? 18 : 3,
     },
     alarms,
+    ...(pool === 'pool_01' || pool === 'pool_02'
+      ? { co2: co2MimicLamps(world.co2, `plant_${pool}`) }
+      : {}),
   };
   return reading;
 }

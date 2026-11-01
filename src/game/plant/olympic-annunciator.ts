@@ -6,6 +6,7 @@ import {
   trioWindows,
 } from './aqualis-annunciator';
 import { serviceAvailable } from './services';
+import { CO2_WINDOWS, CO2_WINDOW_TEXT, co2Windows } from './co2-annunciator';
 import { dayTankLowAt } from './lounge-annunciator';
 import { plantReadingOf } from '../../toolkit/gallery/logic/world-reading';
 import type { AlarmId } from '../../toolkit/gallery/logic/control-room-demo';
@@ -50,8 +51,10 @@ export const OLYMPIC_ALARMS = [
   // CONTROLLER FAULT in the old spare way, the board grown from 24 windows
   // to 30, two of them spare ways (as boards were bought with).
   ...TRIO_WINDOWS.pool_02,
+  // Its CO₂ system's (mission 118, `co2-annunciator.ts`), the board grown
+  // from 30 windows to 36, one of them a spare way.
+  ...CO2_WINDOWS,
   'spare',
-  'spare-2',
 ] as const;
 export type OlympicAlarmId = (typeof OLYMPIC_ALARMS)[number];
 
@@ -80,8 +83,8 @@ export const OLYMPIC_ALARM_TEXT: Record<OlympicAlarmId, string> = {
   ozone: 'OZONE\nIN AIR',
   'power-fail': 'ROOM POWER\nFAIL',
   ...TRIO_WINDOW_TEXT,
+  ...CO2_WINDOW_TEXT,
   spare: '',
-  'spare-2': '',
 };
 
 /** Free chlorine's band, mg/l, and pH's, as the main board's (`world-reading.ts`). */
@@ -127,6 +130,9 @@ export function olympicAlarms(world: World): OlympicAlarmId[] {
     'cl-high': read.freeChlorine > CHLORINE.high,
     ph: read.ph < PH.low || read.ph > PH.high,
     ...Object.fromEntries(trio.map((w) => [w, true])),
+    ...Object.fromEntries(
+      co2Windows(world.co2, 'plant_pool_02').map((w) => [w, true]),
+    ),
   };
   return OLYMPIC_ALARMS.filter((id) => {
     const from = FROM_MAIN[id];

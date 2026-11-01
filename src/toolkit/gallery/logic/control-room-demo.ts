@@ -51,6 +51,11 @@ export interface PlantReading {
   };
   /** The annunciator windows whose alarm is in (`ANNUNCIATOR_ALARMS`). */
   alarms: readonly AlarmId[];
+  /**
+   * Its CO₂ section's two warning lamps (mission 118, decision 10), for a
+   * pool with CO₂ dosing: CO₂ PRESSURE LOW and CHANGE CYLINDERS.
+   */
+  co2?: { pressureLow: boolean; changeCylinders: boolean };
 }
 
 /** The annunciator's windows, in order: each names its fault and the room. */

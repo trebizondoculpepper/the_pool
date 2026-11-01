@@ -29,6 +29,30 @@ const r = (value: number, unit: string, name: string, places = 0): Reading => ({
   places,
 });
 
+// ---- The CO₂ section, on each pool's water mimic (mission 118) -------------
+
+/** Its two amber warning lamps, stacked from `at`. */
+export const CO2_MIMIC_LAMPS = (at: Point) => [
+  {
+    id: 'co2-pressure-low',
+    at: pt(at[0], at[1]),
+    colour: 'amber' as const,
+    label: 'CO₂ PRESS LOW',
+  },
+  {
+    id: 'co2-change-cylinders',
+    at: pt(at[0], at[1] - 0.09),
+    colour: 'amber' as const,
+    label: 'CHANGE CYLS',
+  },
+];
+
+/** What its lamps show, from the pool's reading (`co2MimicLamps`). */
+export const co2MimicState = (p: Pick<PlantReading, 'co2'>) => ({
+  'co2-pressure-low': p.co2?.pressureLow ?? false,
+  'co2-change-cylinders': p.co2?.changeCylinders ?? false,
+});
+
 // ---- The main pool's water circuit --------------------------------------
 
 export const MAIN_POOL_MIMIC: MimicSpec = {
@@ -91,8 +115,13 @@ export const MAIN_POOL_MIMIC: MimicSpec = {
     { symbol: 'uv', at: pt(0.56, 0.18), size: 0.06, label: 'UV' },
     { symbol: 'hx', at: pt(0.74, 0.18), size: 0.08, label: 'HX' },
     { symbol: 'valve', at: pt(0.88, 0.36), size: 0.05, label: 'DOSE' },
+    // Its CO₂ dosing (mission 118): the panel's valve on the return.
+    { symbol: 'valve', at: pt(0.8, 0.36), size: 0.04, label: 'CO₂' },
   ],
-  labels: [{ text: 'FROM BOILERS', at: pt(0.92, -0.26) }],
+  labels: [
+    { text: 'FROM BOILERS', at: pt(0.92, -0.26) },
+    { text: 'CO₂ SUPPLY', at: pt(1.02, 0.12), size: 0.6 },
+  ],
   lamps: [
     { id: 'p1-run', at: pt(-0.53, -0.08), colour: 'green', label: 'RUN' },
     { id: 'p1-trip', at: pt(-0.47, -0.08), colour: 'red' },
@@ -107,6 +136,9 @@ export const MAIN_POOL_MIMIC: MimicSpec = {
     { id: 'dosing', at: pt(0.88, 0.28), colour: 'green' },
     { id: 'makeup', at: pt(-0.95, -0.14), colour: 'blue', label: 'MAKE-UP' },
     { id: 'level-low', at: pt(-0.69, -0.14), colour: 'red', label: 'LOW' },
+    // Its CO₂ section (mission 118, decision 10): the line's pressure and
+    // the manifold's flags, warnings only; nothing is reset from here.
+    ...CO2_MIMIC_LAMPS(pt(1.02, 0.07)),
   ],
   buttons: [
     { id: 'p1-start', at: pt(-0.535, -0.39), colour: 'green', legend: 'START' },
@@ -163,6 +195,7 @@ export function mainPoolState(p: PlantReading, pumps?: PumpsShown): MimicState {
       dosing: p.dosing,
       makeup: p.alarms.includes('makeup-running'),
       'level-low': p.balance < 0.3,
+      ...co2MimicState(p),
     },
     readouts: {
       tank: {
