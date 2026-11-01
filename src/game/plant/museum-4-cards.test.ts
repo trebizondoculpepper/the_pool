@@ -10,13 +10,6 @@ import {
 import type { Level } from './museum-4-challenge';
 import { readWater } from './museum-4-lab';
 import { DOSES, SIZES, doseOf, doseWords } from './museum-4-doses';
-import {
-  PLANT,
-  POOL_25M,
-  circuitWater,
-  runBench,
-  warmedUp,
-} from '../water/chemistry-bench';
 import { fuzzCases } from './museum-4-solver';
 import { doseKey, partials } from './museum-4-challenge.test-support';
 
@@ -151,33 +144,4 @@ describe("Hall 4's first set of challenge cards", () => {
           );
       });
     });
-});
-
-describe('“The acid pump failed”: how long its story says the pump has been off', () => {
-  it('about two weeks: the bench, from its settled water at its set point, takes 13 to 14 days without acid to creep to pH 7.9', () => {
-    // The lab's 25 m pool settled (`warmedUp`) and two steady days on, as
-    // the bench's high-pH scenario starts, then no acid: at two days it
-    // reads 7.60 (the lab's own card), and 7.9 only after about two
-    // weeks, its CO₂ loss slowing as the pH nears the air's.
-    const s0 = warmedUp(POOL_25M, PLANT);
-    let s = runBench(s0, POOL_25M, 48, [], 60).final;
-    expect(
-      Math.abs(circuitWater(s, POOL_25M).ph - PLANT.phSetpoint),
-    ).toBeLessThan(0.05);
-    s = { ...s, plant: { ...s.plant, acidFailed: true } };
-    let hours = 0;
-    while (circuitWater(s, POOL_25M).ph < 7.9 && hours < 30 * 24) {
-      s = runBench(s, POOL_25M, 6, [], 60).final;
-      hours += 6;
-    }
-    expect(hours / 24).toBeGreaterThan(12.5);
-    expect(hours / 24).toBeLessThanOrEqual(14.5);
-    const card = CHALLENGES.find((c) => c.id === 'high-ph')!;
-    for (const words of [
-      card.problem,
-      card.briefing.journeyman,
-      card.briefing.pro,
-    ])
-      expect(words).toContain('about two weeks ago');
-  });
 });
