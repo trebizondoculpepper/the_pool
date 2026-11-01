@@ -238,7 +238,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 - [x] **Fire-collar fixing tabs no longer flicker** (done 2026-10-25; `3108b5a`): corrected the mirrored tab geometry so its raised outer faces render rather than the backs against the wall; checked all six wall normals.
 - [ ] **Lounge plant room door to the main corridor:** investigate the owner’s report at `?room=plant_pool_01&x=-0.23&y=-1.71&z=3.93&yaw=179.0&pitch=-10.7&zoom=1.000`. The corridor loads and renders when its joint is forced open, but the normal door interaction and crossing have not yet been verified.
 - [ ] **The reception, the changing village and the showers, put back as new sections** (the owner, 2026-10-23), with the reception's **speed gates** ([039](doc/prompts/039-reception-speed-gates.md), reference photographs in `doc/research/reception-turnstiles/`): glass swing-wing turnstiles, free-flow, opening as the walker passes through; their appearance and their motion modelled in a dev room first.
-- [ ] **A ceiling dome CCTV camera** (seen beside the halo panel in `doc/research/lighting/01-direct-indirect-halo-panel.jpg`; [040](doc/prompts/040-direct-indirect-panel.md)): a possible later item, under a fictional maker.
+- [ ] **A ceiling dome CCTV camera** (seen beside the halo panel in `doc/research/lighting/01-direct-indirect-halo-panel.jpg`; [040](doc/prompts/040-direct-indirect-panel.md)): a possible later item, under a fictional maker. The owner (2026-11-01): the dome cameras are eventually to be cameras that work, so think the design through first (what they see, where their pictures go, how a player uses them) before placing any; the choices made now have implications later.
 
 ### Lighting features
 
