@@ -3,8 +3,10 @@ import type { MimicSpec } from '../../../components/industrial-control/logic/mim
 import type { FlowState } from '../../../components/industrial-control/logic/mimic-chaser';
 import { createMimicBoard } from '../../../components/industrial-control/views/mimic-board';
 import { createLoungeFilterMimic } from '../../views/lounge-filter-mimic';
+import { createEnergyMimic } from '../../views/energy-mimic';
 import { createScenarioStore } from '../../../save/world-store';
-import { newWorld } from '../../../../game/world';
+import { advance, newWorld } from '../../../../game/world';
+import { clockStopped, paused } from '../../../controls/logic/paused';
 import { createChemControlPrototype } from '../../../components/plant/views/chem-control-prototype';
 import {
   createDirtyWaterMimic,
@@ -135,6 +137,26 @@ export const EXHIBITS: readonly PlantExhibit[] = [
         object: mimic.group,
         parts: mimic.parts,
         update: mimic.update,
+        dispose: () => store.stop(),
+      };
+    },
+  },
+  {
+    title: 'Heat energy mimic',
+    reference:
+      'Mission 120: a Penfold mimic, 2.4 × 1.2 m, each facility’s heat from the LTHW ring (each pool’s water and hall air, the museum, reception, changing, DHW), its share, the total, and the ring’s supply, flow and return, worked against this room’s own world, before the old control room carries it',
+    size: { w: 2.5, d: 0.08, h: 1.3, mount: 'wall', y: 1.45 },
+    build(kit): LiveExhibit {
+      // A world of its own, settled for ten minutes, its clock the game's.
+      const store = createScenarioStore(advance(newWorld(), 600, 10));
+      const mimic = createEnergyMimic(kit, store);
+      return {
+        object: mimic.object,
+        parts: mimic.parts,
+        update(delta) {
+          store.run(!clockStopped.value && !paused.value);
+          mimic.update(delta);
+        },
         dispose: () => store.stop(),
       };
     },
