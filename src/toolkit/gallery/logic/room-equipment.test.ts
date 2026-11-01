@@ -211,6 +211,12 @@ describe.each(EQUIPPED_ROOMS)('%s', (room) => {
       // old 2.0 m (2026-11-01).
       const readOnly =
         room === 'control_room' && p.item.key === 'readout-board';
+      // The control room's upper row of mimics (the owner, 2026-11-01):
+      // read-only copies, read from the floor, high over the lower row.
+      const upper =
+        room === 'control_room' &&
+        UPPER_MIMICS.some((m) => m.key === p.item.key);
+      if (upper) continue;
       expect(y - floorY, p.item.label).toBeLessThanOrEqual(
         readOnly ? 2.3 : 2.0,
       );
@@ -222,8 +228,75 @@ import { EQUIPMENT_OPENING, PLANT_ROOM, plantRoomPlan } from './plant-rooms';
 import {
   ANNUNCIATOR_FRAME_GAP,
   REACH_HALF,
+  UPPER_MIMICS,
+  UPPER_MIMIC_BOTTOM,
+  UPPER_MIMIC_RESERVED,
   roomEquipment,
 } from './room-equipment';
+
+describe('the control room’s upper row of mimics (the owner, 2026-11-01)', () => {
+  const { placed, box } = layoutRoom('control_room')!;
+  const along = (p: { side?: string; x: number; z: number }) =>
+    p.side === 'north' || p.side === 'south' ? p.x : p.z;
+  const span = (wall: string, s: number, w: number, h: number) => ({
+    wall,
+    s0: s - w / 2,
+    s1: s + w / 2,
+    y0: UPPER_MIMIC_BOTTOM,
+    y1: UPPER_MIMIC_BOTTOM + h,
+  });
+  const upper = placed.filter((p) =>
+    UPPER_MIMICS.some((m) => m.key === p.item.key),
+  );
+
+  it('hangs every board on its wall, over the lower row and under the control bus', () => {
+    expect(upper).toHaveLength(UPPER_MIMICS.length);
+    const lowerTop = Math.max(
+      ...placed
+        .filter((p) => p.item.mount === 'wall' && !upper.includes(p))
+        .map((p) => p.y + p.item.h / 2),
+    );
+    for (const p of upper) {
+      expect(p.y - p.item.h / 2, p.item.label).toBeCloseTo(UPPER_MIMIC_BOTTOM);
+      expect(p.y - p.item.h / 2).toBeGreaterThan(lowerTop);
+      expect(
+        Math.abs(along(p)) + p.item.w / 2,
+        p.item.label,
+      ).toBeLessThanOrEqual(
+        (p.side === 'north' || p.side === 'south' ? box.w : box.d) / 2,
+      );
+    }
+  });
+
+  it('keeps the reserved spans free, and the boards clear of each other', () => {
+    const spans = [
+      ...upper.map((p) => span(p.side as string, along(p), p.item.w, p.item.h)),
+      ...UPPER_MIMIC_RESERVED.map((r) => span(r.wall, r.along, r.w, r.h)),
+    ];
+    spans.forEach((a, i) =>
+      spans.slice(i + 1).forEach((b) => {
+        const clash =
+          a.wall === b.wall &&
+          a.s0 < b.s1 - 1e-9 &&
+          b.s0 < a.s1 - 1e-9 &&
+          a.y0 < b.y1 &&
+          b.y0 < a.y1;
+        expect(clash, JSON.stringify([a, b])).toBe(false);
+      }),
+    );
+    // Nothing else of the room's on a reserved span's wall at its height.
+    for (const r of UPPER_MIMIC_RESERVED)
+      for (const p of placed.filter((q) => q.item.mount === 'wall')) {
+        const s = along(p);
+        const clash =
+          p.side === r.wall &&
+          s - p.item.w / 2 < r.along + r.w / 2 &&
+          r.along - r.w / 2 < s + p.item.w / 2 &&
+          p.y + p.item.h / 2 > UPPER_MIMIC_BOTTOM;
+        expect(clash, `${p.item.label} on ${r.name}`).toBe(false);
+      }
+  });
+});
 
 describe('PL1-CP3, the lounge plant room’s annunciator (the owner, 2026-10-31)', () => {
   const { placed, box } = layoutRoom('plant_pool_01')!;

@@ -78,7 +78,9 @@ export const BRIDGE_CONSOLES: readonly BridgeConsole[] = [
   panel('bather-welfare-counsellor.panel', 'BWC-01'),
   panel('east-wall.panel', 'CR-MP1', 'wall'),
   panel('west-wall.panel', 'CR-CP2', 'wall'),
-  panel('water-science-officer.panel', 'CR-CP3'),
+  // The Lounge's Trio, the water's chemistry: CR-CP3, the chart
+  // recorders it showed, are gone (the owner, 2026-11-01).
+  panel('water-science-officer.panel', 'PL1-CP2'),
   panel('drainage-officer.panel', 'WH-T2'),
   panel('loading-bay-chief.panel', 'LB-CAB1'),
   panel('operations-officer.panel', 'WH-CP3'),

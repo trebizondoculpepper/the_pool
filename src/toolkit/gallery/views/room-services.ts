@@ -19,7 +19,7 @@ import { ROOM_SWITCH_FUSES } from '../../../game/plant/installed-feeders';
 import { serviceAvailable } from '../../../game/plant/services';
 import type { ServiceRoom } from '../../../game/plant/services';
 import { roomWorld } from '../../save/world-store';
-import { layoutRoom, FEEDER_ISOLATOR } from '../logic/room-equipment';
+import { layoutRoom, feederIsolatorAt } from '../logic/room-equipment';
 import { roomServiceRoutes } from '../logic/room-services';
 import {
   createSwitchFuse,
@@ -179,12 +179,29 @@ export function createRoomServices(
       })
     : null;
   if (layout && fuse) {
-    fuse.group.position.set(
-      -layout.box.w / 2,
-      floorY + FEEDER_ISOLATOR.y,
-      layout.box.d / 2 - FEEDER_ISOLATOR.fromSouth,
-    );
-    fuse.group.rotation.y = Math.PI / 2;
+    // On the west wall, or the control room's on its south (`feederIsolatorAt`).
+    const at = feederIsolatorAt(room, layout.box);
+    const hw = layout.box.w / 2;
+    const hd = layout.box.d / 2;
+    const facing = {
+      west: Math.PI / 2,
+      east: -Math.PI / 2,
+      north: 0,
+      south: Math.PI,
+    };
+    if (at.wall === 'west' || at.wall === 'east')
+      fuse.group.position.set(
+        at.wall === 'west' ? -hw : hw,
+        floorY + at.y,
+        at.along,
+      );
+    else
+      fuse.group.position.set(
+        at.along,
+        floorY + at.y,
+        at.wall === 'north' ? -hd : hd,
+      );
+    fuse.group.rotation.y = facing[at.wall];
     fuse.group.name = `${room} room supply switch-fuse`;
     fuse.group.userData.assetId = ROOM_SWITCH_FUSES[room].assetId;
     const fuseNode = schematicNodeOfKind(room, 'switch-fuse');

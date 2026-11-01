@@ -1100,22 +1100,6 @@ export const PARODY_SPECS: readonly ParodySpec[] = [
     ],
   },
   {
-    original: 'THE CHART RECORDERS',
-    title: 'TEMPORAL DATA ARCHIVE',
-    code: 'CR-CP3',
-    size: { w: 1.8, h: 0.9 },
-    pages: [
-      {
-        name: 'CHARTS',
-        columns: [
-          [{ kind: 'trend', name: 'POOL TEMPERATURES' }],
-          [{ kind: 'trend', name: 'CHLORINE AND PH' }],
-          [{ kind: 'trend', name: 'HALL AIR · 7 DAYS' }],
-        ],
-      },
-    ],
-  },
-  {
     original: 'THE READOUT BOARD (LED INDICATORS AND AMMETERS)',
     title: 'SYSTEMS STATUS BOARD',
     code: 'CR-CP4',

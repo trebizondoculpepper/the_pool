@@ -1439,7 +1439,8 @@ export function roomEquipment(
             1.75,
             { walls: ['east', 'west'], over: true },
           ),
-          wall('chart-recorders', 'Chart recorders', 1.3, 0.2, 0.6, 1.5),
+          // CR-CP3, the chart recorders, gone (the owner, 2026-11-01: "a
+          // horrible design"); the kind stays, on the bench and in dev rooms.
           wall('readout-board', 'Readout board', 1.3, 0.12, 0.55, 1.5),
           wall('fire-repeater', 'Fire alarm repeater', 0.34, 0.1, 0.26, 1.5, {
             walls: ['east'],
@@ -1516,16 +1517,131 @@ export const FEEDER_ISOLATOR = { fromSouth: 1.1, y: 1.5 } as const;
 /** Where the control room's mimics hang: their middles, m up (the owner, 2026-11-01: all at one height), the highest the reach rule allows. */
 const MIMIC_Y = 2.0;
 
-/** The wall space the feeder isolator takes, kept clear of other things. */
-export function feederIsolatorSpace(box: RoomBox): Footprint {
-  const z = box.d / 2 - FEEDER_ISOLATOR.fromSouth;
+/** Where a room's feeder isolator hangs: the wall, its middle along it (z on the east and west, x on the north and south) and up it, m. */
+export interface FeederIsolatorPlace {
+  wall: Side;
+  along: number;
+  y: number;
+}
+
+/**
+ * Where a room's feeder isolator hangs: on its west wall by the entrance
+ * (`FEEDER_ISOLATOR`), but for the control room's, CR-SF1, moved to the
+ * south wall west of the corridor door, clear of its swing (the owner,
+ * 2026-11-01: a small room with a lot to put in it).
+ */
+export function feederIsolatorAt(
+  room: string,
+  box: { d: number },
+): FeederIsolatorPlace {
+  if (room === 'control_room') return { wall: 'south', along: -1.45, y: 1.5 };
   return {
-    minX: -box.w / 2,
-    maxX: -box.w / 2 + 0.25,
-    minZ: z - 0.2,
-    maxZ: z + 0.2,
+    wall: 'west',
+    along: box.d / 2 - FEEDER_ISOLATOR.fromSouth,
+    y: FEEDER_ISOLATOR.y,
   };
 }
+
+/**
+ * Which way along its wall a switch-fuse's local +x runs, turned to face
+ * into the room: its glands at `along + sign × x`.
+ */
+export const feederAlongSign = (wall: Side) =>
+  wall === 'west' || wall === 'south' ? -1 : 1;
+
+/** The wall space the feeder isolator takes, kept clear of other things. */
+export function feederIsolatorSpace(box: RoomBox, room = ''): Footprint {
+  const { wall, along } = feederIsolatorAt(room, box);
+  const hw = box.w / 2;
+  const hd = box.d / 2;
+  if (wall === 'west' || wall === 'east') {
+    const x = wall === 'west' ? -hw : hw - 0.25;
+    return { minX: x, maxX: x + 0.25, minZ: along - 0.2, maxZ: along + 0.2 };
+  }
+  const z = wall === 'north' ? -hd : hd - 0.25;
+  return { minX: along - 0.2, maxX: along + 0.2, minZ: z, maxZ: z + 0.25 };
+}
+
+/**
+ * The control room's upper row of mimics (the owner, 2026-11-01: "a 2nd
+ * row of mimics high up ... so we can have all of our mimics from all of
+ * the plant rooms here"): the plant rooms' boards the lower row lacks, as
+ * read-only copies of the world (their controls, and every selector and
+ * reset, stay on their plant rooms' boards). Their bottoms 0.2 m over the
+ * lower row's tops (2.6 m), so 2.8 m up; the battens and the control bus
+ * run over them. Placed by hand after packing, as the pit board is: the
+ * packer judges overlap in plan only, and these hang over the lower row.
+ * Each `along` is its middle along its wall (x on the north, z on the
+ * east and west); its board's own size and 5 cm of frame round it.
+ */
+export const UPPER_MIMIC_BOTTOM = 2.8;
+export const UPPER_MIMICS: readonly {
+  key: string;
+  label: string;
+  w: number;
+  h: number;
+  wall: Side;
+  along: number;
+}[] = [
+  // The lounge pool's filters (PL1-CP1's fascia), over the pit board.
+  {
+    key: 'mimic-lounge-filter',
+    label: 'Mimic: lounge pool filters',
+    w: 2.5,
+    h: 1.3,
+    wall: 'north',
+    along: -1.3,
+  },
+  // The boiler house's status and heat output (BH-MP2), over the heating.
+  {
+    key: 'mimic-boiler-heat',
+    label: 'Mimic: boiler status and heat output',
+    w: 2.5,
+    h: 1.9,
+    wall: 'north',
+    along: 1.4,
+  },
+  // The boiler house's gas (BH-MP1), round the corner from its heat.
+  {
+    key: 'mimic-gas',
+    label: 'Mimic: boiler house gas',
+    w: 1.9,
+    h: 1.1,
+    wall: 'east',
+    along: -3.8,
+  },
+  // The jacuzzi's water circuit, over the main pool's board.
+  {
+    key: 'mimic-jacuzzi',
+    label: 'Mimic: jacuzzi water circuit',
+    w: 1.3,
+    h: 0.82,
+    wall: 'west',
+    along: 0.25,
+  },
+];
+
+/**
+ * Upper-row spans kept free for boards to come, nothing else hung there
+ * (`room-equipment.test.ts` checks): mission 120's energy board, a
+ * standard 2.4 × 1.2 m board in its frame (agreed with its agent, who
+ * will say where it goes; this is its place until then).
+ */
+export const UPPER_MIMIC_RESERVED: readonly {
+  name: string;
+  wall: Side;
+  along: number;
+  w: number;
+  h: number;
+}[] = [
+  {
+    name: 'Mission 120 energy mimic',
+    wall: 'east',
+    along: -1.3,
+    w: 2.5,
+    h: 1.3,
+  },
+];
 
 /** A room's machines, placed: a retired room's frozen layout (`retired-rooms.ts`), or its own, laid out now. */
 export function layoutRoom(room: string) {
@@ -1539,11 +1655,19 @@ export function layoutRoomLive(room: string) {
   // Its notices and signs, laid out with its machines (`building-signs.ts`).
   const r = {
     ...found,
-    // The room's feeder isolator is on its west wall by the entrance
-    // (`views/room-services.ts`, `FEEDER_ISOLATOR`): nothing goes there.
+    // The room's feeder isolator is on its west wall by the entrance, the
+    // control room's on its south (`feederIsolatorAt`): nothing goes there.
     box: {
       ...found.box,
-      keepClear: [...found.box.keepClear, feederIsolatorSpace(found.box)],
+      keepClear: [
+        ...found.box.keepClear,
+        feederIsolatorSpace(found.box, room),
+        // The control room's west-wall space, where CR-SF1 hung, still
+        // kept: freed, it set the packer reshuffling the room's walls (and
+        // failing an annunciator), and it is the space the owner wants
+        // for what comes next.
+        ...(room === 'control_room' ? [feederIsolatorSpace(found.box)] : []),
+      ],
     },
     items: [
       ...found.items,
@@ -1616,6 +1740,12 @@ export function layoutRoomLive(room: string) {
         // board over it is.
         access: { minX: -2.7, maxX: 0.1, minZ: -3.7, maxZ: -2.8 },
       });
+    // The upper row, read from the floor below them (`UPPER_MIMICS`).
+    for (const m of UPPER_MIMICS) {
+      const item = wall(m.key, m.label, m.w, 0.08, m.h, 0);
+      const at = put(r.box, item, { wall: m.wall, along: m.along });
+      layout.placed.push({ ...at, y: UPPER_MIMIC_BOTTOM + m.h / 2 });
+    }
   }
   return { ...r, ...layout };
 }

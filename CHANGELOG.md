@@ -8,12 +8,14 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 - The boilers' sounds, heard in the boiler house (the owner, 2026-11-01): a pump hum from a boiler's call to the end of its run-on, its fan through purge, ignition and firing, its igniter ticking until the flame is proved, a burner roar in four steps of firing rate, and a whumpf as the flame lights; worked out from its controller's state alone (`boiler-sounds.ts`), each boiler sounding from beside its casing and falling silent with the room out of hearing (`boiler-sounder.ts`).
 - Research on how a UK leisure centre's boiler house is controlled (sequence controller, staging, lead rotation, ignition sequence) with a proposal for the game's boiler sequencer and boiler sounds: `doc/research/boiler-house-control.md`.
+- The old control room has a second, upper row of mimic boards, 2.8 m up over the first: read-only copies of the lounge pool's filters (CR-MP6), the boiler house's boiler status and heat output (CR-MP7) and gas (CR-MP8), and the jacuzzi's water circuit (CR-MP9), with a span on the east wall kept for mission 120's energy board; the room's lights rise to 5 m and its control bus over the new row.
 
 ### Changed
 
 - The control room's readout board, CR-CP4, hangs on the west wall behind the operator's desk and its BBC Micro, read from the aisle; the staff noticeboard moves to the engineer's office's east wall (the owner, 2026-11-01: the control room's walls are wanted for mimics).
 - The old control room's mimics hang in one line, all 1.2 m tall and centred 2.0 m up, the highest the reach rule allows, their bottoms level with the operator's desk; its readout board, CR-CP4, is 30 cm higher, over the BMS outstation (the owner, 2026-11-01).
 - The wet hall's Fresh Water Distribution and Pit Inflow Sources mimics are the standard board's size, 2.4 × 1.2 m like the Lounge pool filters mimic, their layouts drawn closer, and their readouts show the digits alone, without the one-line LCD under each (the owner, 2026-11-01: they were huge for very little information); a mimic may now leave out its readouts' legends (`readoutLegends: false`).
+- CR-SF1, the control room's supply switch-fuse, moves to the south wall west of the corridor door, its supply and feed run down to it there; every other room's stays on its west wall.
 
 ### Fixed
 
@@ -25,6 +27,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 ### Removed
 
 - The control room's BMS outstation, CR-CP5, which did nothing (bound to nothing in the world), and the bridge's unused parody page of it (the owner, 2026-11-01).
+- CR-CP3, the control room's chart recorders; the bridge's Water Science Officer console now shows the Lounge's Dr Aqualis Trio (PL1-CP2) in their place.
 
 ## [0.13.0] - 2026-11-01
 

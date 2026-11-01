@@ -14,14 +14,18 @@ import {
  * control room's wall. Each binds its buttons to the same world commands
  * and shows the same world, so the two always agree; neither carries a
  * pump's HAND · OFF · AUTO or RESET, which are on PL1-CP1's doors alone.
+ * The control room's upper-row copy, CR-MP6, hangs out of reach, and is
+ * shown only (`readOnly`): its buttons light but work nothing.
  */
 export function createLoungeFilterMimic(
   kit: PanelKit,
   store: WorldStore | null,
+  readOnly = false,
 ) {
   const mimic = createMimicBoard(kit, LOUNGE_FILTER_MIMIC, {
     maker: 'penfold',
     press: (button) => {
+      if (readOnly) return;
       const action = loungeFilterMimicCommand(button);
       if (action) store?.dispatch(action);
     },

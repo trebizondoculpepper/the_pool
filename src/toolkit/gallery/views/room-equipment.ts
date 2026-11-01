@@ -174,6 +174,7 @@ import {
   createWorldWaterMeter,
 } from './wet-hall';
 import { EXHIBITS as BOILER } from '../rooms/plant/boiler';
+import { createUpperMimic } from './control-room-upper-mimics';
 import {
   bindBoilerSupply,
   createLiveBoilerCascade,
@@ -572,6 +573,12 @@ function modelFor(
   bindSupplies();
   if (kind === 'boiler-cascade' && arg)
     return createLiveBoilerCascade(kit, (Number(arg) - 1) * 2);
+  // The control room's upper row: read-only copies of the plant rooms'
+  // boards (`UPPER_MIMICS`), the boiler house's not its own exhibits.
+  if (room === 'control_room') {
+    const upper = createUpperMimic(kit, kind);
+    if (upper) return upper;
+  }
   if (kind === 'mimic-air') return createAirMimic(kit);
   // The wet hall's machines, bound to the world's wet hall.
   if (kind === 'booster-set') return createWorldBoosterSet(kit);

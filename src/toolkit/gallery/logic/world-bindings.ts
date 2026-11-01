@@ -70,6 +70,9 @@ export const WORLD_BINDINGS: Readonly<Record<string, WorldBinding>> = {
   'mimic-wet': world('the wet hall'),
   'mimic-wet-fresh': world('the wet hall’s four fresh-water branches'),
   'mimic-wet-dirty': world('the wet hall’s four pit-inflow branches'),
+  // The control room's upper row (the owner, 2026-11-01).
+  'mimic-lounge-filter': world('the lounge pool’s filters, pumps and valves'),
+  'mimic-jacuzzi': world('the jacuzzi’s circulation and its pool'),
   'make-up-flowmeter': world('the make-up water’s flow'),
   'make-up-recorder': world(
     'the make-up water: its flow, its total and its week’s record',

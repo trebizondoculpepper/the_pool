@@ -225,6 +225,10 @@ export function startShellRoom(canvas: HTMLCanvasElement, id: ShellRoomId) {
         // lights a metre higher, all at one level (the owner, 2026-10-26).
         floorHoles: channels,
         ...(id === 'loading_bay' ? { battenHeight: 4.1 } : {}),
+        // The control room's over its upper row of mimics, whose tallest
+        // top is 4.7 m, and the control bus over them at 4.85 m (the
+        // owner, 2026-11-01: move the trunking and the lights higher).
+        ...(id === 'control_room' ? { battenHeight: 5.0 } : {}),
         note: spec.note,
         seed: SEEDS[id],
       });

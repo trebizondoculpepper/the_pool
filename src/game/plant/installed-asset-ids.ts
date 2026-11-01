@@ -330,6 +330,24 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-1193',
     tag: 'CR-MP5',
   },
+  // The upper row of mimics (the owner, 2026-11-01), clear of the
+  // corridor flowmeters' generated run from asset-1194 and PL2-CP5's 1300.
+  'control_room|mimic-lounge-filter|Mimic: lounge pool filters': {
+    assetId: 'asset-1301',
+    tag: 'CR-MP6',
+  },
+  'control_room|mimic-boiler-heat|Mimic: boiler status and heat output': {
+    assetId: 'asset-1302',
+    tag: 'CR-MP7',
+  },
+  'control_room|mimic-gas|Mimic: boiler house gas': {
+    assetId: 'asset-1303',
+    tag: 'CR-MP8',
+  },
+  'control_room|mimic-jacuzzi|Mimic: jacuzzi water circuit': {
+    assetId: 'asset-1304',
+    tag: 'CR-MP9',
+  },
   'control_room|annunciator|Alarm annunciator': {
     assetId: 'asset-0085',
     tag: 'CR-CP2',
@@ -346,14 +364,12 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0150',
     tag: 'CR-CP9',
   },
-  'control_room|chart-recorders|Chart recorders': {
-    assetId: 'asset-0086',
-    tag: 'CR-CP3',
-  },
   'control_room|readout-board|Readout board': {
     assetId: 'asset-0087',
     tag: 'CR-CP4',
   },
+  // The chart recorders, CR-CP3 (asset-0086, retired): "a horrible
+  // design" (the owner, 2026-11-01).
   // The BMS outstation, CR-CP5 (asset-0088, retired): it did nothing,
   // bound to nothing in the world (the owner, 2026-11-01).
   'control_room|fire-repeater|Fire alarm repeater': {

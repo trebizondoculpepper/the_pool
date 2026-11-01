@@ -1,6 +1,10 @@
 import { ROOM_SERVICES } from '../../../game/plant/services';
 import type { ServiceRoom, Utility } from '../../../game/plant/services';
-import { FEEDER_ISOLATOR, layoutRoom } from './room-equipment';
+import {
+  feederAlongSign,
+  feederIsolatorAt,
+  layoutRoom,
+} from './room-equipment';
 import { cabinetBusbar } from './cabinet-pipes';
 import {
   SWITCH_FUSE,
@@ -136,10 +140,14 @@ export function roomServiceRoutes(
   // A spa's plant room has its busbar along that wall, and its switch-fuse
   // is fed from it and feeds its cabinet's isolator: those runs are its
   // cabinet's services' (`cabinet-pipes.ts`).
-  const feederS = box.d / 2 - FEEDER_ISOLATOR.fromSouth;
+  // The control room's is on its south wall (`feederIsolatorAt`).
+  const feeder = feederIsolatorAt(room, box);
+  const feederS = feeder.along;
+  const fw = feeder.wall;
+  const sign = feederAlongSign(fw);
   if (!cabinetBusbar(room)) {
     const [gIn, gOut] = SWITCH_FUSE.glands.x;
-    const top = FEEDER_ISOLATOR.y + glandTop(SWITCH_FUSE);
+    const top = feeder.y + glandTop(SWITCH_FUSE);
     routes.push(
       {
         name: `${room} room supply`,
@@ -147,8 +155,8 @@ export function roomServiceRoutes(
         kind: 'steel-screwed',
         od: 0.0337,
         points: [
-          onWall(box, 'west', feederS - gIn, y, STANDOFF),
-          onWall(box, 'west', feederS - gIn, top, STANDOFF),
+          onWall(box, fw, feederS + sign * gIn, y, STANDOFF),
+          onWall(box, fw, feederS + sign * gIn, top, STANDOFF),
         ],
         to: 'feeder',
       },
@@ -158,8 +166,8 @@ export function roomServiceRoutes(
         kind: 'steel-screwed',
         od: 0.0337,
         points: [
-          onWall(box, 'west', feederS - gOut, top, STANDOFF),
-          onWall(box, 'west', feederS - gOut, y, STANDOFF),
+          onWall(box, fw, feederS + sign * gOut, top, STANDOFF),
+          onWall(box, fw, feederS + sign * gOut, y, STANDOFF),
         ],
         to: 'room',
       },
@@ -207,21 +215,22 @@ export function roomServiceRoutes(
           y1: topOf(p, i),
         };
       });
-    // The room's switch-fuse hangs on the west wall too.
+    // The room's switch-fuse hangs on its wall too.
     panels.push({
       i: -1,
-      side: 'west',
+      side: fw,
       s0: feederS - SWITCH_FUSE.w / 2,
       s1: feederS + SWITCH_FUSE.w / 2,
-      y0: FEEDER_ISOLATOR.y - SWITCH_FUSE.h / 2,
-      y1: FEEDER_ISOLATOR.y + SWITCH_FUSE.h / 2,
+      y0: feeder.y - SWITCH_FUSE.h / 2,
+      y1: feeder.y + SWITCH_FUSE.h / 2,
     });
     const used: Record<Side, number[]> = {
       north: [],
       south: [],
       east: [],
-      west: [feederS],
+      west: [],
     };
+    used[fw].push(feederS);
     // The place along its wall for a drop from the conduit down to `low`,
     // nearest `centre` within [lo, hi]: clear of every other panel it
     // would pass in front of, and of the other drops.

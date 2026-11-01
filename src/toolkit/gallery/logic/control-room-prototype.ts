@@ -1163,7 +1163,7 @@ export const DUTIES: Record<string, string> = {
 
 /** The rear stations, along the aft walls on the stage: their side, and where along it (a share). */
 export const REAR_STATIONS = [
-  { role: 'WATER SCIENCE OFFICER', side: 4, at: 0.45, panel: 'CR-CP3' },
+  { role: 'WATER SCIENCE OFFICER', side: 4, at: 0.45, panel: 'PL1-CP2' },
   { role: 'DRAINAGE OFFICER', side: 4, at: 0.6, panel: 'WH-T2' },
   { role: 'LOADING BAY CHIEF', side: 3, at: 0.4, panel: 'LB-CAB1' },
   { role: 'OPERATIONS OFFICER', side: 3, at: 0.55, panel: 'WH-CP3' },

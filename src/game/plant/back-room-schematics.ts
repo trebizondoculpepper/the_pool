@@ -371,12 +371,24 @@ const instruments = [
     'Fresh Water Distribution mimic',
   ),
   machine('mimic-wet-dirty', 'mimic-wet-dirty', 'Pit Inflow Sources mimic'),
+  // The upper row (the owner, 2026-11-01): the plant rooms' other boards.
+  machine(
+    'mimic-lounge-filter',
+    'mimic-lounge-filter',
+    'Mimic: lounge pool filters',
+  ),
+  machine(
+    'mimic-boiler-heat',
+    'mimic-boiler-heat',
+    'Mimic: boiler status and heat output',
+  ),
+  machine('mimic-gas', 'mimic-gas', 'Mimic: boiler house gas'),
+  machine('mimic-jacuzzi', 'mimic-jacuzzi', 'Mimic: jacuzzi water circuit'),
   machine('annunciator', 'annunciator', 'Alarm annunciator'),
   machine('annunciator-pl1', 'annunciator', 'Lounge pool annunciator'),
   // The Olympic's and the wet hall's (mission 099).
   machine('annunciator-pl2', 'annunciator', 'Olympic pool annunciator'),
   machine('annunciator-wh', 'annunciator', 'Wet hall annunciator'),
-  machine('chart-recorders', 'chart-recorders', 'Chart recorders'),
   machine('readout-board', 'readout-board', 'Readout board'),
   machine('fire-repeater', 'fire-repeater', 'Fire alarm repeater'),
   machine('cctv', 'cctv', 'CCTV monitor'),

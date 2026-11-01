@@ -69,7 +69,6 @@ export const PANEL_PAGE_ORDER: readonly { code: string; short: string }[] = [
   { code: 'BWC-01', short: 'WELFARE' },
   { code: 'CR-MP1', short: 'MAIN POOL' },
   { code: 'CR-CP2', short: 'ANNUNCIATOR' },
-  { code: 'CR-CP3', short: 'RECORDERS' },
   { code: 'WH-T2', short: 'PIT PUMPS' },
   { code: 'LB-CAB1', short: 'FILL CABINET' },
   { code: 'WH-CP3', short: 'DISTRIBUTION' },
@@ -242,7 +241,7 @@ export const ROLE_PAGES: Readonly<Record<string, readonly string[]>> = {
     'display.small-pools',
   ],
   'water-science-officer': [
-    'cr-cp3',
+    'pl1-cp2',
     'schematics.water-science-officer',
     'schematics.disinfection-tactical',
     'overview.olympic',

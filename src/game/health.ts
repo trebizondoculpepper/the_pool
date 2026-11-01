@@ -461,6 +461,8 @@ export const KIND_HEALTH_COVERAGE = {
   'mimic-wet': 'not health: a display of the wet hall',
   'mimic-wet-fresh': 'not health: a display of fresh water distribution',
   'mimic-wet-dirty': 'not health: a display of pit inflow sources',
+  'mimic-lounge-filter': 'not health: a display of the lounge pool’s filters',
+  'mimic-jacuzzi': 'not health: a display of the jacuzzi’s circuit',
   'sewer-monitor': 'not health: a record of what went to sewer',
   'make-up-recorder': 'not health: a record of the water used',
   'make-up-flowmeter':

@@ -971,20 +971,6 @@ function distributionPanel(): PanelBinding {
   };
 }
 
-/** CR-CP3: the chart recorders, as trends of the world's water and air. */
-function chartRecorders(): PanelBinding {
-  return {
-    code: 'CR-CP3',
-    model: { room: 'control_room', node: 'chart-recorders' },
-    trends: {
-      'POOL TEMPERATURES': (c) =>
-        share(c.world.pools.pool_02.temperature, 20, 40),
-      'CHLORINE AND PH': (c) => share(c.world.pools.pool_02.freeChlorine, 0, 4),
-      'HALL AIR · 7 DAYS': (c) => share(c.world.pools.pool_02.hallAir, 20, 40),
-    },
-  };
-}
-
 /** WH-T2: the backwash pit's pump panel in the wet hall (its selectors and duty local). */
 function pitPumps(): PanelBinding {
   const AT = 'the pit pump panel in the wet hall';
@@ -1228,7 +1214,6 @@ export const BRIDGE_BINDINGS: Readonly<Record<string, PanelBinding>> =
       annunciator(),
       centralControl(),
       distributionPanel(),
-      chartRecorders(),
       pitPumps(),
       fillCabinet(),
       assistantDutyManager(),

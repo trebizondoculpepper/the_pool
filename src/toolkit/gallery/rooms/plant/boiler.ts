@@ -97,6 +97,16 @@ const house = {
   fouling: [0, 0.35, 0.1, 0.25, 0.15, 0.3],
 };
 
+/**
+ * The boiler house's boilers and gas as its room last stepped them, read
+ * only: for the control room's copies of its mimics (the owner,
+ * 2026-11-01), which show what the boiler house's boards show.
+ */
+export const boilerHouseShown = (): {
+  readonly boilers: readonly BoilerState[];
+  readonly gas: GasHouse;
+} => house;
+
 // A development handle for the console: the boiler house's state.
 if (typeof window !== 'undefined')
   (window as unknown as { boilerHouse: unknown }).boilerHouse = house;

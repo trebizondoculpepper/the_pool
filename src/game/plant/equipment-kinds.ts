@@ -355,6 +355,20 @@ export const PLACED_KINDS = {
     class: 'plant',
     purpose: 'Shows the boiler-house gas safety circuit.',
   },
+  'mimic-lounge-filter': {
+    type: 'Mimic panel',
+    status: 'none',
+    code: 'MP',
+    class: 'plant',
+    purpose: 'Shows the lounge pool’s filters, pumps and valves.',
+  },
+  'mimic-jacuzzi': {
+    type: 'Mimic panel',
+    status: 'none',
+    code: 'MP',
+    class: 'plant',
+    purpose: 'Shows the jacuzzi’s water circuit.',
+  },
   'mimic-boiler-heat': {
     type: 'Mimic panel',
     status: 'none',

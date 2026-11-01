@@ -1,7 +1,12 @@
 import { isControlDevice } from './control-bus';
 import { describe, expect, it } from 'vite-plus/test';
 import { ROOM_SERVICES } from '../../../game/plant/services';
-import { FEEDER_ISOLATOR, layoutRoom } from './room-equipment';
+import {
+  FEEDER_ISOLATOR,
+  feederAlongSign,
+  feederIsolatorAt,
+  layoutRoom,
+} from './room-equipment';
 import {
   SWITCH_FUSE,
   glandTop,
@@ -82,22 +87,44 @@ describe('current plant-room service connections', () => {
       const routes = roomServiceRoutes(room);
       const supply = routes.find((r) => r.to === 'feeder')!;
       const feed = routes.find((r) => r.to === 'room')!;
-      const middle = box.d / 2 - FEEDER_ISOLATOR.fromSouth;
-      // Turned onto the west wall, its local x is the room's -z.
+      const place = feederIsolatorAt(room, box);
+      const sign = feederAlongSign(place.wall);
       const [gIn, gOut] = SWITCH_FUSE.glands.x;
       for (const [at, g] of [
         [supply.points[supply.points.length - 1], gIn],
         [feed.points[0], gOut],
       ] as const) {
-        // On a gland: on the west wall's line at its depth, along the
-        // wall at the gland, on its top.
-        expect(at[0], room).toBeCloseTo(-box.w / 2 + SWITCH_FUSE.glands.z, 6);
-        expect(at[2], room).toBeCloseTo(middle - g, 6);
-        expect(at[1], room).toBeCloseTo(
-          FEEDER_ISOLATOR.y + glandTop(SWITCH_FUSE),
-          6,
-        );
+        // On a gland: on its wall's line at its depth, along the wall at
+        // the gland, on its top.
+        const across = place.wall === 'west' || place.wall === 'east';
+        const [deep, along] = across ? [at[0], at[2]] : [at[2], at[0]];
+        const face =
+          place.wall === 'west'
+            ? -box.w / 2 + SWITCH_FUSE.glands.z
+            : place.wall === 'east'
+              ? box.w / 2 - SWITCH_FUSE.glands.z
+              : place.wall === 'north'
+                ? -box.d / 2 + SWITCH_FUSE.glands.z
+                : box.d / 2 - SWITCH_FUSE.glands.z;
+        expect(deep, room).toBeCloseTo(face, 6);
+        expect(along, room).toBeCloseTo(place.along + sign * g, 6);
+        expect(at[1], room).toBeCloseTo(place.y + glandTop(SWITCH_FUSE), 6);
       }
+    }
+  });
+
+  it('keeps every room’s switch-fuse on its west wall by the entrance, but the control room’s on its south wall', () => {
+    for (const room of Object.keys(ROOM_SERVICES)) {
+      const { box } = layoutRoom(room)!;
+      const place = feederIsolatorAt(room, box);
+      if (room === 'control_room')
+        expect(place).toEqual({ wall: 'south', along: -1.45, y: 1.5 });
+      else
+        expect(place, room).toEqual({
+          wall: 'west',
+          along: box.d / 2 - FEEDER_ISOLATOR.fromSouth,
+          y: FEEDER_ISOLATOR.y,
+        });
     }
   });
 

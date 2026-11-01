@@ -88,7 +88,11 @@ describe('a room’s control bus', () => {
         const ownPort = machinePorts(p.item).some(
           (q) => q.service === 'control',
         );
-        expect(len(stubs[0].points), key).toBeLessThan(ownPort ? 10 : 3);
+        // Where the bus runs high over an upper row of boards (the control
+        // room's, the owner, 2026-11-01), a desk's conduit rises that far.
+        expect(len(stubs[0].points), key).toBeLessThan(
+          ownPort ? 10 : Math.max(3, bus.y - 1),
+        );
       }
     });
 
