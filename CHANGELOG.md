@@ -6,7 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
-- The boilers' sounds, ready to be wired in (the owner, 2026-11-01): a pump hum from a boiler's call to the end of its run-on, its fan through purge, ignition and firing, its igniter ticking until the flame is proved, a burner roar in four steps of firing rate, and a whumpf as the flame lights; worked out from its controller's state alone (`boiler-sounds.ts`).
+- The boilers' sounds, heard in the boiler house (the owner, 2026-11-01): a pump hum from a boiler's call to the end of its run-on, its fan through purge, ignition and firing, its igniter ticking until the flame is proved, a burner roar in four steps of firing rate, and a whumpf as the flame lights; worked out from its controller's state alone (`boiler-sounds.ts`), each boiler sounding from beside its casing and falling silent with the room out of hearing (`boiler-sounder.ts`).
 - Research on how a UK leisure centre's boiler house is controlled (sequence controller, staging, lead rotation, ignition sequence) with a proposal for the game's boiler sequencer and boiler sounds: `doc/research/boiler-house-control.md`.
 
 ### Changed

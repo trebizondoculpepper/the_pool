@@ -1,4 +1,5 @@
 import { markComponent } from '../../../components/core/views/component-identity';
+import { createBoilerSounder } from '../../../components/plant/views/boiler-sounder';
 import { computed, signal } from '@preact/signals-core';
 import { clockStopped, paused } from '../../../controls/logic/paused';
 import type { LiveExhibit, PlantExhibit } from './exhibit';
@@ -161,6 +162,17 @@ export function createLiveBoilerCascade(
     panels: panels.map((panel) => panel.group),
     first: first + 1,
   });
+  // Each boiler's sounds, from its casing (`boiler-sounder.ts`; the owner,
+  // 2026-11-01).
+  const sounders = cascade.boilers.map((boiler, offset) => {
+    const sounder = createBoilerSounder(kit, `B-50${first + offset + 1}`);
+    // Beside it, not in it: the boiler's own body stays what is inspected.
+    sounder.object.position.copy(boiler.position);
+    sounder.object.position.y += 0.8;
+    boiler.parent?.add(sounder.object);
+    parts.add(sounder);
+    return sounder;
+  });
   cascade.boilers.forEach((boiler, offset) => {
     const tag = `B-50${first + offset + 1}`;
     const index = first + offset;
@@ -211,6 +223,10 @@ export function createLiveBoilerCascade(
           delta,
         );
       }
+      sounders.forEach((sounder, offset) => {
+        sounder.show(house.boilers[first + offset]);
+        sounder.update(delta);
+      });
       // Each display says GAS while no gas reaches its boiler, firing or not.
       panels.forEach((panel, offset) =>
         panel.show(
