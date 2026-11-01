@@ -376,3 +376,24 @@ it('turns a thing held up to look at to show its front, upright, until it is tur
   expect(turn()).toBeGreaterThan(0.5);
   f.handling.dispose();
 });
+
+it('draws what is held over the world, and its own materials again once let go', () => {
+  const f = cornerFixture();
+  const own = f.object.material;
+  expect(f.handling.use(0, 0)).toBe(true);
+  f.handling.update(1 / 60);
+  const held = f.object.material as MeshBasicMaterial;
+  expect(held).not.toBe(own);
+  expect(held.customProgramCacheKey()).toContain('held-over-world');
+  // Held up to look at: a click neither places nor drops it.
+  f.handling.inspect(true);
+  expect(f.handling.resolve(0, 0).answer).toBeNull();
+  expect(f.handling.use(0, 0)).toBe(true);
+  expect(f.handling.holding()).toBe(true);
+  f.handling.inspect(false);
+  expect(f.handling.use(0, 0)).toBe(true);
+  expect(f.handling.holding()).toBe(false);
+  f.handling.update(1 / 60);
+  expect(f.object.material).toBe(own);
+  f.handling.dispose();
+});

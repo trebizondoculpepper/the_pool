@@ -9,7 +9,7 @@ import {
   Vector3,
 } from 'three';
 import { assertDropProfile } from '../logic/drop-profile';
-import type { Object3D, PerspectiveCamera } from 'three';
+import type { Material, Object3D, PerspectiveCamera } from 'three';
 import type { createPortableBoard } from '../logic/portable-board';
 import { createBoardFall } from '../logic/portable-board';
 import type { CarryAnswer } from '../logic/use-cue';
@@ -80,6 +80,34 @@ export interface DropPlacement {
 const INSPECT_SCALE = { min: 0.3, max: 2 } as const;
 /** A held thing's turn, in the eye's frame, that shows the eye its front (+z) with its top (+y) up. */
 const UPRIGHT_TO_EYE = new Quaternion();
+
+/**
+ * Where a held thing's depth is squeezed to, at the very front of the
+ * depth range (mission 117): drawn over the world, as a first-person game
+ * draws the hands, so it never clips through a wall or shelf it is carried
+ * against, while keeping its own faces in order.
+ */
+const HELD_DEPTH = { scale: 0.02, front: 0.98 } as const;
+
+/**
+ * A copy of `material` that draws over the world: its vertices' depth
+ * squeezed into the front of the range, after whatever its own shader
+ * patch does.
+ */
+function overWorld(material: Material): Material {
+  const copy = material.clone();
+  const own = material.onBeforeCompile.bind(material);
+  copy.onBeforeCompile = (shader, renderer) => {
+    own(shader, renderer);
+    shader.vertexShader = shader.vertexShader.replace(
+      /}\s*$/,
+      `  gl_Position.z = gl_Position.z * ${HELD_DEPTH.scale.toFixed(3)} - gl_Position.w * ${HELD_DEPTH.front.toFixed(3)};\n}`,
+    );
+  };
+  const key = material.customProgramCacheKey.bind(material);
+  copy.customProgramCacheKey = () => `${key()}|held-over-world`;
+  return copy;
+}
 
 /** Shared first-person use behaviour, with no input bindings of its own. */
 export function createObjectHandling(
@@ -188,6 +216,33 @@ export function createObjectHandling(
   // walker turns it, it eases to face the eye, upright. A portable's
   // front is its own +z and its top its own +y.
   let facing = false;
+  // The held thing's own materials while it is drawn over the world
+  // (`overWorld`), to put back when it is let go.
+  let drawnOver: {
+    object: Object3D;
+    originals: Map<Mesh, Material | Material[]>;
+  } | null = null;
+  const drawOver = (object: Object3D | null) => {
+    if (drawnOver?.object === object) return;
+    if (drawnOver) {
+      for (const [mesh, original] of drawnOver.originals) {
+        const copies = mesh.material;
+        mesh.material = original;
+        for (const m of Array.isArray(copies) ? copies : [copies]) m.dispose();
+      }
+      drawnOver = null;
+    }
+    if (!object) return;
+    const originals = new Map<Mesh, Material | Material[]>();
+    object.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      originals.set(child, child.material);
+      child.material = Array.isArray(child.material)
+        ? child.material.map(overWorld)
+        : overWorld(child.material);
+    });
+    drawnOver = { object, originals };
+  };
   const cameraRotation = new Quaternion();
   const worldRotation = new Quaternion();
   const worldPosition = new Vector3();
@@ -490,6 +545,9 @@ export function createObjectHandling(
    * possible or not; a fixed one, or nothing, is not the hands'.
    */
   function resolve(x: number, y: number): HandsResolution {
+    // Held up to look at: nothing is placed or dropped, and no cue says
+    // otherwise, until it is back in the hand (mission 117).
+    if (held && inspecting) return { answer: null, run: () => true };
     if (held) {
       const object = held.object;
       const portable = records.get(object)!.portable;
@@ -641,6 +699,7 @@ export function createObjectHandling(
         if (held?.object === object) held = null;
         records.delete(object);
       }
+      drawOver(held?.object ?? null);
       if (held) {
         camera.getWorldQuaternion(cameraRotation);
         // Its front to the eye, upright: its frame the camera's own.
@@ -771,6 +830,7 @@ export function createObjectHandling(
       }
     },
     dispose() {
+      drawOver(null);
       for (const [object, record] of records) record.parent.attach(object);
       records.clear();
       falling.clear();
