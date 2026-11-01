@@ -16,6 +16,11 @@ import type { Object3D } from 'three';
 import { partAudio } from '../../components/core/audio/part-audio';
 import { devPortals, devWalls } from '../logic/dev-room-links';
 import { BRANDS } from '../../components/core/logic/brands';
+import {
+  BRAND_PANEL,
+  STAND_OFF,
+  brandsRoomLayout,
+} from '../logic/brands-room-layout';
 import { METRE } from '../../components/core/logic/units';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { createSectionBoard } from '../../components/core/views/signage';
@@ -38,57 +43,16 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 
-const FLOOR = { minX: -12, maxX: 12, minZ: -7, maxZ: 7 };
 const CEILING = 3.6;
-/** Each brand's board, metres, and the height of its middle. */
-const PANEL = { w: 2.1, h: 1.5, y: 1.6 };
-/** Where boards hang: along a wall (its centre line), facing in. */
-interface Hang {
-  x: number;
-  z: number;
-  facing: number;
-  off: number;
-}
-const WALL_OFF = 0.15 + 0.06;
-// Numbered in order walking round: along the north wall from the west,
-// down the east end, back along the south wall, up the west end, each
-// run left to right as it is seen.
-const ALONG = [-9.6, -4.8, 0, 4.8, 9.6];
-// The north wall, clear of portals, takes one more.
-const NORTH = [-10, -6, -2, 2, 6, 10];
-const ENDS = [-4.5, -1.5, 1.5];
-// Nine, so every brand has a board (thirty-four, with Veldkamp,
-// 2026-11-01; Meridale retired to make room, 2026-10-31), a board's
-// width and half a metre apart.
-const MIDDLE = Array.from({ length: 9 }, (_, i) => -10.5 + i * 2.625);
-/** How far each face of a freestanding board stands off its middle. */
-const STAND_OFF = 0.03;
-const HANGS: Hang[] = [
-  ...NORTH.map((x) => ({ x, z: FLOOR.minZ, facing: 0, off: WALL_OFF })),
-  // The ends keep clear of the portals near their south corners.
-  ...ENDS.map((z) => ({
-    x: FLOOR.maxX,
-    z,
-    facing: -Math.PI / 2,
-    off: WALL_OFF,
-  })),
-  ...[...ALONG]
-    .reverse()
-    .map((x) => ({ x, z: FLOOR.maxZ, facing: Math.PI, off: WALL_OFF })),
-  ...[...ENDS].reverse().map((z) => ({
-    x: FLOOR.minX,
-    z,
-    facing: Math.PI / 2,
-    off: WALL_OFF,
-  })),
-  // The pool trade's brands and those after, on nine freestanding
-  // double-sided boards down the middle of the room: their south faces
-  // west to east, then their north faces east to west.
-  ...MIDDLE.map((x) => ({ x, z: 0, facing: 0, off: STAND_OFF })),
-  ...[...MIDDLE]
-    .reverse()
-    .map((x) => ({ x, z: 0, facing: Math.PI, off: STAND_OFF })),
-];
+// A board for every brand, round the walls and down the middle, the room
+// as long as the middle row needs (thirty-four brands, a 30 m room, from
+// Veldkamp, 2026-11-01): `brands-room-layout.ts`.
+const {
+  floor: FLOOR,
+  middle: MIDDLE,
+  hangs: HANGS,
+} = brandsRoomLayout(BRANDS.length);
+const PANEL = BRAND_PANEL;
 
 /**
  * Dev8, Brands and Logos: the companies of the world of the VX3 and the
@@ -121,8 +85,11 @@ export function startBrandsRoom(canvas: HTMLCanvasElement) {
   ceiling.rotation.x = Math.PI / 2;
   ceiling.position.y = CEILING;
   room.add(ceiling);
-  for (const x of [-8, 0, 8])
+  // A pair of lamps every 8 m or so down the room's length.
+  const lampRows = Math.max(3, Math.round(W / 8));
+  for (let i = 0; i < lampRows; i++)
     for (const z of [-3.5, 3.5]) {
+      const x = FLOOR.minX + ((i + 0.5) * W) / lampRows;
       const lamp = new PointLight('#fff6ea', 10, 11 * m);
       lamp.position.set(x * m, (CEILING - 0.25) * m, z * m);
       scene.add(lamp);

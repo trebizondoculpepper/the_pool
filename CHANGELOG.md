@@ -30,6 +30,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- Dev8, Brands and Logos, takes Veldkamp as the owner described it (2026-11-01): Veldkamp Gas Systems B.V., a highly regarded Dutch gas handling equipment company founded in 1969 (mass flow controllers, regulators, gas panels and valves for industry and the lab). The room is laid out from the brand count (`brands-room-layout.ts`) and is now 30 m long, not 24, so the end walls' boards stand clear of the middle row.
 - A first run starts on the Medium graphics preset (the owner, 2026-11-01), with Medium's own effects, wherever the game is opened from; a save from before the presets keeps High, the look it was playing.
 - The HUD's icons redrawn as filled shapes (the owner, 2026-11-01): the view link as a map application's fat pin, (in noclip too), the screenshot as a stylised camera, and a new gear and torch (`hud-icons.ts`); the emoji and the ▣ are gone.
 - Hall 4's pool says what it is and holds (the owner, 2026-11-01): stencilled SWIMMING POOL instead of IDEAL, with its water, 470 m³ pool + 30 m³ tank = 500 m³, so visitors can work out their own doses; its balancing tank reads BALANCE TANK, 30 m³, part of the pool's water.

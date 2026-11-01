@@ -599,19 +599,22 @@ export const BRANDS: readonly Brand[] = [
     type: 'sans',
   },
   {
-    // The Olympic's CO₂ mass flow controller's maker (the owner,
-    // 2026-11-01): a Dutch maker of thermal mass flow instruments, after
-    // Bronkhorst, from rural Gelderland. Our own invention; the owner may
-    // rename it, here only.
+    // A Dutch gas handling equipment company, founded in 1969 and highly
+    // regarded (the owner, 2026-11-01): mass flow meters and controllers,
+    // regulators, gas panels, valves and fittings for industrial and
+    // laboratory gases, from rural Gelderland, after Bronkhorst. It makes
+    // the Olympic's CO₂ mass flow controller, the MF-245C. Our own
+    // invention.
     id: 'veldkamp',
-    name: 'Veldkamp Massflow B.V.',
+    name: 'Veldkamp Gas Systems B.V.',
     wordmark: 'VELDKAMP',
     tagline: 'Every gram counted',
-    founded: 1984,
+    founded: 1969,
     country: 'Netherlands',
     makes:
-      'Thermal mass flow meters and controllers for gases and liquids: the MF series',
-    promise: 'A flow measured by its mass, held to its set point, gram by gram',
+      'Mass flow controllers, regulators, gas panels and valves for industry and the lab',
+    promise:
+      'The instruments the world’s laboratories calibrate against, since 1969',
     mark: 'flowsquare',
     colours: ['#8a9096', '#1f5fa8', '#111315'],
     type: 'sans',

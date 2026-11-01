@@ -46,6 +46,14 @@ describe('the brands', () => {
     }
   });
 
+  it('keep Veldkamp as the owner described it: Dutch, gas handling, 1969', () => {
+    const veldkamp = brandById('veldkamp');
+    expect(veldkamp.founded).toBe(1969);
+    expect(veldkamp.country).toBe('Netherlands');
+    expect(veldkamp.wordmark).toBe('VELDKAMP');
+    expect(veldkamp.makes).toMatch(/mass flow/i);
+  });
+
   it('find each brand by its id, as a device names its maker', () => {
     for (const brand of BRANDS) expect(brandById(brand.id)).toBe(brand);
   });
