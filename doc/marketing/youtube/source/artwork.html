@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>The Pool · YouTube artwork</title>
+    <style>
+      @font-face {
+        font-family: Antonio;
+        src: url(../../../../src/toolkit/components/core/assets/fonts/Antonio-Variable.ttf);
+        font-weight: 100 700;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: #061c30;
+      }
+      .banner {
+        width: 2560px;
+        height: 1440px;
+        position: relative;
+        overflow: hidden;
+        color: #fff;
+      }
+      .scene,
+      .veil {
+        position: absolute;
+        inset: 0;
+      }
+      .scene {
+        background-size: cover;
+        background-position: center;
+      }
+      .veil {
+        background: linear-gradient(
+          180deg,
+          #00192a18 0%,
+          #00162818 29%,
+          #001525a6 39%,
+          #001525db 64%,
+          #00152532 78%,
+          #00152515 100%
+        );
+      }
+      .safe {
+        position: absolute;
+        left: 508px;
+        top: 508px;
+        width: 1544px;
+        height: 424px;
+        display: flex;
+        align-items: center;
+      }
+      .mark {
+        display: block;
+        width: 306px;
+        height: 306px;
+        flex: none;
+        filter: drop-shadow(0 13px 16px #00111bc0);
+      }
+      .copy {
+        min-width: 0;
+        margin-left: 42px;
+      }
+      h1 {
+        margin: 0;
+        font:
+          700 194px/1 Antonio,
+          Impact,
+          sans-serif;
+        letter-spacing: 5px;
+        white-space: nowrap;
+        -webkit-text-stroke: 7px #031b30;
+        paint-order: stroke fill;
+        text-shadow:
+          0 11px 0 #1dabcd,
+          0 19px 18px #000a;
+      }
+      p {
+        margin: 27px 0 0 8px;
+        font:
+          550 50px/1.12 Antonio,
+          Impact,
+          sans-serif;
+        letter-spacing: 2px;
+        color: #f6c324;
+        text-transform: uppercase;
+        white-space: nowrap;
+        text-shadow: 0 4px 8px #00111bcc;
+      }
+      #banner-cutaway .scene {
+        background-image: url(pool-cutaway.png);
+      }
+      #banner-cutaway .safe {
+        padding-left: 10px;
+      }
+      #banner-section .scene {
+        background-image: url(plant-section.png);
+      }
+      #banner-section .veil {
+        background: linear-gradient(
+          180deg,
+          #00152600 0%,
+          #00152644 30%,
+          #001526bb 43%,
+          #001526e5 61%,
+          #00152630 78%,
+          #00152600 100%
+        );
+      }
+      #banner-section .safe {
+        display: block;
+        text-align: center;
+        padding-top: 10px;
+      }
+      #banner-section h1 {
+        font-size: 225px;
+      }
+      #banner-section p {
+        margin: 22px 0 0;
+        font-size: 55px;
+      }
+      #banner-section .rule {
+        width: 210px;
+        height: 8px;
+        background: #f6c324;
+        margin: 21px auto 0;
+        box-shadow: 0 3px 10px #00111baa;
+      }
+      #banner-caustics .scene {
+        background-image: url(../../itch_io/the-pool-background-caustics-2560x1600.jpg);
+        background-position: center 42%;
+      }
+      #banner-caustics .veil {
+        background:
+          linear-gradient(90deg, #03182abf, #03182ab0 52%, #03182abf),
+          linear-gradient(180deg, #00152611, #00152666);
+      }
+      #banner-caustics .safe {
+        padding-left: 9px;
+      }
+      .avatar {
+        width: 800px;
+        height: 800px;
+        position: relative;
+        overflow: hidden;
+        display: grid;
+        place-items: center;
+      }
+      .avatar .ring {
+        position: absolute;
+        inset: 29px;
+        border-radius: 50%;
+        border: 6px solid #4dd5e9;
+        box-shadow:
+          0 0 0 11px #00121e88,
+          inset 0 0 35px #00121e55;
+      }
+      .avatar img {
+        position: relative;
+        width: 630px;
+        height: 616px;
+        filter: drop-shadow(0 15px 18px #00111b88);
+      }
+      #avatar-navy {
+        background: radial-gradient(
+          circle at 50% 35%,
+          #0d4766 0,
+          #052b47 44%,
+          #031b31 76%
+        );
+      }
+      #avatar-navy .ring {
+        border-color: #80dbed;
+      }
+      #avatar-cyan {
+        background: radial-gradient(
+          circle at 50% 34%,
+          #55d9eb 0,
+          #1daecc 57%,
+          #087799 100%
+        );
+      }
+      #avatar-cyan .ring {
+        border-color: #fff;
+        box-shadow:
+          0 0 0 10px #05334c77,
+          inset 0 0 28px #00405b77;
+      }
+    </style>
+  </head>
+  <body>
+    <section
+      class="banner"
+      id="banner-cutaway"
+      aria-label="The Pool, cutaway banner"
+    >
+      <div class="scene"></div>
+      <div class="veil"></div>
+      <div class="safe">
+        <img
+          class="mark"
+          src="../../../../resources/images/title/the-pool-logo.svg"
+          alt=""
+        />
+        <div class="copy">
+          <h1>THE POOL</h1>
+          <p>Run the plant behind an impossible swimming pool</p>
+        </div>
+      </div>
+    </section>
+    <section
+      class="banner"
+      id="banner-section"
+      aria-label="The Pool, engineering section banner"
+    >
+      <div class="scene"></div>
+      <div class="veil"></div>
+      <div class="safe">
+        <h1>THE POOL</h1>
+        <div class="rule"></div>
+        <p>A first-person simulation of the plant behind the pool</p>
+      </div>
+    </section>
+    <section
+      class="banner"
+      id="banner-caustics"
+      aria-label="The Pool, caustics banner"
+    >
+      <div class="scene"></div>
+      <div class="veil"></div>
+      <div class="safe">
+        <img
+          class="mark"
+          src="../../../../resources/images/title/the-pool-logo.svg"
+          alt=""
+        />
+        <div class="copy">
+          <h1>THE POOL</h1>
+          <p>Run the plant behind an impossible swimming pool</p>
+        </div>
+      </div>
+    </section>
+    <section
+      class="avatar"
+      id="avatar-navy"
+      aria-label="The Pool, navy channel icon"
+    >
+      <div class="ring"></div>
+      <img src="../../../../resources/images/title/the-pool-logo.svg" alt="" />
+    </section>
+    <section
+      class="avatar"
+      id="avatar-cyan"
+      aria-label="The Pool, cyan channel icon"
+    >
+      <div class="ring"></div>
+      <img src="../../../../resources/images/title/the-pool-logo.svg" alt="" />
+    </section>
+    <script>
+      const asset = new URLSearchParams(location.search).get('asset');
+      if (asset)
+        for (const section of document.querySelectorAll('body > section'))
+          if (section.id !== asset) section.style.display = 'none';
+    </script>
+  </body>
+</html>

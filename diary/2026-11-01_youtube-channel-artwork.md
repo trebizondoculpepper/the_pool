@@ -1,0 +1,3 @@
+# YouTube channel artwork, 2026-11-01
+
+The owner created a YouTube channel for The Pool and asked for banners and logos in `doc/marketing/youtube`. I kept the approved circular logo and the project's navy, cyan, white and yellow palette. Two new text-free pool-and-plant backgrounds were generated, and a third banner uses the existing water-caustics art. Exact Antonio lettering and the vector logo were composited in HTML so the title is spelled correctly and sits inside YouTube's central safe area. The three 2560 × 1440 banners and two 800 × 800 avatars were rendered with headless Chrome, visually inspected and documented with upload instructions. The cutaway banner and navy avatar are the recommended pair.
