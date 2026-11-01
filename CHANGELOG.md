@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Report a bug, in the dev panel's World state box (the owner, 2026-11-01): it downloads the game's state file and opens a GitHub issue prefilled with the version, build, world time, location and browser, asking for the file to be dragged in; nothing is sent until the reporter submits it.
+
 ### Fixed
 
 - Ctrl/Cmd+Shift+K now copies the current frame during held camera cinematics, including Museum 5's skimmer reveal and its “You got…” card.

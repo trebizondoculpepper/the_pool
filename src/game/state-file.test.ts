@@ -1,7 +1,7 @@
 import { expect, it } from 'vite-plus/test';
 import { newWorld } from './world';
 import { deserialiseWorld, serialiseWorld } from './save';
-import { saveFromFile, stateFile } from './state-file';
+import { bugReportUrl, saveFromFile, stateFile } from './state-file';
 
 const meta = {
   game: { version: '0.11.0', build: 'abc1234', slot: 'game' },
@@ -34,4 +34,18 @@ it('takes a bare save as it is, and leaves nonsense to the save reader', () => {
   const save = serialiseWorld(newWorld(), 1);
   expect(saveFromFile(save)).toEqual({ save, location: null });
   expect(deserialiseWorld(saveFromFile('nonsense').save).ok).toBe(false);
+});
+
+it('prefills a GitHub issue with the record, asking for the file', () => {
+  const url = new URL(
+    bugReportUrl('https://github.com/o/r', meta, 'the-pool-game.json'),
+  );
+  expect(url.pathname).toBe('/o/r/issues/new');
+  expect(url.searchParams.get('labels')).toBe('bug');
+  const body = url.searchParams.get('body')!;
+  expect(body).toContain('the-pool-game.json');
+  expect(body).toContain('0.11.0 (build abc1234)');
+  expect(body).toContain('1 h 0 min');
+  expect(body).toContain('?room=plant_pool_01');
+  expect(body).toContain('iPad Safari');
 });

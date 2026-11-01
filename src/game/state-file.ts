@@ -66,3 +66,44 @@ export function saveFromFile(text: string): {
   }
   return { save: text, location: null };
 }
+
+/**
+ * GitHub's New Issue page for a bug report, prefilled from a state file's
+ * record (the owner, 2026-11-01): a title for the reporter to finish, the
+ * game's version and build, the world's time, where the player stood and
+ * what they played on, and a request to attach the state file, `fileName`,
+ * downloaded with it. Nothing is sent: the reporter writes and submits it.
+ */
+export function bugReportUrl(
+  repository: string,
+  meta: StateFileMeta,
+  fileName: string,
+): string {
+  const time =
+    meta.worldTime === null
+      ? 'unknown'
+      : `${Math.floor(meta.worldTime / 3600)} h ${Math.floor((meta.worldTime % 3600) / 60)} min`;
+  const body = [
+    '## What happened',
+    '',
+    '<!-- Describe the bug: what you did, what you expected, what you saw. -->',
+    '',
+    '## The game’s state',
+    '',
+    `Please drag the downloaded file, \`${fileName}\`, into this box: it holds the whole game, so the bug can be looked into.`,
+    '',
+    `- Version: ${meta.game.version}${meta.game.build ? ` (build ${meta.game.build})` : ''}`,
+    `- Save slot: ${meta.game.slot}`,
+    `- World time: ${time}`,
+    `- Where: \`${meta.location ?? 'unknown'}\``,
+    `- Browser: ${meta.environment.userAgent}`,
+    `- Screen: ${meta.environment.screen.width} × ${meta.environment.screen.height} at ${meta.environment.screen.pixelRatio}×, ${meta.environment.touchPoints} touch points`,
+    `- Exported: ${meta.exported}`,
+  ].join('\n');
+  const query = new URLSearchParams({
+    title: 'Bug: ',
+    body,
+    labels: 'bug',
+  });
+  return `${repository}/issues/new?${query.toString()}`;
+}

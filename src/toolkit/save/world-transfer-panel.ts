@@ -1,6 +1,7 @@
 import { exportSlot, importSlot, listSlots } from './world-store';
-import { saveFromFile, stateFile } from '../../game/state-file';
-import { VERSION } from '../../game/version';
+import { bugReportUrl, saveFromFile, stateFile } from '../../game/state-file';
+import type { StateFileMeta } from '../../game/state-file';
+import { REPOSITORY, VERSION } from '../../game/version';
 
 /**
  * The dev panel's World state box (the owner, 2026-11-01): download a save
@@ -32,6 +33,9 @@ export function createWorldTransferPanel(): HTMLElement {
   const upload = document.createElement('button');
   upload.type = 'button';
   upload.textContent = 'Upload…';
+  const report = document.createElement('button');
+  report.type = 'button';
+  report.textContent = 'Report a bug…';
   const file = document.createElement('input');
   file.type = 'file';
   file.accept = '.json,application/json';
@@ -41,18 +45,22 @@ export function createWorldTransferPanel(): HTMLElement {
   status.setAttribute('role', 'status');
   const say = (text: string) => (status.textContent = text);
 
-  download.addEventListener('click', () => {
+  /**
+   * Download the chosen slot's state file: its name and record, or null
+   * (said why) if the slot has no save here.
+   */
+  const downloadState = (): { name: string; meta: StateFileMeta } | null => {
     const save = exportSlot(slot.value);
     if (!save) {
       say(`The “${slot.value}” slot has no save in this browser.`);
-      return;
+      return null;
     }
     const stamp = new Date()
       .toISOString()
       .slice(0, 16)
       .replace('T', '-')
       .replace(':', '');
-    const text = stateFile(save, {
+    const meta: StateFileMeta = {
       game: {
         version: VERSION,
         build: (import.meta.env.VITE_BUILD as string | undefined) ?? null,
@@ -73,17 +81,36 @@ export function createWorldTransferPanel(): HTMLElement {
         touchPoints: navigator.maxTouchPoints ?? 0,
         settings: jsonOf(stored('pool-plant:settings')),
       },
-    });
+    };
     const link = document.createElement('a');
     link.href = URL.createObjectURL(
-      new Blob([text], { type: 'application/json' }),
+      new Blob([stateFile(save, meta)], { type: 'application/json' }),
     );
     link.download = `the-pool-${slot.value}-${stamp}.json`;
     document.body.append(link);
     link.click();
     link.remove();
     setTimeout(() => URL.revokeObjectURL(link.href), 10_000);
-    say(`Downloaded the “${slot.value}” slot as ${link.download}.`);
+    return { name: link.download, meta };
+  };
+  download.addEventListener('click', () => {
+    const done = downloadState();
+    if (done) say(`Downloaded the “${slot.value}” slot as ${done.name}.`);
+  });
+  // A bug report (the owner, 2026-11-01): the state file downloaded, and
+  // GitHub's New Issue page opened, prefilled, asking for it to be dragged
+  // in. Nothing is sent: the reporter writes and submits the issue.
+  report.addEventListener('click', () => {
+    const done = downloadState();
+    if (!done) return;
+    window.open(
+      bugReportUrl(REPOSITORY, done.meta, done.name),
+      '_blank',
+      'noopener',
+    );
+    say(
+      `Downloaded ${done.name}; drag it into the GitHub issue that has opened, describe the bug and submit it.`,
+    );
   });
   upload.addEventListener('click', () => file.click());
   file.addEventListener('change', () => {
@@ -110,7 +137,7 @@ export function createWorldTransferPanel(): HTMLElement {
 
   const row = document.createElement('div');
   row.className = 'world-transfer-row';
-  row.append(slot, download, upload, file);
+  row.append(slot, download, upload, report, file);
   box.append(heading, row, status);
   return box;
 }
