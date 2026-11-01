@@ -28,7 +28,7 @@ export const CHALLENGES: readonly ChallengeCard[] = [
     title: 'The acid pump failed',
     swimmers: 20,
     problem:
-      'The acid pump stopped two days ago. The pH has crept up and the chlorine is working poorly.',
+      'The acid pump stopped about two weeks ago. The pH has crept up and the chlorine is working poorly.',
     goal: 'Bring the pH back to 7.2 to 7.6.',
     water: () =>
       waterFrom({
@@ -49,8 +49,8 @@ export const CHALLENGES: readonly ChallengeCard[] = [
     },
     briefing: {
       journeyman:
-        'The acid pump stopped two days ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Journeyman, fix the fault: bring the pH back to 7.2 to 7.6.',
-      pro: 'The acid pump stopped two days ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Pool Pro, bring the pH back to 7.2 to 7.6, and restore every other reading too: the alkalinity is a little low.',
+        'The acid pump stopped about two weeks ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Journeyman, fix the fault: bring the pH back to 7.2 to 7.6.',
+      pro: 'The acid pump stopped about two weeks ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Pool Pro, bring the pH back to 7.2 to 7.6, and restore every other reading too: the alkalinity is a little low.',
     },
     clue: "Every acid lowers the pH, but most acids also eat the alkalinity, the water's buffer, and the buffer here is already thin. One way down leaves the buffer alone.",
     concept: 'buffer',

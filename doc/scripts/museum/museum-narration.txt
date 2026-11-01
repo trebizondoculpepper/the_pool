@@ -34,9 +34,9 @@ HALL 4: THE CHEMISTRY OF POOLS
 
 HALL 4: THE CHALLENGE CARDS
 
-7b1. The acid pump failed, briefing (Journeyman): The acid pump stopped two days ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Journeyman, fix the fault: bring the pH back to 7.2 to 7.6.
+7b1. The acid pump failed, briefing (Journeyman): The acid pump stopped about two weeks ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Journeyman, fix the fault: bring the pH back to 7.2 to 7.6.
 
-7b2. The acid pump failed, briefing (Pool Pro): The acid pump stopped two days ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Pool Pro, bring the pH back to 7.2 to 7.6, and restore every other reading too: the alkalinity is a little low.
+7b2. The acid pump failed, briefing (Pool Pro): The acid pump stopped about two weeks ago, and the pH has crept up to 7.9. At that pH most of the chlorine is the weak hypochlorite ion, so it works poorly. As a Pool Pro, bring the pH back to 7.2 to 7.6, and restore every other reading too: the alkalinity is a little low.
 
 7b3. The acid pump failed, clue: Every acid lowers the pH, but most acids also eat the alkalinity, the water's buffer, and the buffer here is already thin. One way down leaves the buffer alone.
 
