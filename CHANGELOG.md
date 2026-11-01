@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed
+
+- Release uploads use the game's current itch.io account after its page moved from `salimfadhley` to `trebizondoculpepper` (the owner, 2026-11-01).
+
 ## [0.13.0] - 2026-11-01
 
 ### Added

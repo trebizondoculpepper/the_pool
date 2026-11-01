@@ -141,7 +141,7 @@ jobs:
             echo "BUTLER_API_KEY is not set: the release cannot reach itch.io" >&2
             exit 1
           fi
-          butler push dist salimfadhley/the-pool:html5 --userversion "${TAG#v}"
+          butler push dist trebizondoculpepper/the-pool:html5 --userversion "${TAG#v}"
 
   # The desktop app (mission 111): the release's web build in Electron,
   # packaged on each platform and attached to the GitHub release. File

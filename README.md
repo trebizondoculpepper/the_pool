@@ -2,7 +2,7 @@
 
 **The Pool** is a first-person simulation of the boring things behind a swimming pool. Out front is a leisure centre of serene, impossible pool halls; behind its staff doors is the plant that keeps them running: pumps, sand filters, boilers, heat exchangers, chemical stores, dosing pumps, air handling, switchgear and the control rooms that watch it all. Every machine is a working model of a real kind of plant, with gauges that read, switches that switch, lamps that light and recorders that record, all joined into one simulated building whose water has to stay clean, warm and safe. It is a game for adults who like the quiet satisfaction of machinery.
 
-- **Official release:** https://salimfadhley.itch.io/the-pool
+- **Official release:** https://trebizondoculpepper.itch.io/the-pool
 - **Bleeding-edge release:** https://trebizondoculpepper.github.io/the_pool/ (follows every push to `main`)
 
 Desktop builds for Linux (and the Steam Deck), macOS and Windows are described under [Desktop builds](#desktop-builds).
