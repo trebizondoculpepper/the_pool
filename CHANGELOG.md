@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Ctrl/Cmd+Shift+K now copies the current frame during held camera cinematics, including Museum 5's skimmer reveal and its “You got…” card.
 - Ctrl/Cmd+Shift+K now copies a clean screenshot from a `?record=<shot>` camera view, as it does during title animations and normal play.
 
 ## [0.12.0] - 2026-11-01

@@ -899,7 +899,10 @@ export function createFirstPerson(options: FirstPersonOptions) {
     Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
 
   const keydown = (event: KeyboardEvent) => {
-    if (!current() || holding || inputHeld() || typing(event)) return;
+    if (!current() || inputHeld() || typing(event)) return;
+    // A room may hold the eye for a cinematic, but its screenshot still
+    // belongs to the player's view. Other controls remain held still.
+    if (holding && copyShortcut(event) !== 'screenshot') return;
     if (noclipShortcut(event)) {
       event.preventDefault();
       if (!event.repeat) requestNoclipToggle();
