@@ -36,7 +36,7 @@ The owner's priority: the Olympic is the hardest of the pools, and once it works
 - [ ] **The control room**, new, to take the remote copy of the mimic wall.
 - [ ] **Fittings implied but not drawn** (what is left of [033](doc/prompts/done/033-olympic-plant-redo.md), whose stages 1 to 3 are done): the pumps' non-return valves; each machine's local power isolator; the busbar's fused tap-offs.
 - [ ] **The chlorine and ozone gas detectors** in the Olympic plant room ([022](doc/prompts/022-component-variants-and-detectors.md)).
-- [ ] **The warning signs on the tank hall doors** (risk of drowning and the rest, from the background agent's research of 2026-10-23).
+- [x] **The warning signs on the tank hall doors** (done 2026-11-01, `ca555f19`; risk of drowning and the rest, from the background agent's research of 2026-10-23).
 
 ## Later, not now
 
