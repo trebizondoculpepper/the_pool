@@ -184,6 +184,7 @@ const ITEM: Record<string, { key: string }> = {
   'co2-wall-port': { key: 'co2-wall-port' },
   'co2-detector': { key: 'co2-detector' },
   tankPanel: { key: 'balance-tank-panel' },
+  annunciator: { key: 'annunciator:pool_02' },
 };
 const itemOf = (p: PlanItem): Item => ({
   key: p.key.startsWith('filter') ? 'sand-filter:3' : ITEM[p.key].key,

@@ -77,8 +77,24 @@ export const OLYMPIC_ANNEX = {
     { id: 'switch-fuse', kind: 'switch-fuse', name: 'Room supply switch-fuse' },
     { id: 'room-supply', kind: 'room-supply', name: 'Room supply' },
     { id: 'ozone-monitor', kind: 'ozone-monitor', name: 'Ozone monitor' },
+    // PL2's annunciator over the landing (mission 099; the owner,
+    // 2026-11-01), the twin of the control room's.
+    {
+      id: 'annunciator',
+      kind: 'annunciator',
+      code: 'CP5',
+      name: 'Annunciator',
+    },
   ],
   links: [
+    // The annunciator takes its supply and its signals from the local
+    // control panel it annunciates for (`fedByItsPanel`).
+    link(
+      'panel.annunciator',
+      ['panel', 'annunciator'],
+      ['annunciator', 'in'],
+      'power',
+    ),
     link('tank.drain', ['tank', 'drain'], ['foul-sewer-outlet', 'in'], 'water'),
     link(
       'Collected Olympic filter waste to corridor',

@@ -37,8 +37,12 @@ describe('the Olympic plant room, in plan', () => {
       expect(f.maxX, i.key).toBeLessThanOrEqual(hx);
       expect(f.minZ, i.key).toBeGreaterThanOrEqual(-hz);
       expect(f.maxZ, i.key).toBeLessThanOrEqual(hz);
-      for (const k of [...keptClear(), ...solids()])
-        expect(overlap(f, k), `${i.key} in a kept space`).toBe(false);
+      // Equipment on the walls over the landing and gantry stands a storey
+      // above the floor's kept spaces (the annunciator, over the doors).
+      const onDeck = i.mount === 'wall' && (i.y ?? 0) >= PLANT_ROOM.storey;
+      if (!onDeck)
+        for (const k of [...keptClear(), ...solids()])
+          expect(overlap(f, k), `${i.key} in a kept space`).toBe(false);
       if (i.mount === 'floor')
         for (const k of [...keptClear(), ...solids()])
           expect(

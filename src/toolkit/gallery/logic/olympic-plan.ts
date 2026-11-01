@@ -90,6 +90,8 @@ const SIZE = {
   'co2-detector': CO2_DETECTOR_SIZE,
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
+  // PL2's annunciator (mission 099), the twin of the control room's.
+  annunciator: { w: 1.25, d: 0.2, h: 0.83 },
 } as const;
 
 /** The dosing's fixing heights on the wall (as the room's equipment has them). */
@@ -400,6 +402,21 @@ export function olympicPlan(): PlanItem[] {
     });
     at -= size.w + 0.4;
   }
+  // Its annunciator (mission 099; the owner, 2026-11-01), the twin of the
+  // control room's: on the south wall over the landing, at eye height for
+  // someone standing on the deck by the pool door, read across the
+  // landing as one comes in.
+  const an = SIZE.annunciator;
+  out.push({
+    ...item(
+      'annunciator',
+      'Annunciator',
+      an,
+      against('south', (LANDING.minX + LANDING.maxX) / 2, an, 0),
+      'wall',
+    ),
+    y: PLANT_ROOM.storey + 1.53,
+  });
   return out;
 }
 

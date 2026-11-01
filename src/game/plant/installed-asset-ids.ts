@@ -443,6 +443,12 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0106',
     tag: 'PL2-CP3',
   },
+  // Its annunciator over the landing (the owner, 2026-11-01); its id clear
+  // of the corridor flowmeters' generated run from asset-1194.
+  'plant_pool_02|annunciator:pool_02|Olympic pool annunciator': {
+    assetId: 'asset-1300',
+    tag: 'PL2-CP5',
+  },
   // The chemical distribution (plan 085).
   'hypo_store|chem-pump:hypochlorite|Hypochlorite transfer pump': {
     assetId: 'asset-0132',

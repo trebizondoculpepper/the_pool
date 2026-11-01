@@ -14,6 +14,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The Olympic plant room has its own annunciator again, PL2-CP5, the twin of the control room's: on the south wall over the deck-level landing, at eye height for someone standing on the landing by the pool door, fed from the room's local control panel (the owner, 2026-11-01: mission 099 had put PL2's annunciator only in the control room and on the bridge).
 - Release uploads use the game's current itch.io account after its page moved from `salimfadhley` to `trebizondoculpepper` (the owner, 2026-11-01).
 
 ## [0.13.0] - 2026-11-01

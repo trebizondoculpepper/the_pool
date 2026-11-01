@@ -200,7 +200,11 @@ describe.each(EQUIPPED_ROOMS)('%s', (room) => {
         q.item.key !== 'store-signs',
     )) {
       const y = p.y;
-      const floorY = 0;
+      // PL2's annunciator is reached from the Olympic's landing, a storey up.
+      const floorY =
+        room === 'plant_pool_02' && p.item.key === 'annunciator:pool_02'
+          ? 3.5
+          : 0;
       expect(y - floorY, p.item.label).toBeGreaterThanOrEqual(0.5);
       // The read-only pit board is above the operator's desk in the
       // owner's chosen sightline; it has no local controls to reach.
@@ -272,7 +276,7 @@ describe('the balance tanks', () => {
 describe('the Olympic plant room, redone (prompt 033)', () => {
   it('stands its machines, including the CO₂ panel, and two day tanks in a room of 22 × 14 m, plumbed', () => {
     const layout = layoutRoom('plant_pool_02')!;
-    expect(layout.placed).toHaveLength(20);
+    expect(layout.placed).toHaveLength(21);
     expect([layout.box.w, layout.box.d]).toEqual([22, 14]);
     expect(roomPipes('plant_pool_02').length).toBeGreaterThan(40);
   });

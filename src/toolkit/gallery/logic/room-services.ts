@@ -29,10 +29,13 @@ export interface ServiceRoute {
  * A device wired from its room's local control panel, not by a feed or the
  * control bus of its own: the lounge's annunciator, on the plant room's
  * south wall (the owner, 2026-10-28), takes its supply and its signals
- * from the panel it annunciates for, as such annunciators are.
+ * from the panel it annunciates for, as such annunciators are; so does the
+ * Olympic's, over its landing (the owner, 2026-11-01), from PL2's local
+ * control panel on the east wall below.
  */
 export const fedByItsPanel = (room: string, key: string) =>
-  room === 'plant_pool_01' && key === 'annunciator:pool_01';
+  (room === 'plant_pool_01' && key === 'annunciator:pool_01') ||
+  (room === 'plant_pool_02' && key === 'annunciator:pool_02');
 
 const active = (key: string) =>
   /^(pump-pair|pump-panel|uv-unit|ozone-generator|dosing-controller|hypo-pumps|acid-pump|booster-set|make-up-flowmeter|level-instruments|boiler-cascade|lthw-pumps|pressurisation|gas-safety|combustion-panel|mimic-gas|store-extract|lv-switchboard|mcc|central-battery|distribution-board|rotary-isolators|generator-point|ahu|operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|chem-control-box)/.test(
