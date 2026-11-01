@@ -1218,16 +1218,22 @@ export function plumbOlympic(
       [acidX, TRIO_Y.acid, acidZ],
       [acidX, topOf(acidBoard), acidZ],
     ]);
+    // The CO₂ panel's: along out from the wall, over its wall port, and
+    // in behind its face to drop onto its control box's top (the panel
+    // faces north, its control box to the west), not down across the
+    // wall port and onto nothing in front of the panel (2026-11-01).
     const co2 = port('controller', 'co2');
     const co2Board = board('co2-panel');
-    const co2X = round(co2Board.x + 0.12);
+    const co2X = round(co2Board.x - 0.15);
     const co2Z = round(co2.at[2] - 0.4);
+    const co2In = round(hz - CO2_PANEL_SIZE.d / 2 + 0.03);
     rule(TRIO_LINKS.co2, TRIO_LINKS.co2, 'control', 0.02, [
       co2.at,
       [co2.at[0], TRIO_Y.co2, co2.at[2]],
       [co2.at[0], TRIO_Y.co2, co2Z],
       [co2X, TRIO_Y.co2, co2Z],
-      [co2X, topOf(co2Board), co2Z],
+      [co2X, TRIO_Y.co2, co2In],
+      [co2X, topOf(co2Board), co2In],
     ]);
     // The CO₂ line (mission 118): out of the wall into the wall port over
     // the panel, down into its inlet; from its foot past its edge, up over

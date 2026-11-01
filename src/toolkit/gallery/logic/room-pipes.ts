@@ -363,9 +363,21 @@ export function poolPlantPipework(room: string): {
   ) => {
     const points = tidy(r.points);
     const through: WallCrossing[] = [];
-    // Carried through a north or south wall at either end, its fitting in it.
+    // Carried through a wall at either end, its fitting in it.
     for (const i of [0, points.length - 1]) {
       const p = points[i];
+      // East or west (the CO₂ line, mission 118), square to it.
+      if (Math.abs(Math.abs(p[0]) - hx) < 1e-6) {
+        const side = Math.sign(p[0]);
+        points[i] = [side * (hx + WALL), p[1], p[2]];
+        through.push({
+          at: [side * (hx + WALL / 2), p[1], p[2]],
+          normal: [-side, 0, 0],
+          thickness: WALL,
+          kind: PLASTIC.has(r.kind) ? 'fire-collar' : 'sleeve',
+        });
+        continue;
+      }
       const side = Math.sign(p[2]);
       if (Math.abs(Math.abs(p[2]) - hz) > 1e-6) continue;
       points[i] = [p[0], p[1], side * (hz + WALL)];
@@ -1286,8 +1298,12 @@ export function poolPlantPipework(room: string): {
     ) => {
       const g = placedPort(trio, gland);
       const top = to.item.mount === 'wall' ? to.y + to.item.h / 2 : to.item.h;
-      const z = (to.footprint.minZ + to.footprint.maxZ) / 2 + 0.05;
-      const x = to.footprint.minX + along;
+      // Along its wall from its end, a little behind its middle's depth.
+      const f = to.footprint;
+      const across = to.side === 'east' || to.side === 'west';
+      const back = to.side === 'north' || to.side === 'west' ? -0.05 : 0.05;
+      const x = across ? (f.minX + f.maxX) / 2 + back : f.minX + along;
+      const z = across ? f.minZ + along : (f.minZ + f.maxZ) / 2 + back;
       tube(
         `${name}, from the cabinet`,
         name,
@@ -1329,7 +1345,9 @@ export function poolPlantPipework(room: string): {
     // the wall into the wall port over the panel, its lever ball valve on
     // the drop, down into the panel's inlet; from the panel's foot along
     // past its edge, up into the ceiling and over to the nozzle on the
-    // heated return after the filters, through its non-return valve.
+    // heated return after the filters, through its non-return valve. The
+    // panel and its port hang on the east wall, facing west (the owner,
+    // 2026-11-01), so each point here is worked along its wall.
     const co2Panel = by('CO₂ dosing valve controller');
     const co2Port = by('CO₂ wall port');
     const portIn = port(co2Port, 'in');
@@ -1337,10 +1355,15 @@ export function poolPlantPipework(room: string): {
     const panelIn = port(co2Panel, 'in');
     const feedMid = (portOut.at[1] + panelIn.at[1]) / 2;
     const panelOut = port(co2Panel, 'out');
+    // Out of its wall's face behind the port, square to it.
+    const wallFace: Vec3 =
+      co2Port.side === 'east' || co2Port.side === 'west'
+        ? [co2Port.side === 'east' ? hx : -hx, portIn.at[1], portIn.at[2]]
+        : [portIn.at[0], portIn.at[1], co2Port.side === 'south' ? hz : -hz];
     tube(
       'CO₂ from the building line',
       'CO₂ from the building line',
-      [[portIn.at[0], portIn.at[1], hz], [...portIn.at]],
+      [wallFace, [...portIn.at]],
       'gas',
       'CO₂',
       'copper',
@@ -1366,18 +1389,28 @@ export function poolPlantPipework(room: string): {
     const co2Y = QUILL_Y + 0.35;
     const co2Nozzle: Vec3 = [pheOut1[0] + 0.22, co2Y, pheOut1[2]];
     const co2Roof = INTO_CEILING - 0.03;
-    // Out past the panel's edge on the side clear of its neighbours.
-    const co2Side = co2Panel.footprint.maxX + 0.05;
+    // Out past the panel's edge nearer its outlet, along its wall, and up
+    // beside it into the ceiling.
     const co2Low = panelOut.at[1] - 0.1;
+    const pf = co2Panel.footprint;
+    const alongZ = co2Panel.side === 'east' || co2Panel.side === 'west';
+    const [lo, hi] = alongZ ? [pf.minZ, pf.maxZ] : [pf.minX, pf.maxX];
+    const outAlong = panelOut.at[alongZ ? 2 : 0];
+    const co2Side = outAlong - lo < hi - outAlong ? lo - 0.05 : hi + 0.05;
+    const besideAt = (y: number): Vec3 =>
+      alongZ ? [panelOut.at[0], y, co2Side] : [co2Side, y, panelOut.at[2]];
+    const overAt: Vec3 = alongZ
+      ? [panelOut.at[0], co2Roof, co2Nozzle[2]]
+      : [co2Nozzle[0], co2Roof, panelOut.at[2]];
     tube(
       'CO₂ to the injection nozzle',
       'CO₂ to the injection nozzle',
       [
         [...panelOut.at],
         [panelOut.at[0], co2Low, panelOut.at[2]],
-        [co2Side, co2Low, panelOut.at[2]],
-        [co2Side, co2Roof, panelOut.at[2]],
-        [co2Nozzle[0], co2Roof, panelOut.at[2]],
+        besideAt(co2Low),
+        besideAt(co2Roof),
+        overAt,
         [co2Nozzle[0], co2Roof, co2Nozzle[2]],
         co2Nozzle,
       ],
@@ -1430,11 +1463,13 @@ export function poolPlantPipework(room: string): {
     const co2Detector = by('CO₂ detector');
     const alarm = port(co2Detector, 'alarm');
     const lock = onWall(CO2_PANEL_PORTS.interlock, CO2_PANEL_SIZE);
-    // Turned with the panel (it faces north, its +x to the west).
+    // Turned with the panel, as its ports are (`placedPort`).
+    const yc = Math.cos(co2Panel.yaw);
+    const ys = Math.sin(co2Panel.yaw);
     const interlock: Vec3 = [
-      co2Panel.x - lock[0],
+      co2Panel.x + lock[0] * yc + lock[2] * ys,
       co2Panel.y + lock[1],
-      co2Panel.z - lock[2],
+      co2Panel.z - lock[0] * ys + lock[2] * yc,
     ];
     tube(
       `${CO2_DETECTOR_LINK}, from the detector`,

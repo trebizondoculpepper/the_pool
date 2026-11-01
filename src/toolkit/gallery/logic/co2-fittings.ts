@@ -76,13 +76,23 @@ export const CO2_MASTER_SIZE = { w: 0.5, h: 0.42, d: 0.2 } as const;
  * master valve, and into the wall west of it to the plant rooms.
  */
 export const CO2_LOADING_BAY = {
-  inlet: 5.9,
-  master: 5.1,
-  // East of the inlet, clear of the dock's door west of the master.
-  detector: 6.5,
+  // All east of the east bay's roller shutter's hand chain (x ≈ 5.17,
+  // `dock-parts.ts`), which hung in front of the master valve's panel at
+  // 5.1, and west of the generator point in the corner (from 6.75): the
+  // master 0.15 m clear of the chain, then the inlet and the detector
+  // (2026-11-01).
+  inlet: 6.14,
+  master: 5.57,
+  detector: 6.56,
   y: 1.5,
   /** The line's height through them. */
   line: 1.62,
   /** Its depth off the wall. */
   off: 0.06,
+  /**
+   * The dock's safety signs on this stretch of wall (`dock-safety.ts`),
+   * their row's middle raised from 1.65 m to over the fittings, so the
+   * line and the fittings no longer cross them (2026-11-01).
+   */
+  signs: 2.25,
 } as const;

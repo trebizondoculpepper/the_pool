@@ -28,6 +28,7 @@ import { createSafetySign } from '../../components/general-safety/views/safety-s
 import { zoneInAlarm } from '../../../game/plant/fire-alarm';
 import { roomWorld } from '../../save/world-store';
 import type { ShellAperture } from '../logic/shell-rooms';
+import { CO2_LOADING_BAY } from '../logic/co2-fittings';
 import { dockChannel, hazardStripes } from './dock-fittings';
 import { YARD_LEVEL } from './dock-outside';
 
@@ -225,9 +226,10 @@ export function createDockSafety(kit: PanelKit, f: DockFrame) {
       readonly Parameters<typeof createSafetySign>[1][number][],
       readonly string[],
     ][],
+    y = 1.65,
   ) => {
     const row = new Group();
-    row.position.set(x, 1.65, f.wallZ + 0.005);
+    row.position.set(x, y, f.wallZ + 0.005);
     rows.forEach(([p, lines], i) => {
       const sign = createSafetySign(kit, p, lines);
       sign.position.x = (i - (rows.length - 1) / 2) * 0.42;
@@ -240,11 +242,16 @@ export function createDockSafety(kit: PanelKit, f: DockFrame) {
     [['general'], ['Danger', 'Vehicles reversing']],
     [['general'], ['Caution', 'Edge drop']],
   ]);
-  signRow(endX, [
-    [['mandatory'], ['Hi-vis clothing', 'must be worn']],
-    [['boots'], ['Safety footwear', 'must be worn']],
-    [['no-smoking'], ['No smoking']],
-  ]);
+  // Over the CO₂ line's way in, which shares this end of the wall.
+  signRow(
+    endX,
+    [
+      [['mandatory'], ['Hi-vis clothing', 'must be worn']],
+      [['boots'], ['Safety footwear', 'must be worn']],
+      [['no-smoking'], ['No smoking']],
+    ],
+    CO2_LOADING_BAY.signs,
+  );
 
   // Fire points: CO2 and foam, the floor before them kept clear, the fire
   // action notice above.

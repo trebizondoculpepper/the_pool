@@ -731,7 +731,7 @@ function poolPlant(
       0.9,
       1.4,
       {
-        walls: ['south'],
+        walls: ['east'],
       },
     ),
     // Its wall port above it, where the building's CO₂ line comes through
@@ -743,7 +743,7 @@ function poolPlant(
       CO2_WALL_PORT_SIZE.d,
       CO2_WALL_PORT_SIZE.h,
       CO2_WALL_PORT_Y,
-      { walls: ['south'] },
+      { walls: ['east'] },
     ),
     wall(
       'co2-detector',
@@ -752,7 +752,7 @@ function poolPlant(
       CO2_DETECTOR_SIZE.d,
       CO2_DETECTOR_SIZE.h,
       CO2_DETECTOR_Y,
-      { walls: ['south'] },
+      { walls: ['east'] },
     ),
   ];
 }
@@ -2038,24 +2038,30 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
       along: hypoPlaced.footprint.minX - WALL_GAP - 2 * apart - acid.w / 2,
     });
     out.push(acidPlaced);
-    // Between the Trio and the acid board, on the same dosing wall.
-    const trioPlaced = out.find((p) => p.item === trio)!;
-    const co2Placed = put(box, at('CO₂ dosing valve controller'), {
-      wall: 'south',
-      along: (trioPlaced.footprint.maxX + acidPlaced.footprint.minX) / 2,
-    });
-    out.push(co2Placed);
-    // Its wall port hung above it, over its inlet (mission 118); its
-    // detector between the acid board and the hypochlorite pumps, near it.
-    const co2X = (co2Placed.footprint.minX + co2Placed.footprint.maxX) / 2;
+    // The CO₂ dosing panel on the clear stretch of the east wall between
+    // the east door's approach and the local control panel, WALL_GAP short
+    // of the panel, facing west into the room: between the Trio and the
+    // acid board, where mission 118 first hung it, the Trio's sample tubes,
+    // their brackets and its supply's feed ran across its face and its
+    // wall port (the owner, 2026-11-01).
+    const pumpPanel = at('local control panel');
+    const co2Item = at('CO₂ dosing valve controller');
+    const co2Z = south - 0.3 - pumpPanel.w - WALL_GAP - co2Item.w / 2;
+    out.push(put(box, co2Item, { wall: 'east', along: co2Z }));
+    // Its wall port hung above it, over its inlet (mission 118: its frame
+    // turned to face west, its +x is south); its detector beside it to the
+    // north, near the gas it watches, room between them for the panel's
+    // line up into the ceiling (on the dosing wall, between the acid board
+    // and the hypochlorite pumps, the heating flow ran through it).
+    const detector = at('CO₂ detector');
     out.push(
       put(box, at('CO₂ wall port'), {
-        wall: 'south',
-        along: co2X - CO2_PANEL_PORTS.inlet[0],
+        wall: 'east',
+        along: co2Z + CO2_PANEL_PORTS.inlet[0],
       }),
-      put(box, at('CO₂ detector'), {
-        wall: 'south',
-        along: (acidPlaced.footprint.maxX + hypoPlaced.footprint.minX) / 2,
+      put(box, detector, {
+        wall: 'east',
+        along: co2Z - co2Item.w / 2 - 0.15 - detector.w / 2,
       }),
     );
     // The annunciator on the south wall, just west of the door (the owner,
