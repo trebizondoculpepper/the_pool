@@ -19,8 +19,17 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- Dr Aqualis works out Show dose's amounts only when the player asks for one (Show dose pressed on the doctor's page), cached against the readings, instead of on every world step for every advice: a plant room's cabinet's advice now costs about 0.002 ms a frame, where a pool well out of balance cost 0.17.
+- Hand doses can be fed at a rate (the owner, 2026-10-31; `WORLD_VERSION` 65, saves migrated): `dose pool_01 bicarbonate 17kg 1kg/min` feeds it in until it is all in, logging its start and finish, a second feed of the same chemical into the same place queued behind the first; `doses` lists the feeds under way; without a rate a dose goes in at once, as before. A dose into the pool is spread over its surface. Dr Aqualis's Show dose says how each dose goes in, where, and at what rate (one to type into `dose`), and splits one too big for a single visit, giving the first visit's amount. The owner's 17 kg of bicarbonate tipped into the Lounge's tank raises pH HIGH and WATER SCALING at the Trio; fed at his rate it raises none.
+- The Dr Aqualis Trio's settings can close the pool (Settings › Pool dynamics, Pool: OPEN · CLOSED, world state): closed, Dr Aqualis may take larger corrections straight into the pool, does not treat high chlorine as an alarm, and says what must be true before it reopens; a First Aid programme that needs the pool closed closes it, and it cannot be opened while one runs. Open, his every instruction is bounded by bather safety, and superchlorination asks for the pool to be closed first.
 - The console logs a status window such as MAKE-UP RUNNING, ordinary activity rather than a fault, as ON and OFF, not as an ALARM with accepting and resetting (the owner, 2026-11-01).
 - The software boxes' barcodes now start 20, GS1's in-store range, rather than 50, a real UK range, so no fictional box shares a code with a real product; their check digits stay valid.
+
+### Fixed
+
+- Dr Aqualis's advice, as the verification suite found it wanting (2026-11-01): a pH a little low under acid dosing is left to rise on its own (soda ash only for a pH far low, aimed halfway to its set point); bicarbonate waits for a pH already above its band and is held to what keeps the pH inside its alarm limit; thiosulphate goes with First Aid › Bring chlorine down, so the Trio does not chase it, and aims at the top of the band; high alkalinity is the acid pump's, and an acid pump flat out against high alkalinity is helped by hand; a gas-locked pump is told to bleed it; every feed goes in over a turnover; and the `dilute` stand-in is a drain-down and refill, as his arithmetic is.
+- Dr Aqualis ranks his advice safety first (the owner, 2026-10-31): health and safety (chlorine too low, chlorine dangerously high or pH far out while the pool is open, the hypochlorite offline, the acid offline with the pH high), then water balance and comfort, then information; within each, the biggest difference first, but alkalinity before pH and a cause before its effect, as normal practice has it; superchlorination and a closed pool relax the safety tier. Advising bicarbonate with the pH high, he now says it will lift the pH a little and the acid pump will bring it back.
+- The Dr Aqualis Trio's pH control has an integral: it learns the steady acid demand of a pool fed bicarbonate or losing CO₂, so the pH returns to its set point rather than sitting above it (the Olympic's three-day mean now within 0.05 of 7.3).
 
 ## [0.9.0] - 2026-10-31
 
