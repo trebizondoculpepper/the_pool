@@ -23,6 +23,8 @@
  * SI units within; temperatures °C, times seconds. Pure.
  */
 
+import { RING } from './lthw-ring';
+
 /** The outside's temperature, °C, unless the weather says otherwise. */
 export const AMBIENT = 12;
 
@@ -98,6 +100,9 @@ export function thermalParams(s: PoolHallShape) {
     ground * (s.water - AMBIENT);
   const airLoad =
     (fabric + leak) * (s.air - AMBIENT) - surface * (s.water - s.air);
+  const waterHeater = T.headroom * waterLoad;
+  const airHeater =
+    T.headroom * Math.max(airLoad, 0.3 * (fabric + leak) * (s.air - AMBIENT));
   return {
     waterCapacity: s.volume * T.waterPerM3,
     airCapacity: hallVolume * T.airPerM3 * T.fabric,
@@ -106,9 +111,15 @@ export function thermalParams(s: PoolHallShape) {
     fabric,
     leak,
     evaporation,
-    waterHeater: T.headroom * waterLoad,
-    airHeater:
-      T.headroom * Math.max(airLoad, 0.3 * (fabric + leak) * (s.air - AMBIENT)),
+    waterHeater,
+    airHeater,
+    /**
+     * Each heater's conductance from the LTHW ring, W/K (mission 120): its
+     * full output with the ring at its design flow temperature and its
+     * water or air at design (`lthw-ring.ts`).
+     */
+    waterK: waterHeater / Math.max(1, RING.setpoint - s.water),
+    airK: airHeater / Math.max(1, RING.setpoint - s.air),
     water: s.water,
     air: s.air,
   };
@@ -137,6 +148,13 @@ export interface ThermalInputs {
   madeUp: number;
   /** The water's thermostat's setting, °C, where someone has set it; its design temperature otherwise. */
   waterSet?: number;
+  /**
+   * The LTHW ring's flow temperature, °C (`lthw-ring.ts`): each heater
+   * gives what its thermostat asks only as far as the ring is hot enough
+   * (`k·(T_flow − T)`). Without it, a bottomless supply, as before the
+   * ring was modelled.
+   */
+  ring?: number;
 }
 
 /** A thermostat's output, W: full this far under its setting (`band`), none at it. */
@@ -152,7 +170,13 @@ export function stepThermal(
   p: ThermalParams,
   inputs: ThermalInputs,
   dt: number,
-): ThermalState & { waterHeat: number; airHeat: number } {
+): ThermalState & {
+  waterHeat: number;
+  airHeat: number;
+  /** What the thermostats asked, W, the step's mean: `waterHeat` and `airHeat` are what was delivered. */
+  waterAsked: number;
+  airAsked: number;
+} {
   let { water, air } = s;
   // The make-up mixes in at once.
   if (inputs.madeUp > 0)
@@ -164,13 +188,23 @@ export function stepThermal(
   const h = dt / n;
   let waterHeat = 0;
   let airHeat = 0;
+  let waterAsked = 0;
+  let airAsked = 0;
+  const ring = inputs.ring;
+  // What the ring can give a heater: its conductance times the difference.
+  const fromRing = (ask: number, k: number, now: number) =>
+    ring === undefined ? ask : Math.min(ask, k * Math.max(0, ring - now));
   for (let i = 0; i < n; i++) {
-    const qWater = inputs.heatWater
+    const askWater = inputs.heatWater
       ? thermostat(p.waterHeater, inputs.waterSet ?? p.water, water)
       : 0;
-    const qAir = inputs.heatAir
+    const askAir = inputs.heatAir
       ? thermostat(p.airHeater * (inputs.airShare ?? 1), p.air, air)
       : 0;
+    const qWater = fromRing(askWater, p.waterK, water);
+    const qAir = fromRing(askAir, p.airK * (inputs.airShare ?? 1), air);
+    waterAsked += askWater / n;
+    airAsked += askAir / n;
     const humidity =
       inputs.humidity ??
       (inputs.ventilated ? THERMAL.humidity : THERMAL.stillHumidity);
@@ -186,5 +220,5 @@ export function stepThermal(
     waterHeat += qWater / n;
     airHeat += qAir / n;
   }
-  return { water, air, waterHeat, airHeat };
+  return { water, air, waterHeat, airHeat, waterAsked, airAsked };
 }
