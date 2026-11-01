@@ -107,5 +107,7 @@ describe('the mains water off', () => {
     w = advance(w, 36 * 3600, 10);
     for (const id of POOL_IDS) expect(w.pools[id].level, id).toBeGreaterThan(0);
     // Days of plant, simulated: allowed longer than the default under a full run.
-  }, 90_000);
+    // About 50 s alone; with the advice verification suite beside it in a full
+    // run, over two minutes.
+  }, 300_000);
 });

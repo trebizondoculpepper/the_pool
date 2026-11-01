@@ -85,6 +85,14 @@ export const ALARM_LIMITS = {
   combinedTimes: 2,
 } as const;
 
+/**
+ * A dosing channel asked for this share of its most or more is flat out
+ * (`Ctx.pinned`): the pumps' own chemicals are then advised by hand as
+ * well, to help it catch up (`doc/plans/aqualis-advice-verification.md`,
+ * Part 4: the Olympic's undersized acid pump).
+ */
+export const PINNED = 0.98;
+
 /** Superchlorination raises free chlorine to this many times the combined chlorine (the breakpoint rule of thumb), at least its set point. */
 export const SUPERCHLORINATE_TIMES = 10;
 
@@ -132,8 +140,17 @@ const EFFECT: Record<ChannelId, string> = {
   co2: 'the pH will drift up',
 };
 
-function fixFor(id: ChannelId, reason: OfflineReason): string {
+function fixFor(
+  id: ChannelId,
+  reason: OfflineReason,
+  fault: string | null = null,
+): string {
   const at = id === 'co2' ? 'at the valve controller' : 'at the pump';
+  // A pump's own faults, as its manual puts them right.
+  if (reason === 'fault' && fault === 'flow monitor tripped')
+    return 'Gas in its head: open its bleed, acknowledge it, and shut the bleed once it pumps liquid.';
+  if (reason === 'fault' && fault === 'tank empty')
+    return 'Its day tank is empty: fill it, then acknowledge the pump.';
   switch (reason) {
     case 'switched-off':
       return `Switch it back on ${at}.`;
@@ -210,15 +227,17 @@ const turnoverOf = (s: AqualisSettings) =>
 /**
  * The rate Dr Aqualis recommends for a hand feed, in the chemical's unit a
  * minute, rounded down to two figures so it can be typed into `dose`
- * (`dose pool_01 bicarbonate 12.6kg 130g/min`): into the balance tank,
- * the visit's amount over one turnover, so the water the Trio samples
- * from the tank rises no further than the whole circuit will once mixed;
- * spread over a closed pool, which the Trio sees only mixed, over a
- * quarter of a turnover (at least 10 minutes).
+ * (`dose pool_01 bicarbonate 12.6kg 130g/min`): the visit's amount over
+ * one turnover, so the water the Trio samples from the tank rises no
+ * further than the whole circuit will once mixed, and the pumps keep pace
+ * with what it does to the pH (bicarbonate lifts it); the same spread
+ * over a closed pool, which spread faster pushed the pH out of its band
+ * (Part 4). A shock (superchlorination) goes in over a quarter of a
+ * turnover, at least 10 minutes.
  */
-export function feedRate(amount: number, where: Where, s: AqualisSettings) {
+export function feedRate(amount: number, s: AqualisSettings, shock = false) {
   const turnover = turnoverOf(s) * 60;
-  const minutes = where === 'pool' ? Math.max(10, turnover / 4) : turnover;
+  const minutes = shock ? Math.max(10, turnover / 4) : turnover;
   const r = amount / Math.max(1, minutes);
   if (!(r > 0)) return 0;
   const p = 10 ** (Math.floor(Math.log10(r)) - 1);
@@ -239,6 +258,10 @@ function howOf(
     const device = DEVICE[additive as ChannelId] ?? 'pump';
     return `The ${device} is doing this; leave it to work.`;
   }
+  const helping =
+    c && additive === 'acid' && c.online('acid') && c.pinned('acid')
+      ? `The ${DEVICE[additive]} is flat out and cannot catch up: help it by hand. `
+      : '';
   const again =
     visits > 1
       ? ` Too much at once: ${firstText} now, retest after a turnover (${hoursText(c ? turnoverOf(c.s) : 4)}) and repeat, ${visits} visits.`
@@ -258,10 +281,11 @@ function howOf(
       : '';
   if (additive === 'superchlorinate')
     return `${closeFirst}Spread it across the pool${at}, and keep the pool closed until the chlorine is back in its band.${again}`;
-  if (where === 'pool') return `Spread it across the pool${at}.${again}`;
+  if (where === 'pool')
+    return `${helping}Spread it across the pool${at}.${again}`;
   if (additive === 'acid')
-    return `Feed it into the balance tank${at}, acid into water.${again}`;
-  return `Feed it into the balance tank${at}.${again}`;
+    return `${helping}Feed it into the balance tank${at}, acid into water.${again}`;
+  return `${helping}Feed it into the balance tank${at}.${again}`;
 }
 
 function nameOf(additive: Additive) {
@@ -282,6 +306,7 @@ function doseOf(
   unit: DoseAmount['unit'],
   c: Ctx | null = null,
   perVisit = Infinity,
+  whereTo?: Where,
 ): DoseAmount | null {
   const a = sig3(amount);
   if (!(a > 0)) return null;
@@ -290,10 +315,10 @@ function doseOf(
       ? Math.ceil(amount / perVisit - 1e-6)
       : 1;
   const first = visits > 1 ? sig3(perVisit) : a;
-  const where = whereOf(additive, c);
+  const where = whereTo ?? whereOf(additive, c);
   const rate =
     c && where && where !== 'automatic' && HAND_CHEMICAL[additive]
-      ? feedRate(first, where, c.s)
+      ? feedRate(first, c.s, additive === 'superchlorinate')
       : null;
   return {
     amount: a,
@@ -323,6 +348,8 @@ interface Ctx {
   V: number;
   T: number;
   online: (id: ChannelId) => boolean;
+  /** Online but asked for all it has (`PINNED`): it cannot catch up alone. */
+  pinned: (id: ChannelId) => boolean;
   /** The pool open to bathers: bather safety bounds every instruction. */
   open: boolean;
   /** Fresh water's rate for a dilution, m³/h (the make-up's: about a tenth of the circulation). */
@@ -519,10 +546,9 @@ function whereOf(additive: Additive | null, c: Ctx | null): Where | null {
   if (!additive) return null;
   if (additive === 'dilution' || additive === 'superchlorinate') return 'pool';
   if (additive === 'co2') return c?.online('co2') ? 'automatic' : 'pool';
-  if (
-    (additive === 'hypochlorite' || additive === 'acid') &&
-    c?.online(additive)
-  )
+  if (additive === 'hypochlorite' && c?.online('hypochlorite'))
+    return 'automatic';
+  if (additive === 'acid' && c?.online('acid') && !c.pinned('acid'))
     return 'automatic';
   return c && !c.open ? 'pool' : 'balance-tank';
 }
@@ -569,12 +595,13 @@ function readingRules(c: Ctx): Draft[] {
           ? `Free chlorine far too high (${twoDp(fc)} mg/l): nobody should swim in that!`
           : `Free chlorine far above its band (${twoDp(fc)} mg/l): the pool stays closed until it is under ${twoDp(t.freeChlorine.high)}.`,
         direction: c.open
-          ? 'Stop the hypochlorite and take it down with sodium thiosulphate.'
+          ? 'Stop the hypochlorite (First Aid › Bring chlorine down) and take it down with sodium thiosulphate.'
           : 'Let it fall, or take it down with sodium thiosulphate.',
         additive: 'thiosulphate',
         prescribe: () => {
           const g =
-            (Math.max(0, c.w.freeChlorine - t.freeChlorine.set) * V) /
+            // To the top of its band: it falls the rest of the way on its own.
+            (Math.max(0, c.w.freeChlorine - t.freeChlorine.high) * V) /
             thiosulphateStoichiometry().chlorinePerMg;
           return doseOf('thiosulphate', g / 1000, 'kg', c);
         },
@@ -585,7 +612,9 @@ function readingRules(c: Ctx): Draft[] {
         reading: 'freeChlorine',
         severity: 'warning',
         problem: `Free chlorine rather high (${twoDp(fc)} mg/l): stinging eyes, I fear.`,
-        direction: 'Turn the hypochlorite down; it will fall on its own.',
+        direction: c.online('hypochlorite')
+          ? 'The hypochlorite pump has stopped; it will fall on its own.'
+          : 'Turn the hypochlorite down; it will fall on its own.',
         additive: null,
         prescribe: null,
       });
@@ -623,37 +652,60 @@ function readingRules(c: Ctx): Draft[] {
   // Alkalinity, before the pH it steadies.
   const alk = r.alkalinity;
   if (alk < t.alkalinity.low) {
+    // Normal practice: the alkalinity first, then the pH. Bicarbonate
+    // nudges the pH up (towards 8.3): where the pH is already above its
+    // band that would take it past its alarm limit, so the pH comes first
+    // (the acid pump's, or acid by hand), and the bicarbonate after.
+    const acidOnline = c.online('acid') || c.online('co2');
+    const waits = r.ph > t.ph.high;
     add({
       id: 'alkalinity-low',
       reading: 'alkalinity',
       severity: 'warning',
       problem: `Alkalinity low (${whole(alk)} mg/l): the pH will be unstable.`,
-      // Normal practice: the alkalinity first, then the pH. Bicarbonate
-      // nudges the pH up (towards 8.3), so say so where it is already high.
-      direction:
-        r.ph < t.ph.set
+      direction: waits
+        ? acidOnline
+          ? `Let the ${c.online('co2') ? 'CO₂' : 'acid pump'} bring the pH into its band first; then raise the alkalinity with sodium bicarbonate.`
+          : 'Lower the pH with acid by hand first; then raise the alkalinity with sodium bicarbonate.'
+        : r.ph < t.ph.set
           ? 'Raise the alkalinity with sodium bicarbonate.'
-          : c.online('acid') || c.online('co2')
+          : acidOnline
             ? `Raise it with sodium bicarbonate. This will lift the pH a little; the ${c.online('co2') ? 'CO₂' : 'acid pump'} will bring it back down.`
             : 'Raise it with sodium bicarbonate, then lower the pH with acid by hand: the bicarbonate lifts it a little.',
-      additive: 'bicarbonate',
-      prescribe: () => {
-        const g = gramsFor(
-          c,
-          'bicarbonate',
-          (w) => w.alkalinity,
-          t.alkalinity.set,
-          1000 * V,
-        );
-        return doseOf(
-          'bicarbonate',
-          g / 1000,
-          'kg',
-          c,
-          ((g / 1000) * limit(c, 'alkalinity')) /
-            Math.max(1e-9, t.alkalinity.set - c.w.alkalinity),
-        );
-      },
+      additive: waits ? null : 'bicarbonate',
+      prescribe: waits
+        ? null
+        : () => {
+            const g = gramsFor(
+              c,
+              'bicarbonate',
+              (w) => w.alkalinity,
+              t.alkalinity.set,
+              1000 * V,
+            );
+            // A visit: its alkalinity limit, and no more than lifts the pH
+            // (unbuffered by any acid) to 0.1 inside its alarm limit open,
+            // or 0.1 past it closed.
+            const ceiling =
+              t.ph.high + ALARM_LIMITS.phMargin + (c.open ? -0.1 : 0.1);
+            const byPh = gramsFor(
+              c,
+              'bicarbonate',
+              (w) => w.ph,
+              ceiling,
+              1000 * V,
+            );
+            const byAlk =
+              (g * limit(c, 'alkalinity')) /
+              Math.max(1e-9, t.alkalinity.set - c.w.alkalinity);
+            return doseOf(
+              'bicarbonate',
+              g / 1000,
+              'kg',
+              c,
+              Math.max(g * 0.01, Math.min(byAlk, byPh)) / 1000,
+            );
+          },
     });
   } else if (alk > t.alkalinity.high) {
     add({
@@ -663,6 +715,15 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Alkalinity high (${whole(alk)} mg/l): the pH will keep creeping up.`,
       direction: 'Bring it down with hydrochloric acid, a little at a time.',
       additive: 'acid',
+      // The acid pump takes it down as it holds the pH (the CO₂ the acid
+      // makes leaves, and the pH with it); by hand only where the pump is
+      // flat out or offline.
+      where:
+        c.online('acid') && !c.pinned('acid')
+          ? 'automatic'
+          : c.open
+            ? 'balance-tank'
+            : 'pool',
       prescribe: () => {
         const g = gramsFor(
           c,
@@ -671,15 +732,27 @@ function readingRules(c: Ctx): Draft[] {
           t.alkalinity.set,
           1000 * V,
         );
-        const per =
+        // A visit's acid: its alkalinity limit, and no more than takes the
+        // pH to its band's foot (open) or 0.2 below it (closed); the pH
+        // comes back up as the CO₂ the acid made leaves (acid and aerate).
+        const floor = t.ph.low - (c.open ? 0 : 0.2);
+        const per = Math.min(
           (g * limit(c, 'alkalinity')) /
-          Math.max(1e-9, c.w.alkalinity - t.alkalinity.set);
+            Math.max(1e-9, c.w.alkalinity - t.alkalinity.set),
+          acidFor(c.w, floor, V, c.T),
+        );
+        if (!(per > g * 0.01)) return null;
         return doseOf(
           'acid',
           g / CHANNELS.acid.gramsPerUnit,
           'l',
           c,
           per / CHANNELS.acid.gramsPerUnit,
+          c.online('acid') && !c.pinned('acid')
+            ? 'automatic'
+            : c.open
+              ? 'balance-tank'
+              : 'pool',
         );
       },
     });
@@ -737,24 +810,36 @@ function readingRules(c: Ctx): Draft[] {
       });
     }
   } else if (ph < t.ph.low) {
+    const far = ph < t.ph.low - ALARM_LIMITS.phMargin;
+    // Normal practice: a pH a little low in a pool dosed with acid is put
+    // right by the water itself, as it gives up its CO₂ (and the acid pump
+    // stops); look at the acid dosing. Only a pH far out wants soda ash.
+    const waits = !far && c.online('acid');
     add({
       id: 'ph-low',
       reading: 'ph',
-      severity: ph < t.ph.low - ALARM_LIMITS.phMargin ? 'alarm' : 'warning',
+      severity: far ? 'alarm' : 'warning',
       problem: `pH low (${twoDp(ph)}): the water will sting and corrode.`,
-      direction: 'Raise it gently with soda ash.',
-      additive: 'sodaAsh',
-      prescribe: () => {
-        const g = gramsFor(c, 'sodaAsh', (w) => w.ph, t.ph.set, 200 * V);
-        const per = gramsFor(
-          c,
-          'sodaAsh',
-          (w) => w.ph,
-          Math.min(t.ph.set, c.w.ph + limit(c, 'ph')),
-          200 * V,
-        );
-        return doseOf('sodaAsh', g / 1000, 'kg', c, per / 1000);
-      },
+      direction: waits
+        ? 'It will rise on its own as the water gives up its CO₂; check the acid pump is not overdosing.'
+        : 'Raise it gently with soda ash.',
+      additive: waits ? null : 'sodaAsh',
+      prescribe: waits
+        ? null
+        : () => {
+            // Halfway from the band's foot to its set point: a pool's pH
+            // drifts up on its own as its CO₂ leaves it, and finishes the job.
+            const aim = (t.ph.low + t.ph.set) / 2;
+            const g = gramsFor(c, 'sodaAsh', (w) => w.ph, aim, 200 * V);
+            const per = gramsFor(
+              c,
+              'sodaAsh',
+              (w) => w.ph,
+              Math.min(aim, c.w.ph + limit(c, 'ph')),
+              200 * V,
+            );
+            return doseOf('sodaAsh', g / 1000, 'kg', c, per / 1000);
+          },
     });
   }
 
@@ -908,7 +993,7 @@ function channelRules(
         reading: null,
         severity: 'warning',
         problem: `The ${DEVICE[ch.id]} is offline (${why}): ${EFFECT[ch.id]}.`,
-        direction: fixFor(ch.id, st.reason),
+        direction: fixFor(ch.id, st.reason, st.fault),
         additive: null,
         prescribe: null,
       });
@@ -1011,7 +1096,10 @@ function order(drafts: Draft[], c: Ctx | null, doses = true): Advice[] {
     if (seen.has(id)) return o;
     seen.add(id);
     let { tier, size } = o;
-    for (const e of BEFORE[id] ?? []) {
+    // Only an instruction comes before: a wait (no additive) does not.
+    const draft = drafts.find((d) => d.id === id);
+    const instructs = !!draft?.additive || id.endsWith('-offline');
+    for (const e of instructs ? (BEFORE[id] ?? []) : []) {
       if (!has(e)) continue;
       const l = lifted(e, seen);
       if (l.tier < tier || (l.tier === tier && l.size >= size)) {
@@ -1075,6 +1163,13 @@ function draftsOf(
     V: Math.max(1e-6, settings.dynamics.volumeM3),
     T,
     online: (id) => statusOf(id) === 'online',
+    // Flat out, and (for acid) against a structural demand: the alkalinity
+    // at or above its set point, whose CO₂ loss keeps lifting the pH. With
+    // less, the pump catches up alone, and a hand dose only replaces its own.
+    pinned: (id) =>
+      statusOf(id) === 'online' &&
+      (channels.find((ch) => ch.id === id)?.demand ?? 0) >= PINNED &&
+      (id !== 'acid' || readings.alkalinity >= settings.targets.alkalinity.set),
     open: options.open ?? true,
     makeUp: Math.max(0.1, settings.dynamics.flowM3h * 0.1),
     superchlorinating: options.superchlorinating ?? false,

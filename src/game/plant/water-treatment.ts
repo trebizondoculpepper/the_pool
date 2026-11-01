@@ -230,7 +230,12 @@ export function releaseCharges(
       const fresh = ch.fresh * share;
       const total = vTank + vPool;
       if (fresh > 0 && total > EMPTY) {
-        const f = Math.min(1, fresh / total);
+        // A drain-down and refill: the water drained is the pool's as it
+        // was, so the whole charge replaces its share B of it, as a batch
+        // would (not a bleed, which would drain fresh water with the old).
+        const B = Math.min(1, ch.fresh / total);
+        const done = 1 - ch.left;
+        const f = Math.min(1, (B * share) / Math.max(1e-9, 1 - B * done));
         const mains = waterFrom(MAINS);
         const mix = (w: PoolChemistry) =>
           mixWaters(

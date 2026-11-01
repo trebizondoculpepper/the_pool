@@ -56,7 +56,8 @@ describe('reference: sodium bicarbonate per 10 mg/l of alkalinity', () => {
     expect(rel(d.alkalinity - 100, 10)).toBeLessThan(0.01);
   });
   it('Show dose: 60 → 120 mg/l in 100 m³ is 10.07 kg (±3 %)', () => {
-    const a = showDose({ alkalinity: 60 }, 'alkalinity-low');
+    // At pH 7.3: with the pH above its band the bicarbonate waits for it.
+    const a = showDose({ alkalinity: 60, ph: 7.3 }, 'alkalinity-low');
     expect(a.dose?.unit).toBe('kg');
     expect(rel(a.dose!.amount, 10.07)).toBeLessThan(0.03);
   });
@@ -81,10 +82,10 @@ describe('reference: soda ash, its alkalinity and its pH', () => {
     const d = dose(water({ ph: 7.2, alkalinity: 80 }), { sodaAsh: 1059 }, V, T);
     expect(Math.abs(d.ph - 7.5)).toBeLessThan(0.03);
   });
-  it('Show dose: pH 7.0 → 7.3 at alkalinity 100 is 1.94 kg per 100 m³ (±5 %)', () => {
-    const a = showDose({ ph: 7.0, alkalinity: 100 }, 'ph-low');
+  it('Show dose: pH 6.9 (far low) → 7.25, halfway to its set point, at alkalinity 100 is 2.65 kg per 100 m³ (±5 %)', () => {
+    const a = showDose({ ph: 6.9, alkalinity: 100 }, 'ph-low');
     expect(a.additive).toBe('sodaAsh');
-    expect(rel(a.dose!.amount, 1.943)).toBeLessThan(0.05);
+    expect(rel(a.dose!.amount, 2.651)).toBeLessThan(0.05);
   });
 });
 
@@ -141,11 +142,12 @@ describe('reference: sodium hypochlorite per 1 mg/l of free chlorine', () => {
 describe('reference: sodium thiosulphate per 1 mg/l of chlorine removed', () => {
   // PWTAG TN23: 5 g of the pentahydrate per m³ per mg/l (the model is fitted
   // to it). Stoichiometry to sulphate alone is 0.875 g/m³; US trade figures
-  // 1.2 to 2 g/m³. 4.0 → 1.3 mg/l in 100 m³: 2.7 × 100 × 5 = 1.35 kg.
-  it('Show dose: 4.0 → 1.3 mg/l in 100 m³ is 1.35 kg (±3 %)', () => {
+  // 1.2 to 2 g/m³. Show dose takes it to the top of its band (it falls the
+  // rest on its own): 4.0 → 1.5 mg/l in 100 m³, 2.5 × 100 × 5 = 1.25 kg.
+  it('Show dose: 4.0 → 1.5 mg/l in 100 m³ is 1.25 kg (±3 %)', () => {
     const a = showDose({ freeChlorine: 4 }, 'free-chlorine-high');
     expect(a.additive).toBe('thiosulphate');
-    expect(rel(a.dose!.amount, 1.35)).toBeLessThan(0.03);
+    expect(rel(a.dose!.amount, 1.25)).toBeLessThan(0.03);
   });
 });
 

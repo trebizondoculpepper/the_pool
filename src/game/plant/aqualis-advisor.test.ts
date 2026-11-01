@@ -384,10 +384,16 @@ describe('Show dose', () => {
     expect(at(water, { co2: d.amount }).ph).toBeCloseTo(7.3, 1);
   });
 
-  it('soda ash for low pH, in kilograms', () => {
-    const { d, water } = doseFor({ ph: 7.0 }, 'ph-low');
+  it('soda ash for a pH far low, in kilograms, aimed halfway to its set point', () => {
+    const { d, water } = doseFor({ ph: 6.9 }, 'ph-low');
     expect(d.unit).toBe('kg');
-    expect(at(water, { sodaAsh: d.amount * 1000 }).ph).toBeCloseTo(7.3, 1);
+    expect(at(water, { sodaAsh: d.amount * 1000 }).ph).toBeCloseTo(7.25, 1);
+  });
+  it('a pH a little low, with the acid pump online, is left to rise on its own', () => {
+    const { r, water } = scene({ ph: 7.1 });
+    const a = find(advise(r, SETTINGS, ALL_ONLINE, water), 'ph-low');
+    expect(a.additive).toBe(null);
+    expect(a.direction).toMatch(/rise on its own/);
   });
 
   it('calcium chloride for low hardness, in kilograms', () => {
@@ -412,12 +418,12 @@ describe('Show dose', () => {
     expect(Math.abs(after)).toBeLessThan(0.02);
   });
 
-  it('thiosulphate for very high chlorine, in kilograms', () => {
+  it('thiosulphate for very high chlorine, in kilograms, to the top of its band', () => {
     const { d } = doseFor({ freeChlorine: 4.5 }, 'free-chlorine-high');
     expect(d.unit).toBe('kg');
     const removed =
       (d.amount * 1000 * thiosulphateStoichiometry().chlorinePerMg) / V;
-    near(removed, 4.5 - 1.3);
+    near(removed, 4.5 - 1.5);
   });
 
   it('superchlorination raises free chlorine to ten times the combined', () => {

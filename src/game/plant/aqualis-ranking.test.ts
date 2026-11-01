@@ -129,33 +129,44 @@ describe('within a tier, the biggest difference first', () => {
 });
 
 describe('normal practice: alkalinity before pH', () => {
-  it('alkalinity low before pH high, even where the pH is further out', () => {
-    const a = ranked({ alkalinity: 70, ph: 7.55 });
+  it('alkalinity low before a pH low, even where the pH is further out', () => {
+    const a = ranked({ alkalinity: 70, ph: 6.95 }, {}, {}, ACID_OFF);
     const i = ids(a);
-    expect(deviation(7.55, { set: 7.3, low: 7.2, high: 7.4 })).toBeGreaterThan(
+    expect(deviation(6.95, { set: 7.3, low: 7.2, high: 7.4 })).toBeGreaterThan(
       deviation(70, { set: 120, low: 80, high: 200 }),
     );
-    expect(i.indexOf('alkalinity-low')).toBeLessThan(i.indexOf('ph-high'));
-  });
-  it('and lifted to the pH’s tier when the pH is far out', () => {
-    const a = ranked({ alkalinity: 70, ph: 7.75 });
+    expect(i.indexOf('alkalinity-low')).toBeLessThan(i.indexOf('ph-low'));
+    // And lifted to the pH's tier, the pH far out.
     expect(tierOf(a, 'alkalinity-low')).toBe(1);
-    expect(ids(a).slice(0, 2)).toEqual(['alkalinity-low', 'ph-high']);
   });
-  it('the bicarbonate’s words, the pH high: the acid pump will bring it back', () => {
-    const a = ranked({ alkalinity: 70, ph: 7.55 });
+  it('the bicarbonate’s words, the pH at or above its set point: the acid pump will bring it back', () => {
+    const a = ranked({ alkalinity: 70, ph: 7.35 });
     expect(a.find((x) => x.id === 'alkalinity-low')?.direction).toMatch(
       /lift the pH a little; the acid pump will bring it back down/,
     );
   });
   it('and with the acid offline: acid by hand after it', () => {
-    const a = ranked({ alkalinity: 70, ph: 7.55 }, {}, {}, ACID_OFF);
+    const a = ranked({ alkalinity: 70, ph: 7.35 }, {}, {}, ACID_OFF);
     expect(a.find((x) => x.id === 'alkalinity-low')?.direction).toMatch(
       /then lower the pH with acid by hand/,
     );
+  });
+  it('the pH already above its band: the bicarbonate waits for it (it would lift the pH past its alarm)', () => {
+    const a = ranked({ alkalinity: 70, ph: 7.55 });
+    const alk = a.find((x) => x.id === 'alkalinity-low')!;
+    expect(alk.additive).toBe(null);
+    expect(alk.direction).toMatch(
+      /^Let the acid pump bring the pH into its band first/,
+    );
+  });
+  it('and with the acid offline: acid by hand first, the bicarbonate after', () => {
+    const a = ranked({ alkalinity: 70, ph: 7.55 }, {}, {}, ACID_OFF);
     const i = ids(a);
-    expect(i.indexOf('alkalinity-low')).toBeLessThan(i.indexOf('ph-high'));
+    expect(i.indexOf('ph-high')).toBeLessThan(i.indexOf('alkalinity-low'));
     expect(a.find((x) => x.id === 'ph-high')?.where).toBe('balance-tank');
+    expect(a.find((x) => x.id === 'alkalinity-low')?.direction).toMatch(
+      /^Lower the pH with acid by hand first/,
+    );
   });
   it('with the pH below its set point the bicarbonate needs no warning', () => {
     const a = ranked({ alkalinity: 70, ph: 7.25 });

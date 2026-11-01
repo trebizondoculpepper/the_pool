@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { waterFrom } from '../water/pool-chemistry';
+import { dose, waterFrom } from '../water/pool-chemistry';
 import type { WaterSpec } from '../water/pool-chemistry';
 import { PER_VISIT, advise } from './aqualis-advisor';
 import { trioSettings } from './aqualis-world';
@@ -8,7 +8,6 @@ import {
   TRIO_CHANNELS,
   channelView,
   readingsOf,
-  rel,
 } from './aqualis-advice.test-support';
 
 /**
@@ -82,19 +81,38 @@ describe('Show dose says how the dose goes in', () => {
 });
 
 describe('a dose too big for one visit is split', () => {
-  it('the Lounge: alkalinity 30 → 120 is two visits of at most 50 mg/l', () => {
+  it('the Lounge: alkalinity 30 → 120 is split, each visit at most 50 mg/l', () => {
     const a = adviceFor('pool_01', { alkalinity: 30 }, 'alkalinity-low');
-    expect(a.dose?.visits).toBe(2);
-    expect(rel(a.dose!.first, (a.dose!.amount * 50) / 90)).toBeLessThan(0.02);
+    expect(a.dose!.visits).toBeGreaterThanOrEqual(2);
+    expect(a.dose!.first).toBeLessThanOrEqual(
+      (a.dose!.amount * 50) / 90 + 1e-9,
+    );
     expect(a.dose?.how).toMatch(/Too much at once: .* now/);
   });
-  it('the Olympic: its bicarbonate over 200 kg, split, the first visit 50 mg/l’s worth', () => {
+  it('the Olympic: its bicarbonate over 200 kg, split, the first visit at most 50 mg/l’s worth', () => {
     const a = adviceFor('pool_02', { alkalinity: 50 }, 'alkalinity-low');
     expect(a.dose!.amount).toBeGreaterThan(200);
-    expect(a.dose!.visits).toBe(Math.ceil(70 / PER_VISIT.alkalinity));
-    expect(
-      rel(a.dose!.first, (a.dose!.amount * PER_VISIT.alkalinity) / 70),
-    ).toBeLessThan(0.02);
+    expect(a.dose!.visits).toBeGreaterThanOrEqual(
+      Math.ceil(70 / PER_VISIT.alkalinity),
+    );
+    expect(a.dose!.first).toBeLessThanOrEqual(
+      (a.dose!.amount * PER_VISIT.alkalinity) / 70 + 1e-9,
+    );
+  });
+  it('and no more at a visit than keeps the pH, unbuffered, 0.1 inside its alarm limit', () => {
+    const a = adviceFor(
+      'pool_01',
+      { alkalinity: 50, ph: 7.35 },
+      'alkalinity-low',
+    );
+    const w = waterFrom({ ...GOOD, alkalinity: 50, ph: 7.35 });
+    const after = dose(
+      w,
+      { bicarbonate: a.dose!.first * 1000 },
+      trioSettings('pool_01').dynamics.volumeM3,
+      GOOD.temperature,
+    );
+    expect(after.ph).toBeLessThanOrEqual(7.5 + 0.005);
   });
   it('a small correction is one visit, all of it', () => {
     const a = adviceFor('pool_01', { alkalinity: 78 }, 'alkalinity-low');
