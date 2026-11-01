@@ -6,7 +6,17 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- The engineer's office chair can be sat in, as the bridge's chairs can: use it and you sit facing the Gateway 3000's screen; walk or crouch to stand.
+
+- The engineer's Gateway 3000 boots DOS when its power is pressed, with the game's `dos` boot sequence (Kestrel BIOS, memory count, then DOS), its screen redrawn only when the boot's picture changes.
+
+- The developer console's log now records pumps and alarms as it does valves: each pool's circulation pumps and the wet hall's make-up booster set STARTED and STOPPED, with who did it (you, the console, its starter, or the make-up's demand), and every annunciator window, on the control room's board and each location's, as its alarm comes in, is accepted, clears and is reset, each line naming the board by its tag and name and the window by its engraving, all taken from the model.
+
 - The balance tank hall's doors carry their own warning signs, current UK style after ISO 7010, on both faces of both leaves: Authorised Personnel Only, Danger Deep Water (risk of drowning), Danger Confined Space (tank entry by permit only), Caution Slippery Surface and Fire Door Keep Shut (a new `tank-hall` door warning preset), in the Olympic tank hall and on any plant room shell's tank doors.
+
+### Changed
+
+- The software boxes' barcodes now start 20, GS1's in-store range, rather than 50, a real UK range, so no fictional box shares a code with a real product; their check digits stay valid.
 
 ## [0.9.0] - 2026-10-31
 

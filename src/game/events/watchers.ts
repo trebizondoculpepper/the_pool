@@ -38,9 +38,7 @@ const WATCHERS: readonly Watcher<unknown>[] = [
         const pump = `${MOTORS[tag].role} pump, ${MOTORS[tag].pool}`;
         if (now.endsWith('-trip') && !was.endsWith('-trip'))
           return { subject: tag, text: `${pump}: TRIPPED`, severity: 'alarm' };
-        if (now === 'run') return { subject: tag, text: `${pump}: running` };
-        if (now === 'stop' && was === 'run')
-          return { subject: tag, text: `${pump}: stopped` };
+        // Starting and stopping: the pumps' source (`pump-events.ts`).
         if (was.endsWith('-trip') && !now.endsWith('-trip'))
           return { subject: tag, text: `${pump}: trip cleared` };
         return null;

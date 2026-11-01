@@ -5,6 +5,7 @@ import type { GameEvent } from './game-event';
 import { formatEvent } from './game-event';
 import { actionEvents } from './describe-action';
 import { collectEvents, diffWorld } from './event-sources';
+import { steady } from './steady.test-support';
 import { allDue } from '../plant/wash-o-tron.test-support';
 
 /** A world and its log, as the world store keeps them: actions and steps. */
@@ -69,7 +70,7 @@ describe('the valve log', () => {
     expect(diffWorld(w, w)).toEqual([]);
     const t = logged();
     t.run(30);
-    expect(t.log).toEqual([]);
+    expect(steady(t.log)).toEqual([]);
   });
 
   it('logs a Wash-O-Tron state change’s valves, attributed to it', () => {

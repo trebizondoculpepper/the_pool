@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
+import { steady } from './steady.test-support';
 import { advance, applyAction, newWorld } from '../world';
 import type { World, WorldAction } from '../world';
 import {
@@ -125,7 +126,7 @@ describe('watching the plant', () => {
     expect(WATCHER_COUNT).toBeGreaterThan(10);
     const w = newWorld();
     expect(diffWorld(w, w)).toEqual([]);
-    expect(diffWorld(w, advance(w, 1))).toEqual([]);
+    expect(steady(diffWorld(w, advance(w, 1)))).toEqual([]);
   });
 
   it('logs the lights going out once, when they go', () => {
@@ -134,7 +135,7 @@ describe('watching the plant', () => {
     const said = diffWorld(w, dark);
     expect(said.length).toBeGreaterThan(0);
     expect(said.every((e) => e.text === 'lights out')).toBe(true);
-    expect(diffWorld(dark, advance(dark, 1))).toEqual([]);
+    expect(steady(diffWorld(dark, advance(dark, 1)))).toEqual([]);
   });
 
   it('logs a pump stopping when its panel’s emergency stop is struck', () => {
@@ -145,7 +146,7 @@ describe('watching the plant', () => {
     );
     const said = diffWorld(w, stopped);
     expect(
-      said.some((e) => e.subject === 'P-101A' && /stopped/.test(e.text)),
+      said.some((e) => e.subject === 'P-101A' && /STOPPED/.test(e.text)),
     ).toBe(true);
   });
 

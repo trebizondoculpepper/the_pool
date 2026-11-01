@@ -2,12 +2,14 @@ import type { World } from '../world';
 import type { GameEvent } from './game-event';
 import { watcherEvents } from './watchers';
 import { valveEvents } from './valve-events';
+import { pumpEvents } from './pump-events';
+import { alarmEvents } from './alarm-events';
 
 /**
  * Where the log's lines about the plant come from: a short list of event
  * sources, each comparing the world before and after a step or an action
- * and adding a line for each change it sees. A new kind of event (pumps
- * starting and stopping, alarms) is a new source added to the list. Pure.
+ * and adding a line for each change it sees. A new kind of event is a new source
+ * added to the list: valves, pumps, alarms. Pure.
  */
 
 /** What made a change, when the world knows: an action's hand; none for a step. */
@@ -31,6 +33,8 @@ export type EventSource = (
 export const EVENT_SOURCES: readonly EventSource[] = [
   watcherEvents,
   valveEvents,
+  pumpEvents,
+  alarmEvents,
 ];
 
 /** What changed from `before` to `after`, a line each, from every source. */
