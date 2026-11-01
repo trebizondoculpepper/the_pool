@@ -16,6 +16,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 ### Fixed
 
 - The release build no longer times out on GitHub's slower runner: the main incoming switch test (ten hours of world time) and the thermostat's heating and cooling tests (hours each) have moved to `*.slow.test.ts` files, which CI skips and `npm test` still runs locally.
+- The water no longer loses its carbon dioxide several times too fast (mission 118, the owner's top priority): Wojtowicz's CO₂ loss is held to the turnovers he measured (7.41 a day, where it ran to 160) and scaled from his test pool's true surface/volume (0.919 m⁻¹, not 0.67), checked against his own paper's constants and pH drifts (`co2-loss-reference.test.ts`); the jacuzzi's jets and air blower now drive CO₂ out while they run. The Lounge's acid falls from 37 to 13 l/day on the same water, its alkalinity drift from 34 to 11 mg/l a day (acid only; with the Trios' CO₂ on, as a new game now is, it needs 2.8 kg of CO₂ a day and no acid); a new game starts every pool, the spas too, at the Trio's alkalinity of 120, LSI −0.2 to 0, with no hand dose needed (the spas started at 34 and 16, LSI −0.6 and −0.9). Existing saves keep their water.
 
 ## [0.10.0] - 2026-11-01
 

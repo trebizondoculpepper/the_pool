@@ -52,6 +52,10 @@ const litres = (w: World, c: Chemical, site: PoolId) =>
 describe('the chemical distribution, end to end', () => {
   it('runs two day tanks dry with their pumps off, stops their dosing, and recovers when the pumps go back to AUTO', () => {
     let w = newWorld();
+    // Acid only: with CO₂ on, and the CO₂ loss put right (mission 118), the
+    // lounge's acid pump only trims and its day tank would not run dry.
+    for (const room of ['plant_pool_01', 'plant_pool_02'] as const)
+      w = applyAction(w, { type: 'co2/port', room, open: false });
     const chlorineAtStart = w.pools.pool_02.freeChlorine;
     w = nearlyEmpty(w, 'hypochlorite', 'pool_02');
     // The lounge draws little acid (a few litres a day), so start it lower.
