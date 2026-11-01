@@ -1,6 +1,16 @@
 # 118: CO₂ into Plant 1 and Plant 2, under the Trios
 
-The owner, 2026-10-31: "start plumbing in the carbon dioxide lines from the outside world, which will lead into the plants 1 and 2 only. And then there would need to be some kind of valve that links into the injection point and some kind of control system that allows the Aqualis trio to control that valve on or off … we want to see if that improves the situation now that the system has a milder acid to work with." It follows the advisor verification (`doc/plans/aqualis-advice-verification.md`), whose worked chemistry it builds on, and is started once that has merged.
+The owner, 2026-10-31: "start plumbing in the carbon dioxide lines from the outside world, which will lead into the plants 1 and 2 only. And then there would need to be some kind of valve that links into the injection point and some kind of control system that allows the Aqualis trio to control that valve on or off … we want to see if that improves the situation now that the system has a milder acid to work with." It follows the advisor verification (`doc/plans/aqualis-advice-verification.md`, merged 2026-11-01), whose worked chemistry it builds on.
+
+## Coordination (2026-11-01)
+
+The owner is giving this mission to another agent while the Claude session `nicole_buruaah` (agent-inbox) fixes the model's CO₂ loss rate in `src/game/water/` and `water-treatment.ts`.
+
+- **Can start now:** steps 1 to 4 and 6, meaning the model, the Trio's CO₂ port, the world state and stepping, the drawing, and the console stand-ins.
+- **Must wait for the CO₂ loss fix to merge:** step 5, the experiment. Run before the fix, it would measure the bug, not CO₂ dosing. `nicole_buruaah` will mail when it has merged.
+- **Don't edit:** `src/game/water/`, `water-treatment.ts`'s CO₂-loss and `SETTLED`/`MAINTAINED_ALKALINITY` code, `aqualis-advisor.ts`, `hand-dose.ts` and `test-kit.ts`, until that mail arrives. This mission's chemistry seam is `Additions.co2`, which already exists; feed grams into it and leave the chemistry alone.
+- **Agree a `WORLD_VERSION` number before taking one:** it is 65 now, and the CO₂ loss fix may need one. Mail `nicole_buruaah`, and rebase onto `main` before merging.
+- **`aqualis-world.ts`:** changes to the Trio's CO₂ port and `ChannelPorts.co2` belong to this mission. Say in the mail which functions you touch.
 
 Read the root `CLAUDE.md` first: the model is the source of truth, so each change goes into the graph first, then the plumbing, and then the scene binds. Also read `doc/plant-model.md`, `doc/room-layout-guide.md`, `doc/prompts/109-co2-supply.md`, `doc/plans/co2-system.md` (the pure logic, already built and tested), `doc/plans/114/placement.md` ("The CO₂ channel until CO₂ exists") and `doc/plans/new-game-normal.md` (the Lounge's pH drift and the spas, both put down to CO₂ loss and acid control).
 
