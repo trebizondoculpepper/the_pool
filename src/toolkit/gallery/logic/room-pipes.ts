@@ -4,6 +4,8 @@ import { loadingBayPlumbing } from './loading-bay-plumbing';
 import { dayTankPlumbing } from './day-tank-plumbing';
 import { chemicalLineFittings } from './chemical-line-fittings';
 import { MODEL_VALVES } from '../../../game/plant/model-valves';
+import { CO2_DETECTOR_LINK } from '../../../game/plant/co2-schematic';
+import { CO2_PANEL_PORTS } from './co2-fittings';
 import {
   LOUNGE_TRIO_SITE,
   SAMPLE_POINT,
@@ -1323,16 +1325,22 @@ export function poolPlantPipework(room: string): {
       0.35,
       'CO₂ CONTROL',
     );
-    // The building's low-pressure main enters beside the CO₂ panel; the
-    // panel's valve feeds a nozzle into the heated return after the filters.
+    // The CO₂ line (mission 118): the building's low-pressure main out of
+    // the wall into the wall port over the panel, its lever ball valve on
+    // the drop, down into the panel's inlet; from the panel's foot along
+    // past its edge, up into the ceiling and over to the nozzle on the
+    // heated return after the filters, through its non-return valve.
     const co2Panel = by('CO₂ dosing valve controller');
-    const co2Wall: Vec3 = [co2Panel.x, 1.5, hz + WALL];
-    const co2Port: Vec3 = [co2Panel.x, 1.5, hz - 0.12];
-    const co2Face: Vec3 = [co2Panel.x, 1.5, co2Panel.footprint.minZ - 0.05];
+    const co2Port = by('CO₂ wall port');
+    const portIn = port(co2Port, 'in');
+    const portOut = port(co2Port, 'out');
+    const panelIn = port(co2Panel, 'in');
+    const feedMid = (portOut.at[1] + panelIn.at[1]) / 2;
+    const panelOut = port(co2Panel, 'out');
     tube(
       'CO₂ from the building line',
       'CO₂ from the building line',
-      [co2Wall, co2Port],
+      [[portIn.at[0], portIn.at[1], hz], [...portIn.at]],
       'gas',
       'CO₂',
       'copper',
@@ -1342,23 +1350,35 @@ export function poolPlantPipework(room: string): {
     tube(
       'CO₂ low-pressure feed',
       'CO₂ low-pressure feed',
-      [co2Port, co2Face],
+      [
+        [...portOut.at],
+        [portOut.at[0], feedMid, portOut.at[2]],
+        [panelIn.at[0], feedMid, panelIn.at[2]],
+        [...panelIn.at],
+      ],
       'gas',
       'CO₂',
       'copper',
       0.015,
       ['CO₂ to the injection nozzle'],
     );
-    const co2Nozzle: Vec3 = [pheOut1[0] + 0.22, QUILL_Y, pheOut1[2]];
+    // On the heated main's riser, above the acid's quill.
+    const co2Y = QUILL_Y + 0.35;
+    const co2Nozzle: Vec3 = [pheOut1[0] + 0.22, co2Y, pheOut1[2]];
     const co2Roof = INTO_CEILING - 0.03;
+    // Out past the panel's edge on the side clear of its neighbours.
+    const co2Side = co2Panel.footprint.maxX + 0.05;
+    const co2Low = panelOut.at[1] - 0.1;
     tube(
       'CO₂ to the injection nozzle',
       'CO₂ to the injection nozzle',
       [
-        co2Face,
-        [co2Face[0], co2Roof, co2Face[2]],
-        [co2Nozzle[0], co2Roof, co2Face[2]],
-        [co2Nozzle[0], QUILL_Y, co2Face[2]],
+        [...panelOut.at],
+        [panelOut.at[0], co2Low, panelOut.at[2]],
+        [co2Side, co2Low, panelOut.at[2]],
+        [co2Side, co2Roof, panelOut.at[2]],
+        [co2Nozzle[0], co2Roof, panelOut.at[2]],
+        [co2Nozzle[0], co2Roof, co2Nozzle[2]],
         co2Nozzle,
       ],
       'gas',
@@ -1367,15 +1387,70 @@ export function poolPlantPipework(room: string): {
       0.015,
       ['CO₂ injection into the circulation'],
     );
+    // The nozzle's non-return valve, then the nozzle (an injection cone in
+    // a short contact length) set into the return.
+    const co2Check = MODEL_VALVES.find(
+      (v) => v.room === room && v.id === 'PL1.co2-injection.in.nrv',
+    );
+    const mainAt: Vec3 = [pheOut1[0], co2Y, pheOut1[2]];
+    const nozzleBody: Vec3 = [pheOut1[0] + 0.08, co2Y, pheOut1[2]];
+    run({
+      name: 'CO₂ injection into the circulation',
+      kind: 'copper',
+      od: 0.015,
+      points: [co2Nozzle, nozzleBody],
+      joins: ['CO₂ injection nozzle'],
+      service: 'gas',
+      label: 'CO₂',
+      checks: co2Check
+        ? [
+            {
+              at: [co2Nozzle[0] - 0.05, co2Y, co2Nozzle[2]],
+              along: [-1, 0, 0],
+              od: 0.015,
+              name: co2Check.name,
+              tag: co2Check.tag,
+              fitting: co2Check.id,
+            },
+          ]
+        : [],
+    });
+    run({
+      name: 'CO₂ injection nozzle',
+      model: { node: 'co2-injection' },
+      kind: 'stainless',
+      od: 0.03,
+      points: [nozzleBody, mainAt],
+      joins: ['Heat exchanger to the ozone contact tank'],
+      service: 'gas',
+      label: 'CO₂ NOZZLE',
+    });
+    // The detector's interlock cable, up from its controller into the
+    // ceiling and down onto the panel's control box.
+    const co2Detector = by('CO₂ detector');
+    const alarm = port(co2Detector, 'alarm');
+    const interlock: Vec3 = [
+      co2Panel.x - CO2_PANEL_PORTS.interlock[0],
+      co2Panel.y + CO2_PANEL_PORTS.interlock[1],
+      co2Panel.z - CO2_PANEL_PORTS.interlock[2],
+    ];
     tube(
-      'CO₂ injection into the circulation',
-      'CO₂ injection into the circulation',
-      [co2Nozzle, [pheOut1[0], QUILL_Y, pheOut1[2]]],
-      'gas',
-      'CO₂',
-      'copper',
-      0.015,
-      ['Heat exchanger to the ozone contact tank'],
+      `${CO2_DETECTOR_LINK}, from the detector`,
+      CO2_DETECTOR_LINK,
+      [[...alarm.at], [alarm.at[0], INTO_CEILING, alarm.at[2]]],
+      'electrical',
+      'CO₂ ALARM',
+      'steel-screwed',
+      0.02,
+    );
+    tube(
+      `${CO2_DETECTOR_LINK}, to the panel`,
+      CO2_DETECTOR_LINK,
+      [[interlock[0], INTO_CEILING, interlock[2]], interlock],
+      'electrical',
+      'CO₂ ALARM',
+      'steel-screwed',
+      0.02,
     );
     const annunciator = layout.placed.find((p) =>
       p.item.key.startsWith('annunciator'),

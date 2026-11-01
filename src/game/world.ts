@@ -17,7 +17,14 @@ import { newCo2Plant, stepCo2Plant } from './plant/co2-plant';
 import type { Co2Plant } from './plant/co2-plant';
 import { actOnCo2Doser, co2Feedback } from './plant/co2-dosing';
 import type { Co2PanelAction } from './plant/co2-dosing';
-import { setPortOpen } from './plant/co2-distribution';
+import { resetMaster, setMaster, setPortOpen } from './plant/co2-distribution';
+import {
+  CO2_ROOM_IDS,
+  acceptCo2,
+  masterInterlock,
+  resetCo2,
+} from './plant/co2-detection';
+import type { Co2RoomId } from './plant/co2-detection';
 import type { Co2PortId } from './plant/co2-distribution';
 import {
   setIsolation,
@@ -660,6 +667,10 @@ export type WorldAction =
   | { type: 'co2/port'; room: Co2PortId; open: boolean }
   /** At a plant room's CO₂ dosing panel: its REMOTE · MANUAL · OFF selector, manual rate or RESET (local controls). */
   | { type: 'co2/panel'; room: Co2PortId; action: Co2PanelAction }
+  /** At a room's CO₂ detector's controller: ACCEPT (silence) or RESET. */
+  | { type: 'co2/detector'; room: Co2RoomId; act: 'accept' | 'reset' }
+  /** At the loading bay's master valve panel: ON or OFF, and RESET after a trip. */
+  | { type: 'co2/master'; act: 'on' | 'off' | 'reset' }
   /** The chemical transfer control box worked: a terminal's command, its isolator or MCB, or a fault. */
   | { type: 'chem-control'; action: ChemControlAction }
   | { type: 'booster/changeover'; action: ChangeoverAction }
@@ -980,6 +991,33 @@ export function applyAction(world: World, action: WorldAction): World {
           ),
         },
       };
+    case 'co2/detector': {
+      const before = world.co2.detectors[action.room];
+      const after =
+        action.act === 'accept' ? acceptCo2(before) : resetCo2(before);
+      return after === before
+        ? world
+        : {
+            ...world,
+            co2: {
+              ...world.co2,
+              detectors: { ...world.co2.detectors, [action.room]: after },
+            },
+          };
+    }
+    case 'co2/master': {
+      const d = world.co2.distribution;
+      const holding = CO2_ROOM_IDS.some((id) =>
+        masterInterlock(world.co2.detectors[id]),
+      );
+      const next =
+        action.act === 'reset'
+          ? resetMaster(d, holding)
+          : setMaster(d, action.act === 'on');
+      return next === d
+        ? world
+        : { ...world, co2: { ...world.co2, distribution: next } };
+    }
     case 'co2/panel': {
       const doser = actOnCo2Doser(world.co2.dosers[action.room], action.action);
       return doser === world.co2.dosers[action.room]

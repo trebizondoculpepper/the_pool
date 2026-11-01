@@ -104,8 +104,23 @@ describe('a room’s CO₂ and its detector', () => {
     const burst = { ...quiet, minutes: quiet.minutes.map(() => 15500) };
     const b = stepCo2Detector(ROOM, burst, { leakGh: 0, fan: true }, 1);
     expect(b.a2).toBe(true);
-    // Neither resets while its average is over the limit.
-    expect(resetCo2(a)).toBe(a);
+    // The 15-minute average holds A2 until it is clear.
+    expect(resetCo2(b)).toBe(b);
+    // RESET clears the 8-hour average's A1 once the reading is clear
+    // (decision 7), and it does not latch again until that average falls.
+    const cleared = resetCo2(a);
+    expect(cleared.a1).toBe(false);
+    expect(dosingInterlock(cleared)).toBe(false);
+    const on = stepCo2Detector(ROOM, cleared, { leakGh: 0, fan: true }, 60);
+    expect(on.a1).toBe(false);
+    // A new leak still raises it on the reading.
+    const leak = stepCo2Detector(
+      ROOM,
+      { ...on, reading: CO2_LIMITS.a1 + 100, excess: CO2_LIMITS.a1 },
+      { leakGh: 0, fan: true },
+      1,
+    );
+    expect(leak.a1).toBe(true);
   });
 
   it('latches its alarms, and resets only once the air is clear again', () => {

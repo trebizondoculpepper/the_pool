@@ -377,6 +377,28 @@ function said(
         subject: 'CO₂ SUPPLY',
         text: `CO₂ changeover lever turned to ${after.co2.distribution.supply.service}`,
       };
+    case 'co2/detector': {
+      const where =
+        action.room === 'loading_bay'
+          ? 'Loading bay'
+          : action.room === 'plant_pool_01'
+            ? 'Lounge plant room'
+            : 'Olympic plant room';
+      return {
+        subject: `${where} CO₂ detector`,
+        text: `CO₂ detector ${action.act === 'accept' ? 'ACCEPT' : 'RESET'}`,
+      };
+    }
+    case 'co2/master':
+      return {
+        subject: modelTag('LB.co2-master.out.valve'),
+        text:
+          action.act === 'reset'
+            ? after.co2.distribution.master.tripped
+              ? 'CO₂ master valve RESET refused: a detector still holds it'
+              : 'CO₂ master valve RESET'
+            : `CO₂ master valve switched ${action.act.toUpperCase()}`,
+      };
     case 'co2/panel': {
       const a = action.action;
       const d = after.co2.dosers[action.room];

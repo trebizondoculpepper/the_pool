@@ -1,3 +1,5 @@
+import { CO2_PANEL_PORTS, CO2_PANEL_SIZE } from '../logic/co2-fittings';
+
 import { Group, Mesh, MeshStandardMaterial, SphereGeometry } from 'three';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createSevenSegment } from '../../components/core/views/eighties-controls';
@@ -53,13 +55,7 @@ import type {
  * backboard at the back of its 0.28 m depth (the wall's face at z = −0.14).
  */
 
-export const CO2_PANEL_SIZE = { w: 0.7, h: 0.9, d: 0.28 } as const;
-
-/** Where its gas enters (top) and leaves (bottom), in its frame: its pipes' ends. */
-export const CO2_PANEL_PORTS = {
-  inlet: [-0.17, CO2_PANEL_SIZE.h / 2, -0.08] as const,
-  outlet: [-0.17, -CO2_PANEL_SIZE.h / 2, -0.08] as const,
-} as const;
+export { CO2_PANEL_PORTS, CO2_PANEL_SIZE };
 
 /** The modes, left to right as engraved. */
 export const CO2_PANEL_MODES: readonly Co2DoserMode[] = [
@@ -145,10 +141,10 @@ export function createCo2DosingPanel(
   const face = back + 0.02;
   t.box(object, t.paint('#eceeea', 0.6), w, h, 0.02, 0, 0, back + 0.01);
   const title = createEngravedPlate(kit, ['CO₂ DOSING', 'VALVE CONTROLLER'], {
-    width: 0.3,
+    width: 0.25,
     height: 0.06,
   });
-  title.position.set(0.17, h / 2 - 0.05, face + 0.002);
+  title.position.set(0.145, h / 2 - 0.05, face + 0.002);
   object.add(title);
   // Its maker's badge under the control box; Penfold's mark, which wires
   // its control box, bottom right (the top right holds the title).

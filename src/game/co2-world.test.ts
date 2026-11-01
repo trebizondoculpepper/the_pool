@@ -37,4 +37,69 @@ describe('CO₂ dosing in the world', () => {
     expect(world.co2.dosers.plant_pool_01.delivering).toBe(0);
     expect(world.co2.dosers.plant_pool_02.delivering).toBeGreaterThan(0);
   });
+
+  it('works each panel’s local controls, the detectors’ ACCEPT and RESET, and the master valve', () => {
+    let world = newWorld();
+    world = applyAction(world, {
+      type: 'co2/panel',
+      room: 'plant_pool_02',
+      action: { kind: 'mode', mode: 'manual' },
+    });
+    world = applyAction(world, {
+      type: 'co2/panel',
+      room: 'plant_pool_02',
+      action: { kind: 'rate', gh: 800 },
+    });
+    expect(world.co2.dosers.plant_pool_02.mode).toBe('manual');
+    expect(world.co2.dosers.plant_pool_02.manualRate).toBe(800);
+    for (let i = 0; i < 6; i++) world = stepWorld(world, 10);
+    expect(world.co2.dosers.plant_pool_02.delivering).toBeCloseTo(800, 0);
+    // OFF from the panel stops it.
+    world = applyAction(world, {
+      type: 'co2/panel',
+      room: 'plant_pool_02',
+      action: { kind: 'mode', mode: 'off' },
+    });
+    for (let i = 0; i < 2; i++) world = stepWorld(world, 10);
+    expect(world.co2.dosers.plant_pool_02.delivering).toBe(0);
+    // A high alarm trips the master valve; RESET is refused while it holds.
+    world = {
+      ...world,
+      co2: {
+        ...world.co2,
+        detectors: {
+          ...world.co2.detectors,
+          loading_bay: {
+            ...world.co2.detectors.loading_bay,
+            a2: true,
+            reading: 20000,
+          },
+        },
+      },
+    };
+    world = stepWorld(world, 10);
+    expect(world.co2.distribution.master.tripped).toBe(true);
+    const refused = applyAction(world, { type: 'co2/master', act: 'reset' });
+    expect(refused.co2.distribution.master.tripped).toBe(true);
+    // The air clears; the detector is reset, then the master valve.
+    world = {
+      ...world,
+      co2: {
+        ...world.co2,
+        detectors: {
+          ...world.co2.detectors,
+          loading_bay: newWorld().co2.detectors.loading_bay,
+        },
+      },
+    };
+    world = applyAction(world, {
+      type: 'co2/detector',
+      room: 'loading_bay',
+      act: 'reset',
+    });
+    world = applyAction(world, { type: 'co2/master', act: 'reset' });
+    expect(world.co2.distribution.master.tripped).toBe(false);
+    world = applyAction(world, { type: 'co2/master', act: 'off' });
+    expect(world.co2.distribution.master.on).toBe(false);
+  });
 });

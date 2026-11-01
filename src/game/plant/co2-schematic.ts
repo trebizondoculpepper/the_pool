@@ -2,6 +2,12 @@ import { link } from './schematic-parts';
 import type { PlumbEdge } from './plumbing-expansion';
 import type { SchematicFitting, SchematicNode } from './schematics';
 
+/** The detector's interlock cable to its room's dosing panel. */
+export const CO2_DETECTOR_LINK = 'CO₂ detector interlock to the dosing panel';
+
+/** The injection nozzle's node: drawn as its contact length on the main. */
+export const CO2_NOZZLE_NODE = 'co2-injection';
+
 /** The low-pressure CO₂ branch shared by Plant 1 and Plant 2 (mission 118). */
 export function co2RoomParts(
   code: 'PL1' | 'PL2',
@@ -40,6 +46,14 @@ export function co2RoomParts(
         kind: 'gas-main',
         name: 'Low-pressure CO₂ building line',
       },
+      // The room's NDIR CO₂ detector, its head 0.3 m off the floor near
+      // the panel (CO₂ is heavier than air), its controller above it.
+      {
+        id: 'co2-detector',
+        kind: 'co2-detector',
+        code: 'GD2',
+        name: `${pool} CO₂ detector`,
+      },
     ],
     links: [
       link(inlet, ['co2-building-line', 'out'], ['co2-wall-port', 'in'], 'gas'),
@@ -56,6 +70,13 @@ export function co2RoomParts(
         ['switch-fuse', 'co2'],
         ['co2-panel', 'power'],
         'power',
+      ),
+      // Its alarms' interlock shuts the room's dosing valve (decision 8).
+      link(
+        CO2_DETECTOR_LINK,
+        ['co2-detector', 'alarm'],
+        ['co2-panel', 'interlock'],
+        'control',
       ),
     ],
     fittings: [

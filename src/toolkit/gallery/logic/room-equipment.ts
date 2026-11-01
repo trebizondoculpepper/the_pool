@@ -1,3 +1,10 @@
+import {
+  CO2_DETECTOR_SIZE,
+  CO2_DETECTOR_Y,
+  CO2_PANEL_PORTS,
+  CO2_WALL_PORT_SIZE,
+  CO2_WALL_PORT_Y,
+} from './co2-fittings';
 import { CHEMICALS } from '../../../game/plant/chemicals';
 import { OT216_SIZE } from '../../components/industrial-control/logic/ot216-terminal';
 import {
@@ -723,6 +730,26 @@ function poolPlant(
       {
         walls: ['south'],
       },
+    ),
+    // Its wall port above it, where the building's CO₂ line comes through
+    // (mission 118), and its CO₂ detector, the head 0.3 m off the floor.
+    wall(
+      'co2-wall-port',
+      `${name} CO₂ wall port`,
+      CO2_WALL_PORT_SIZE.w,
+      CO2_WALL_PORT_SIZE.d,
+      CO2_WALL_PORT_SIZE.h,
+      CO2_WALL_PORT_Y,
+      { walls: ['south'] },
+    ),
+    wall(
+      'co2-detector',
+      `${name} CO₂ detector`,
+      CO2_DETECTOR_SIZE.w,
+      CO2_DETECTOR_SIZE.d,
+      CO2_DETECTOR_SIZE.h,
+      CO2_DETECTOR_Y,
+      { walls: ['south'] },
     ),
   ];
 }
@@ -1957,10 +1984,22 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
     out.push(acidPlaced);
     // Between the Trio and the acid board, on the same dosing wall.
     const trioPlaced = out.find((p) => p.item === trio)!;
+    const co2Placed = put(box, at('CO₂ dosing valve controller'), {
+      wall: 'south',
+      along: (trioPlaced.footprint.maxX + acidPlaced.footprint.minX) / 2,
+    });
+    out.push(co2Placed);
+    // Its wall port hung above it, over its inlet (mission 118); its
+    // detector between the acid board and the hypochlorite pumps, near it.
+    const co2X = (co2Placed.footprint.minX + co2Placed.footprint.maxX) / 2;
     out.push(
-      put(box, at('CO₂ dosing valve controller'), {
+      put(box, at('CO₂ wall port'), {
         wall: 'south',
-        along: (trioPlaced.footprint.maxX + acidPlaced.footprint.minX) / 2,
+        along: co2X - CO2_PANEL_PORTS.inlet[0],
+      }),
+      put(box, at('CO₂ detector'), {
+        wall: 'south',
+        along: (acidPlaced.footprint.maxX + hypoPlaced.footprint.minX) / 2,
       }),
     );
     // The annunciator on the south wall, just west of the door (the owner,

@@ -1,3 +1,8 @@
+import {
+  CO2_DETECTOR_LINK,
+  CO2_NOZZLE_NODE,
+} from '../../../game/plant/co2-schematic';
+import { CO2_PANEL_PORTS } from './co2-fittings';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { chemicalLineFittings } from './chemical-line-fittings';
 import {
@@ -176,6 +181,8 @@ const ITEM: Record<string, { key: string }> = {
   hypo: { key: 'hypo-pumps' },
   acid: { key: 'acid-pump' },
   'co2-panel': { key: 'co2-panel' },
+  'co2-wall-port': { key: 'co2-wall-port' },
+  'co2-detector': { key: 'co2-detector' },
   tankPanel: { key: 'balance-tank-panel' },
 };
 const itemOf = (p: PlanItem): Item => ({
@@ -346,6 +353,8 @@ const pipeOf: Record<string, { kind: Kind; joint: PipeJoint; medium: Medium }> =
     makeup: { kind: 'copper', joint: 'socket', medium: 'water' },
     chemical: { kind: 'chemical-tube', joint: 'socket', medium: 'chemical' },
     co2: { kind: 'copper', joint: 'socket', medium: 'gas' },
+    // The CO₂ injection nozzle's contact length (mission 118).
+    nozzle: { kind: 'stainless', joint: 'socket', medium: 'gas' },
     // A day tank's branch from the wet hall's selector: PVC-U, rigid.
     transfer: { kind: 'pvc-pressure', joint: 'socket', medium: 'chemical' },
     ozone: { kind: 'stainless', joint: 'socket', medium: 'gas' },
@@ -1220,42 +1229,72 @@ export function plumbOlympic(
       [co2X, TRIO_Y.co2, co2Z],
       [co2X, topOf(co2Board), co2Z],
     ]);
-    const wallPort: Vec3 = [co2Board.x, 1.5, hz - 0.12];
-    const panelFace: Vec3 = [co2Board.x, 1.5, co2Board.z - 0.18];
+    // The CO₂ line (mission 118): out of the wall into the wall port over
+    // the panel, down into its inlet; from its foot past its edge, up over
+    // the plant to the nozzle on the UV unit's outlet, through its
+    // non-return valve; and the detector's interlock cable to the panel.
+    const portIn = port('co2-wall-port', 'in');
+    const portOut = port('co2-wall-port', 'out');
+    const panelIn = port('co2-panel', 'in');
+    const panelOut = port('co2-panel', 'out');
     rule(
       'CO₂ from the building line',
       'CO₂ from the building line',
       'co2',
       0.015,
-      [[co2Board.x, 1.5, hz + 0.2], wallPort],
+      [[portIn.at[0], portIn.at[1], hz + 0.2], portIn.at],
     );
     rule('CO₂ low-pressure feed', 'CO₂ low-pressure feed', 'co2', 0.015, [
-      wallPort,
-      panelFace,
+      portOut.at,
+      [portOut.at[0], (portOut.at[1] + panelIn.at[1]) / 2, portOut.at[2]],
+      [panelIn.at[0], (portOut.at[1] + panelIn.at[1]) / 2, panelIn.at[2]],
+      panelIn.at,
     ]);
     const uvOutlet = port('uv', 'outlet').at;
     const nozzle: Vec3 = [uvOutlet[0] + 0.22, uvOutlet[1], uvOutlet[2]];
     const gasY = 3.15;
+    const side = round(footprintOf(co2Board).maxX + 0.05);
+    const low = round(panelOut.at[1] - 0.1);
     rule(
       'CO₂ to the injection nozzle',
       'CO₂ to the injection nozzle',
       'co2',
       0.015,
       [
-        panelFace,
-        [panelFace[0], gasY, panelFace[2]],
-        [panelFace[0], gasY, uvOutlet[2]],
+        panelOut.at,
+        [panelOut.at[0], low, panelOut.at[2]],
+        [side, low, panelOut.at[2]],
+        [side, gasY, panelOut.at[2]],
+        [side, gasY, uvOutlet[2]],
         [nozzle[0], gasY, uvOutlet[2]],
         nozzle,
       ],
     );
+    const nozzleBody: Vec3 = [uvOutlet[0] + 0.08, uvOutlet[1], uvOutlet[2]];
     rule(
       'CO₂ injection into the circulation',
       'CO₂ injection into the circulation',
       'co2',
       0.015,
-      [nozzle, uvOutlet],
+      [nozzle, nozzleBody],
     );
+    rule('CO₂ injection nozzle', 'co2-injection', 'nozzle', 0.03, [
+      nozzleBody,
+      uvOutlet,
+    ]);
+    const alarmOut = port('co2-detector', 'alarm');
+    const interlock: Vec3 = [
+      round(co2Board.x - CO2_PANEL_PORTS.interlock[0]),
+      round((co2Board.y ?? 0) + CO2_PANEL_PORTS.interlock[1]),
+      round(co2Board.z - CO2_PANEL_PORTS.interlock[2]),
+    ];
+    rule(CO2_DETECTOR_LINK, CO2_DETECTOR_LINK, 'control', 0.02, [
+      alarmOut.at,
+      [alarmOut.at[0], TRIO_Y.co2 + 0.1, alarmOut.at[2]],
+      [interlock[0], TRIO_Y.co2 + 0.1, alarmOut.at[2]],
+      [interlock[0], TRIO_Y.co2 + 0.1, interlock[2]],
+      interlock,
+    ]);
     // Its alarm to the local panel on the east wall: up over the landing's
     // headroom, under the busbar, north of the stair and across, and down
     // the wall behind the gantry.
@@ -2145,7 +2184,9 @@ export function olympicRoom() {
       name: r.name,
       // The Trio's sample point is a node (the saddle and its stub).
       model:
-        r.line === SAMPLE_POINT ? { node: SAMPLE_POINT } : { link: r.line },
+        r.line === SAMPLE_POINT || r.line === CO2_NOZZLE_NODE
+          ? { node: r.line }
+          : { link: r.line },
       kind: r.kind,
       od: r.od,
       points: r.points,

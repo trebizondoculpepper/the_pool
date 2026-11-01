@@ -27,11 +27,14 @@ export function createGasBallValve(
     initial = true,
     name = 'Gas isolating valve',
     binding,
+    lever: leverColour = '#e5c43a',
   }: {
     pipeRadius?: number;
     initial?: boolean;
     name?: string;
     binding?: { open(): boolean; set(open: boolean): void };
+    /** Its lever's colour: yellow for gas, red for an emergency isolation valve. */
+    lever?: string;
   } = {},
 ): BallValveView {
   const t = plantTools(kit);
@@ -46,7 +49,7 @@ export function createGasBallValve(
   a.object.add(lever);
   const handle = t.box(
     lever,
-    t.paint('#e5c43a', 0.45),
+    t.paint(leverColour, 0.45),
     0.16,
     0.012,
     0.03,
@@ -61,15 +64,19 @@ export function createGasBallValve(
     if (binding) binding.set(!binding.open());
     else open = !open;
   });
+  // A quarter turn, either way it is (the crosshair's cue, prompt 115).
+  a.cue(handle, () => ({
+    gesture: 'turn',
+    direction: (binding?.open() ?? open) ? -1 : 1,
+    possible: true,
+  }));
   a.updates.push((delta) => {
     const target = (binding?.open() ?? open) ? 0 : -Math.PI / 2;
     angle += (target - angle) * Math.min(1, delta * 8);
     lever.rotation.y = angle;
   });
-  const part = a.part();
-  return Object.assign(part, {
-    get open() {
-      return binding?.open() ?? open;
-    },
-  });
+  // A live getter (Object.assign would read it once, as it is built).
+  return Object.defineProperty(a.part(), 'open', {
+    get: () => binding?.open() ?? open,
+  }) as BallValveView;
 }

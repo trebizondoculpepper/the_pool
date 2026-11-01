@@ -14,6 +14,7 @@ import {
 import { olympicPlanKeys, olympicPlumbing } from './olympic-plumbing';
 import { OLYMPIC_ANNEX } from './olympic-annex';
 import { SAMPLE_POINT } from '../../../game/plant/aqualis-schematic';
+import { CO2_NOZZLE_NODE } from '../../../game/plant/co2-schematic';
 import { SCHEMATICS, schematicExpansion } from '../../../game/plant/schematics';
 import { modelValveOn } from '../../../game/plant/model-valves';
 import type {
@@ -180,7 +181,9 @@ function olympicThings(): DrawnThing[] {
       name: r.name,
       // The Trio's sample point is a node: the saddle and its stub.
       binding:
-        r.line === SAMPLE_POINT ? { node: SAMPLE_POINT } : { link: r.line },
+        r.line === SAMPLE_POINT || r.line === CO2_NOZZLE_NODE
+          ? { node: r.line }
+          : { link: r.line },
     })),
   ];
 }

@@ -1,6 +1,19 @@
 import { createBackwashPitWater } from '../../components/plant/views/backwash-pit-water';
 import { createCo2DosingPanel } from './co2-dosing-panel';
-import { portPressure } from '../../../game/plant/co2-distribution';
+import {
+  linePressure,
+  portPressure,
+} from '../../../game/plant/co2-distribution';
+import { createCo2Detector, createCo2WallPort } from './co2-room-fittings';
+import type { FittingView } from './co2-room-fittings';
+
+/** A CO₂ fitting as a room's working exhibit. */
+const liveFitting = (f: FittingView) => ({
+  object: f.object,
+  parts: f.parts,
+  update: (delta: number) => f.update(delta),
+  status: () => f.status(),
+});
 import { CO2_DOSERS } from '../../../game/plant/co2-dosing';
 import type { Co2PanelAction } from '../../../game/plant/co2-dosing';
 import type { PitPumpAction } from '../../../game/plant/wet-hall';
@@ -354,6 +367,32 @@ function modelFor(
       update: (delta: number) => panel.update(delta),
       status: () => panel.status(),
     };
+  }
+  // Its CO₂ wall port and detector (mission 118), from the world.
+  if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-wall-port') {
+    const port = `plant_${pool}` as const;
+    const fitting = createCo2WallPort(
+      kit,
+      () => {
+        const d = roomWorld().world.value.co2.distribution;
+        return { open: d.ports[port].open, lineBar: linePressure(d) };
+      },
+      (open) => roomWorld().dispatch({ type: 'co2/port', room: port, open }),
+      item.label,
+    );
+    return liveFitting(fitting);
+  }
+  if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-detector') {
+    const port = `plant_${pool}` as const;
+    return liveFitting(
+      createCo2Detector(
+        kit,
+        () => roomWorld().world.value.co2.detectors[port],
+        (act) =>
+          roomWorld().dispatch({ type: 'co2/detector', room: port, act }),
+        item.label,
+      ),
+    );
   }
   if (pool && kind === 'pump-pair') return pumpPairExhibit(pool).build(kit);
   if (pool && kind === 'pump-panel') return pumpPanelExhibit(pool).build(kit);

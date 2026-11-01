@@ -62,6 +62,14 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0157',
     tag: 'PL1-CP4',
   },
+  'plant_pool_01|co2-wall-port|Lounge pool CO₂ wall port': {
+    assetId: 'asset-0159',
+    tag: 'PL1-WP1',
+  },
+  'plant_pool_01|co2-detector|Lounge pool CO₂ detector': {
+    assetId: 'asset-0160',
+    tag: 'PL1-GD2',
+  },
   'plant_pool_01|hypo-pumps|Lounge pool hypochlorite dosing pumps': {
     assetId: 'asset-0011',
     tag: 'PL1-DP1',
@@ -402,6 +410,14 @@ export const INSTALLED_ASSET_IDS: Readonly<
   'plant_pool_02|co2-panel|Olympic pool CO₂ dosing valve controller': {
     assetId: 'asset-0158',
     tag: 'PL2-CP4',
+  },
+  'plant_pool_02|co2-wall-port|Olympic pool CO₂ wall port': {
+    assetId: 'asset-0161',
+    tag: 'PL2-WP1',
+  },
+  'plant_pool_02|co2-detector|Olympic pool CO₂ detector': {
+    assetId: 'asset-0162',
+    tag: 'PL2-GD2',
   },
   'plant_pool_02|hypo-pumps|Olympic pool hypochlorite dosing pumps': {
     assetId: 'asset-0104',

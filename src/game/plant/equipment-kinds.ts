@@ -146,6 +146,24 @@ export const PLACED_KINDS = {
     purpose: 'Meters low-pressure CO₂ into the pool return under the Trio.',
     brand: 'chlorella',
   },
+  'co2-wall-port': {
+    type: 'CO₂ wall port',
+    status: 'none',
+    code: 'WP',
+    class: 'plant',
+    purpose:
+      'Brings the low-pressure CO₂ line through the wall, with its isolating valve and gauge.',
+    brand: 'arncliffe',
+  },
+  'co2-detector': {
+    type: 'CO₂ gas detector',
+    status: 'none',
+    code: 'GD',
+    class: 'plant',
+    purpose:
+      'Watches the room’s air for CO₂ and shuts the dosing, or the whole supply, on its alarms.',
+    brand: 'warden',
+  },
   'hypo-pumps': {
     type: 'Dosing pump set',
     status: 'none',

@@ -1,3 +1,10 @@
+import {
+  CO2_DETECTOR_SIZE,
+  CO2_DETECTOR_Y,
+  CO2_PANEL_PORTS,
+  CO2_WALL_PORT_SIZE,
+  CO2_WALL_PORT_Y,
+} from './co2-fittings';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import {
   EQUIPMENT_OPENING,
@@ -78,6 +85,9 @@ const SIZE = {
   hypo: { w: 1.2, d: 0.3, h: 1.0 },
   acid: { w: 0.7, d: 0.35, h: 0.8 },
   'co2-panel': { w: 0.7, d: 0.28, h: 0.9 },
+  // Its wall port above it and its detector beside it (mission 118).
+  'co2-wall-port': CO2_WALL_PORT_SIZE,
+  'co2-detector': CO2_DETECTOR_SIZE,
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
 } as const;
@@ -88,6 +98,8 @@ const WALL_HEIGHT: Record<string, number> = {
   hypo: 1.3,
   acid: 1.3,
   'co2-panel': 1.4,
+  'co2-wall-port': CO2_WALL_PORT_Y,
+  'co2-detector': CO2_DETECTOR_Y,
 };
 
 /** The gap behind the pump pair, along the west wall, metres. */
@@ -344,7 +356,38 @@ export function olympicPlan(): PlanItem[] {
     ['hypo', 'Hypochlorite dosing pumps', SIZE.hypo],
     ['acid', 'Acid dosing pump', SIZE.acid],
     ['co2-panel', 'CO₂ dosing valve controller', SIZE['co2-panel']],
+    ['co2-detector', 'CO₂ detector', SIZE['co2-detector']],
   ] as const) {
+    // The wall port hangs over its panel, where the line comes through;
+    // the detector stands in the gap between the panel and the acid board
+    // (west of the panel the chemicals' lines run low along the wall).
+    if (key === 'co2-detector') {
+      const panel = out.at(-1)!;
+      const port = SIZE['co2-wall-port'];
+      out.push(
+        {
+          ...item(
+            'co2-wall-port',
+            'CO₂ wall port',
+            port,
+            against('south', panel.x - CO2_PANEL_PORTS.inlet[0], port, 0),
+            'wall',
+          ),
+          y: WALL_HEIGHT['co2-wall-port'],
+        },
+        {
+          ...item(
+            key,
+            label,
+            size,
+            against('south', panel.x + panel.w / 2 + 0.2, size, 0),
+            'wall',
+          ),
+          y: WALL_HEIGHT[key],
+        },
+      );
+      continue;
+    }
     out.push({
       ...item(
         key,

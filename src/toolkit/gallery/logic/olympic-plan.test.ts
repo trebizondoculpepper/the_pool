@@ -52,6 +52,18 @@ describe('the Olympic plant room, in plan', () => {
     for (const a of items)
       for (const b of items) {
         if (a === b) continue;
+        // Two wall fittings, one hung clear above the other (the CO₂ wall
+        // port over its panel, mission 118), do not meet.
+        const span = (i: typeof a) => [
+          (i.y ?? 0) - i.h / 2,
+          (i.y ?? 0) + i.h / 2,
+        ];
+        if (
+          a.mount === 'wall' &&
+          b.mount === 'wall' &&
+          (span(a)[1] <= span(b)[0] + 1e-9 || span(b)[1] <= span(a)[0] + 1e-9)
+        )
+          continue;
         expect(
           overlap(footprintOf(a), footprintOf(b)),
           `${a.key} / ${b.key}`,

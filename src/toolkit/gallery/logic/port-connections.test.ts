@@ -34,7 +34,8 @@ const KINDS: Record<MachinePort['service'], readonly string[]> = {
   // A dosing pump's tube, or a transfer line's PVC-U main or branch (plan 085).
   chemical: ['chemical-tube', 'pvc-pressure'],
   power: ['steel-screwed'],
-  gas: ['steel-screwed'],
+  // Natural gas in screwed steel; low-pressure CO₂ in copper (mission 118).
+  gas: ['steel-screwed', 'copper'],
   flue: ['flue'],
   'hot-water': ['copper'],
   air: ['duct'],

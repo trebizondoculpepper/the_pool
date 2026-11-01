@@ -1,4 +1,10 @@
 import {
+  CO2_DETECTOR_PORTS,
+  CO2_PANEL_PORTS,
+  CO2_WALL_PORT_PORTS,
+} from './co2-fittings';
+
+import {
   ACID_PORTS,
   HYPO_PORTS,
 } from '../../components/plant/logic/dosing-boards';
@@ -589,6 +595,46 @@ export function machinePorts(item: Item): MachinePort[] {
         ),
         drawn: true,
       })),
+    ];
+  // The CO₂ system in a plant room (mission 118): the dosing panel's gas
+  // in at its top and out at its foot (`CO2_PANEL_PORTS`); the wall port's
+  // line in from the wall behind it and out of its foot; the detector's
+  // interlock cable out of its controller's top. Each draws its own
+  // connection.
+  if (kind === 'co2-panel')
+    return [
+      {
+        ...port('in', [...CO2_PANEL_PORTS.inlet], [0, 1, 0], 0.015, 'gas'),
+        drawn: true,
+      },
+      {
+        ...port('out', [...CO2_PANEL_PORTS.outlet], [0, -1, 0], 0.015, 'gas'),
+        drawn: true,
+      },
+    ];
+  if (kind === 'co2-wall-port')
+    return [
+      {
+        ...port('in', [...CO2_WALL_PORT_PORTS.in], [0, 0, -1], 0.015, 'gas'),
+        drawn: true,
+      },
+      {
+        ...port('out', [...CO2_WALL_PORT_PORTS.out], [0, -1, 0], 0.015, 'gas'),
+        drawn: true,
+      },
+    ];
+  if (kind === 'co2-detector')
+    return [
+      {
+        ...port(
+          'alarm',
+          [...CO2_DETECTOR_PORTS.alarm],
+          [0, 1, 0],
+          0.02,
+          'control',
+        ),
+        drawn: true,
+      },
     ];
   if (kind === 'pump-panel')
     return [port('supply', [0, item.h, 0], [0, 1, 0], 0.05, 'power')];

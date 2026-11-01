@@ -445,6 +445,8 @@ export const KIND_HEALTH_COVERAGE = {
   'dosing-controller':
     'pools: pH and free chlorine in band (the Lounge’s and Olympic’s, Dr Aqualis Trios, mission 114)',
   'co2-panel': 'co2: line pressure, valve delivery and detector interlock',
+  'co2-wall-port': 'co2: its isolating valve open, the line at pressure',
+  'co2-detector': 'co2: the room’s air clear, no A1 or A2',
   'hypo-pumps': 'pools: free chlorine in band; chemicals: stock',
   'acid-pump': 'pools: pH in band; chemicals: stock',
   'jacuzzi-pack': 'jacuzzi: cabinet powered, no trip',

@@ -108,6 +108,12 @@ export interface Co2DetectorState {
   a2: boolean;
   /** The sounder accepted (silenced) until the alarm rises again. */
   accepted: boolean;
+  /**
+   * RESET with its 8-hour average still over A1 but the reading clear (the
+   * owner's decision 7, mission 118): that average may not latch A1 again
+   * until it has fallen below the limit.
+   */
+  twaReset: boolean;
 }
 
 export function newCo2Detector(p: Co2RoomParams): Co2DetectorState {
@@ -121,6 +127,7 @@ export function newCo2Detector(p: Co2RoomParams): Co2DetectorState {
     a1: false,
     a2: false,
     accepted: false,
+    twaReset: false,
   };
 }
 
@@ -177,7 +184,17 @@ function stepPart(
     quarters = [...quarters.slice(1), quarter.sum / quarter.t];
     quarter = { sum: 0, t: 0 };
   }
-  const next = { ...s, excess, reading, minute, quarter, minutes, quarters };
+  const twaReset = !!s.twaReset && co2Twa({ ...s, quarters }) >= CO2_LIMITS.twa;
+  const next = {
+    ...s,
+    excess,
+    reading,
+    minute,
+    quarter,
+    minutes,
+    quarters,
+    twaReset,
+  };
   const a1 = s.a1 || alarmA1(next);
   const a2 = s.a2 || alarmA2(next);
   return {
@@ -189,7 +206,7 @@ function stepPart(
 }
 
 const alarmA1 = (s: Co2DetectorState) =>
-  s.reading >= CO2_LIMITS.a1 || co2Twa(s) >= CO2_LIMITS.twa;
+  s.reading >= CO2_LIMITS.a1 || (!s.twaReset && co2Twa(s) >= CO2_LIMITS.twa);
 const alarmA2 = (s: Co2DetectorState) =>
   s.reading >= CO2_LIMITS.a2 || co2Stel(s) >= CO2_LIMITS.stel;
 
@@ -221,10 +238,22 @@ export const masterInterlock = (s: Co2DetectorState) => s.a2;
 export const acceptCo2 = (s: Co2DetectorState): Co2DetectorState =>
   s.accepted ? s : { ...s, accepted: true };
 
-/** RESET: the alarms clear only once neither's condition holds any more. */
+/**
+ * RESET: the alarms clear once their conditions have; but an 8-hour
+ * average still over A1 does not hold it once the reading itself is clear
+ * (decision 7: a personal-exposure measure should not keep a plant room
+ * shut after the leak has gone), and is kept from latching it again until
+ * it falls below its limit. The 15-minute A2 still holds until clear.
+ */
 export function resetCo2(s: Co2DetectorState): Co2DetectorState {
-  if (alarmA1(s) || alarmA2(s)) return s;
-  return { ...s, a1: false, a2: false, accepted: false };
+  if (s.reading >= CO2_LIMITS.a1 || alarmA2(s)) return s;
+  return {
+    ...s,
+    a1: false,
+    a2: false,
+    accepted: false,
+    twaReset: co2Twa(s) >= CO2_LIMITS.twa,
+  };
 }
 
 /** What the detector shows: its beacon flashing, its sounder sounding. */
