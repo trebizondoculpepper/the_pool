@@ -80,13 +80,9 @@ export function kitBands(
       temp + HEALTHY.temperature,
     ),
   };
-  // The spas' alkalinity has no band they can hold (`TODO.md`): judged by drift.
-  if (trio)
-    bands.alkalinity = kitBand(
-      'alkalinity',
-      t.alkalinity.low,
-      t.alkalinity.high,
-    );
+  // PWTAG's 80–200 (the Trio's), the spas' too since their CO₂ loss was
+  // put right (mission 118).
+  bands.alkalinity = kitBand('alkalinity', t.alkalinity.low, t.alkalinity.high);
   return bands;
 }
 
@@ -128,12 +124,8 @@ export function abnormalities(w: World, start?: World): string[] {
     // The water's balance, where the Trio judges it.
     const water = farSide(w.treatment.circuits[id]);
     const lsi = readings(water, w.pools[id].temperature).langelier;
-    if (
-      (TRIO_POOLS as readonly PoolId[]).includes(id) &&
-      !inTarget(lsi, DEFAULT_TARGETS.lsi)
-    )
-      bad(`${id} LSI ${lsi.toFixed(2)}`);
-    // The spas' settled water: steady, not drifting.
+    if (!inTarget(lsi, DEFAULT_TARGETS.lsi)) bad(`${id} LSI ${lsi.toFixed(2)}`);
+    // The spas, which no Trio watches: their alkalinity steady, not drifting.
     if (start && !(TRIO_POOLS as readonly PoolId[]).includes(id)) {
       const a0 = farSide(start.treatment.circuits[id]).alkalinity;
       if (Math.abs(water.alkalinity - a0) > 5)

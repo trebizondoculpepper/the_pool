@@ -8,6 +8,7 @@ import {
   waterFrom,
 } from './pool-chemistry';
 import type { ChemistryInputs } from './pool-chemistry';
+import { JACUZZI_AERATION } from '../plant/water-treatment';
 
 /**
  * Carbon dioxide's loss tethered to reality (mission 118's first step,
@@ -83,20 +84,6 @@ const POOLS: Record<
 
 const rel = (a: number, b: number) => Math.abs(a - b) / Math.abs(b);
 
-/** Cases the model failed before its CO₂ loss was put right (run as `it.fails` until then). */
-const BEFORE_FIX = new Set([
-  'constants',
-  'equation',
-  'continuous',
-  'acid',
-  'velocity:lounge',
-  'velocity:25 m',
-  'velocity:jacuzzi',
-  'velocity:footbath',
-  'still tub',
-]);
-const check = (key: string) => (BEFORE_FIX.has(key) ? it.fails : it);
-
 /** A pool's water at pH 7.3 and its alkalinity, in an 800 ppm hall. */
 const waterOf = (p: (typeof POOLS)[string]) =>
   waterFrom({
@@ -124,34 +111,28 @@ describe('reference: Wojtowicz’s measured CO₂ loss constants, at his pool’
     [2.47, 0.066],
     [7.41, 0.19],
   ])
-    check('constants')(
-      `${tr} turnovers a day: k = ${k} (ppm·day)⁻¹ (±10 %)`,
-      () => {
-        expect(rel(co2LossConstant(wojPool(tr)), k)).toBeLessThan(0.1);
-      },
-    );
+    it(`${tr} turnovers a day: k = ${k} (ppm·day)⁻¹ (±10 %)`, () => {
+      expect(rel(co2LossConstant(wojPool(tr)), k)).toBeLessThan(0.1);
+    });
 });
 
 describe('reference: his general equation within his range, held at its edge beyond it', () => {
   for (const [name, p] of Object.entries(POOLS))
-    check('equation')(`${name}: k = ${p.k} (±3 %)`, () => {
+    it(`${name}: k = ${p.k} (±3 %)`, () => {
       expect(rel(co2LossConstant(p), p.k)).toBeLessThan(0.03);
     });
-  check('continuous')(
-    'k rises with the turnovers to his 7.41 and no further, continuously',
-    () => {
-      const at = (tr: number) => co2LossConstant(wojPool(tr));
-      for (let tr = 0; tr < 7.4; tr += 0.1)
-        expect(at(tr + 0.1)).toBeGreaterThan(at(tr));
-      expect(at(7.41 + 1e-6) - at(7.41 - 1e-6)).toBeLessThan(1e-6);
-      expect(at(160)).toBeCloseTo(at(7.41), 9);
-    },
-  );
+  it('k rises with the turnovers to his 7.41 and no further, continuously', () => {
+    const at = (tr: number) => co2LossConstant(wojPool(tr));
+    for (let tr = 0; tr < 7.4; tr += 0.1)
+      expect(at(tr + 0.1)).toBeGreaterThan(at(tr));
+    expect(at(7.41 + 1e-6) - at(7.41 - 1e-6)).toBeLessThan(1e-6);
+    expect(at(160)).toBeCloseTo(at(7.41), 9);
+  });
 });
 
 describe('reference: the acid that holds the pH at 7.3 (g HCl/m³ a day, ±15 %)', () => {
   for (const [name, p] of Object.entries(POOLS))
-    check('acid')(`${name}, alkalinity ${p.alkalinity}: ${p.acid}`, () => {
+    it(`${name}, alkalinity ${p.alkalinity}: ${p.acid}`, () => {
       expect(rel(holdingAcid(p), p.acid)).toBeLessThan(0.15);
     });
 });
@@ -161,7 +142,7 @@ describe('reference: transfer velocity within what calm and stirred surfaces sho
   // cm/h (k600, Tellus B 66:23795, 2014), Wojtowicz's fully pumped outdoor
   // pool 5 to 9 cm/h at an excess of 5 to 9 mg/l; nothing without jets or air above it.
   for (const [name, p] of Object.entries(POOLS))
-    check(`velocity:${name}`)(`${name}: 0.5 to 9 cm/h`, () => {
+    it(`${name}: 0.5 to 9 cm/h`, () => {
       const w = waterOf(p);
       const e =
         readings(w, p.temperature).co2 - co2Equilibrium(800, p.temperature);
@@ -200,21 +181,43 @@ describe('reference: Wojtowicz’s pH drift (Table 2), his pool, 24 h pump, no a
 describe('reference: a still hot tub drifts slowly; its jets and air drive it', () => {
   // A hot tub at alkalinity 100 and 37 °C, jets and air off: only its
   // surface, held at Wojtowicz's most-mixed constant (no faster than a day).
-  check('still tub')(
-    'jets and air off: pH 7.6 → 8.0 takes more than 12 h',
-    () => {
+  it('jets and air off: pH 7.6 → 8.0 takes more than 12 h', () => {
+    const p = POOLS.jacuzzi;
+    let w = waterFrom({
+      ph: 7.6,
+      alkalinity: 100,
+      hardness: 250,
+      tds: 800,
+      temperature: 37,
+      freeChlorine: 3,
+    });
+    for (let m = 0; m < 12 * 60; m++)
+      w = stepChemistry(w, { ...p, airCo2: 420 }, 60).water;
+    expect(w.ph).toBeLessThan(8);
+  });
+  // TroubleFreePool's community: 7.6 to over 8 within 2 to 4 h of jets, alkalinity 80–120.
+  for (const [alk, lo, hi] of [
+    [80, 2, 5],
+    [100, 1.5, 4],
+    [120, 1.5, 4],
+  ])
+    it(`jets and air on, alkalinity ${alk}: pH 7.6 → 8.0 in ${lo} to ${hi} h`, () => {
       const p = POOLS.jacuzzi;
       let w = waterFrom({
         ph: 7.6,
-        alkalinity: 100,
+        alkalinity: alk,
         hardness: 250,
         tds: 800,
         temperature: 37,
         freeChlorine: 3,
       });
-      for (let m = 0; m < 12 * 60; m++)
-        w = stepChemistry(w, { ...p, airCo2: 420 }, 60).water;
-      expect(w.ph).toBeLessThan(8);
-    },
-  );
+      const aeration = JACUZZI_AERATION.jets + JACUZZI_AERATION.air;
+      let minutes = 0;
+      while (w.ph < 8 && minutes < 24 * 60) {
+        w = stepChemistry(w, { ...p, airCo2: 420, aeration }, 60).water;
+        minutes++;
+      }
+      expect(minutes / 60).toBeGreaterThan(lo);
+      expect(minutes / 60).toBeLessThan(hi);
+    });
 });

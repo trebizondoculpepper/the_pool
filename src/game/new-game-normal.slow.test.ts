@@ -79,7 +79,6 @@ describe('a new game is normal', () => {
     expect(found).toContain('pool_01 Trio alkalinity');
     expect(found).toContain('pool_02 Dr Aqualis warning: Alkalinity low');
     expect(found).toContain('pool_01 Dr Aqualis asks for a hand dose');
-    expect(found).toContain('pool_01 kit alkalinity');
     expect(found).toContain('PL2-F1 dirt');
     expect(found).toContain('acid day tank 0 at or below low');
   });

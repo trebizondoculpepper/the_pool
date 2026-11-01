@@ -103,6 +103,21 @@ export const MAINS = {
 /** The hall's air's CO₂, ppm (the bench's: a busy indoor hall). */
 const HALL_CO2 = 800;
 
+/**
+ * The jacuzzi's jets and air blower, each as the CO₂ loss it adds while it
+ * runs, (mg/l · day)⁻¹ (`ChemistryInputs.aeration`): together, a hot tub
+ * at alkalinity 80 to 120 rises from pH 7.6 to 8.0 in 4.4 to 2.1 hours
+ * with no acid, against 2 to 4 hours of jets in practice (TroubleFreePool's
+ * community figure, mission 118, `co2-loss-reference.test.ts`), _fitted_;
+ * the blower's bubbles the larger share, _invented_ split.
+ */
+export const JACUZZI_AERATION = { jets: 2, air: 4 };
+
+/** The jacuzzi's aeration with its jets and air as they run. */
+export const jacuzziAeration = (runs: { jets: boolean; air: boolean }) =>
+  (runs.jets ? JACUZZI_AERATION.jets : 0) +
+  (runs.air ? JACUZZI_AERATION.air : 0);
+
 /** A dosing controller's state: its sample cell's water, its integral, and its outputs held since its last step. */
 export interface DosingControl {
   cell: { freeChlorine: number; ph: number };
@@ -274,11 +289,12 @@ const nothingPending = (): PendingFlows => ({
  * species, and its controller's integral, from the bench's 120-day steady
  * state of the game's pools with the world's pumps and controller
  * (`chemistry-bench.ts` `GAME_POOLS`, `GAME_PLANTS`; checked by
- * `water-treatment.slow.test.ts`). A new pool would be filled at
- * alkalinity 120; a working one has lost most of it to CO₂ loss and acid
- * (`water-chemistry-models.md` §8), and the spas, which degas fastest, the
- * most: starting a footbath at 120 drove its pH up 0.2 in half a minute.
- * The Olympic's integral is wound up: its pump is too small (mission 101).
+ * `water-treatment.slow.test.ts`; found again in mission 118, when the
+ * CO₂ loss was put right). A new pool would be filled at alkalinity 120; a
+ * working one with no bicarbonate added loses some of it to CO₂ loss and
+ * acid against the mains' 150 its make-up brings, the shallow footbath,
+ * which degasses fastest, the most. The Olympic's integral is wound up: its
+ * pump is too small (mission 101).
  */
 export const SETTLED: Record<
   PoolId,
@@ -292,33 +308,33 @@ export const SETTLED: Record<
   }
 > = {
   pool_01: {
-    alkalinity: 50.7,
+    alkalinity: 77.2,
     hardness: 213.7,
-    tds: 769,
+    tds: 750,
     sulphate: 42.8,
     chlorate: 3.3,
     integral: 0.148,
   },
   pool_02: {
-    alkalinity: 68.4,
+    alkalinity: 74.7,
     hardness: 213.9,
-    tds: 737,
+    tds: 732,
     sulphate: 45,
     chlorate: 2.5,
     integral: 0.5,
   },
   pool_03: {
-    alkalinity: 34.4,
+    alkalinity: 110.6,
     hardness: 206.7,
-    tds: 739,
+    tds: 685,
     sulphate: 41.3,
     chlorate: 3,
-    integral: -0.067,
+    integral: -0.049,
   },
   pool_04: {
-    alkalinity: 16.3,
+    alkalinity: 62.1,
     hardness: 230.4,
-    tds: 954,
+    tds: 921,
     sulphate: 46.1,
     chlorate: 4.7,
     integral: 0.073,
@@ -372,21 +388,20 @@ export function nominalCircuit(
 
 /**
  * The total alkalinity a new game's pools are kept at, mg/l as CaCO₃
- * (`doc/plans/new-game-normal.md`): the Trio pools' inside PWTAG's and
- * the Trio's 80–200 band, as their operators keep it with sodium
+ * (`doc/plans/new-game-normal.md`): the Trio's set point, 120, inside
+ * PWTAG's and the Trio's 80–200 band, as operators keep it with sodium
  * bicarbonate. `SETTLED`'s alkalinities are what months of acid dosing
- * leave with none added, below the band, and Dr Aqualis would ask for a
- * hand dose at once. 100, not the Trio's 120 set point: the model's CO₂
- * loss is fast at these pools' turnovers (Wojtowicz's fit taken past its
- * range), so the higher the alkalinity the harder the acid works and the
- * further the Trio's proportional pH control sits above its set point;
- * at 100 the Lounge holds inside its band through the first hour. The
- * spas keep their settled water: their acid pumps cannot hold the pH of
- * any water in the band (`TODO.md`).
+ * leave with none added, the Trio pools' and the footbath's below the
+ * band. Every pool, the spas too, since the CO₂ loss was held to the range
+ * Wojtowicz measured (mission 118): before, the model's loss at these
+ * pools' turnovers was so fast that only 100 kept the Lounge in its pH
+ * band, and the spas' acid pumps held no water in the band at all.
  */
 export const MAINTAINED_ALKALINITY: Partial<Record<PoolId, number>> = {
-  pool_01: 100,
-  pool_02: 100,
+  pool_01: 120,
+  pool_02: 120,
+  pool_03: 120,
+  pool_04: 120,
 };
 
 /**
@@ -555,6 +570,7 @@ export function stepCircuit(
   id: PoolId,
   p: PendingFlows,
   pool: Pick<PoolWaterState, 'level' | 'balance' | 'temperature'>,
+  aeration = 0,
 ): CircuitWater {
   const dt = p.seconds;
   if (!(dt > 0)) return c;
@@ -609,6 +625,7 @@ export function stepCircuit(
         bathers: bathers * share * POOL_CELL_SHARES[i],
         visitHours,
         agitation,
+        aeration,
       },
       dt,
     ).water;
@@ -687,13 +704,16 @@ export function stepControl(
 /**
  * The pools' water treatment a world step of `dt` seconds on: the step's
  * flows and doses summed, and each circuit's chemistry stepped once it has
- * `CHEMISTRY_TICK` of them (`pools` the pools as they are after the step).
+ * `CHEMISTRY_TICK` of them (`pools` the pools as they are after the step;
+ * `aeration` each pool's air through its water as the tick falls, as
+ * `ChemistryInputs.aeration`: the jacuzzi's jets and blower).
  */
 export function stepWaterTreatment(
   t: WaterTreatment,
   flows: Record<PoolId, StepFlows>,
   dt: number,
   pools: PoolsState,
+  aeration: Partial<Record<PoolId, number>> = {},
 ): WaterTreatment {
   const circuits = { ...t.circuits };
   const pending = { ...t.pending };
@@ -711,7 +731,7 @@ export function stepWaterTreatment(
       c = r.circuit;
       charges[id] = r.charges;
     }
-    circuits[id] = stepCircuit(c, id, p, pools[id]);
+    circuits[id] = stepCircuit(c, id, p, pools[id], aeration[id] ?? 0);
     pending[id] = nothingPending();
   }
   return { circuits, pending, charges };

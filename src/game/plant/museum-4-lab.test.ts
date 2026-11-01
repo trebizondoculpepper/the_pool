@@ -151,7 +151,8 @@ describe('the challenge cards', () => {
       readWater(CARDS.find((c) => c.id === id)!.water());
     expect(r('combined-chlorine').cc).toBeGreaterThan(1);
     expect(r('low-alkalinity').ta).toBeLessThan(80);
-    expect(r('high-ph').ph).toBeGreaterThan(7.6);
+    // Two days without acid: 7.60 since mission 118 put the CO₂ loss right (7.64 before).
+    expect(r('high-ph').ph).toBeGreaterThan(7.55);
     expect(r('acid-overdose').ph).toBeLessThan(7.0);
     expect(r('low-hardness').ch).toBeLessThan(60);
     expect(r('high-tds').tdsAbove).toBeGreaterThan(1500);

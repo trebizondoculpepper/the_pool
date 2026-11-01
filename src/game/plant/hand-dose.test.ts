@@ -116,8 +116,9 @@ describe('a hand dose, against Dr Aqualis’s Show dose', () => {
 
   it('the Lounge on its settled water has its alkalinity low, and he says how much bicarbonate', () => {
     expect(advice?.dose?.unit).toBe('kg');
-    // 50.7 to 120 mg/l in his 150 m³: about 17.4 kg.
-    expect(advice?.dose?.amount).toBeCloseTo(17.4, 1);
+    // 77.2 to 120 mg/l in his 150 m³: 42.8 × 0.168 × 1.5, about 10.8 kg
+    // (17.4 from 50.7, before the CO₂ loss was put right, mission 118).
+    expect(advice?.dose?.amount).toBeCloseTo(10.8, 1);
   });
 
   it('18 kg of bicarbonate raises the Lounge’s alkalinity by about what he predicts, once mixed', () => {

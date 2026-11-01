@@ -13,10 +13,11 @@ verificationSuite('pool_01', true, {
   'twin:chlorine-high': WHY.thioFalls,
   'accuracy:chlorine-high': WHY.thioAccuracy,
   'accuracy:alkalinity-low': WHY.acidTakesAlkalinity,
-  'accuracy:ph-low+alkalinity-low': WHY.acidTakesAlkalinity,
   'accuracy:aggressive': WHY.acidTakesAlkalinity,
   'loop:alkalinity-high': WHY.alkalinityHighSlow,
   'twin:combined-high': WHY.shockCaustic,
   'loop:ph-high+alkalinity-low': WHY.phIntegralUndershoot,
-  'twin:acid-off': WHY.acidRestartTakesAlkalinity,
+  'loop:alkalinity-low': WHY.bicarbIntegralUndershoot,
+  'twin:alkalinity-low': WHY.bicarbIntegralUndershoot,
+  'loop:scaling': WHY.phIntegralUndershoot,
 });

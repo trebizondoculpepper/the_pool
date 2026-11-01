@@ -8,11 +8,11 @@ import { WHY } from './aqualis-verification-known.test-support';
  */
 verificationSuite('pool_02', false, {
   'accuracy:chlorine-high': WHY.thioAccuracy,
-  'accuracy:ph-low': WHY.sodaAshTakenBack,
   'loop:alkalinity-high': WHY.alkalinityHighOlympic,
   'loop:combined-high': WHY.shockOscillates,
   'loop:ph-low+alkalinity-low': WHY.bicarbLiftsPh,
   'loop:aggressive': WHY.bicarbLiftsPh,
   'loop:scaling': WHY.scalingOlympic,
   'accuracy:scaling': WHY.scalingAccuracy,
+  'loop:hardness-high': WHY.dilutionThinsChlorine,
 });

@@ -1,6 +1,19 @@
 import { SCENARIO_WATERS, RESET_WATER, TEMPERATURE } from './museum-4-lab';
 import { waterFrom } from '../water/pool-chemistry';
 import type { ChallengeCard } from './museum-4-challenge';
+import type { PoolChemistry } from '../water/pool-chemistry';
+
+/** A pinned water with its alkalinity set (its carbonate in proportion, the pH near as was) and its free chlorine. */
+const withAlkalinity = (
+  w: PoolChemistry,
+  alkalinity: number,
+  freeChlorine: number,
+): PoolChemistry => ({
+  ...w,
+  alkalinity,
+  carbonate: (w.carbonate * alkalinity) / w.alkalinity,
+  freeChlorine,
+});
 
 /**
  * Hall 4's first set of challenge cards (mission 113, `doc/plans/113/f-solver-and-tests.md`),
@@ -161,7 +174,9 @@ export const CHALLENGES: readonly ChallengeCard[] = [
     problem:
       'The acid pump stuck on overnight. The pH is far too low and the pool is closed.',
     goal: 'Bring the pH back to 7.2 to 7.6.',
-    water: () => ({ ...SCENARIO_WATERS['acid-overdose'], freeChlorine: 0.4 }),
+    // Its alkalinity as authored (53.7, the bench's before mission 118 put
+    // the CO₂ loss right; 63.6 since), so the puzzle stays as it was set.
+    water: () => withAlkalinity(SCENARIO_WATERS['acid-overdose'], 53.7, 0.4),
     targets: ['ph'],
     pars: { journeyman: 2, pro: 3 },
     solutions: {
@@ -272,7 +287,9 @@ export const CHALLENGES: readonly ChallengeCard[] = [
     problem:
       'The chlorine controller stuck on overnight: 4.7 mg/l of free chlorine. It cannot reopen like this.',
     goal: 'Bring free chlorine back to 1.0 to 2.0 mg/l.',
-    water: () => ({ ...SCENARIO_WATERS['dechlorination'], freeChlorine: 4.7 }),
+    // Its alkalinity as authored (72.1, the bench's before mission 118; 82.3
+    // since, in band, which would leave the Pool Pro nothing to restore).
+    water: () => withAlkalinity(SCENARIO_WATERS['dechlorination'], 72.1, 4.7),
     targets: ['fc'],
     pars: { journeyman: 2, pro: 4 },
     solutions: {

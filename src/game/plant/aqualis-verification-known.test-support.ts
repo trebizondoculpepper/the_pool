@@ -13,7 +13,9 @@ export const WHY = {
   thioAccuracy:
     'the chlorine falls on its own as well, so followed less not, a turnover after the feed, is off the thiosulphate’s aim',
   acidTakesAlkalinity:
-    'the acid pump takes back a third or more of the bicarbonate’s alkalinity as it holds the pH up against the model’s fast CO₂ loss',
+    'the acid pump takes back a quarter or more of the bicarbonate’s alkalinity: fed into the balance tank, the bicarbonate lifts the Trio’s sample, and its pH integral doses acid against it',
+  bicarbIntegralUndershoot:
+    'the bicarbonate fed into the balance tank lifts the Trio’s sample, its pH integral winds up the acid, and with the CO₂ now leaving at a real pool’s pace (mission 118) the pool’s pH sits below its band for hours (7.09 at the least), so it scores worse than not following',
   alkalinityHighSlow:
     'left to the acid pump, which works to the pH: the alkalinity comes down only as the CO₂ the acid makes leaves, a round’s score rising as the pH does',
   alkalinityHighOlympic:
@@ -23,17 +25,11 @@ export const WHY = {
   shockOscillates:
     'after the shock and its thiosulphate the chlorine swings low as the undersized hypochlorite pump catches up',
   bicarbLiftsPh:
-    'the bicarbonate, with the model’s fast CO₂ loss, takes a low pH up past the top of its band',
-  bicarbOvershootsOlympic:
-    'the bicarbonate lifts the pH past its alarm limit on the Olympic, whose undersized acid pump cannot keep pace',
-  acidRestartTakesAlkalinity:
-    'the restarted acid pump takes the alkalinity, already drifting down with the CO₂ loss, out of its band',
+    'the bicarbonate, straight into the closed Olympic, takes a low pH up past the top of its band, and the pH swings back',
   phIntegralUndershoot:
     'the acid pump’s integral, wound up bringing the pH down, takes it below its band before it unwinds',
   phHighOlympicSlow:
     'the Olympic’s undersized acid pump takes the pH down too slowly for the bicarbonate to follow within ten rounds',
-  sodaAshTakenBack:
-    'the soda ash’s lift is taken back: the pH rises on its own as CO₂ leaves and the acid pump holds it at 7.3 either way',
   dilutionThinsChlorine:
     'the fresh water thins the chlorine, which the Olympic’s undersized hypochlorite pump cannot make up at once: a round’s score rises',
   scalingOlympic:

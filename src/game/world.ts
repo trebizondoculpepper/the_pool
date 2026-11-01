@@ -33,6 +33,7 @@ import {
 } from './plant/dosing-pumps';
 import type { DosingPumpAction, DosingPumps } from './plant/dosing-pumps';
 import {
+  jacuzziAeration,
   newWaterTreatment,
   pumpDraw,
   stepWaterTreatment,
@@ -1725,6 +1726,7 @@ function stepPlant(world: World, delta: number): World {
     ) as Record<PoolId, StepFlows>,
     delta,
     pools,
+    { pool_03: jacuzziAeration(jacuzziRuns(world)) },
   );
   const wetHall = stepWetHall(
     world.wetHall,

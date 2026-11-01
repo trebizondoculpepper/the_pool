@@ -150,18 +150,25 @@ export const CHEMISTRY = {
     trichloramine: 0.8,
   },
   /**
-   * Carbon dioxide's loss, (mg/l · day)⁻¹ at Wojtowicz's reference
-   * (surface/volume 0.67 m⁻¹, 27.8 °C): `k = 0.0341 + 0.009·TR + 0.0016·TR²`,
-   * TR turnovers a day (Wojtowicz 2001), _sourced_; scaled by
-   * surface/volume and Arrhenius at 5.0 kcal/mol.
+   * Carbon dioxide's loss, (mg/l · day)⁻¹, second order in its excess:
+   * `k = 0.0341 + 0.009·TR + 0.0016·TR²`, TR turnovers a day, scaled by
+   * surface/volume against his test pool's and Arrhenius at 5.0 kcal/mol,
+   * _sourced_ (Wojtowicz, "Swimming Pool Water Balance – Part 3: Factors
+   * Affecting Loss of Carbon Dioxide", JSPSI 1(3):19, 1995; his general
+   * equation, `(SVR/0.28 ft⁻¹)·4296.4·e^(−2516.36/T)`, unity at 27.65 °C).
+   * His pool was 6,800 gal, 3.57 ft deep (SVR 0.28 ft⁻¹, 0.919 m⁻¹, not the
+   * 0.67 first taken) and fitted at TR 0, 2.47 and 7.41 only; the quadratic
+   * is not taken past `maxTurnovers` (`doc/plans/aqualis-advice-verification.md`,
+   * "Changes to the chemistry model").
    */
   co2: {
     a: 0.0341,
     b: 0.009,
     c: 0.0016,
-    refSurfaceToVolume: 0.67,
-    refT: 27.8,
+    refSurfaceToVolume: 0.28 / 0.3048,
+    refT: 27.65,
     activation: 5000,
+    maxTurnovers: 7.41,
   },
   /** Excess sodium hydroxide in hypochlorite, g NaOH per g available chlorine (0.6 % w/w at 171 g/l), _derived_. */
   hypochloriteCaustic: 0.043,
@@ -487,6 +494,11 @@ export interface ChemistryInputs {
   uvFlow?: number;
   /** The hall air's CO₂, ppm (outdoor about 420; a busy hall more). */
   airCo2?: number;
+  /**
+   * Air blown or drawn through the water (a spa's jets and blower), as an
+   * extra CO₂ loss constant, (mg/l · day)⁻¹ at 27.65 °C (`co2LossConstant`).
+   */
+  aeration?: number;
 }
 
 /** What crossed the water's boundary or reacted this step, for mass balances. */
@@ -625,13 +637,22 @@ export function thiosulphateStoichiometry(C: ChemistryConstants = CHEMISTRY) {
   };
 }
 
-/** Wojtowicz's CO₂ loss constant for a pool, (mg/l · day)⁻¹. */
+/**
+ * Wojtowicz's CO₂ loss constant for a pool, (mg/l · day)⁻¹: his surface
+ * term by its surface/volume, its turnovers' mixing held at the most he
+ * measured (`maxTurnovers`: beyond it the circulation's returns stir no
+ * more of the surface), and any air blown or drawn through it (`aeration`),
+ * all by Arrhenius.
+ */
 export function co2LossConstant(
   i: ChemistryInputs,
   C: ChemistryConstants = CHEMISTRY,
 ): number {
   const c = C.co2;
-  const turnovers = (i.circulation * 24) / Math.max(1e-9, i.volume);
+  const turnovers = Math.min(
+    c.maxTurnovers,
+    (i.circulation * 24) / Math.max(1e-9, i.volume),
+  );
   const k = c.a + c.b * turnovers + c.c * turnovers * turnovers;
   const sv = i.surface / Math.max(1e-9, i.volume) / c.refSurfaceToVolume;
   const R = 1.987; // cal/(mol·K)
@@ -639,7 +660,7 @@ export function co2LossConstant(
     (-c.activation / R) *
       (1 / (i.temperature + 273.15) - 1 / (c.refT + 273.15)),
   );
-  return k * sv * arr;
+  return (k * sv + Math.max(0, i.aeration ?? 0)) * arr;
 }
 
 /**

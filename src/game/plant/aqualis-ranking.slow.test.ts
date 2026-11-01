@@ -37,6 +37,11 @@ const TOLERANCE = 0.25;
  */
 const KNOWN: Record<string, true> = {
   'alkalinity-low+hardness-low+tds-high': true,
+  // Since mission 118 (the Olympic's water at alkalinity 120, its CO₂ loss
+  // held to Wojtowicz's range): the dilution for TDS ranks first, by its
+  // distance, and improves the score 0.84; calcium chloride, after it,
+  // 1.68. The same cause as above.
+  'pool_02:hardness-low+tds-high': true,
 };
 
 const MULTI: Scenario[] = [
@@ -67,7 +72,7 @@ const PRECEDES: Record<string, readonly string[]> = {
 for (const pool of ['pool_01', 'pool_02'] as TrioPool[])
   describe(`9. the ranking in the world: ${pool}`, () => {
     for (const s of MULTI)
-      (KNOWN[s.id] ? it.fails : it)(
+      (KNOWN[s.id] || KNOWN[`${pool}:${s.id}`] ? it.fails : it)(
         `${s.about}: each instruction alone; tiers first, and within one the biggest improvement first (±${TOLERANCE}) or normal practice’s order`,
         () => {
           const results = new Map<string, number>();

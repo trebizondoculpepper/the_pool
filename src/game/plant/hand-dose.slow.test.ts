@@ -4,6 +4,7 @@ import type { World } from '../world';
 import { onSettledWater } from '../world.test-support';
 import { advise } from './aqualis-advisor';
 import { trioAlarms } from './aqualis-world';
+import { withWater } from './aqualis-advice.test-support';
 
 /**
  * A hand dose fed in at a rate (`doc/plans/aqualis-advice-verification.md`,
@@ -54,8 +55,13 @@ function watch(w0: World, minutes: number) {
 }
 
 describe('17 kg of bicarbonate into the Lounge’s balance tank', () => {
-  // Its water as months of service leave it, alkalinity about 51.
-  const base = advance(onSettledWater(newWorld()), 120, 1);
+  // The owner's water: as months of service left it before mission 118
+  // put the CO₂ loss right, alkalinity 50.7 (settled water is now 77).
+  const base = advance(
+    withWater(onSettledWater(newWorld()), 'pool_01', { alkalinity: 50.7 }),
+    120,
+    1,
+  );
   const t = base.aqualis.pool_01;
   const before = new Set<string>(trioAlarms(t).map((a) => a.id));
   const advice = advise(t.readings, t.settings, t.channels, undefined, {

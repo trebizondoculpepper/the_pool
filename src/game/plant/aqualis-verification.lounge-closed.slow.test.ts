@@ -11,10 +11,10 @@ verificationSuite('pool_01', false, {
   'loop:hypochlorite-tripped': WHY.chlorineOvershoot,
   'accuracy:chlorine-high': WHY.thioAccuracy,
   'accuracy:alkalinity-low': WHY.acidTakesAlkalinity,
-  'accuracy:ph-low+alkalinity-low': WHY.acidTakesAlkalinity,
   'accuracy:aggressive': WHY.acidTakesAlkalinity,
   'loop:alkalinity-high': WHY.alkalinityHighSlow,
   'twin:combined-high': WHY.shockCaustic,
-  'loop:ph-low+alkalinity-low': WHY.bicarbLiftsPh,
-  'twin:acid-off': WHY.acidRestartTakesAlkalinity,
+  'twin:alkalinity-low': WHY.bicarbIntegralUndershoot,
+  'twin:aggressive': WHY.bicarbIntegralUndershoot,
+  'loop:scaling': WHY.phIntegralUndershoot,
 });
