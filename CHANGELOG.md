@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-11-01
+
 ### Added
 
 - Mission 118 connects the low-pressure CO₂ supply to the world and to the Lounge and Olympic Trios. Their valves meter CO₂ into the modelled circulation injection points, and copper lines, the control cables and live dosing panels are installed in Plants 1 and 2.
@@ -1110,7 +1112,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.7.0...v0.8.0
