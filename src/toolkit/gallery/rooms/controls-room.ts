@@ -73,6 +73,10 @@ import {
   MACHINE_PLINTH_WIDTH,
 } from './machine-gallery';
 import { createPlantPlinths } from './plant-gallery';
+import {
+  BOOT_BOARD_WIDTH,
+  createBootSequencesBoard,
+} from './boot-sequences-board';
 
 /**
  * Dev0, Controls and Displays: the kinds of controls, displays and working
@@ -194,6 +198,17 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
     0,
     boardFootprint(studioX, 2.1),
   );
+  // The boot-sequences board (moved from dev58, the owner, 2026-11-01), on
+  // the north wall's west end, clear of the controls board and the west
+  // wall's period instruments.
+  const bootsX = -7.2;
+  const northFace = -half.z + 0.15;
+  place(createBootSequencesBoard(kit), bootsX, 0, northFace, 0, {
+    minX: (bootsX - BOOT_BOARD_WIDTH / 2) * m,
+    maxX: (bootsX + BOOT_BOARD_WIDTH / 2) * m,
+    minZ: -half.z * m,
+    maxZ: (northFace + 0.15) * m,
+  });
   // The cabinet fittings on the east wall, facing west: tried here first,
   // then fitted to the Retro Encabulator (dev6).
   const cabinetX = half.x - 0.25;
@@ -480,6 +495,7 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
     controls: { x: -3 * m, z: (boardZ + 2.2) * m, yaw: 0, pitch: -0.12 },
     displays: { x: 2.4 * m, z: (boardZ + 2.2) * m, yaw: 0, pitch: -0.12 },
     studio: { x: studioX * m, z: (boardZ + 1.6) * m, yaw: 0, pitch: -0.1 },
+    boots: { x: bootsX * m, z: (northFace + 1.4) * m, yaw: 0, pitch: -0.15 },
     cabinet: {
       x: (cabinetX - 2.6) * m,
       z: cabinetZ * m,
@@ -564,7 +580,7 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
     }),
   });
   const notes = document.createElement('div');
-  notes.textContent = `DEV0 · Controls and Displays: controls and displays on the north wall, switch-fuse and distribution board on the south wall, machine components on ${MACHINE_GALLERY_LAYOUT.length} plinths and plant fittings on ${PLANT_GALLERY_LAYOUT.length}, plus ${EMPTY_GALLERY_LAYOUT.length} temporarily empty exhibits · Portals: the training room west, dev1 east`;
+  notes.textContent = `DEV0 · Controls and Displays: controls, displays and boot sequences on the north wall, switch-fuse and distribution board on the south wall, machine components on ${MACHINE_GALLERY_LAYOUT.length} plinths and plant fittings on ${PLANT_GALLERY_LAYOUT.length}, plus ${EMPTY_GALLERY_LAYOUT.length} temporarily empty exhibits · Portals: the training room west, dev1 east`;
   Object.assign(notes.style, {
     position: 'absolute',
     top: '12px',

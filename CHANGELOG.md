@@ -22,6 +22,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 - The HUD's icons redrawn as filled shapes (the owner, 2026-11-01): the view link as a map application's fat pin, (in noclip too), the screenshot as a stylised camera, and a new gear and torch (`hud-icons.ts`); the emoji and the ▣ are gone.
 - Hall 4's pool says what it is and holds (the owner, 2026-11-01): stencilled SWIMMING POOL instead of IDEAL, with its water, 470 m³ pool + 30 m³ tank = 500 m³, so visitors can work out their own doses; its balancing tank reads BALANCE TANK, 30 m³, part of the pool's water.
+- The boot-sequences board (the Unix-like controller, the 1990s PC and the microcontroller, each booting with its own RESTART) moved from dev58 to dev0, the controls and displays room, on the north wall's west end (`boot-sequences-board.ts`; `?room=dev0&view=boots`).
 
 ## [0.11.0] - 2026-11-01
 

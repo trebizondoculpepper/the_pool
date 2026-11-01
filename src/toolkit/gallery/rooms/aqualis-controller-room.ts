@@ -57,8 +57,6 @@ import {
   WATCHDOG_LEGEND,
   createAqualisRoomHost,
 } from './aqualis-room';
-import { createBootDisplay } from '../../components/core/views/boot-screens';
-import type { BootFamily } from '../../components/core/logic/boot-sequence';
 import type { AqualisRoomHost } from './aqualis-room';
 
 /** The room inside, metres. */
@@ -116,13 +114,13 @@ const BAR_SEGMENTS = 10;
  * world's model and drawing, plumbed to their own nozzles on the return
  * (`aqualis-co2-rig.ts`); the scenario board and the time-speed knob on
  * the right wall. Everything it runs is behind one host (`aqualis-room.ts`);
- * `?view=room|cabinet|screen|units|board|boots|co2|co2-lounge|co2-olympic`
+ * `?view=room|cabinet|screen|units|board|crash|co2|co2-lounge|co2-olympic`
  * frames it. The cabinet's computer is on and running as the room loads
  * (`&boot=on` boots it instead, `&boot=20` 20 s into its boot); it boots
  * when its supply (the switch beside the time-speed knob, or its own
- * power switch) comes back, and at Restart on its Settings › Pool dynamics tab; a
- * board on the right wall shows the game's other boot families, each with
- * its own Restart. The crash board, left of the scenario board, crashes the
+ * power switch) comes back, and at Restart on its Settings › Pool dynamics tab
+ * (the other boot families' board is in dev0, `?room=dev0&view=boots`).
+ * The crash board, left of the scenario board, crashes the
  * computer (BLUE SCREEN, GLITCH; `&crash=stop|glitch` crashes it two
  * seconds after it starts running), its watchdog as its WORKS · FAILS
  * switch is set (`&watchdog=works|fails`), with a CRASHED lamp and a
@@ -1003,91 +1001,6 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     '#d8c9c9',
   );
 
-  // ---- The other boot families, on a board of their own ---------------------------
-  const bootBoard = new Group();
-  bootBoard.position.set(w / 2, 0, 1.4);
-  bootBoard.rotation.y = -Math.PI / 2;
-  room.add(bootBoard);
-  t.box(bootBoard, t.paint('#2e3438', 0.5), 1.7, 1.0, 0.03, 0, 1.5, 0.015);
-  t.label(
-    bootBoard,
-    'BOOT SEQUENCES · THE OTHER FAMILIES',
-    0,
-    1.93,
-    0.032,
-    0.035,
-    '#ffffff',
-  );
-  const others: {
-    family: BootFamily;
-    title: string;
-    x: number;
-    metres: number;
-    px: { w: number; h: number };
-    kind: 'crt' | 'lcd';
-  }[] = [
-    {
-      family: 'unix',
-      title: 'UNIX-LIKE CONTROLLER · FRUGALBSD',
-      x: -0.55,
-      metres: 0.46,
-      px: { w: 480, h: 300 },
-      kind: 'crt',
-    },
-    {
-      family: 'dos',
-      title: '1990s PC · HARBOUR DOS',
-      x: 0.02,
-      metres: 0.46,
-      px: { w: 480, h: 300 },
-      kind: 'crt',
-    },
-    {
-      family: 'firmware',
-      title: 'MICROCONTROLLER · KILOMON',
-      x: 0.56,
-      metres: 0.2,
-      px: { w: 128, h: 64 },
-      kind: 'lcd',
-    },
-  ];
-  const bootScreens = others.map((o, i) => {
-    const display = createBootDisplay({
-      family: o.family,
-      px: o.px,
-      metres: o.metres,
-      kind: o.kind,
-      seed: 11 + i,
-    });
-    display.group.position.set(o.x, 1.55, 0.04);
-    bootBoard.add(display.group);
-    // A bezel behind it.
-    const bh = (o.metres * o.px.h) / o.px.w;
-    t.box(
-      bootBoard,
-      t.paint('#15181a', 0.6),
-      o.metres + 0.04,
-      bh + 0.04,
-      0.012,
-      o.x,
-      1.55,
-      0.026,
-    );
-    t.label(bootBoard, o.title, o.x, 1.84, 0.032, 0.022, '#ffffff');
-    const restart = parts.add(
-      pushButton(kit, {
-        colour: 'blue',
-        name: `Restart the ${o.family} boot`,
-        action: () => display.restart(),
-      }),
-    );
-    restart.object.scale.setScalar(0.6);
-    restart.object.position.set(o.x, 1.17, 0.03);
-    bootBoard.add(restart.object);
-    t.label(bootBoard, 'RESTART', o.x, 1.08, 0.032, 0.022, '#ffffff');
-    return display;
-  });
-
   // ---- Walking and touching ---------------------------------------------------------
   const raycaster = new Raycaster();
   const pointer = new Vector2();
@@ -1128,7 +1041,6 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     screen: { x: 0, z: -2.6 * m, yaw: 0, pitch: -0.5 },
     units: { x: 2.1 * m, z: -1.5 * m, yaw: 0, pitch: -0.2 },
     board: { x: 3.0 * m, z: -0.6 * m, yaw: Math.PI / 2, pitch: -0.15 },
-    boots: { x: 2.7 * m, z: 1.4 * m, yaw: Math.PI / 2, pitch: -0.15 },
     crash: { x: 3.2 * m, z: -2.05 * m, yaw: Math.PI / 2, pitch: -0.3 },
     // The CO₂ bay on the front wall, and each panel close to.
     co2: { x: 0, z: (d / 2 - 2.9) * m, yaw: Math.PI, pitch: -0.04 },
@@ -1215,7 +1127,6 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     host.step(delta);
     // The cabinet, driven as a plant room's Trio is (`aqualis-painter.ts`).
     beeperCrash = driveCabinet(cabinet, host, beeperCrash);
-    for (const b of bootScreens) b.update(delta);
     for (const u of units) {
       const fb = host.feedback(u.id);
       u.run.set(Boolean(fb?.running));
@@ -1251,7 +1162,6 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     parts.dispose();
     for (const p of panels) p.panel.dispose();
     cabinet.dispose();
-    for (const b of bootScreens) b.dispose();
     disposeKit(kit, scene as unknown as Group);
     freeEnvironment();
     renderer.dispose();
