@@ -6,9 +6,13 @@ import type { Co2Doser, Co2Fault } from '../../../game/plant/co2-dosing';
  * 2026-11-01; `doc/plans/co2-system.md`, "The mass flow controller"): a
  * backlit 2 × 16 character LCD, as Alicat's MC and Bronkhorst's display
  * versions carry. Line 1 always shows the measured flow in g/h and a
- * status word of four letters: AUTO, HAND, or OFF with the panel switched
- * off; while its valve is overridden, OPEN (forced open: Alicat's EXH) or
- * SHUT (held shut: Alicat's HLD), so a forced valve is plain at a glance.
+ * status word: REMOTE (its set point from the 4-20 mA input), LOCAL (from
+ * its own front panel), or OFF with the panel switched off; while its
+ * valve is overridden, OPEN (forced open: Alicat's EXH) or SHUT (held
+ * shut: Alicat's HLD), so a forced valve is plain at a glance. LOCAL ·
+ * REMOTE is the instrument trade's word for where a controller takes its
+ * set point (the owner, 2026-11-01), as HAND · OFF · AUTO is a motor
+ * starter's. Plain ASCII only: its font is an HD44780's.
  * Line 2 shows the page its MODE key has stepped to. Pure.
  */
 
@@ -58,10 +62,10 @@ const flowText = (gh: number) => {
 
 /** Line 1's status flag. */
 export function mfcFlag(d: Co2Doser): string {
-  if (d.mode === 'off') return ' OFF';
+  if (d.mode === 'off') return 'OFF';
   if (d.override === 'open') return 'OPEN';
   if (d.override === 'close') return 'SHUT';
-  return d.mode === 'manual' ? 'HAND' : 'AUTO';
+  return d.mode === 'manual' ? 'LOCAL' : 'REMOTE';
 }
 
 /**
@@ -75,7 +79,9 @@ export function mfcLines(
   page: MfcPage,
 ): [string, string] {
   if (!d.powered) return [line(''), line('')];
-  const l1 = line(`${flowText(d.delivering).padStart(7)} g/h ${mfcFlag(d)}`);
+  const l1 = line(
+    `${flowText(d.delivering).padStart(5)} g/h ${mfcFlag(d).padStart(6)}`,
+  );
   let l2: string;
   switch (page) {
     case 'setpoint': {
@@ -87,7 +93,10 @@ export function mfcLines(
             : d.override === 'normal'
               ? String(Math.round(d.asked))
               : '----';
-      l2 = `SP ${d.mode === 'manual' ? 'HAND' : 'AUTO'}${sp.padStart(5)} g/h`;
+      l2 =
+        d.mode === 'manual'
+          ? `SP LOCAL${sp.padStart(4)} g/h`
+          : `SP REM ${sp.padStart(5)} g/h`;
       break;
     }
     case 'drive':
@@ -103,7 +112,7 @@ export function mfcLines(
       l2 = `ALM ${d.fault ? MFC_FAULT_TEXT[d.fault] : 'NONE'}`;
       break;
     case 'control':
-      l2 = `${d.mode === 'off' ? 'OFF ' : d.hand ? 'HAND' : 'AUTO'} OVR ${d.override.toUpperCase()}`;
+      l2 = `${d.mode === 'off' ? 'OFF' : d.hand ? 'LOCAL' : 'REMOTE'} OVR ${d.override === 'normal' ? 'NORM' : d.override.toUpperCase()}`;
       break;
   }
   return [l1, line(l2)];

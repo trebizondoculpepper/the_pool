@@ -414,7 +414,7 @@ function said(
             : a.kind === 'on'
               ? `CO₂ dosing panel switched ${a.on ? 'ON' : 'OFF'}`
               : a.kind === 'hand'
-                ? `CO₂ mass flow controller switched to ${a.hand ? 'HAND' : 'AUTO'}`
+                ? `CO₂ mass flow controller set point to ${a.hand ? 'LOCAL' : 'REMOTE'}`
                 : a.kind === 'override'
                   ? a.override === 'normal'
                     ? 'CO₂ mass flow controller’s valve OVERRIDE back to NORMAL'

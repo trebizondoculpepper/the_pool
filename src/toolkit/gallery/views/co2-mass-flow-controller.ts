@@ -1,10 +1,13 @@
 import {
   CatmullRomCurve3,
   Group,
+  ExtrudeGeometry,
   Mesh,
   MeshBasicMaterial,
+  Path,
   PlaneGeometry,
   RepeatWrapping,
+  Shape,
   TubeGeometry,
   Vector3,
 } from 'three';
@@ -23,13 +26,19 @@ import { createPs1Material } from '../../components/core/parts/ps1-material';
 import { beginPart } from '../../components/core/parts/parts';
 import type { Part, PartSet } from '../../components/core/parts/parts';
 import {
+  KEY_TURN,
   LOCKED,
   PRESS,
   asset,
   emitter,
 } from '../../components/core/parts/building-part-tools';
 import { recording } from '../../components/core/audio/part-audio';
-import { markUsable } from '../../controls/input/use-marking';
+import type { SoundRecipe } from '../../components/core/audio/part-audio';
+import { signal } from '@preact/signals-core';
+import { createSelector } from '../../components/core/logic/world/components';
+import { createKnob } from '../../components/industrial-control/views/panel-switchgear';
+import { createLeverSelector } from '../../components/industrial-control/views/industrial-controls';
+import { dot } from '../../components/industrial-control/logic/font-5x7';
 import { markTurnable } from '../../controls/input/knob-turning';
 import { CO2_OVERRIDES } from '../../../game/plant/co2-dosing';
 import type { Co2Doser, Co2Override } from '../../../game/plant/co2-dosing';
@@ -53,9 +62,9 @@ import type { MfcPage } from '../logic/co2-mfc-display';
  * held by counterbored cap screws and sealed by a gasket along its seam,
  * vent louvres in its ends, its rating plate on its left end. On its face:
  * a backlit 2 × 16 LCD behind a recessed window in its bezel, a sealed
- * membrane keypad (MODE, ▼, ▲), RUN and ALARM lamps, the HAND · AUTO
- * toggle and the valve OVERRIDE toggle (OPEN · NORMAL · CLOSE) between its
- * guard rails. An M12 connector on its top for its signal cable, an earth
+ * membrane keypad (MODE, ▼, ▲), RUN and ALARM lamps, the LOCAL · REMOTE
+ * rotary selector (a pointer knob) and the valve OVERRIDE key selector
+ * (CLOSE · NORM · OPEN). An M12 connector on its top for its signal cable, an earth
  * stud on its flow body, two screws down through its base into its bracket.
  *
  * It holds nothing but the page its MODE key shows: `read` gives it its
@@ -100,12 +109,12 @@ export interface MfcReading {
 
 export interface MfcControls {
   setHand(hand: boolean): void;
-  /** HAND's local set point, g/h (clamped by the model). */
+  /** LOCAL's set point, g/h (clamped by the model). */
   setManualRate(gh: number): void;
   setOverride(override: Co2Override): void;
 }
 
-/** ▲ and ▼ step HAND's set point by this, g/h. */
+/** ▲ and ▼ step LOCAL's set point by this, g/h. */
 export const MFC_RATE_STEP = 50;
 
 export interface MfcView {
@@ -116,7 +125,13 @@ export interface MfcView {
   page(): MfcPage;
 }
 
-const TOGGLE = recording(asset('switch-click.wav'), 0.05);
+/** A selector clicking over a detent, as the parts library's selectors sound. */
+const DETENT = recording(asset('switch-click.wav'), 0.06);
+
+/** Its rotary selectors' row on its face, and each one's place along it. */
+const ROTARY_Y = -0.03;
+const LOCAL_X = -0.026;
+const OVERRIDE_X = 0.006;
 
 export function createMassFlowController(
   kit: PanelKit,
@@ -140,7 +155,6 @@ export function createMassFlowController(
   const cableGrey = t.paint('#7a7f83', 0.7);
   const keyBlue = t.paint('#2d5f9a', 0.45);
   const keyGrey = t.paint('#5b6166', 0.5);
-  const red = t.paint('#b3261e', 0.5);
   const geometry = (g: RoundedBoxGeometry, m: Material) => new Mesh(g, m);
 
   // ---- The flow body: machined stainless, the gas along its axis ---------------
@@ -289,8 +303,39 @@ export function createMassFlowController(
     m.position.z = zs * (half / 2 + 0.0005);
     shell.add(m);
   }
-  // The gasket line, black in the groove where the halves' edges round off.
-  t.box(shell, gasket, housing.l - 0.002, housing.h - 0.002, 0.003, 0, 0, 0);
+  // The gasket, black in the groove where the halves' edges round off: a
+  // rounded-rectangle ring following the shell's outline, its corners on
+  // the shell's radius and just inside it, so nothing stands proud.
+  {
+    const inset = 0.0008;
+    const ring = <P extends Path>(
+      hw: number,
+      hh: number,
+      r: number,
+      path: P,
+    ): P => {
+      path.moveTo(-hw + r, -hh);
+      path.lineTo(hw - r, -hh);
+      path.absarc(hw - r, -hh + r, r, -Math.PI / 2, 0, false);
+      path.lineTo(hw, hh - r);
+      path.absarc(hw - r, hh - r, r, 0, Math.PI / 2, false);
+      path.lineTo(-hw + r, hh);
+      path.absarc(-hw + r, hh - r, r, Math.PI / 2, Math.PI, false);
+      path.lineTo(-hw, -hh + r);
+      path.absarc(-hw + r, -hh + r, r, Math.PI, Math.PI * 1.5, false);
+      return path;
+    };
+    const hw = housing.l / 2 - inset;
+    const hh = housing.h / 2 - inset;
+    const outline = ring(hw, hh, round - inset, new Shape());
+    outline.holes.push(ring(hw - 0.004, hh - 0.004, round - 0.004, new Path()));
+    const seal = new Mesh(
+      new ExtrudeGeometry(outline, { depth: 0.003, bevelEnabled: false }),
+      gasket,
+    );
+    seal.position.z = -0.0015;
+    shell.add(seal);
+  }
   const faceZ = housing.d / 2 + 0.0015;
 
   // Counterbored cap screws at its corners, through the front half.
@@ -317,7 +362,9 @@ export function createMassFlowController(
     10,
   );
 
-  // Vent louvres in both ends, upper half, and its rating plate on its left.
+  // Vent louvres in both ends, upper half, on the front half only: each
+  // slot on the flat of its end wall between the face's rounding and the
+  // seam's, clear of the gasket by 6 mm. And its rating plate on its left.
   for (const ex of [-1, 1])
     for (let k = 0; k < 6; k++)
       t.box(
@@ -325,10 +372,10 @@ export function createMassFlowController(
         gasket,
         0.0012,
         0.0016,
-        0.024,
+        0.009,
         ex * (housing.l / 2 + 0.0003),
         0.04 - k * 0.0045,
-        0,
+        0.0105,
       );
   const plate = t.printed(
     0.032,
@@ -435,14 +482,41 @@ export function createMassFlowController(
       // Its lamps' legends.
       text('RUN', 0.022, -0.0155, 1.5);
       text('ALARM', 0.036, -0.0155, 1.5);
-      // Its toggles' legends.
-      text('HAND', -0.024, -0.0215, 1.6);
-      text('AUTO', -0.024, -0.0405, 1.6);
-      // The override's positions beside its guard, and its name over it.
-      text('OPEN', 0.0045, -0.0245, 1.5, 'right');
-      text('NORM', 0.0045, -0.031, 1.5, 'right');
-      text('CLOSE', 0.0045, -0.0375, 1.5, 'right');
-      text('VALVE OVERRIDE', 0.016, -0.0203, 1.3, 'center', '#7a1410');
+      // Its rotary selectors' positions round them, 45° either side of
+      // upright, a tick at each, and each one's name under it.
+      const ticks = (x: number, angles: readonly number[], ink: string) => {
+        c.strokeStyle = ink;
+        c.lineWidth = 0.35 * mm;
+        for (const deg of angles) {
+          const r = (deg * Math.PI) / 180;
+          c.beginPath();
+          c.moveTo(
+            px(x + 0.0052 * Math.sin(r)),
+            py(ROTARY_Y + 0.0052 * Math.cos(r)),
+          );
+          c.lineTo(
+            px(x + 0.0066 * Math.sin(r)),
+            py(ROTARY_Y + 0.0066 * Math.cos(r)),
+          );
+          c.stroke();
+        }
+      };
+      ticks(LOCAL_X, [-45, 45], '#111315');
+      text('LOCAL', LOCAL_X - 0.0068, ROTARY_Y + 0.0078, 1.4);
+      text('REMOTE', LOCAL_X + 0.0068, ROTARY_Y + 0.0078, 1.4);
+      text('SET POINT', LOCAL_X, ROTARY_Y - 0.0095, 1.3);
+      ticks(OVERRIDE_X, [-45, 0, 45], '#7a1410');
+      text('CLOSE', OVERRIDE_X - 0.0072, ROTARY_Y + 0.0078, 1.5);
+      text('NORM', OVERRIDE_X, ROTARY_Y + 0.0088, 1.5);
+      text('OPEN', OVERRIDE_X + 0.0072, ROTARY_Y + 0.0078, 1.5);
+      text(
+        'VALVE OVERRIDE',
+        OVERRIDE_X,
+        ROTARY_Y - 0.0095,
+        1.3,
+        'center',
+        '#7a1410',
+      );
       // Its calibration sticker, beside the sealed screw.
       c.fillStyle = '#f4f1e4';
       c.fillRect(px(0.0235), py(-0.0365), 12.5 * mm, 7 * mm);
@@ -465,7 +539,7 @@ export function createMassFlowController(
   // The bezel's recess, and the window's glass in it.
   t.box(shell, gasket, 0.071, 0.023, 0.0006, 0, lcdY, faceZ + 0.0013);
   const COLS = 16;
-  const lcdPx = { w: 320, h: 80 };
+  const lcdPx = { w: 400, h: 100 };
   const lcd = createCanvasTexture(lcdPx.w, lcdPx.h, 'lcd');
   kit.textures.push(lcd.texture);
   const lcdMaterial = new MeshBasicMaterial({
@@ -478,40 +552,33 @@ export function createMassFlowController(
   lcdMesh.name = `${name}: LCD`;
   lcdMesh.userData.live = true;
   shell.add(lcdMesh);
+  // Its character dots: an HD44780 module's, each character 5 × 8 dots
+  // (its ROM's 5 × 7 font, `font-5x7.ts`, over the cursor's row) in its own
+  // cell, a dot's width between cells and between its two rows; 4 px a dot.
+  const DOT = 4;
+  const cellW = 6 * DOT;
+  const rowH = 9 * DOT;
+  const left = (lcdPx.w - (COLS * cellW - DOT)) / 2;
+  const top = (lcdPx.h - (2 * rowH - DOT)) / 2;
   const drawLcd = (lines: readonly [string, string]) => {
     const c = lcd.context;
     const { w, h } = lcdPx;
-    // A yellow-green STN panel, its LED backlight behind: dark characters
-    // in their 5 × 8 cells, the unlit cells just showing.
+    // A yellow-green STN panel, its LED backlight behind: dark dots, the
+    // unlit ones just showing.
     c.fillStyle = '#b5cf3a';
     c.fillRect(0, 0, w, h);
-    const cell = w / (COLS + 1);
-    const top = h * 0.12;
-    const rowH = h * 0.38;
-    c.fillStyle = 'rgba(70, 92, 10, 0.12)';
     for (let r = 0; r < 2; r++)
-      for (let k = 0; k < COLS; k++)
-        c.fillRect(
-          cell * (0.5 + k) + 1,
-          top + r * (rowH + h * 0.02),
-          cell - 2,
-          rowH,
-        );
-    c.fillStyle = '#1b2410';
-    c.font = `bold ${rowH * 0.92}px "Courier New", monospace`;
-    c.textBaseline = 'top';
-    c.textAlign = 'center';
-    lines.forEach((l, r) => {
       for (let k = 0; k < COLS; k++) {
-        const ch = l[k];
-        if (ch && ch !== ' ')
-          c.fillText(
-            ch,
-            cell * (1 + k),
-            top + r * (rowH + h * 0.02) + rowH * 0.06,
-          );
+        const ch = lines[r][k] ?? ' ';
+        const x0 = left + k * cellW;
+        const y0 = top + r * rowH;
+        for (let dy = 0; dy < 8; dy++)
+          for (let dx = 0; dx < 5; dx++) {
+            const lit = dy < 7 && ch !== ' ' && dot(ch, dx, dy);
+            c.fillStyle = lit ? '#1b2410' : 'rgba(70, 92, 10, 0.16)';
+            c.fillRect(x0 + dx * DOT, y0 + dy * DOT, DOT - 0.6, DOT - 0.6);
+          }
       }
-    });
     lcd.texture.needsUpdate = true;
   };
 
@@ -585,86 +652,118 @@ export function createMassFlowController(
   key('▼', -0.016, keyGrey, () => nudge(-1));
   key('▲', 0, keyGrey, () => nudge(1));
 
-  // A miniature bat-handle toggle: its bushing's nut and its lever, thrown
-  // up or down (`tilt`), the lever the thing used.
-  const toggleView = (parent: Object3D) => {
-    t.cyl(parent, stainless, 0.0042, 0.0018, 0, 0, 0.0009, 'z', 6);
-    t.cyl(parent, stainless, 0.0028, 0.002, 0, 0, 0.0025, 'z', 14);
-    const pivot = new Group();
-    pivot.position.z = 0.003;
-    parent.add(pivot);
-    const bat = t.cyl(pivot, stainless, 0.0011, 0.011, 0, 0, 0.0055, 'z', 10);
-    t.cyl(pivot, stainless, 0.0016, 0.003, 0, 0, 0.0105, 'z', 10);
-    bat.userData.live = true;
-    pivot.userData.live = true;
-    return {
-      pivot,
-      set(tilt: -1 | 0 | 1) {
-        pivot.rotation.x = -tilt * 0.45;
+  // Its two rotary selectors, each a selector of the parts library
+  // (`createSelector`) bound to the doser through `read` and `controls`: a
+  // use on its left half turns it anticlockwise a detent, on its right half
+  // clockwise (`knobDirection`; LB and RB on a pad), with the turn cue, and
+  // it clicks over each detent. Its binding reads a plain value, so a tick
+  // the binding reads makes it look afresh (as the parts library's
+  // selectors do, mission 114).
+  const rotary = (
+    label: string,
+    x: number,
+    view: {
+      object: Object3D;
+      shaft: Object3D;
+      set(i: number): void;
+      update(delta: number): void;
+    },
+    positions: number,
+    at: () => number,
+    to: (i: number) => void,
+    sound: SoundRecipe,
+    names: readonly string[],
+  ) => {
+    const a = beginPart(kit, `${name}: ${label}`);
+    a.object.position.set(x, ROTARY_Y, faceZ);
+    a.object.add(view.object);
+    const fresh = signal(0);
+    const last = positions - 1;
+    const selector = createSelector({
+      positions,
+      bound: {
+        get value() {
+          void fresh.value;
+          return at() / last;
+        },
+        set(share: number) {
+          to(Math.round(share * last));
+          fresh.value++;
+        },
       },
-    };
+    });
+    a.voice(selector, { detent: sound, 'end-stop': LOCKED });
+    a.uses.set(view.shaft, (direction = 1) => selector.turn(direction));
+    a.disposers.push(markTurnable(view.shaft, selector), selector.dispose);
+    // Its first frame puts it straight at its detent; after that it eases.
+    let first = true;
+    a.updates.push((delta) => {
+      fresh.value++;
+      view.set(selector.position.value);
+      view.update(first ? 1 : delta);
+      first = false;
+    });
+    a.shows(() => `at ${names[selector.position.value]}`);
+    shell.add(a.object);
+    parts.add(a.part());
   };
 
-  // HAND · AUTO: up HAND, down AUTO; a use throws it over.
+  // LOCAL · REMOTE: the parts library's black pointer knob (`createKnob`, its
+  // `pointer` style), 9 mm across, on a stainless bush; two detents, 45°
+  // either side of upright, LOCAL to the left and REMOTE to the right:
+  // where it takes its set point, its own ▲ ▼ or the 4-20 mA input. The
+  // model calls LOCAL `hand` (its field, kept to keep the save).
   {
-    const a = beginPart(kit, `${name}: HAND · AUTO toggle`);
-    a.object.position.set(-0.024, -0.031, faceZ);
-    const view = toggleView(a.object);
-    const e = emitter();
-    a.voice(e, { on: TOGGLE, off: TOGGLE });
-    a.disposers.push(
-      markUsable(view.pivot, () => ({ gesture: 'use', possible: true })),
+    const object = new Group();
+    t.cyl(object, stainless, 0.0042, 0.0012, 0, 0, 0.0006, 'z', 6);
+    const knob = createKnob(kit, { radius: 0.0045, style: 'pointer' });
+    knob.group.position.z = 0.0012;
+    knob.spindle.userData.live = true;
+    object.add(knob.group);
+    const view = {
+      object,
+      shaft: knob.spindle,
+      set: (i: number) => knob.set(i ? 2 / 3 : 1 / 3),
+      update: knob.update,
+    };
+    rotary(
+      'LOCAL · REMOTE selector',
+      LOCAL_X,
+      view,
+      2,
+      () => (read().doser.hand ? 0 : 1),
+      (i) => controls.setHand(i === 0),
+      DETENT,
+      ['LOCAL', 'REMOTE'],
     );
-    a.uses.set(view.pivot, () => {
-      const hand = !read().doser.hand;
-      e.emit(hand ? 'on' : 'off');
-      controls.setHand(hand);
-    });
-    let shown: boolean | null = null;
-    a.updates.push(() => {
-      const hand = read().doser.hand;
-      if (hand === shown) return;
-      shown = hand;
-      view.set(hand ? 1 : -1);
-    });
-    a.shows(() => (read().doser.hand ? 'at HAND' : 'at AUTO'));
-    shell.add(a.object);
-    parts.add(a.part());
   }
 
-  // The valve OVERRIDE: up OPEN, centre NORMAL, down CLOSE, between two
-  // red guard rails so it cannot be knocked; a use on its left half moves
-  // it down a position, on its right half up, as a knob turns.
+  // The valve OVERRIDE: a key-operated selector (the parts library's
+  // `createLeverSelector` with its key, at a third of its size), as forcing
+  // switches are, in place of a guard: CLOSE 45° anticlockwise, NORM
+  // upright, OPEN 45° clockwise, its key's bow the pointer. The operator's
+  // key stays in its barrel (the game has no keys to carry yet).
   {
-    const a = beginPart(kit, `${name}: valve OVERRIDE toggle`);
-    a.object.position.set(0.016, -0.031, faceZ);
-    const view = toggleView(a.object);
-    for (const gx of [-0.0058, 0.0058])
-      t.box(a.object, red, 0.0014, 0.014, 0.009, gx, 0, 0.0045);
-    const e = emitter();
-    a.voice(e, { detent: TOGGLE, 'end-stop': LOCKED });
-    const at = () => CO2_OVERRIDES.indexOf(read().doser.override);
-    a.disposers.push(
-      markTurnable(view.pivot, {
-        canTurn: (d) => (d < 0 ? at() > 0 : at() < CO2_OVERRIDES.length - 1),
-      }),
+    const lever = createLeverSelector(kit, 3, { key: true });
+    lever.group.scale.setScalar(0.3);
+    lever.knob.userData.live = true;
+    const object = new Group();
+    object.add(lever.group);
+    rotary(
+      'valve OVERRIDE key selector',
+      OVERRIDE_X,
+      {
+        object,
+        shaft: lever.knob,
+        set: (i) => lever.set(i),
+        update: (delta) => lever.update(delta),
+      },
+      CO2_OVERRIDES.length,
+      () => CO2_OVERRIDES.indexOf(read().doser.override),
+      (i) => controls.setOverride(CO2_OVERRIDES[i]),
+      KEY_TURN,
+      CO2_OVERRIDES.map((o) => (o === 'normal' ? 'NORM' : o.toUpperCase())),
     );
-    a.uses.set(view.pivot, (direction = 1) => {
-      const next = at() + (direction < 0 ? -1 : 1);
-      if (next < 0 || next >= CO2_OVERRIDES.length) return e.emit('end-stop');
-      e.emit('detent');
-      controls.setOverride(CO2_OVERRIDES[next]);
-    });
-    let shown: Co2Override | null = null;
-    a.updates.push(() => {
-      const o = read().doser.override;
-      if (o === shown) return;
-      shown = o;
-      view.set(o === 'open' ? 1 : o === 'close' ? -1 : 0);
-    });
-    a.shows(() => `at ${read().doser.override.toUpperCase()}`);
-    shell.add(a.object);
-    parts.add(a.part());
   }
 
   // ---- Each frame ------------------------------------------------------------
@@ -695,7 +794,7 @@ export function createMassFlowController(
     status() {
       const { doser, inletBar } = read();
       const [l1, l2] = mfcLines(doser, inletBar, page);
-      return `display “${l1.trim()} / ${l2.trim()}” · ${doser.hand ? 'HAND' : 'AUTO'} · override ${doser.override.toUpperCase()} · ${mfcFaultWords(doser)}`;
+      return `display “${l1.trim()} / ${l2.trim()}” · ${doser.hand ? 'LOCAL' : 'REMOTE'} · override ${doser.override.toUpperCase()} · ${mfcFaultWords(doser)}`;
     },
   };
 }

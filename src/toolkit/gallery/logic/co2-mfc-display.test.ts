@@ -26,26 +26,26 @@ describe('the mass flow controller’s 2 × 16 LCD', () => {
       const [l1, l2] = mfcLines(d, 4, page);
       expect(l1).toHaveLength(16);
       expect(l2).toHaveLength(16);
-      expect(l1).toBe('  500.0 g/h AUTO');
+      expect(l1).toBe('500.0 g/h REMOTE');
     }
-    expect(mfcLines(d, 4, 'setpoint')[1]).toBe('SP AUTO  500 g/h');
+    expect(mfcLines(d, 4, 'setpoint')[1]).toBe('SP REM   500 g/h');
     expect(mfcLines(d, 4, 'drive')[1]).toBe('VALVE DRIVE  15%');
     expect(mfcLines(d, 3.9, 'inlet')[1]).toBe('INLET  3.90 bar ');
     expect(mfcLines(d, 4, 'total')[1]).toBe('TOTAL   0.008 kg');
     expect(mfcLines(d, 4, 'alarm')[1]).toBe('ALM NONE        ');
-    expect(mfcLines(d, 4, 'control')[1]).toBe('AUTO OVR NORMAL ');
+    expect(mfcLines(d, 4, 'control')[1]).toBe('REMOTE OVR NORM ');
   });
 
-  it('shows an override on line 1, and HAND and OFF', () => {
+  it('shows an override on line 1, and LOCAL and OFF', () => {
     expect(mfcLines(setCo2Override(olympic(), 'open'), 4, 'control')).toEqual([
-      '  500.0 g/h OPEN',
-      'AUTO OVR OPEN   ',
+      '500.0 g/h   OPEN',
+      'REMOTE OVR OPEN ',
     ]);
     expect(mfcLines(setCo2Override(olympic(), 'close'), 4, 'drive')[0]).toMatch(
       /SHUT$/,
     );
     expect(mfcLines(setCo2Hand(olympic(), true), 4, 'drive')[0]).toMatch(
-      /HAND$/,
+      / LOCAL$/,
     );
     expect(mfcLines(setCo2On(olympic(), false), 4, 'drive')[0]).toMatch(
       / OFF$/,

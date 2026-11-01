@@ -23,8 +23,9 @@ import type { ChannelFeedback } from './aqualis-types';
  *   MC; `doc/plans/co2-system.md`, "The mass flow controller"), its
  *   proportional valve and its meter in one body, holding the flow at
  *   demand × its range whatever the inlet pressure, while it can. On its
- *   own face: a HAND · AUTO toggle (AUTO is REMOTE, HAND is MANUAL at its
- *   local set point) and a guarded valve OVERRIDE, CLOSE · NORMAL · OPEN,
+ *   own face: a LOCAL · REMOTE selector (REMOTE is the REMOTE mode, LOCAL
+ *   is MANUAL at its own set point; `hand` is LOCAL) and a key-operated
+ *   valve OVERRIDE, CLOSE · NORMAL · OPEN,
  *   as the real ones' valve override input (Brooks's VOR, Alicat's valve
  *   hold and exhaust): forced shut, or fully open whatever the set point
  *   says, but still shut by every interlock (`command`).
