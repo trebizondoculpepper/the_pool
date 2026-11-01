@@ -115,6 +115,17 @@ function said(
       return { subject: 'PLANT', text: 'SLOW START begun' };
     case 'weather/ambient':
       return { subject: 'WEATHER', text: `outside ${action.celsius} °C` };
+    case 'lthw/pumps':
+      return {
+        subject: 'LTHW PUMPS',
+        text: action.running ? 'started' : 'stopped',
+        severity: action.running ? 'info' : 'notice',
+      };
+    case 'lthw/boilers':
+      return {
+        subject: 'BOILERS',
+        text: `${action.count} in service`,
+      };
     case 'lighting/supply':
       return {
         subject: 'DB-LIGHTING',

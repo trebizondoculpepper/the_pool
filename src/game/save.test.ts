@@ -95,7 +95,7 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(70);
+    expect(WORLD_VERSION).toBe(71);
   });
 
   it('installs the normal CO₂ system when a version 65 save is loaded', () => {
@@ -292,6 +292,7 @@ describe('a save', () => {
       cabinets: newWorld().cabinets,
       jacuzziFibreIlluminator: newWorld().jacuzziFibreIlluminator,
       boilerGas: newWorld().boilerGas,
+      lthw: newWorld().lthw,
       music: newWorld().music,
       fireAlarm: newWorld().fireAlarm,
       washOTron: newWorld().washOTron,
@@ -488,5 +489,19 @@ describe('the water chemistry migration (57 → 58, mission 101)', () => {
       rest.pools.pool_01.freeChlorine,
       9,
     );
+  });
+
+  it('comes to a version 70 save with the LTHW ring at its set point (mission 120)', () => {
+    const { lthw: _none, ...old } = newWorld();
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 70,
+        savedAt: 0,
+        world: old,
+      }),
+    );
+    expect(loaded.ok && loaded.world.lthw).toEqual(newWorld().lthw);
+    expect(loaded.ok && loaded.world.lthw.flow).toBe(80);
   });
 });

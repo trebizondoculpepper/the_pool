@@ -1,4 +1,4 @@
-import { WATER_HEAT } from './heat-loop';
+import { GAS_ENERGY, WATER_HEAT } from './heat-loop';
 
 /**
  * The low temperature hot water (LTHW) ring (mission 120): one lumped
@@ -174,3 +174,10 @@ export function stepRing(
     areas: inputs.areas ?? s.areas,
   };
 }
+
+/** The boilers' seasonal efficiency, as the gas meter has always counted it (`site-intake.ts`). */
+export const RING_EFFICIENCY = 0.9;
+
+/** The boilers' gas, m³/h, for the supply's kW. */
+export const ringGasM3h = (supply: number) =>
+  Math.max(0, supply) / (GAS_ENERGY * RING_EFFICIENCY);

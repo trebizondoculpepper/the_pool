@@ -385,6 +385,10 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
       },
     };
   },
+  // 70 → 71: the LTHW ring (mission 120): at its set point, its pumps
+  // running, its six boilers in service, the museum at its thermostat's
+  // setting (`fillDefaults` adds it).
+  70: (world) => world,
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

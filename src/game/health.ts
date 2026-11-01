@@ -406,6 +406,7 @@ export const WORLD_HEALTH_COVERAGE = {
   jacuzziFibreIlluminator:
     'not checked: decoration lighting, its own on switch',
   boilerGas: 'gas: the boiler house’s safety chain made',
+  lthw: 'heat: the LTHW ring at its set point, every load’s demand met',
   music: 'not health: the halls’ music',
   fireAlarm:
     'not checked: an alarm raised by hand, seen and heard where it sounds',

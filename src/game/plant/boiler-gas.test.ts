@@ -63,15 +63,22 @@ describe('the boiler house’s gas safety', () => {
     ).toBe(true);
   });
 
-  it('starves the boilers: no heat to the pools with the SSOV shut', () => {
+  it('starves the boilers: the ring’s supply stops with the SSOV shut, and the ring cools', () => {
     const warm = wantingHeat();
     expect(heating(warm)).toBeGreaterThan(1);
+    expect(warm.lthw.supply).toBeGreaterThan(1);
     const starved = advance(stop(warm, true), 10, 1);
-    expect(heating(starved)).toBe(0);
-    // Pulled out, still no gas until GAS RESET; then the heat comes back.
+    expect(starved.lthw.supply).toBe(0);
+    expect(starved.lthw.firing).toBe(false);
+    // The ring's water still carries heat to the pools for a while.
+    expect(heating(starved)).toBeGreaterThan(1);
+    expect(starved.lthw.flow).toBeLessThan(warm.lthw.flow);
+    // Pulled out, still no gas until GAS RESET; then the supply comes back.
     const released = advance(stop(starved, false), 10, 1);
-    expect(heating(released)).toBe(0);
-    expect(heating(advance(reset(released), 10, 1))).toBeGreaterThan(1);
+    expect(released.lthw.supply).toBe(0);
+    const restored = advance(reset(released), 10, 1);
+    expect(restored.lthw.supply).toBeGreaterThan(1);
+    expect(restored.lthw.firing).toBe(true);
   });
 
   it('survives a save and reload', () => {

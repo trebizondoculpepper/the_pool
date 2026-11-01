@@ -62,7 +62,6 @@ import {
   actOnIntake,
   newSiteIntake,
   restoreInside,
-  siteGasM3h,
   siteLoadKw,
   stepIntakeMeters,
   withIntake,
@@ -191,7 +190,7 @@ import { fullOff, fullOn, slowStartAt, slowStartBegin } from './plant/startup';
 import type { BathersState } from './bathers';
 import { STORE_CAPACITY, deliver, newChemicalStores } from './plant/chemicals';
 import type { Chemical, ChemicalStores } from './plant/chemicals';
-import type { PoolId, PoolsState } from './plant/pools';
+import type { PoolHeat, PoolId, PoolsState } from './plant/pools';
 import {
   actOnGasZone,
   newGasZones,
@@ -306,11 +305,20 @@ import type {
 } from './plant/fibre-illuminator';
 import {
   actOnBoilerGas,
-  heatingPlant,
+  boilerGasOn,
   newBoilerGas,
   stepBoilerGas,
 } from './plant/boiler-gas';
 import type { BoilerGasAction, BoilerGasState } from './plant/boiler-gas';
+import {
+  RING,
+  newLthwRing,
+  ringGasM3h,
+  stepRing,
+  supplyCapacity,
+} from './plant/lthw-ring';
+import type { LthwRingState } from './plant/lthw-ring';
+import { poolConsumer, stepAreas } from './plant/heat-consumers';
 import type {
   MotorsState,
   MotorTag,
@@ -356,7 +364,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 70;
+export const WORLD_VERSION = 71;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -469,6 +477,12 @@ export interface World {
   jacuzziFibreIlluminator: FibreIlluminatorState;
   /** The boiler house's gas safety: ECV, emergency stop, detector and SSOV (`boiler-gas.ts`). */
   boilerGas: BoilerGasState;
+  /**
+   * The LTHW ring (mission 120, `lthw-ring.ts`): its flow and return, its
+   * pumps, the supply's boilers in service, each consumer's draw and the
+   * heated areas' temperatures.
+   */
+  lthw: LthwRingState;
   music: ZoneMusicState;
   /** The fire alarm's call points (`plant/fire-alarm.ts`). */
   fireAlarm: FireAlarmState;
@@ -558,6 +572,7 @@ export function newWorld(): World {
     cabinets: { pool_03: runningCabinet(), pool_04: runningCabinet() },
     jacuzziFibreIlluminator: newFibreIlluminator(),
     boilerGas: newBoilerGas(),
+    lthw: newLthwRing(),
     music: newZoneMusic(),
     fireAlarm: newFireAlarm(),
     // Its programme in AUTO from the start (the owner, 2026-10-31).
@@ -590,6 +605,10 @@ export type WorldAction =
   | { type: 'plant/full-on' }
   | { type: 'plant/slow-start' }
   | { type: 'weather/ambient'; celsius: number }
+  /** The LTHW ring's pumps switched to run or stop (mission 120). */
+  | { type: 'lthw/pumps'; running: boolean }
+  /** The stand-in supply's boilers in service, 0 to 6, until mission 121 gives the boilers' own states. */
+  | { type: 'lthw/boilers'; count: number }
   | { type: 'lighting/supply'; on: boolean }
   | { type: 'lighting/zone'; zone: LightingZoneId; on: boolean }
   /** DB-L1 worked: its main switch, a way's RCBO, a way's TEST. */
@@ -1168,6 +1187,19 @@ export function applyAction(world: World, action: WorldAction): World {
       return world.ambient === action.celsius
         ? world
         : { ...world, ambient: action.celsius };
+    case 'lthw/pumps':
+      return world.lthw.pumps === action.running
+        ? world
+        : { ...world, lthw: { ...world.lthw, pumps: action.running } };
+    case 'lthw/boilers': {
+      const count = Math.max(
+        0,
+        Math.min(RING.boilers, Math.round(action.count)),
+      );
+      return world.lthw.boilers === count
+        ? world
+        : { ...world, lthw: { ...world.lthw, boilers: count } };
+    }
     case 'lighting/supply':
       return world.lighting.supply === action.on
         ? world
@@ -1377,7 +1409,7 @@ export function stepWorld(world: World, delta: number): World {
     world.intake,
     {
       water: hours > 0 ? (next.wetHall.meter - world.wetHall.meter) / hours : 0,
-      gas: siteGasM3h(next.pools, effective.sources.heat),
+      gas: ringGasM3h(next.lthw.supply),
       power: siteLoadKw({ ...next, plant: effective }),
     },
     delta,
@@ -1570,6 +1602,48 @@ function stepTrios(
   return { aqualis, driven, co2Demand };
 }
 
+/**
+ * The LTHW ring a step on (mission 120): the other areas drawing on it,
+ * every consumer's draw summed, the stand-in supply as the boilers' gas,
+ * the boiler house's power and the ring's flow allow it.
+ */
+function stepLthw(
+  world: World,
+  heat: Record<PoolId, PoolHeat>,
+  ring: { flow: number; circulating: boolean },
+  delta: number,
+): LthwRingState {
+  const areas = stepAreas(world.lthw.areas, ring, world.ambient, delta);
+  const draws: Record<string, number> = {};
+  let demand = 0;
+  for (const id of POOL_IDS) {
+    draws[poolConsumer(id, 'water')] = heat[id].water;
+    draws[poolConsumer(id, 'air')] = heat[id].air;
+    demand += heat[id].waterAsked + heat[id].airAsked;
+  }
+  for (const [id, q] of Object.entries(areas.draws)) {
+    draws[id] = q;
+    demand += areas.asked[id] ?? 0;
+  }
+  const capacity = supplyCapacity({
+    gas: boilerGasOn(world.boilerGas) && world.plant.sources.heat,
+    powered: serviceAvailable(world.plant, 'boiler_house', 'power'),
+    circulating: ring.circulating,
+    boilers: world.lthw.boilers,
+  });
+  return stepRing(
+    world.lthw,
+    {
+      capacity,
+      circulating: ring.circulating,
+      draws,
+      demand,
+      areas: areas.temps,
+    },
+    delta,
+  );
+}
+
 function stepPlant(world: World, delta: number): World {
   // The Wash-O-Tron first: the filters' valves it drives this step.
   world = { ...world, ...stepWashWorld(world, delta) };
@@ -1687,10 +1761,15 @@ function stepPlant(world: World, delta: number): World {
       POOL_TARGET.pool_04.flow,
     ),
   };
-  // The heating, as the boilers' gas allows: none with the SSOV or ECV shut.
+  // The LTHW ring (mission 120): its pumps run while switched to and the
+  // boiler house has power; the pools' heaters draw on it as hot as it is
+  // at the step's start.
+  const ringMoving =
+    world.lthw.pumps && serviceAvailable(world.plant, 'boiler_house', 'power');
+  const ring = { flow: world.lthw.flow, circulating: ringMoving };
   const water = stepPoolsWater(
     world.pools,
-    heatingPlant(world.plant, world.boilerGas),
+    world.plant,
     delta,
     world.time,
     stock,
@@ -1737,7 +1816,9 @@ function stepPlant(world: World, delta: number): World {
     motors,
     jacuzzi,
     spaWash,
+    ring,
   );
+  const lthw = stepLthw(world, water.heat, ring, delta);
   // Each pool's dosing pumps while their pool may be dosed (circulating,
   // its chemical service, its day tank's stock and open path); its water's
   // chemistry, a step on (mission 101). Each pump stepped on: released while its pool may be dosed, asked its
@@ -1872,6 +1953,7 @@ function stepPlant(world: World, delta: number): World {
       delta,
     ),
     boilerGas: stepBoilerGas(world.boilerGas, delta),
+    lthw,
     loungeValvePositions,
     loungeFilters: stepLoungeFilters(
       world.loungeFilters,

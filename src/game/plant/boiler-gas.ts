@@ -2,7 +2,6 @@ import {
   resetGasHouse,
   settleGasHouse,
 } from '../../toolkit/components/plant/logic/boiler-house';
-import type { PlantServices } from './services';
 
 /**
  * The boiler house's gas safety, in the world: the incoming emergency
@@ -13,8 +12,8 @@ import type { PlantServices } from './services';
  * the gas clears, and reopens only on GAS RESET with every permit made).
  *
  * With the SSOV or the ECV shut no gas reaches the boilers: they cannot
- * fire, and the heating they give the pools and their halls stops
- * (`heatingPlant`). The boilers' own controllers stay in the boiler
+ * fire, the LTHW ring's supply stops (`lthw-ring.ts`, `supplyCapacity`),
+ * and the ring cools as its loads draw on it. The boilers' own controllers stay in the boiler
  * house's room; the gas they share is here, so the stop's state survives
  * a reload and the control room sees it. Pure.
  */
@@ -96,16 +95,3 @@ export function stepBoilerGas(
 
 /** Whether gas reaches the boilers' own isolators: the ECV and the SSOV open. */
 export const boilerGasOn = (gas: BoilerGasState) => gas.ecvOpen && gas.ssovOpen;
-
-/**
- * The plant as the heating sees it: without gas the boilers cannot fire,
- * so heat is to be had nowhere (`services.ts`' `heat`), whatever the
- * boiler house's feeder.
- */
-export function heatingPlant(
-  plant: PlantServices,
-  gas: BoilerGasState,
-): PlantServices {
-  if (boilerGasOn(gas) || !plant.sources.heat) return plant;
-  return { ...plant, sources: { ...plant.sources, heat: false } };
-}
