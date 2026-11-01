@@ -15,7 +15,7 @@ While several agents work at once (the owner, 2026-11-01):
 - **Claim shared files.** Say on the mailbox which files and systems your job touches. Keep out of another agent's claimed files until it says they are free, and say so when you free your own. Changing a claimed file needs that agent's agreement first.
 - **Reserve a `WORLD_VERSION` before taking it.** Agree the next number with the other agents on the mailbox before you bump it or add a `save.ts` migration. Two jobs must never take the same number. Whoever merges second rebases onto the other's migration and keeps its own number.
 - **Say what a job waits on.** A brief that depends on another job's result says which parts can start now and which must wait (mission 118's Coordination section is the pattern). The agent whose work it waits on mails when that work has merged.
-- **Agents in worktrees** (subagents) commit there. The session that spawned them cherry-picks onto `main`, checks, pushes, and then removes the worktree and its branch.
+- **Everyone works in the main checkout, on `main`, with no git worktrees** (the owner, 2026-11-01), so all work shows on the one shared dev server. The owner gives agents orthogonal jobs. Because the checkout is shared, stage only your own files or hunks (never `git add -A`, nor a whole `TODO.md` or `CHANGELOG.md` holding others' lines), check the staged diff, then pull with `--rebase` and push. Expect a test run to see other agents' unfinished edits; rerun a failure before blaming it on them.
 
 ## Rules
 
