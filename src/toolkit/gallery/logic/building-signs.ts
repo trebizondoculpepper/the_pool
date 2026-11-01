@@ -39,10 +39,10 @@ export type SignItemId = keyof typeof SIGN_ITEMS;
 
 /** Each room's notices: the staff's, the procedures by what they concern. */
 export const ROOM_SIGNS: Partial<Record<string, readonly SignItemId[]>> = {
-  // No staff room yet: the statutory notices on the control room's board,
-  // where the staff are. (The engineer's office has no wall free of its
-  // doorways and furniture.)
-  control_room: ['staff-noticeboard'],
+  // No staff room yet: the statutory notices on the engineer's office's
+  // board, on its east wall south of the gallery door (the owner,
+  // 2026-11-01: the control room's walls are wanted for mimics).
+  engineers_office: ['staff-noticeboard'],
   switch_room: ['shock-poster'],
   // The boiler house's gas emergency notice is on the gas train, by its
   // emergency control valve (`room-equipment.ts`'s view); its no naked

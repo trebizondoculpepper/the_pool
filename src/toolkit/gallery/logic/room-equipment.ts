@@ -1606,19 +1606,16 @@ export function layoutRoomLive(room: string) {
     // The extra water boards take the last full-width wall spans. Two
     // smaller passive displays share the south wall vertically with its
     // BMS cabinet and chart recorders.
-    for (const [key, along, y] of [
-      // CR-CP4 30 cm higher (the owner, 2026-11-01).
-      ['readout-board', -2.04, 2.3],
-      ['sign:staff-noticeboard', 2.0, 2.2],
-    ] as const) {
-      const item =
-        key === 'readout-board'
-          ? readoutBoard
-          : layout.failed.find((candidate) => candidate.key === key);
-      if (!item) continue;
-      layout.failed = layout.failed.filter((candidate) => candidate !== item);
-      layout.placed.push({ ...put(r.box, item, { wall: 'south', along }), y });
-    }
+    // CR-CP4, the readout board, on the west wall behind the operator's
+    // desk and its BBC Micro (the owner, 2026-11-01).
+    if (readoutBoard)
+      layout.placed.push({
+        ...put(r.box, readoutBoard, { wall: 'west', along: -3.7 }),
+        y: 2.0,
+        // Read, not worked: from the aisle behind the desk, as the pit
+        // board over it is.
+        access: { minX: -2.7, maxX: 0.1, minZ: -3.7, maxZ: -2.8 },
+      });
   }
   return { ...r, ...layout };
 }
@@ -1730,6 +1727,15 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
       onWall(at('storage-cupboard:solid'), -1.75, -0.32, 'east', 'west'),
       onWall(at('storage-cupboard:glass'), -1.75, 0.72, 'east', 'west'),
       onWall(at('scenario-simulator'), 1.55, -2.53, 'west', 'east'),
+      // The staff noticeboard, moved from the control room (the owner,
+      // 2026-11-01): on the east wall between the gallery door and the
+      // south corner.
+      ...items
+        .filter((item) => item.key === 'sign:staff-noticeboard')
+        .map((item) => ({
+          ...onWall(item, box.w / 2, 1.75, 'west', 'east'),
+          y: item.y ?? 1.5,
+        })),
     ];
   },
   // The boiler house (the owner, 2026-10-24: re-planned): the cascades

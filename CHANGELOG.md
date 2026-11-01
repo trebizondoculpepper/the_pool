@@ -10,6 +10,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The control room's readout board, CR-CP4, hangs on the west wall behind the operator's desk and its BBC Micro, read from the aisle; the staff noticeboard moves to the engineer's office's east wall (the owner, 2026-11-01: the control room's walls are wanted for mimics).
 - The old control room's mimics hang in one line, all 1.2 m tall and centred 2.0 m up, the highest the reach rule allows, their bottoms level with the operator's desk; its readout board, CR-CP4, is 30 cm higher, over the BMS outstation (the owner, 2026-11-01).
 - The wet hall's Fresh Water Distribution and Pit Inflow Sources mimics are the standard board's size, 2.4 × 1.2 m like the Lounge pool filters mimic, their layouts drawn closer, and their readouts show the digits alone, without the one-line LCD under each (the owner, 2026-11-01: they were huge for very little information); a mimic may now leave out its readouts' legends (`readoutLegends: false`).
 
