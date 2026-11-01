@@ -23,13 +23,19 @@ import { createPutBack } from '../logic/put-back';
 import type { Pose } from '../logic/put-back';
 import { SOFTWARE_TITLES } from '../logic/software-boxes';
 import type { BoxSize, SoftwareTitle } from '../logic/software-boxes';
+import { declareSeat } from '../../../controls/input/seating';
 import { createOfficeChair } from './office-chair';
 import {
   WALL_SHELF,
   WALL_SHELF_STANDOFF,
   createWallShelf,
 } from './office-wall-shelf';
-import { createLead, createPcCarton, createPeriodPc } from './period-pc';
+import {
+  bootSequenceScreen,
+  createLead,
+  createPcCarton,
+  createPeriodPc,
+} from './period-pc';
 import type { PeriodPcOptions } from './period-pc';
 import {
   createBoxContents,
@@ -296,7 +302,11 @@ export function createEngineersDesk(
   deskTop.userData.noCollision = true;
   group.add(deskTop);
 
-  const pc = createPeriodPc(kit, options);
+  // It boots DOS (the game's `dos` boot sequence) when its power is pressed.
+  const pc = createPeriodPc(kit, {
+    ...options,
+    boot: options.boot ?? bootSequenceScreen('dos'),
+  });
   pc.monitor.position.set(-0.22, top, -0.02);
   pc.monitor.rotation.y = 0.08;
   pc.tower.position.set(-0.6, top, -0.13);
@@ -621,12 +631,22 @@ export function createEngineersDesk(
     binned: () => things.binned(),
   };
 
-  // A chair, pushed back a little.
+  // A chair, pushed back a little, that can be sat in, facing the screen
+  // (the bridge's seats, `controls/input/seating.ts`): a seat declares its
+  // way as +z, the chair model faces -z, so it turns a half inside it.
   const chair = createOfficeChair(1);
-  chair.group.position.set(-0.15, 0, 0.75);
-  chair.group.rotation.y = 0.25;
-  chair.group.userData.beside = true;
-  group.add(chair.group);
+  chair.group.rotation.y = Math.PI;
+  const seat = new Group();
+  seat.name = 'Office chair seat';
+  seat.position.set(-0.15, 0, 0.75);
+  seat.rotation.y = 0.25 + Math.PI;
+  seat.userData.beside = true;
+  seat.add(chair.group);
+  declareSeat(seat, {
+    height: 0.45,
+    lookAt: { x: -0.22, y: top + 0.2, z: -0.02 },
+  });
+  group.add(seat);
 
   return {
     group,

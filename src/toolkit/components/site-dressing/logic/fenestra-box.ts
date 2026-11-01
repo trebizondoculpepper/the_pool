@@ -36,7 +36,7 @@ export const FENESTRA_PROSPECT_BOX: SoftwareTitle = {
     os: 'Bootable installer',
     drive: 'DVD-ROM drive',
   },
-  barcode: '5000000000098',
+  barcode: '2000000000091',
   price: { amount: '£129.00' },
   ageRating: null,
   compatibility: 'Fenestra Prospect Embedded',

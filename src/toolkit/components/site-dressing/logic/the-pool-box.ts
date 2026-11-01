@@ -30,7 +30,7 @@ export const THE_POOL_BOX: SoftwareTitle = {
     os: 'Desktop operating system',
     drive: 'Internet connection for browser play',
   },
-  barcode: '5000000000111',
+  barcode: '2000000000114',
   price: { amount: 'FREE' },
   ageRating: null,
   compatibility: 'PC compatible',

@@ -64,6 +64,17 @@ describe('the engineer’s PC', () => {
     expect(pcFrame(desk, 601).key).not.toBe(pcFrame(desk, 600).key);
   });
 
+  it('keys its boot on a boot sequence’s own key when it is given one', () => {
+    const booting = pressPower(pressPower(newPc()));
+    const key = (s: number) => (s < 1 ? 'a' : 'b');
+    expect(pcFrame(stepPc(booting, 0.2), 0, key).key).toBe(
+      pcFrame(stepPc(booting, 0.9), 0, key).key,
+    );
+    expect(pcFrame(stepPc(booting, 1.2), 0, key).key).not.toBe(
+      pcFrame(stepPc(booting, 0.2), 0, key).key,
+    );
+  });
+
   it('wears the same cow spots for the same seed, on its surface', () => {
     expect(cowSpots(3, 9)).toEqual(cowSpots(3, 9));
     expect(cowSpots(3, 9)).not.toEqual(cowSpots(4, 9));

@@ -138,7 +138,11 @@ export function diskBusy(pc: PcState): boolean {
 export function pcFrame(
   pc: PcState,
   clockMinutes: number,
+  /** A boot sequence's own key at `seconds` into the boot, which changes only when its picture does: by default the boot's quarter second. */
+  bootKey?: (seconds: number) => string,
 ): { screen: PcScreen; step: number; key: string } {
+  if (pc.screen === 'booting' && bootKey)
+    return { screen: pc.screen, step: 0, key: `booting:${bootKey(pc.since)}` };
   const step =
     pc.screen === 'screensaver'
       ? Math.floor(pc.since * SCREENSAVER_HZ)

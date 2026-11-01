@@ -11,6 +11,9 @@ import {
 } from './engineers-desk';
 import { WALL_SHELF } from './office-wall-shelf';
 import { createOfficeChair } from './office-chair';
+import { bootSequenceScreen } from './period-pc';
+import { seatDeclared } from '../../../controls/input/seating';
+import { bootFrame, bootScript } from '../../core/logic/boot-sequence';
 
 beforeEach(() => {
   vi.stubGlobal('document', {
@@ -139,4 +142,19 @@ it('stands the carton, flaps and all, clear of the desk, wall, chair and cupboar
   expect(w / 2 - inRoom.maxX).toBeGreaterThanOrEqual(spare);
   expect(inRoom.minZ + d / 2).toBeGreaterThanOrEqual(spare);
   expect(d / 2 - inRoom.maxZ).toBeGreaterThanOrEqual(spare);
+});
+
+it('boots its PC through the dos boot sequence, redrawing only when the picture changes, and has a chair to sit in', () => {
+  const built = createEngineersDesk(createPanelKit());
+  const seat = built.group.getObjectByName('Office chair seat');
+  expect(seat && seatDeclared(seat)?.height).toBeCloseTo(0.45);
+  const screen = bootSequenceScreen('dos');
+  const script = bootScript('dos', { seed: 3 });
+  expect(screen.seconds).toBe(script.total);
+  expect(screen.key!(0)).toBe(bootFrame(script, 0).key);
+  const keys = new Set<string>();
+  for (let t = 0; t < screen.seconds; t += 0.01) keys.add(screen.key!(t));
+  // Far fewer pictures than frames: at most ten a second.
+  expect(keys.size).toBeLessThan(screen.seconds * 10 + 10);
+  expect(keys.size).toBeGreaterThan(3);
 });

@@ -31,6 +31,9 @@ import {
   touchPc,
 } from '../logic/period-pc';
 import type { PcState } from '../logic/period-pc';
+import { bootFrame, bootScript } from '../../core/logic/boot-sequence';
+import type { BootFamily, BootFrame } from '../../core/logic/boot-sequence';
+import { drawBootScreen } from '../../core/views/boot-screens';
 
 /**
  * The hook for a boot sequence (`core/logic/boot-sequence.ts`, its `'gui'`
@@ -46,6 +49,8 @@ export interface PcBootScreen {
     height: number,
     seconds: number,
   ): void;
+  /** A key for the picture at `seconds`, changing only when it does, so the screen redraws only then; without one, it redraws at `BOOT_HZ`. */
+  key?(seconds: number): string;
 }
 
 export interface PeriodPcOptions {
@@ -53,6 +58,35 @@ export interface PeriodPcOptions {
   clock?: () => number;
   /** A boot sequence to show instead of the PC's own (see `PcBootScreen`). */
   boot?: PcBootScreen;
+}
+
+/**
+ * One of the game's boot sequences (`core/logic/boot-sequence.ts`) as the
+ * PC's boot screen: by default the `dos` family, which suits a 1990s PC.
+ * Its key is the boot frame's, so the screen redraws only when the
+ * picture or its live element changes; the frame worked out for the key
+ * is the one drawn.
+ */
+export function bootSequenceScreen(
+  family: BootFamily = 'dos',
+  seed = 3,
+): PcBootScreen {
+  const script = bootScript(family, { seed });
+  let at = Number.NaN;
+  let frame: BootFrame | null = null;
+  const frameAt = (seconds: number) => {
+    if (seconds !== at || !frame) {
+      at = seconds;
+      frame = bootFrame(script, seconds);
+    }
+    return frame;
+  };
+  return {
+    seconds: script.total,
+    key: (seconds) => frameAt(seconds).key,
+    draw: (context, width, height, seconds) =>
+      drawBootScreen(context, frameAt(seconds), width, height),
+  };
 }
 
 const BEIGE = PC_MAKER.beige;
@@ -993,7 +1027,7 @@ export function createPeriodPc(kit: PanelKit, options: PeriodPcOptions = {}) {
   let drawn = '';
   const show = () => {
     const minutes = clock();
-    const frame = pcFrame(pc, minutes);
+    const frame = pcFrame(pc, minutes, options.boot?.key);
     if (frame.key === drawn) return;
     drawn = frame.key;
     const { context, canvas, texture } = screen.shown;

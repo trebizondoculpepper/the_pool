@@ -36,7 +36,7 @@ export const PANES_95_BOX: SoftwareTitle = {
     os: 'PC-DOZE 5.0 for upgrade installation',
     drive: 'CD-ROM and 3.5" floppy drives',
   },
-  barcode: '5000000000104',
+  barcode: '2000000000107',
   price: { amount: '£79.95' },
   ageRating: null,
   compatibility: 'PC compatible',

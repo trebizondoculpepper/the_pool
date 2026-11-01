@@ -57,6 +57,8 @@ describe('software boxes', () => {
     expect(isValidEan13('400638133393')).toBe(false);
     for (const title of SOFTWARE_TITLES)
       expect(isValidEan13(title.barcode)).toBe(true);
+    // 20–29 is GS1's in-store range, so no real product can share a code.
+    for (const title of SOFTWARE_TITLES) expect(title.barcode).toMatch(/^2\d/);
   });
 
   it('maps every title to a measured box and all six face dimensions', () => {
