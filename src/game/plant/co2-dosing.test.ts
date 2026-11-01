@@ -4,6 +4,7 @@ import {
   CO2_FAULT_TEXT,
   CO2_MFC,
   CO2_PANEL,
+  CO2_SOLENOID_PANEL,
   actOnCo2Doser,
   co2Feedback,
   co2ValveDrive,
@@ -37,6 +38,7 @@ import type { AqualisReadings, ChannelFeedback } from './aqualis-types';
 import { RIG_DEVICE_MOST } from './aqualis-rig';
 
 const lounge = () => newCo2Doser(CO2_DOSERS.plant_pool_01);
+const solenoid = () => newCo2Doser(CO2_SOLENOID_PANEL);
 const olympic = () => newCo2Doser(CO2_DOSERS.plant_pool_02);
 
 const GOOD: Co2DoserInputs = {
@@ -73,8 +75,12 @@ describe('the Trio’s port: 4–20 mA and release', () => {
 describe('the panels’ sizes', () => {
   it('match the Trio’s pH channel: the Lounge’s takes all its full scale, the Olympic’s its base load', () => {
     const fullScale = (m3: number) => m3 * ACID_G_PER_M3 * CO2_PER_HCL;
+    // The Lounge's mass flow controller on its 500 g/h range, the standard
+    // range next above its 270 g/h; the period's rotameter was the rig's.
+    expect(CO2_DOSERS.plant_pool_01.kind).toBe('mass-flow');
     expect(CO2_DOSERS.plant_pool_01.most).toBeGreaterThan(fullScale(150));
-    expect(CO2_DOSERS.plant_pool_01.most).toBe(RIG_DEVICE_MOST.co2);
+    expect(CO2_DOSERS.plant_pool_01.most).toBe(500);
+    expect(CO2_SOLENOID_PANEL.most).toBe(RIG_DEVICE_MOST.co2);
     expect(CO2_DOSERS.plant_pool_02.most).toBeLessThan(fullScale(2500));
     // Three times the Olympic's estimated average of 15 kg a day.
     expect(CO2_DOSERS.plant_pool_02.most).toBeGreaterThan((3 * 15000) / 24);
@@ -124,23 +130,28 @@ describe('the mass flow controller (the Olympic’s)', () => {
   });
 });
 
-describe('the solenoid and rotameter (the Lounge’s)', () => {
+describe('the solenoid and rotameter (the period’s panel, the Lounge’s until 2026-11-01)', () => {
   it('opens for its share of each cycle, so its average is demand × its needle valve’s setting', () => {
     expect(openSeconds(0, 60, 15, 60)).toBe(15);
     expect(openSeconds(10, 10, 15, 60)).toBe(5);
     expect(openSeconds(50, 20, 15, 60)).toBe(10);
     expect(openSeconds(0, 600, 15, 60)).toBe(150);
-    const { grams } = run(lounge(), { ...GOOD, ...trioSignal(0.25) }, 3600);
+    const { grams } = run(solenoid(), { ...GOOD, ...trioSignal(0.25) }, 3600);
     expect(grams).toBeCloseTo(75, 6);
   });
 
   it('gives the same on a coarse step', () => {
-    const { grams } = run(lounge(), { ...GOOD, ...trioSignal(0.25) }, 3600, 7);
+    const { grams } = run(
+      solenoid(),
+      { ...GOOD, ...trioSignal(0.25) },
+      3600,
+      7,
+    );
     expect(grams).toBeCloseTo(75, 0);
   });
 
   it('is open in the first part of its cycle and shut after', () => {
-    let d = lounge();
+    let d = solenoid();
     const i = { ...GOOD, ...trioSignal(0.5) };
     d = stepCo2Doser(d, i, 10).state;
     expect(d.open).toBe(true);
@@ -194,7 +205,7 @@ describe('its faults', () => {
 
   it('doses a little less on a sagging inlet its regulator cannot quite hold, its flow still proved', () => {
     const { d, grams } = run(
-      lounge(),
+      solenoid(),
       { ...GOOD, ...trioSignal(1), inletBar: 2.1 },
       3600,
     );
@@ -426,8 +437,8 @@ describe('the mass flow controller’s own controls (the owner, 2026-11-01)', ()
     expect(run(setCo2On(open, false), GOOD, 60).grams).toBe(0);
   });
 
-  it('has no override on the Lounge’s solenoid panel', () => {
-    expect(setCo2Override(lounge(), 'open')).toEqual(lounge());
+  it('has no override on the solenoid panel', () => {
+    expect(setCo2Override(solenoid(), 'open')).toEqual(solenoid());
   });
 
   it('is worked through its panel’s actions', () => {

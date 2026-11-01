@@ -358,6 +358,33 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
         : d;
     return { ...w, co2: { ...w.co2, dosers: next } };
   },
+  // 69 → 70: the Lounge's CO₂ panel takes a mass flow controller (the
+  // owner, 2026-11-01: both rooms' panels the new design): its doser's
+  // spec is the MF-245C on its 0–500 g/h range in place of the 300 g/h
+  // solenoid and rotameter, its local rate kept within it, its override
+  // at NORMAL (the solenoid panel's was already).
+  69: (world) => {
+    const w = world as { co2?: { dosers?: Record<string, unknown> } };
+    const d = w.co2?.dosers?.plant_pool_01;
+    if (!isRecord(d)) return world;
+    const rate = typeof d.manualRate === 'number' ? d.manualRate : 250;
+    return {
+      ...w,
+      co2: {
+        ...w.co2,
+        dosers: {
+          ...w.co2!.dosers,
+          plant_pool_01: {
+            ...d,
+            spec: { kind: 'mass-flow', most: 500, cycle: 60 },
+            manualRate: Math.max(0, Math.min(500, rate)),
+            override: 'normal',
+            phase: 0,
+          },
+        },
+      },
+    };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

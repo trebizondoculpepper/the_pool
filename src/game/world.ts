@@ -356,7 +356,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 69;
+export const WORLD_VERSION = 70;
 
 /**
  * Where the main corridor's control room doors lead (the owner,

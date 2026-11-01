@@ -33,11 +33,11 @@ function run(p: Co2Plant, seconds: number, i = DRIVE, dt = 10) {
 describe('the CO₂ system, loading bay to injection point', () => {
   it('doses each room as its Trio asks, from the cylinders in the loading bay', () => {
     const { p, grams } = run(newCo2Plant(20), 3600);
-    // The Lounge's solenoid: half of 300 g/h; the Olympic's mass flow controller: half of 2 kg/h.
-    expect(grams.plant_pool_01).toBeCloseTo(150, 0);
+    // The Lounge's mass flow controller: half of 500 g/h; the Olympic's: half of 2 kg/h.
+    expect(grams.plant_pool_01).toBeCloseTo(250, 0);
     expect(grams.plant_pool_02).toBeCloseTo(1000, 0);
     const drawn = 4 * 34 - bankContents(p.distribution.supply, 'left');
-    expect(drawn).toBeCloseTo(1.15, 2);
+    expect(drawn).toBeCloseTo(1.25, 2);
   });
 
   it('with the master valve shut, the line falls until both panels stop on NO SUPPLY PRESSURE', () => {

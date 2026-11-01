@@ -409,7 +409,11 @@ export interface LeverSelectorView {
 export function createLeverSelector(
   kit: PanelKit,
   positions: 2 | 3,
-  { key = false } = {},
+  {
+    key = false,
+    /** The key's bow (its head), where it has one. */
+    bow = '#202022',
+  } = {},
 ): LeverSelectorView {
   const group = new Group();
   ringNut(kit, group);
@@ -437,7 +441,7 @@ export function createLeverSelector(
     add(
       knob,
       new BoxGeometry(0.004, 0.018, 0.012),
-      kitPaint(kit, '#202022'),
+      kitPaint(kit, bow),
       0,
       0,
       0.031,
@@ -703,10 +707,15 @@ export function createPilotLamp(
 export function createXB4Selector(
   kit: PanelKit,
   positions: 2 | 3,
+  {
+    /** Its handle's moulding, and the line along it. */
+    colour = '#1d1e20',
+    line = '#f2f1ea',
+  } = {},
 ): LeverSelectorView {
   const group = new Group();
   xb4Bezel(kit, group);
-  const black = kitPaint(kit, '#1d1e20', 0.4);
+  const black = kitPaint(kit, colour, 0.4);
   disc(group, 0.0123, 0.0065, black, 0.0035, 40);
   const handle = new Group();
   handle.position.z = 0.01;
@@ -717,7 +726,7 @@ export function createXB4Selector(
   add(
     handle,
     new BoxGeometry(0.0012, 0.006, 0.0004),
-    kitPaint(kit, '#f2f1ea'),
+    kitPaint(kit, line),
     0,
     0.0085,
     0.0112,

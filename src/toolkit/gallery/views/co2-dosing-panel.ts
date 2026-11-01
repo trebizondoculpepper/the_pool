@@ -32,7 +32,7 @@ import {
   panelCable,
 } from './co2-valve-controller';
 import {
-  CO2_DOSERS,
+  CO2_SOLENOID_PANEL,
   CO2_FAULT_TEXT,
   CO2_PANEL,
 } from '../../../game/plant/co2-dosing';
@@ -50,18 +50,19 @@ import type {
  * shows in the plant rooms and in dev58 at once. On a white backboard, its
  * gas train runs down the left, top to bottom as the gas goes: the inlet
  * and its pressure switch with the INLET gauge, the second-stage regulator
- * with its WORKING gauge, the dosing valve (the Lounge's solenoid valve,
- * its coil's lamp lit while open; the Olympic's thermal mass flow
+ * with its WORKING gauge, the dosing valve (a thermal mass flow
  * controller, `co2-mass-flow-controller.ts`, an instrument of its own on
  * its bracket, the copper jogging out to its inlet fitting and back from
- * its outlet), the flow meter (the Lounge's glass-tube rotameter with its
- * float and needle valve; the Olympic's flow is on its controller's LCD),
+ * its outlet, both rooms' since 2026-11-01, the Lounge's on its 500 g/h
+ * range; or the period's solenoid valve, its coil's lamp lit while open),
+ * the flow meter (the solenoid panel's glass-tube rotameter with its
+ * float and needle valve; a mass flow controller's flow is on its LCD),
  * and the non-return valve before the line goes down to the injection
  * point. On the right, its control cabinet, a Veldkamp CV-310
  * (`co2-valve-controller.ts`): the POWER, FLOW and REMOTE lamps, the ALARM
- * window, the REMOTE · LOCAL · OFF selector on the Lounge's (OFF · ON on
- * the Olympic's, whose mass flow controller chooses LOCAL or REMOTE
- * itself), the Lounge's LOCAL RATE potentiometer, and RESET; its cables
+ * window, OFF · ON (its mass flow controller choosing LOCAL or REMOTE
+ * itself; the solenoid panel's REMOTE · LOCAL · OFF selector and LOCAL
+ * RATE potentiometer in its place), and RESET; its cables
  * (the valve's, the 4–20 mA and release cable in, the detector's
  * interlock, the supply, and its earth) out of its glands into the
  * panel's trunking, which runs up to where the conduits land.
@@ -90,7 +91,7 @@ export interface Co2PanelControls {
   reset(): void;
   /** The mass flow controller panel's OFF · ON switch. */
   setOn(on: boolean): void;
-  /** The mass flow controller's HAND · AUTO toggle. */
+  /** The mass flow controller's LOCAL · REMOTE selector (the model's `hand` is LOCAL). */
   setHand(hand: boolean): void;
   /** The mass flow controller's valve OVERRIDE. */
   setOverride(override: Co2Override): void;
@@ -317,11 +318,7 @@ export function createCo2DosingPanel(
   let float: Mesh | null = null;
   const tube = 0.15;
   /** The rotameter's range: its needle valve's setting as built, g/h. */
-  const range = Math.max(
-    1,
-    (kind === 'solenoid' ? CO2_DOSERS.plant_pool_01 : CO2_DOSERS.plant_pool_02)
-      .most,
-  );
+  const range = CO2_SOLENOID_PANEL.most;
   const floatLow = -0.13 - tube * 0.42;
   if (kind === 'solenoid') {
     const glass = new MeshStandardMaterial({

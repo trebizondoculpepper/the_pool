@@ -527,9 +527,9 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
 
   // ---- CO₂: the plant rooms' own panels, plumbed into the rig --------------------------
   // The panel model the world runs (`aqualis-co2-rig.ts`), drawn by the
-  // plant rooms' own drawing (`co2-dosing-panel.ts`): the Lounge's solenoid
-  // and rotameter on the left, the Olympic's mass flow controller on the
-  // right, each on its wall port off a stand-in for the building line, the
+  // plant rooms' own drawing (`co2-dosing-panel.ts`): the Lounge's mass
+  // flow controller (500 g/h) on the left, the Olympic's (2 kg/h) on the
+  // right, both the plant rooms' design (the owner, 2026-11-01), each on its wall port off a stand-in for the building line, the
   // Trio's CO₂ cable on whichever its changeover selector chooses, and each
   // panel's line over the ceiling to its own nozzle on the rig's return.
   const copper = t.paint('#b8734a', 0.35, 0.8);
@@ -634,7 +634,7 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     t.label(
       bay,
       id === 'plant_pool_01'
-        ? 'LOUNGE · PL1-CP4 · SOLENOID AND ROTAMETER'
+        ? 'LOUNGE · PL1-CP4 · MASS FLOW CONTROLLER'
         : 'OLYMPIC · PL2-CP4 · MASS FLOW CONTROLLER',
       -px,
       CO2_BAY.y + 0.5,

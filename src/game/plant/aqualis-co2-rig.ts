@@ -19,10 +19,10 @@ import type { ChannelId, ChannelPorts } from './aqualis-types';
  * controller into the Aqualis Trio dev room, and plumb it in there"): the
  * rig's ideal CO₂ valve is unplugged and the plant rooms' own CO₂ system
  * (`co2-plant.ts`) takes its place, the same model the world runs, so the
- * dev room's panels are the plant rooms' panels. Both kinds stand side by
+ * dev room's panels are the plant rooms' panels. Both stand side by
  * side, each on its own wall port off a small stand-in supply: the Lounge's
- * solenoid-and-rotameter panel (`plant_pool_01`) and the Olympic's mass
- * flow panel (`plant_pool_02`). One of them at a time has its control cable
+ * panel (`plant_pool_01`, its mass flow controller on 500 g/h) and the
+ * Olympic's (`plant_pool_02`, on 2 kg/h). One of them at a time has its control cable
  * on the Trio's CO₂ port (`plugged`); the other's cable hangs free, so in
  * REMOTE it calls SIGNAL LOST, as a real one would. Both inject into the
  * rig's circulation at its injection point, through their non-return

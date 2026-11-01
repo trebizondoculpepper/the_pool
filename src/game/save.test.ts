@@ -49,6 +49,41 @@ describe('a save', () => {
     expect(lounge.hand).toBe(false);
   });
 
+  it('brings a version 69 save’s Lounge CO₂ panel up as a 500 g/h mass flow controller', () => {
+    const old = newWorld();
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 69,
+        savedAt: 5,
+        world: {
+          ...old,
+          co2: {
+            ...old.co2,
+            dosers: {
+              ...old.co2.dosers,
+              plant_pool_01: {
+                ...old.co2.dosers.plant_pool_01,
+                spec: { kind: 'solenoid', most: 300, cycle: 60 },
+                manualRate: 150,
+                mode: 'manual',
+                hand: true,
+              },
+            },
+          },
+        },
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const lounge = loaded.world.co2.dosers.plant_pool_01;
+    expect(lounge.spec).toEqual({ kind: 'mass-flow', most: 500, cycle: 60 });
+    expect(lounge.manualRate).toBe(150);
+    expect(lounge.mode).toBe('manual');
+    expect(lounge.hand).toBe(true);
+    expect(lounge.override).toBe('normal');
+  });
+
   it('keeps the Olympic’s mass flow controller’s override through a save, a world action', () => {
     const world = applyAction(newWorld(), {
       type: 'co2/panel',
@@ -60,7 +95,7 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(69);
+    expect(WORLD_VERSION).toBe(70);
   });
 
   it('installs the normal CO₂ system when a version 65 save is loaded', () => {

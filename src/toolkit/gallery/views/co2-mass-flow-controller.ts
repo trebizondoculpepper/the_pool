@@ -114,8 +114,17 @@ export interface MfcControls {
   setOverride(override: Co2Override): void;
 }
 
-/** ▲ and ▼ step LOCAL's set point by this, g/h. */
-export const MFC_RATE_STEP = 50;
+/** ▲ and ▼ step LOCAL's set point by this, g/h: 50 on the 2 kg/h range, 10 on the 500 g/h. */
+export const mfcRateStep = (range: number) => (range >= 1000 ? 50 : 10);
+
+/**
+ * Its range as printed (its full scale, g/h): "0–2 kg/h" or "0–500 g/h",
+ * and its order code's range letters (RD2, 2 kg/h; RG5, 500 g/h).
+ */
+export const mfcRangeText = (range: number) =>
+  range >= 1000 ? `0–${range / 1000} kg/h` : `0–${range} g/h`;
+export const mfcRangeCode = (range: number) =>
+  range >= 1000 ? `RD${range / 1000}` : `RG${range / 100}`;
 
 export interface MfcView {
   object: Group;
@@ -154,7 +163,9 @@ export function createMassFlowController(
   const brass = t.paint('#b6944c', 0.35, 0.75);
   const cableGrey = t.paint('#7a7f83', 0.7);
   const keyBlue = t.paint('#2d5f9a', 0.45);
-  const keyGrey = t.paint('#5b6166', 0.5);
+  // Light grey keys on a mid-grey keypad, MODE blue: nothing black, which
+  // the game's lighting loses against the grey housing (the owner).
+  const keyGrey = t.paint('#c3c7ca', 0.5);
   const geometry = (g: RoundedBoxGeometry, m: Material) => new Mesh(g, m);
 
   // ---- The flow body: machined stainless, the gas along its axis ---------------
@@ -377,41 +388,41 @@ export function createMassFlowController(
         0.04 - k * 0.0045,
         0.0105,
       );
-  const plate = t.printed(
-    0.032,
-    0.036,
-    (c, cw, ch) => {
-      c.fillStyle = '#d9dcd8';
-      c.fillRect(0, 0, cw, ch);
-      c.strokeStyle = '#2a2d30';
-      c.lineWidth = 2;
-      c.strokeRect(1, 1, cw - 2, ch - 2);
-      c.fillStyle = '#16181a';
-      const rows = [
-        ['VELDKAMP MASSFLOW B.V.', 0.1, true],
-        ['MF-245C-RD2', 0.1, true],
-        ['S/N 24C-07193', 0.08, false],
-        ['GAS  CO₂', 0.08, false],
-        ['RANGE  0–2 kg/h', 0.08, false],
-        ['SUPPLY  24 Vdc  6 W', 0.08, false],
-        ['P max 10 bar   IP65', 0.08, false],
-        ['NETHERLANDS', 0.07, false],
-      ] as const;
-      let y = ch * 0.13;
-      for (const [text, size, bold] of rows) {
-        c.font = `${bold ? 'bold ' : ''}${ch * size}px Arial`;
-        c.textAlign = 'left';
-        c.fillText(text, cw * 0.06, y);
-        y += ch * (size + 0.025);
-      }
-      c.font = `bold ${ch * 0.1}px Arial`;
-      c.fillText('CE', cw * 0.06, ch * 0.95);
-      c.strokeRect(cw * 0.32, ch * 0.86, cw * 0.22, ch * 0.1);
-      c.font = `bold ${ch * 0.06}px Arial`;
-      c.fillText('UKCA', cw * 0.34, ch * 0.935);
-    },
-    256,
-  );
+  // Its range, as its rating plate and face print it: the doser's, read at
+  // its first frame (nothing is read while it is built); the 2 kg/h
+  // range until then.
+  let range = 2000;
+  const drawPlate = (c: CanvasRenderingContext2D, cw: number, ch: number) => {
+    c.fillStyle = '#d9dcd8';
+    c.fillRect(0, 0, cw, ch);
+    c.strokeStyle = '#2a2d30';
+    c.lineWidth = 2;
+    c.strokeRect(1, 1, cw - 2, ch - 2);
+    c.fillStyle = '#16181a';
+    const rows = [
+      ['VELDKAMP MASSFLOW B.V.', 0.1, true],
+      [`MF-245C-${mfcRangeCode(range)}`, 0.1, true],
+      ['S/N 24C-07193', 0.08, false],
+      ['GAS  CO₂', 0.08, false],
+      [`RANGE  ${mfcRangeText(range)}`, 0.08, false],
+      ['SUPPLY  24 Vdc  6 W', 0.08, false],
+      ['P max 10 bar   IP65', 0.08, false],
+      ['NETHERLANDS', 0.07, false],
+    ] as const;
+    let y = ch * 0.13;
+    for (const [text, size, bold] of rows) {
+      c.font = `${bold ? 'bold ' : ''}${ch * size}px Arial`;
+      c.textAlign = 'left';
+      c.fillText(text, cw * 0.06, y);
+      y += ch * (size + 0.025);
+    }
+    c.font = `bold ${ch * 0.1}px Arial`;
+    c.fillText('CE', cw * 0.06, ch * 0.95);
+    c.strokeRect(cw * 0.32, ch * 0.86, cw * 0.22, ch * 0.1);
+    c.font = `bold ${ch * 0.06}px Arial`;
+    c.fillText('UKCA', cw * 0.34, ch * 0.935);
+  };
+  const plate = t.printed(0.032, 0.036, drawPlate, 256);
   plate.mesh.rotation.y = -Math.PI / 2;
   plate.mesh.position.set(-housing.l / 2 - 0.0006, -0.022, 0);
   shell.add(plate.mesh);
@@ -427,109 +438,103 @@ export function createMassFlowController(
   // Its flat, inside the rounding of its edges.
   const faceW = housing.l - 2 * round;
   const faceH = housing.h - 2 * round;
-  const face = t.printed(
-    faceW,
-    faceH,
-    (c, cw, ch) => {
-      const mm = cw / (faceW * 1000);
-      // Metres on the face to pixels, its middle the housing's.
-      const px = (x: number) => cw / 2 + x * 1000 * mm;
-      const py = (y: number) => ch / 2 - y * 1000 * mm;
-      c.fillStyle = '#8d949a';
-      c.fillRect(0, 0, cw, ch);
-      const text = (
-        s: string,
-        x: number,
-        y: number,
-        size: number,
-        align: CanvasTextAlign = 'center',
-        ink = '#111315',
-        weight = 'bold',
-      ) => {
-        c.font = `${weight} ${size * mm}px Arial`;
-        c.textAlign = align;
-        c.textBaseline = 'middle';
-        c.fillStyle = ink;
-        c.fillText(s, px(x), py(y));
-      };
-      // Its maker's mark and wordmark, top left; its model, top right.
-      drawBrandMark(c, brand, px(-0.032), py(0.039), 2.6 * mm, '#8d949a');
-      c.font = wordmarkFont(brand, 3 * mm);
-      c.textAlign = 'left';
+  const drawFace = (c: CanvasRenderingContext2D, cw: number, ch: number) => {
+    const mm = cw / (faceW * 1000);
+    // Metres on the face to pixels, its middle the housing's.
+    const px = (x: number) => cw / 2 + x * 1000 * mm;
+    const py = (y: number) => ch / 2 - y * 1000 * mm;
+    c.fillStyle = '#8d949a';
+    c.fillRect(0, 0, cw, ch);
+    const text = (
+      s: string,
+      x: number,
+      y: number,
+      size: number,
+      align: CanvasTextAlign = 'center',
+      ink = '#111315',
+      weight = 'bold',
+    ) => {
+      c.font = `${weight} ${size * mm}px Arial`;
+      c.textAlign = align;
       c.textBaseline = 'middle';
-      c.fillStyle = '#111315';
-      c.fillText('VELDKAMP', px(-0.028), py(0.039));
-      text(
-        'MF-245C  0–2 kg/h CO₂',
-        0.035,
-        0.039,
-        2,
-        'right',
-        '#1b1d20',
-        'normal',
-      );
-      // A thin blue accent rule under them.
-      c.fillStyle = '#1f5fa8';
-      c.fillRect(px(-0.036), py(0.0345), 72 * mm, 0.6 * mm);
-      // The membrane keypad's panel: dark, its keys' legends.
-      c.fillStyle = '#2b2f33';
-      c.beginPath();
-      c.roundRect(px(-0.039), py(-0.0015), 48 * mm, 16 * mm, 1.5 * mm);
-      c.fill();
-      text('MODE', -0.032, -0.0155, 1.6, 'center', '#e8e8e2');
-      text('▼', -0.016, -0.0155, 1.8, 'center', '#e8e8e2');
-      text('▲', 0.0, -0.0155, 1.8, 'center', '#e8e8e2');
-      // Its lamps' legends.
-      text('RUN', 0.022, -0.0155, 1.5);
-      text('ALARM', 0.036, -0.0155, 1.5);
-      // Its rotary selectors' positions round them, 45° either side of
-      // upright, a tick at each, and each one's name under it.
-      const ticks = (x: number, angles: readonly number[], ink: string) => {
-        c.strokeStyle = ink;
-        c.lineWidth = 0.35 * mm;
-        for (const deg of angles) {
-          const r = (deg * Math.PI) / 180;
-          c.beginPath();
-          c.moveTo(
-            px(x + 0.0052 * Math.sin(r)),
-            py(ROTARY_Y + 0.0052 * Math.cos(r)),
-          );
-          c.lineTo(
-            px(x + 0.0066 * Math.sin(r)),
-            py(ROTARY_Y + 0.0066 * Math.cos(r)),
-          );
-          c.stroke();
-        }
-      };
-      ticks(LOCAL_X, [-45, 45], '#111315');
-      text('LOCAL', LOCAL_X - 0.0068, ROTARY_Y + 0.0078, 1.4);
-      text('REMOTE', LOCAL_X + 0.0068, ROTARY_Y + 0.0078, 1.4);
-      text('SET POINT', LOCAL_X, ROTARY_Y - 0.0095, 1.3);
-      ticks(OVERRIDE_X, [-45, 0, 45], '#7a1410');
-      text('CLOSE', OVERRIDE_X - 0.0072, ROTARY_Y + 0.0078, 1.5);
-      text('NORM', OVERRIDE_X, ROTARY_Y + 0.0088, 1.5);
-      text('OPEN', OVERRIDE_X + 0.0072, ROTARY_Y + 0.0078, 1.5);
-      text(
-        'VALVE OVERRIDE',
-        OVERRIDE_X,
-        ROTARY_Y - 0.0095,
-        1.3,
-        'center',
-        '#7a1410',
-      );
-      // Its calibration sticker, beside the sealed screw.
-      c.fillStyle = '#f4f1e4';
-      c.fillRect(px(0.0235), py(-0.0365), 12.5 * mm, 7 * mm);
-      c.strokeStyle = '#1f5fa8';
-      c.lineWidth = 0.4 * mm;
-      c.strokeRect(px(0.0235), py(-0.0365), 12.5 * mm, 7 * mm);
-      text('CAL', 0.03, -0.039, 1.6);
-      text('2026-03-12', 0.03, -0.0415, 1.1, 'center', '#1b1d20', 'normal');
-    },
-    512,
-    false,
-    1.5,
-  );
+      c.fillStyle = ink;
+      c.fillText(s, px(x), py(y));
+    };
+    // Its maker's mark and wordmark, top left; its model, top right.
+    drawBrandMark(c, brand, px(-0.032), py(0.039), 2.6 * mm, '#8d949a');
+    c.font = wordmarkFont(brand, 3 * mm);
+    c.textAlign = 'left';
+    c.textBaseline = 'middle';
+    c.fillStyle = '#111315';
+    c.fillText('VELDKAMP', px(-0.028), py(0.039));
+    text(
+      `MF-245C  ${mfcRangeText(range)} CO₂`,
+      0.035,
+      0.039,
+      2,
+      'right',
+      '#1b1d20',
+      'normal',
+    );
+    // A thin blue accent rule under them.
+    c.fillStyle = '#1f5fa8';
+    c.fillRect(px(-0.036), py(0.0345), 72 * mm, 0.6 * mm);
+    // The membrane keypad's panel: dark, its keys' legends.
+    c.fillStyle = '#5f666c';
+    c.beginPath();
+    c.roundRect(px(-0.039), py(-0.0015), 48 * mm, 16 * mm, 1.5 * mm);
+    c.fill();
+    text('MODE', -0.032, -0.0155, 1.6, 'center', '#e8e8e2');
+    text('▼', -0.016, -0.0155, 1.8, 'center', '#e8e8e2');
+    text('▲', 0.0, -0.0155, 1.8, 'center', '#e8e8e2');
+    // Its lamps' legends.
+    text('RUN', 0.022, -0.0155, 1.5);
+    text('ALARM', 0.036, -0.0155, 1.5);
+    // Its rotary selectors' positions round them, 45° either side of
+    // upright, a tick at each, and each one's name under it.
+    const ticks = (x: number, angles: readonly number[], ink: string) => {
+      c.strokeStyle = ink;
+      c.lineWidth = 0.35 * mm;
+      for (const deg of angles) {
+        const r = (deg * Math.PI) / 180;
+        c.beginPath();
+        c.moveTo(
+          px(x + 0.0052 * Math.sin(r)),
+          py(ROTARY_Y + 0.0052 * Math.cos(r)),
+        );
+        c.lineTo(
+          px(x + 0.0066 * Math.sin(r)),
+          py(ROTARY_Y + 0.0066 * Math.cos(r)),
+        );
+        c.stroke();
+      }
+    };
+    ticks(LOCAL_X, [-45, 45], '#111315');
+    text('LOCAL', LOCAL_X - 0.0068, ROTARY_Y + 0.0078, 1.4);
+    text('REMOTE', LOCAL_X + 0.0068, ROTARY_Y + 0.0078, 1.4);
+    text('SET POINT', LOCAL_X, ROTARY_Y - 0.0095, 1.3);
+    ticks(OVERRIDE_X, [-45, 0, 45], '#7a1410');
+    text('CLOSE', OVERRIDE_X - 0.0072, ROTARY_Y + 0.0078, 1.5);
+    text('NORM', OVERRIDE_X, ROTARY_Y + 0.0088, 1.5);
+    text('OPEN', OVERRIDE_X + 0.0072, ROTARY_Y + 0.0078, 1.5);
+    text(
+      'VALVE OVERRIDE',
+      OVERRIDE_X,
+      ROTARY_Y - 0.0095,
+      1.3,
+      'center',
+      '#7a1410',
+    );
+    // Its calibration sticker, beside the sealed screw.
+    c.fillStyle = '#f4f1e4';
+    c.fillRect(px(0.0235), py(-0.0365), 12.5 * mm, 7 * mm);
+    c.strokeStyle = '#1f5fa8';
+    c.lineWidth = 0.4 * mm;
+    c.strokeRect(px(0.0235), py(-0.0365), 12.5 * mm, 7 * mm);
+    text('CAL', 0.03, -0.039, 1.6);
+    text('2026-03-12', 0.03, -0.0415, 1.1, 'center', '#1b1d20', 'normal');
+  };
+  const face = t.printed(faceW, faceH, drawFace, 512, false, 1.5);
   face.mesh.position.set(0, 0, faceZ + 0.0002);
   shell.add(face.mesh);
 
@@ -647,7 +652,9 @@ export function createMassFlowController(
   const nudge = (sign: 1 | -1) => {
     const { doser } = read();
     if (!doser.powered) return;
-    controls.setManualRate(doser.manualRate + sign * MFC_RATE_STEP);
+    controls.setManualRate(
+      doser.manualRate + sign * mfcRateStep(doser.spec.most),
+    );
   };
   key('▼', -0.016, keyGrey, () => nudge(-1));
   key('▲', 0, keyGrey, () => nudge(1));
@@ -708,15 +715,20 @@ export function createMassFlowController(
     parts.add(a.part());
   };
 
-  // LOCAL · REMOTE: the parts library's black pointer knob (`createKnob`, its
-  // `pointer` style), 9 mm across, on a stainless bush; two detents, 45°
-  // either side of upright, LOCAL to the left and REMOTE to the right:
+  // LOCAL · REMOTE: the parts library's pointer knob (`createKnob`, its
+  // `pointer` style) in light grey, 9 mm across, on a stainless bush; two
+  // detents, 45° either side of upright, LOCAL to the left and REMOTE to the right:
   // where it takes its set point, its own ▲ ▼ or the 4-20 mA input. The
   // model calls LOCAL `hand` (its field, kept to keep the save).
   {
     const object = new Group();
     t.cyl(object, stainless, 0.0042, 0.0012, 0, 0, 0.0006, 'z', 6);
-    const knob = createKnob(kit, { radius: 0.0045, style: 'pointer' });
+    const knob = createKnob(kit, {
+      radius: 0.0045,
+      style: 'pointer',
+      body: '#a9aeb2',
+      pointer: '#141414',
+    });
     knob.group.position.z = 0.0012;
     knob.spindle.userData.live = true;
     object.add(knob.group);
@@ -744,7 +756,7 @@ export function createMassFlowController(
   // upright, OPEN 45° clockwise, its key's bow the pointer. The operator's
   // key stays in its barrel (the game has no keys to carry yet).
   {
-    const lever = createLeverSelector(kit, 3, { key: true });
+    const lever = createLeverSelector(kit, 3, { key: true, bow: '#a9aeb2' });
     lever.group.scale.setScalar(0.3);
     lever.knob.userData.live = true;
     const object = new Group();
@@ -776,6 +788,16 @@ export function createMassFlowController(
     page: () => page,
     update() {
       const { doser, inletBar } = read();
+      if (doser.spec.most !== range) {
+        range = doser.spec.most;
+        for (const [p, draw] of [
+          [plate, drawPlate],
+          [face, drawFace],
+        ] as const) {
+          draw(p.context, p.context.canvas.width, p.context.canvas.height);
+          p.texture.needsUpdate = true;
+        }
+      }
       if (doser.powered !== lit) {
         lit = doser.powered;
         setLcdBacklight(lcdMaterial, lit);

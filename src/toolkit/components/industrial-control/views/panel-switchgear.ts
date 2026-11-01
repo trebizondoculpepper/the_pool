@@ -143,15 +143,18 @@ export function createKnob(
     ink = '#f1ecdc',
     accent = '#b9bcbc',
     value = 0.5,
+    /** Its moulding, and its pointer's line. */
+    body = '#141414',
+    pointer = '#f2f0e8',
   } = {},
 ): Knob {
   const group = new Group();
   group.userData.sound = style === 'pointer' ? 'selector' : 'knob';
   const spindle = new Group();
   group.add(spindle);
-  const black = kitPaint(kit, '#141414');
+  const black = kitPaint(kit, body);
   const cap = kitPaint(kit, accent, 0.5);
-  const line = kitPaint(kit, '#f2f0e8');
+  const line = kitPaint(kit, pointer);
   if (scale) group.add(scaleRing(kit, radius * 1.15, ink));
   if (style === 'pointer') {
     peg(spindle, black, radius * 0.75, radius * 0.5, 0, 14);

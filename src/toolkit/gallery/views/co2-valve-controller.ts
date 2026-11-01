@@ -57,8 +57,8 @@ import type {
  * LEDs in chrome bezels), the ALARM window (six backlit legends, one lit
  * for the fault it holds), the REMOTE · LOCAL · OFF selector (OFF · ON on
  * the mass-flow model, whose instrument has its own LOCAL · REMOTE), the
- * LOCAL RATE potentiometer (a blanking plug in its hole on the mass-flow
- * model, whose set point is on its instrument), and RESET, an illuminated
+ * LOCAL RATE potentiometer (none on the mass-flow model, whose set point
+ * is on its instrument: its face has no hole for one), and RESET, an illuminated
  * pushbutton lit while a fault stands. Its rating plate on its face; its
  * cable glands on the back box's bottom face, behind and below the
  * cover's lip, and its earth stud beside them.
@@ -149,9 +149,18 @@ const DETENT = recording(asset('switch-click.wav'), 0.06);
 const LAMP_Y = 0.205;
 const WINDOW = { y: 0.103, w: 0.24, h: 0.082 } as const;
 const ROW_Y = -0.005;
-const SELECTOR_X = -0.075;
 const POT_X = 0.075;
-const RESET = { x: 0.075, y: -0.1 } as const;
+/**
+ * Where its selector and RESET sit: the three-way model's selector left
+ * and LOCAL RATE right, RESET under it; the mass-flow model, with no rate
+ * of its own (its set point is on its instrument), has no hole for one,
+ * its selector and RESET side by side on the row (the owner, 2026-11-01:
+ * no blanking plug to read as an unlabelled button).
+ */
+const layoutOf = (twoWay: boolean) =>
+  twoWay
+    ? { selectorX: -0.05, reset: { x: 0.05, y: ROW_Y } }
+    : { selectorX: -0.075, reset: { x: 0.075, y: -0.1 } };
 
 export function createCo2ValveController(
   kit: PanelKit,
@@ -237,6 +246,7 @@ export function createCo2ValveController(
   const faceW = w - 2 * cover.round;
   const faceH = h - 2 * cover.round;
   const twoWay = kind === 'mass-flow';
+  const { selectorX: SELECTOR_X, reset: RESET } = layoutOf(twoWay);
   const face = t.printed(
     faceW,
     faceH,
@@ -316,9 +326,9 @@ export function createCo2ValveController(
       };
       if (twoWay) ticks(SELECTOR_X, ROW_Y, [0, 45], ['OFF', 'ON']);
       else ticks(SELECTOR_X, ROW_Y, [-45, 0, 45], ['REMOTE', 'LOCAL', 'OFF']);
-      text('MODE', SELECTOR_X, ROW_Y - 0.031, 3.2);
+      text(twoWay ? 'DOSING' : 'MODE', SELECTOR_X, ROW_Y - 0.031, 3.2);
       if (!twoWay) text('LOCAL RATE', POT_X, ROW_Y + 0.031, 3.2);
-      text('RESET', RESET.x, RESET.y - 0.025, 3.2);
+      text('RESET', RESET.x, RESET.y - 0.031, 3.2);
       // Its terminals, as the installer's leaflet names them, by the reset.
       const terms = [
         'X1  ANALOG IN 4–20 mA SET POINT',
@@ -502,7 +512,12 @@ export function createCo2ValveController(
     const label = `${twoWay ? CO2_CABINET_ON_LEGEND : CO2_CABINET_LEGEND} selector`;
     const a = beginPart(kit, `${name}: ${label}`);
     a.object.position.set(SELECTOR_X, ROW_Y, faceZ);
-    const view = createXB4Selector(kit, positions);
+    // Light grey with a black line: a black handle is lost against the
+    // grey cover in the game's lighting (the owner, 2026-11-01).
+    const view = createXB4Selector(kit, positions, {
+      colour: '#b4b8bb',
+      line: '#16181a',
+    });
     a.object.add(view.group);
     const fresh = signal(0);
     const last = positions - 1;
@@ -534,7 +549,7 @@ export function createCo2ValveController(
     parts.add(a.part());
   }
   // The LOCAL RATE potentiometer (the share of the valve's most in LOCAL),
-  // or, on the mass-flow model, a 22 mm blanking plug in its hole.
+  // on the three-way model only.
   if (!twoWay) {
     const most = () => read().doser.spec.most;
     const pot = parts.add(
@@ -551,9 +566,6 @@ export function createCo2ValveController(
     );
     pot.object.position.set(POT_X, ROW_Y, faceZ);
     object.add(pot.object);
-  } else {
-    t.cyl(object, black, 0.0118, 0.004, POT_X, ROW_Y, faceZ + 0.002, 'z', 28);
-    t.cyl(object, hole, 0.0102, 0.0006, POT_X, ROW_Y, faceZ + 0.0042, 'z', 28);
   }
   // RESET: a 22 mm illuminated pushbutton, blue (IEC 60073's reset), lit
   // while a fault stands.

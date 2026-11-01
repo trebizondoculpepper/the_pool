@@ -12,13 +12,14 @@ import type { ChannelFeedback } from './aqualis-types';
  * second-stage regulator, a dosing valve, a flow meter, a non-return valve,
  * and the gas line to the injection point. Two kinds, a bit of everything:
  *
- * - **'solenoid'** (the Lounge, the period's panel): a normally closed
+ * - **'solenoid'** (the period's panel, the Lounge's until 2026-11-01;
+ *   kept in the model, `CO2_SOLENOID_PANEL`): a normally closed
  *   solenoid valve, a glass-tube rotameter with a needle valve setting the
  *   flow while it is open, and a limit contact on the rotameter's float
  *   proving the flow. The 4–20 mA demand is turned into time-proportional
  *   opening: open for demand × `cycle` seconds in each cycle, so the
  *   average is demand × the needle valve's setting (its `most`).
- * - **'mass-flow'** (the Olympic, the modern panel): a thermal mass flow
+ * - **'mass-flow'** (both rooms', the modern panel): a thermal mass flow
  *   controller (after Bronkhorst's EL-FLOW, Brooks's SLA5850 and Alicat's
  *   MC; `doc/plans/co2-system.md`, "The mass flow controller"), its
  *   proportional valve and its meter in one body, holding the flow at
@@ -64,16 +65,30 @@ export interface Co2DoserSpec {
  * scale asks for `ACID_G_PER_M3` (1.5 g of HCl an hour for every m³) times
  * `CO2_PER_HCL` (1.21 g of CO₂ for a gram of HCl), CO₂ first, acid for the
  * rest. The Lounge (139 m³ and its tank, about 150): 270 g/h at full
- * scale, so a 300 g/h rotameter takes all of it, as the rig's ideal valve
- * does. The Olympic (2,500 m³): about 4.9 kg/h at full scale, but some
+ * scale, so its mass flow controller is the same MF-245C body on its
+ * 0–500 g/h range, the standard range next above it (the owner,
+ * 2026-11-01: both rooms' panels the new design; it was a 300 g/h
+ * solenoid and rotameter). The Olympic (2,500 m³): about 4.9 kg/h at full
+ * scale, but some
  * 15 kg a day (0.6 kg/h) on average (mission 109's estimate), so a 2 kg/h
  * mass flow controller carries the base load three times over and acid
  * trims the peaks, as the Trio's sharing intends.
  */
 export const CO2_DOSERS = {
-  plant_pool_01: { kind: 'solenoid', most: 300, cycle: 60 },
+  plant_pool_01: { kind: 'mass-flow', most: 500, cycle: 60 },
   plant_pool_02: { kind: 'mass-flow', most: 2000, cycle: 60 },
 } as const satisfies Record<string, Co2DoserSpec>;
+
+/**
+ * The period's solenoid-and-rotameter panel, its needle valve set to
+ * 300 g/h: the Lounge's until it took a mass flow controller (2026-11-01),
+ * kept in the model and its tests.
+ */
+export const CO2_SOLENOID_PANEL: Co2DoserSpec = {
+  kind: 'solenoid',
+  most: 300,
+  cycle: 60,
+};
 
 /** The panel's pressures, bar gauge, and its proving. */
 export const CO2_PANEL = {
