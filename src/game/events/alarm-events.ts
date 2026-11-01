@@ -11,13 +11,16 @@ import {
 } from '../plant/location-annunciators';
 import type { LocationId } from '../plant/location-annunciators';
 import { registerLabel, shortName } from './register-label';
+import { INFORMATIONAL_INDICATIONS } from '../health';
 
 /**
  * Every annunciator window's alarm, as the log has it, in the valves'
  * words (`valve-events.ts`): the board's tag, its name and the window's
  * engraving from the model, then what happened: ALARM as the alarm comes
  * in, cleared as it goes, accepted as its window goes steady, reset as it
- * goes dark, and who where the world knows. The control room's board
+ * goes dark, and who where the world knows. A status window, ordinary
+ * activity rather than a fault (`INFORMATIONAL_INDICATIONS`), logs ON and
+ * OFF instead. The control room's board
  * (`annunciator.ts`) and each location's (`location-annunciators.ts`),
  * whose twins share one state, so each is logged once, under the board in
  * its own place where the register has one. Cheap: a reference comparison
@@ -100,6 +103,14 @@ export const alarmEvents: EventSource = (before, after, cause, out) => {
       });
       const p0 = was.present[id] ?? false;
       const p1 = now.present[id] ?? false;
+      // A status window (MAKE-UP RUNNING: ordinary activity, never an
+      // alarm; the owner, 2026-11-01) logs ON and OFF, and nothing for
+      // its accepting or resetting.
+      if (id in INFORMATIONAL_INDICATIONS) {
+        if (!p0 && p1) out.push(line('ON', 'info'));
+        if (p0 && !p1) out.push(line('OFF', 'info'));
+        continue;
+      }
       if (!p0 && p1) out.push(line('ALARM', 'alarm'));
       if (p0 && !p1) out.push(line('cleared', 'notice'));
       const w0 = was.windows[id] ?? 'off';

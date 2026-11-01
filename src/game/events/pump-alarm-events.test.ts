@@ -92,3 +92,16 @@ describe('the alarm log', () => {
     expect(reset.every((e) => e.by === 'you')).toBe(true);
   });
 });
+
+describe('a status window', () => {
+  it('logs MAKE-UP RUNNING as ON and OFF, never as an alarm to accept', () => {
+    const t = logged();
+    t.run(900, 0.5);
+    const makeUp = plant(t.log).filter((e) => /MAKE-UP RUNNING/.test(e.text));
+    expect(makeUp.length).toBeGreaterThan(0);
+    for (const e of makeUp) {
+      expect(e.severity).toBe('info');
+      expect(e.text).toMatch(/: (ON|OFF)$/);
+    }
+  });
+});

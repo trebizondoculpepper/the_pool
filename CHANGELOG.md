@@ -16,6 +16,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The console logs a status window such as MAKE-UP RUNNING, ordinary activity rather than a fault, as ON and OFF, not as an ALARM with accepting and resetting (the owner, 2026-11-01).
 - The software boxes' barcodes now start 20, GS1's in-store range, rather than 50, a real UK range, so no fictional box shares a code with a real product; their check digits stay valid.
 
 ## [0.9.0] - 2026-10-31
