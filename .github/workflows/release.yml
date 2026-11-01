@@ -168,7 +168,12 @@ jobs:
         with:
           node-version-file: .node-version
           cache: npm
-          cache-dependency-path: desktop/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            desktop/package-lock.json
+      # The desktop app is compiled with the root's TypeScript and
+      # @types/node (desktop/tsconfig.json), so both are installed.
+      - run: npm ci
       - run: npm ci
         working-directory: desktop
       - uses: actions/download-artifact@v4

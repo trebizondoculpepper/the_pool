@@ -35,6 +35,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The Release workflow's desktop builds install the root's dependencies before compiling the app, whose TypeScript and `@types/node` come from there: v0.8.0 and v0.9.0 failed on every platform with `tsc: not found`.
 - The engineer's software boxes can be put on the wall shelf by aiming at the space over it: the aim used to pass over the thin board to the wall and send the box back to the desk.
 - A new game starts perfectly normal and stays so through its first hour (the owner, 2026-10-31; `doc/plans/new-game-normal.md`): the Lounge's and Olympic's alkalinity in band at 100 mg/l (it began at the 51 and 68 that months without bicarbonate leave, and Dr Aqualis asked for a hand dose at once), every pool at its pH set point of 7.3 (not the Trio band's edge), every filter bed clean, and every day tank part full with no line calling; the test kit and Dr Aqualis are checked through the hour by `new-game-normal.slow.test.ts`. Saves keep their water.
 
