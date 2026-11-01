@@ -54,6 +54,7 @@ import {
   handsCue,
   useCue,
   useCueKey,
+  useCueLabel,
 } from '../logic/use-cue';
 import type { CarryAnswer, UseAnswer, UseCue } from '../logic/use-cue';
 import { CARRY_CUE_CENTRE, ringStyle, useCueMarkup } from './use-cue-markup';
@@ -822,9 +823,26 @@ export function createFirstPerson(options: FirstPersonOptions) {
   crouchButton.textContent = 'CROUCH';
   crouchButton.addEventListener('click', () => stance());
   container?.append(crouchButton);
+  // The context button, beside CROUCH (the owner, 2026-11-01): it says
+  // what a use at the centre would do (USE, TURN, PICK UP, DROP…), from
+  // the crosshair's own cue, and does it, held as long as it is pressed.
+  const contextButton = document.createElement('button');
+  contextButton.type = 'button';
+  contextButton.className = 'touch-crouch touch-context';
+  contextButton.textContent = 'USE';
+  contextButton.addEventListener('pointerdown', (event) => {
+    event.stopPropagation();
+    contextButton.setPointerCapture?.(event.pointerId);
+    heldUse('hud', 0, 0);
+  });
+  for (const type of ['pointerup', 'pointercancel', 'lostpointercapture'])
+    contextButton.addEventListener(type, () => holds.release('hud'));
+  container?.append(contextButton);
+  let contextShown = '';
   const inspectButton = document.createElement('button');
   inspectButton.type = 'button';
-  // Beside CROUCH, not over it (`.touch-inspect`).
+  // Beside the context button, and only while something is carried: it
+  // holds the thing up to look at and turn over (mission 117).
   inspectButton.className = 'touch-crouch touch-inspect';
   inspectButton.textContent = 'INSPECT';
   let touchInspect = false;
@@ -1448,7 +1466,10 @@ export function createFirstPerson(options: FirstPersonOptions) {
       syncInput();
       if (following) {
         movement.hidden = help.hidden = altitude.hidden = true;
-        crouchButton.hidden = inspectButton.hidden = true;
+        crouchButton.hidden =
+          inspectButton.hidden =
+          contextButton.hidden =
+            true;
         sticks?.setVisible(false);
         // Another room's eye: no walking, no looking, no crosshair.
         const eye = following();
@@ -1515,8 +1536,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
         !controlsActive || !flying || !(hud.movement || hud.touch);
       flightReadout.hidden = !flying;
       useButton.hidden = flying;
-      crouchButton.hidden = inspectButton.hidden =
+      crouchButton.hidden = contextButton.hidden =
         !controlsActive || flying || !hud.touch;
+      inspectButton.hidden = crouchButton.hidden || !handling?.holding();
       // What is aimed at, named instead of the controls (prompt 061), a few
       // times a second: not while flying, climbing or carrying, nor behind
       // the menu or the console, nor while held (the title's shots). Climbing's and carrying's lines come first.
@@ -1857,6 +1879,15 @@ export function createFirstPerson(options: FirstPersonOptions) {
         );
       }
       const cueKey = useCueKey(cueShown);
+      if (!contextButton.hidden) {
+        const label = useCueLabel(cueShown, Boolean(handling?.holding()));
+        const key = `${label.text}:${label.possible}`;
+        if (key !== contextShown) {
+          contextShown = key;
+          contextButton.textContent = label.text;
+          contextButton.classList.toggle('is-idle', !label.possible);
+        }
+      }
       const place = cueShown ? cuePlace(cueShown) : 'none';
       if (cueKey !== cueDrawn) {
         cueDrawn = cueKey;
@@ -1935,6 +1966,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       speed.remove();
       options.scene?.remove(torchLight.light, torchLight.target);
       inspectButton.remove();
+      contextButton.remove();
       help.remove();
     },
   };

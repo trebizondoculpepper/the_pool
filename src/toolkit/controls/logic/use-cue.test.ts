@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import {
+  useCueLabel,
   PLAIN_USE,
   carryGlyph,
   cueGoes,
@@ -267,5 +268,39 @@ describe('the carrying cues', () => {
       useCue({ gesture: 'put-in', possible: true }, false, 'simple'),
     ].map(useCueKey);
     expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
+describe('the touch context button', () => {
+  it('says what a use at the centre would do', () => {
+    expect(useCueLabel(null, false)).toEqual({ text: 'USE', possible: false });
+    expect(useCueLabel(null, true)).toEqual({ text: 'DROP', possible: true });
+    expect(
+      useCueLabel(
+        {
+          kind: 'one',
+          gesture: 'pick-up',
+          direction: 0,
+          possible: true,
+          button: '',
+        },
+        false,
+      ),
+    ).toEqual({ text: 'PICK UP', possible: true });
+    expect(
+      useCueLabel(
+        {
+          kind: 'one',
+          gesture: 'turn',
+          direction: 1,
+          possible: false,
+          button: '',
+        },
+        false,
+      ),
+    ).toEqual({ text: 'TURN', possible: false });
+    expect(
+      useCueLabel({ kind: 'both', down: false, up: true }, false).text,
+    ).toBe('TURN');
   });
 });

@@ -226,3 +226,31 @@ export function handsCue(input: {
   }
   return carrying ? null : use;
 }
+
+/**
+ * The touch screen's context button's words for what a use at the centre
+ * would do now (the owner, 2026-11-01: "Use", "Turn", "Pick up", "Drop"
+ * as the action is), and whether it would do anything: from the same cue
+ * the crosshair draws. Carrying, with nothing aimed at, a use drops it.
+ */
+export function useCueLabel(
+  cue: UseCue | null,
+  carrying: boolean,
+): { text: string; possible: boolean } {
+  if (!cue) return { text: carrying ? 'DROP' : 'USE', possible: carrying };
+  if (cue.kind === 'both')
+    return { text: 'TURN', possible: cue.down || cue.up };
+  const words: Record<CueGlyph, string> = {
+    turn: 'TURN',
+    push: 'PUSH',
+    pull: 'PULL',
+    use: 'USE',
+    'pick-up': 'PICK UP',
+    'put-down': 'PUT DOWN',
+    'put-back': 'PUT BACK',
+    'put-in': 'PUT IN',
+    fit: 'FIT',
+    put: 'PUT DOWN',
+  };
+  return { text: words[cue.gesture], possible: cue.possible };
+}
