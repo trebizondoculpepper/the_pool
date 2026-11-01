@@ -25,6 +25,8 @@ import {
   testKit,
   testKitSummary,
 } from '../../../game/plant/test-kit';
+import { co2StatusLines } from '../../../game/plant/co2-status';
+import { swapRefusal } from '../../components/plant/logic/co2-supply';
 import { splitStatements, tokenise } from './command-line';
 import { objectStatus, statusNames } from './object-status';
 
@@ -648,6 +650,21 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         by: 'console',
       });
       return formatTestKit(t);
+    },
+  },
+  {
+    name: 'co2',
+    usage: '[swap]',
+    help: 'the CO₂ system: line pressure, racks, master valve, wall ports, panels and detectors; co2 swap refills the spent rack not in service (a delivery’s stand-in)',
+    complete: (_host, args) => (args.length ? [] : ['swap']),
+    run(host, [word]) {
+      if (!word) return co2StatusLines(host.world().co2);
+      if (word !== 'swap') return fail('co2: say co2, or co2 swap');
+      const refused = swapRefusal(host.world().co2.distribution.supply);
+      // Logged either way; refused, it says why.
+      host.dispatch({ type: 'co2/swap', from: 'console' });
+      if (refused) return fail(`co2 swap: refused: ${refused}`);
+      return co2StatusLines(host.world().co2).slice(0, 3);
     },
   },
   {

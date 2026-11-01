@@ -32,6 +32,46 @@ describe('a save', () => {
     );
   });
 
+  it('gives a version 66 save its CO₂ racks in grams, from its cylinders', () => {
+    const w = newWorld();
+    const cyl = (kg: number) => ({ kg, open: true });
+    const old = {
+      ...w,
+      co2: {
+        ...w.co2,
+        distribution: {
+          ...w.co2.distribution,
+          supply: {
+            banks: {
+              left: [cyl(10), cyl(10), cyl(10), cyl(10)],
+              right: [cyl(34), cyl(34), cyl(34), cyl(34)],
+            },
+            service: 'left',
+            isolation: true,
+            ambient: 12,
+          },
+        },
+      },
+    };
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 66,
+        savedAt: 5,
+        world: old,
+      }),
+    );
+    expect(loaded.ok && loaded.world.co2.distribution.supply).toEqual({
+      racks: { left: 40_000, right: 136_000 },
+      service: 'left',
+      isolation: true,
+      ambient: 12,
+    });
+    expect(loaded.ok && loaded.world.co2.detectors.loading_bay.twaReset).toBe(
+      false,
+    );
+  });
+
   it('brings back the world it saved', () => {
     const world = applyAction(newWorld(), { type: 'demo/set', on: true });
     const loaded = deserialiseWorld(serialiseWorld(world, 1000));

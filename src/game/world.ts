@@ -28,6 +28,7 @@ import type { Co2RoomId } from './plant/co2-detection';
 import type { Co2PortId } from './plant/co2-distribution';
 import {
   setIsolation,
+  swapRack,
   throwLever,
 } from '../toolkit/components/plant/logic/co2-supply';
 import { pumpFeedback, pumpInputs } from './plant/aqualis-ports';
@@ -664,6 +665,12 @@ export type WorldAction =
   | { type: 'aqualis'; pool: TrioPool; action: TrioAction }
   | { type: 'co2/isolation'; open: boolean }
   | { type: 'co2/lever' }
+  /**
+   * A CO₂ rack swap (mission 118, decision 5): the spent rack not in
+   * service refilled, a delivery's stand-in, by a use at the cage or the
+   * console's `co2 swap`. Refused, the world unchanged, with nothing spent.
+   */
+  | { type: 'co2/swap'; from: 'cage' | 'console' }
   | { type: 'co2/port'; room: Co2PortId; open: boolean }
   /** At a plant room's CO₂ dosing panel: its REMOTE · MANUAL · OFF selector, manual rate or RESET (local controls). */
   | { type: 'co2/panel'; room: Co2PortId; action: Co2PanelAction }
@@ -979,6 +986,18 @@ export function applyAction(world: World, action: WorldAction): World {
           },
         },
       };
+    case 'co2/swap': {
+      const supply = swapRack(world.co2.distribution.supply);
+      return supply === world.co2.distribution.supply
+        ? world
+        : {
+            ...world,
+            co2: {
+              ...world.co2,
+              distribution: { ...world.co2.distribution, supply },
+            },
+          };
+    }
     case 'co2/port':
       return {
         ...world,

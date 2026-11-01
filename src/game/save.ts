@@ -1,4 +1,5 @@
 import { WORLD_VERSION, newWorld } from './world';
+import { supplyFromCylinders } from '../toolkit/components/plant/logic/co2-supply';
 import type { World } from './world';
 import { DAY_TANKS, newDayTank } from './plant/chemical-distribution';
 import { POOL_IDS, newPools } from './plant/pools';
@@ -310,11 +311,32 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   // 65 → 66: low-pressure CO₂ supply and dosing in Plants 1 and 2;
   // `fillDefaults` installs the normal, full system in existing saves.
   65: (world) => world,
-  // 66 → 67 is reserved for mission 118's two-rack CO₂ state. Preserve
-  // this placeholder until that migration is merged into this checkout.
-  66: (world) => world,
+  // 66 → 67: the CO₂ supply as two racks counted in grams (mission 118,
+  // decision 5), each converted from its cylinders' kilograms; the
+  // detectors' and the rest of the CO₂ system's new state from
+  // `fillDefaults`.
+  66: (world) => {
+    const w = world as { co2?: { distribution?: { supply?: unknown } } };
+    const supply = w.co2?.distribution?.supply;
+    if (!supply || typeof supply !== 'object' || 'racks' in supply)
+      return world;
+    return {
+      ...w,
+      co2: {
+        ...w.co2,
+        distribution: {
+          ...w.co2!.distribution,
+          supply: supplyFromCylinders(
+            supply as Parameters<typeof supplyFromCylinders>[0],
+          ),
+        },
+      },
+    };
+  },
   // 67 → 68: the wet hall's eight damped branch-meter indications.
-  // `fillDefaults` starts old saves' new instruments at zero.
+  // `fillDefaults` starts old saves' new instruments at zero. (A save
+  // written at 67 or 68 before mission 118's racks merged still has the
+  // cylinders' shape; `fillDefaults` gives it two full racks.)
   67: (world) => world,
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water

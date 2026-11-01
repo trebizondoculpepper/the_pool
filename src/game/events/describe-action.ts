@@ -5,6 +5,10 @@ import type { World, WorldAction } from '../world';
 import type { GameEvent } from './game-event';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
 import { MODEL_VALVES } from '../plant/model-valves';
+import {
+  rackToSwap,
+  swapRefusal,
+} from '../../toolkit/components/plant/logic/co2-supply';
 import { INSTALLED_ASSET_IDS } from '../plant/installed-asset-ids';
 import { identifiedPart } from '../plant/identification';
 import { MOTORS } from '../plant/motor-starters';
@@ -411,6 +415,21 @@ function said(
               ? `CO₂ dosing panel’s manual rate set to ${Math.round(d.manualRate)} g/h`
               : 'CO₂ dosing panel RESET',
       };
+    }
+    case 'co2/swap': {
+      const refused = swapRefusal(before.co2.distribution.supply);
+      const rack = rackToSwap(before.co2.distribution.supply);
+      const where = action.from === 'cage' ? 'at the cage' : 'by the console';
+      return refused
+        ? {
+            subject: 'CO₂ SUPPLY',
+            text: `CO₂ rack swap ${where} refused: ${refused}`,
+            severity: 'notice',
+          }
+        : {
+            subject: 'CO₂ SUPPLY',
+            text: `CO₂ ${rack} rack swapped for four full cylinders ${where}`,
+          };
     }
     case 'co2/port':
       return {

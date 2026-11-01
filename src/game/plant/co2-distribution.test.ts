@@ -24,7 +24,7 @@ import {
   bankContents,
   bankInUse,
   setIsolation,
-  throwLever,
+  swapRack,
 } from '../../toolkit/components/plant/logic/co2-supply';
 
 /** Run the distribution with steady draws, g/h, for `seconds` in `dt` steps. */
@@ -138,10 +138,12 @@ describe('the cylinders behind it', () => {
     expect(co2DistributionAlarms(d).bankEmpty).toBe(true);
     // The line never noticed.
     expect(linePressure(d)).toBeCloseTo(4, 3);
-    // The lever thrown makes the right the service bank; the left still wants changing.
-    d = withSupply(d, throwLever);
+    // The manifold has changed over: the right is in service, the spent
+    // left still wants its swap (mission 118, the racks).
     expect(d.supply.service).toBe('right');
     expect(co2DistributionAlarms(d).bankEmpty).toBe(true);
+    d = withSupply(d, swapRack);
+    expect(co2DistributionAlarms(d).bankEmpty).toBe(false);
   });
 
   it('let the line fall when both banks are spent: SUPPLY EXHAUSTED', () => {

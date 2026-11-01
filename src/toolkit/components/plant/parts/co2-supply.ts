@@ -1,4 +1,5 @@
 import type { Object3D } from 'three';
+import { markUsable } from '../../../controls/input/use-marking';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import type { Part } from '../../core/parts/parts';
 import type { PartEvent } from '../../core/logic/world/components';
@@ -8,6 +9,9 @@ import {
   bankFlag,
   bankPressure,
   co2Pressures,
+  cylinderContents,
+  rackToSwap,
+  swapRack,
   drawCo2,
   newCo2Supply,
   setIsolation,
@@ -42,7 +46,12 @@ export interface Co2SupplyPart extends Part {
 export function createCo2SupplyPart(
   kit: PanelKit,
   initial: Co2Supply = newCo2Supply(),
-  controls?: { throwLever(): void; setIsolation(open: boolean): void },
+  controls?: {
+    throwLever(): void;
+    setIsolation(open: boolean): void;
+    /** The spent rack not in service exchanged (a delivery's stand-in). */
+    swap(): void;
+  },
 ): Co2SupplyPart {
   const view = createCo2Cage(kit);
   // The cage round it, its door working.
@@ -52,6 +61,7 @@ export function createCo2SupplyPart(
   view.group.add(cage.object);
   let supply = initial;
   const listeners = new Set<(event: PartEvent, name: string) => void>();
+  const disposers: (() => void)[] = [];
   const emit = (event: PartEvent) => {
     for (const l of listeners) l(event, 'CO₂ supply');
   };
@@ -61,14 +71,13 @@ export function createCo2SupplyPart(
       const flag = bankFlag(supply, bank);
       view.setFlag(bank, flag);
       // Each cylinder's tag, as the operator would hang it: EMPTY on a
-      // spent bank, FULL on one not yet drawn from, otherwise IN USE.
-      supply.banks[bank].forEach((c, i) =>
-        view.bankCylinders[bank][i].setContents(
-          flag === 'empty'
-            ? 'empty'
-            : contentsFrom(c.kg, CO2_CYLINDER.contents),
-        ),
-      );
+      // spent rack, FULL on one not yet drawn from, otherwise IN USE. A
+      // rack's four are drawn together, each holding a quarter of it.
+      const kg = cylinderContents(supply, bank);
+      for (const cylinder of view.bankCylinders[bank])
+        cylinder.setContents(
+          flag === 'empty' ? 'empty' : contentsFrom(kg, CO2_CYLINDER.contents),
+        );
     }
     const p = co2Pressures(supply);
     view.outletGauge.set(p.outlet);
@@ -98,6 +107,37 @@ export function createCo2SupplyPart(
       },
     ],
   ]);
+  // A use on a spent rack's cylinders, not in service, swaps the rack: a
+  // delivery's stand-in (mission 118) until deliveries are played. On any
+  // other rack, nothing.
+  for (const bank of CO2_BANKS)
+    for (const cylinder of view.bankCylinders[bank]) {
+      uses.set(cylinder.group, () => {
+        if (rackToSwap(supply) !== bank) return;
+        if (controls) controls.swap();
+        else supply = swapRack(supply);
+        show();
+        emit('detent');
+      });
+      disposers.push(
+        markUsable(cylinder.group, () => ({
+          gesture: 'use',
+          possible: rackToSwap(supply) === bank,
+        })),
+      );
+    }
+  disposers.push(
+    markUsable(view.leverHandle, () => ({
+      gesture: 'turn',
+      direction: supply.service === 'left' ? 1 : -1,
+      possible: true,
+    })),
+    markUsable(view.isolationHandle, () => ({
+      gesture: 'turn',
+      direction: supply.isolation ? -1 : 1,
+      possible: true,
+    })),
+  );
   for (const [o, use] of cage.uses) uses.set(o, use);
   return {
     object: view.group,
@@ -127,6 +167,7 @@ export function createCo2SupplyPart(
     },
     setAudible() {},
     dispose() {
+      for (const done of disposers) done();
       cage.dispose();
       listeners.clear();
     },

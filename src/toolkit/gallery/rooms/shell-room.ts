@@ -984,6 +984,7 @@ function yardCo2Cage(kit: ReturnType<typeof createPanelKit>): Part {
     {
       throwLever: () => store.dispatch({ type: 'co2/lever' }),
       setIsolation: (open) => store.dispatch({ type: 'co2/isolation', open }),
+      swap: () => store.dispatch({ type: 'co2/swap', from: 'cage' }),
     },
   );
   part.object.position.set(

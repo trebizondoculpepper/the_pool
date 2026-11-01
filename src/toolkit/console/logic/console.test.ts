@@ -521,3 +521,37 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
     );
   });
 });
+
+describe('the CO₂ stand-in: co2 and co2 swap (mission 118)', () => {
+  it('shows the line, the racks, the master valve, each port, panel and detector', () => {
+    const f = fakeHost();
+    const out = texts(runLine(f.host, 'co2'));
+    expect(out[0]).toMatch(/^CO₂ line 4\.00 bar · master valve OPEN/);
+    expect(out[1]).toMatch(
+      /^ {2}left {2}rack +136\.0 kg {2}IN USE \(in service\)$/,
+    );
+    expect(out[2]).toMatch(/^ {2}right rack +136\.0 kg {2}STANDBY$/);
+    expect(out.join('\n')).toMatch(/PL1 Lounge: wall port OPEN/);
+    expect(out.join('\n')).toMatch(/PL2 Olympic: wall port OPEN/);
+    expect(out.join('\n')).toMatch(/LB loading bay detector \d+ ppm/);
+  });
+
+  it('refuses a swap with nothing spent, says why and logs it; swaps the spent rack when there is one', () => {
+    const f = fakeHost();
+    const out = runLine(f.host, 'co2 swap');
+    expect(out.every((l) => l.tone === 'error')).toBe(true);
+    expect(texts(out)[0]).toMatch(/refused: neither rack is spent/);
+    expect(f.events.at(-1)?.text).toMatch(
+      /CO₂ rack swap by the console refused: neither rack is spent: no change/,
+    );
+    // The left rack drawn down: the manifold has changed over to the right.
+    const supply = f.world().co2.distribution.supply;
+    Object.assign(supply, { service: 'right' });
+    Object.assign(supply.racks, { left: 0 });
+    runLine(f.host, 'co2 swap');
+    expect(f.world().co2.distribution.supply.racks.left).toBe(136_000);
+    expect(f.events.some((e) => /CO₂ left rack swapped/.test(e.text))).toBe(
+      true,
+    );
+  });
+});

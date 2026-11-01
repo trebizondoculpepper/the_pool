@@ -10,10 +10,12 @@ import {
   co2Pressures,
   cylinderPressure,
   drawCo2,
-  exchangeCylinder,
   newCo2Supply,
-  setCylinderValve,
+  rackToSwap,
   setIsolation,
+  supplyFromCylinders,
+  swapRack,
+  swapRefusal,
   throwLever,
   vapourPressure,
 } from './co2-supply';
@@ -64,17 +66,48 @@ describe('the changeover manifold', () => {
       6,
     );
   });
-  it('the lever thrown, the reserve becomes the service bank, and the empties are exchanged to stand by', () => {
-    let s = throwLever(drawCo2(newCo2Supply(20), 4 * 34 - 2));
+  it('changes over by itself: the full rack becomes the one in service, the spent one awaits a swap', () => {
+    const s = drawCo2(newCo2Supply(20), 4 * 34 - 2);
     expect(s.service).toBe('right');
-    for (let i = 0; i < 4; i++) {
-      s = exchangeCylinder(s, 'left', i);
-      // A new cylinder's valve is shut until opened.
-      expect(bankFlag(s, 'left')).toBe('empty');
-    }
-    for (let i = 0; i < 4; i++) s = setCylinderValve(s, 'left', i, true);
-    expect(bankFlag(s, 'left')).toBe('standby');
-    expect(bankInUse(s)).toBe('right');
+    expect(rackToSwap(s)).toBe('left');
+    // The swap refills the spent rack, not in service: it stands by.
+    const swapped = swapRack(s);
+    expect(bankContents(swapped, 'left')).toBe(4 * 34);
+    expect(bankFlag(swapped, 'left')).toBe('standby');
+    expect(bankInUse(swapped)).toBe('right');
+    expect(co2SupplyAlarms(swapped).bankEmpty).toBe(false);
+  });
+  it('refuses a swap with nothing spent, and says why', () => {
+    const s = newCo2Supply(20);
+    expect(swapRack(s)).toBe(s);
+    expect(swapRefusal(s)).toBe('neither rack is spent');
+    // The lever thrown onto a spent rack: it must not be swapped while it feeds.
+    const spent = throwLever(drawCo2(s, 4 * 34 - 2));
+    expect(spent.service).toBe('left');
+    expect(swapRefusal(spent)).toMatch(/still in service/);
+  });
+  it('with both racks spent, a swap refills the one not in service and the manifold takes it', () => {
+    const s = drawCo2(newCo2Supply(20), 1000);
+    expect(co2SupplyAlarms(s).exhausted).toBe(true);
+    const swapped = swapRack(s);
+    expect(co2SupplyAlarms(swapped).exhausted).toBe(false);
+    expect(bankInUse(swapped)).toBe(swapped.service);
+    expect(bankContents(swapped, swapped.service)).toBe(4 * 34);
+  });
+  it('takes an old save’s cylinders as two racks of grams', () => {
+    const cyl = (kg: number, open = true) => ({ kg, open });
+    const s = supplyFromCylinders({
+      banks: {
+        left: [cyl(1), cyl(1), cyl(1), cyl(1)],
+        right: [cyl(34), cyl(34), cyl(34), cyl(34, false)],
+      },
+      service: 'left',
+      isolation: true,
+      ambient: 12,
+    });
+    expect(s.racks.right).toBe(3 * 34 * 1000);
+    // Its left rack spent: the manifold has changed over.
+    expect(s.service).toBe('right');
   });
   it('gives nothing once both banks are spent, and nothing through a shut valve', () => {
     const s = drawCo2(newCo2Supply(20), 1000);

@@ -214,8 +214,7 @@ export function stepCo2Distribution(
   };
 }
 
-const totalKg = (s: Co2Supply) =>
-  [...s.banks.left, ...s.banks.right].reduce((sum, c) => sum + c.kg, 0);
+const totalKg = (s: Co2Supply) => (s.racks.left + s.racks.right) / 1000;
 
 /** The distribution's alarms, for the loading bay's panel and both control rooms. */
 export function co2DistributionAlarms(d: Co2Distribution) {
