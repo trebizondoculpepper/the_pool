@@ -21,11 +21,11 @@ describe('the ring’s other consumers', () => {
     ]);
   });
 
-  it('sizes the museum’s heating to its ten halls’ floor at 50 W/m²', () => {
+  it('sizes the museum’s heating to its ten halls’ floor at 60 W/m²', () => {
     expect(MUSEUM_FLOOR).toBeGreaterThan(2500);
     expect(MUSEUM_FLOOR).toBeLessThan(3500);
     const p = areaParams(museum);
-    expect(p.design).toBeCloseTo((MUSEUM_FLOOR * 50) / 1000, 9);
+    expect(p.design).toBeCloseTo((MUSEUM_FLOOR * 60) / 1000, 9);
     // Its UA holds its set point at the design outside on its design load.
     expect(p.ua * (museum.setpoint - DESIGN_OUTSIDE)).toBeCloseTo(p.design, 9);
   });

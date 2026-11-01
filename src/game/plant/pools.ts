@@ -244,8 +244,24 @@ export const poolArea = (id: PoolId) => WATER[id].area;
 /** Each pool's balance tank's capacity, m³ (its balance is the share of it full). */
 export const poolTankCapacity = (id: PoolId) => WATER[id].tank;
 
+/**
+ * Each pool's heaters' full outputs, kW (mission 120; `doc/research/heat-demand.md`
+ * §3, §4 and §9): the water's exchanger and the hall's coils, as normal
+ * practice selects them. The Olympic's exchanger warms a cold fill at the
+ * 0.25 K/h limit (CTG009, 727 kW, so 750); the Lounge's at 0.5 K/h (80); the
+ * jacuzzi's reheats a fill within a shift (12); the footbath's 5. The
+ * Olympic's coils (450) sit within a design day's 240–550 kW; the
+ * Lounge's (75) the same method's 65–80; the small rooms' as they were.
+ */
+export const POOL_HEATERS: Record<PoolId, { water: number; air: number }> = {
+  pool_01: { water: 80, air: 75 },
+  pool_02: { water: 750, air: 450 },
+  pool_03: { water: 12, air: 13 },
+  pool_04: { water: 5, air: 2.5 },
+};
+
 /** Each pool and its hall's thermal parameters (`thermal.ts`). */
-const HEAT: Record<PoolId, ThermalParams> = Object.fromEntries(
+export const HEAT: Record<PoolId, ThermalParams> = Object.fromEntries(
   POOL_IDS.map((id) => [
     id,
     thermalParams({
@@ -255,6 +271,10 @@ const HEAT: Record<PoolId, ThermalParams> = Object.fromEntries(
       hall: HALL_SHAPE[id],
       water: POOL_TARGET[id].temp,
       air: HALL_AIR[id],
+      heaters: {
+        water: POOL_HEATERS[id].water * 1000,
+        air: POOL_HEATERS[id].air * 1000,
+      },
     }),
   ]),
 ) as Record<PoolId, ThermalParams>;

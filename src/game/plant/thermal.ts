@@ -73,6 +73,12 @@ export interface PoolHallShape {
   /** The design temperatures, °C: water, hall air. */
   water: number;
   air: number;
+  /**
+   * The heaters' full outputs, W, as selected (mission 120,
+   * `doc/research/heat-demand.md`): the water's exchanger and the hall's
+   * coils. Without them, `headroom` times their loads at the usual 12 °C.
+   */
+  heaters?: { water: number; air: number };
 }
 
 /** Saturation vapour pressure over water at `t` °C, Pa (Magnus–Tetens, Alduchov and Eskridge). */
@@ -100,8 +106,9 @@ export function thermalParams(s: PoolHallShape) {
     ground * (s.water - AMBIENT);
   const airLoad =
     (fabric + leak) * (s.air - AMBIENT) - surface * (s.water - s.air);
-  const waterHeater = T.headroom * waterLoad;
+  const waterHeater = s.heaters?.water ?? T.headroom * waterLoad;
   const airHeater =
+    s.heaters?.air ??
     T.headroom * Math.max(airLoad, 0.3 * (fabric + leak) * (s.air - AMBIENT));
   return {
     waterCapacity: s.volume * T.waterPerM3,

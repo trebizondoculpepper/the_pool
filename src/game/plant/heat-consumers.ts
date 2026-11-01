@@ -44,37 +44,39 @@ export const AREA_BAND = 0.5;
 export const MUSEUM_FLOOR = HALL_PLACES.reduce((t, p) => t + p.w * p.d, 0);
 
 /**
- * The areas the ring heats, besides the pools. The museum: 50 W/m² at
- * −3 °C (a well-insulated building of about 2000, the low end of the
- * usual 50–80 W/m² rule of thumb), held at 20 °C, a heavy building's
- * 100 kJ/K per m² (about thirteen hours to cool by a factor e).
- * Reception, changing and its showers' hot water (DHW): not built yet,
- * so no load until they are.
+ * The areas the ring heats, besides the pools (`doc/research/heat-demand.md`
+ * §5–§7 and §9). The museum: 60 W/m² at −3 °C (a UK building of about
+ * 2000, galleries tall and ventilated; nPro gives museums 61 W/m²), held
+ * at 20 °C, 200 kJ/K per m² (ISO 13790's medium to heavy: a time constant
+ * of about 21 hours). Reception (70 W/m² at 20 °C: busy doors, glass) and
+ * changing (110 W/m² at 24 °C: ten air changes through a recuperator):
+ * not built yet, so no floor and no load. The changing area's showers'
+ * hot water (DHW): `DHW`, no load until the changing area is built.
  */
 export const AREAS: readonly AreaHeating[] = [
   {
     id: 'museum',
     name: 'MUSEUM',
     area: MUSEUM_FLOOR,
-    wPerM2: 50,
+    wPerM2: 60,
     setpoint: 20,
-    massPerM2: 100,
+    massPerM2: 200,
   },
   {
     id: 'reception',
     name: 'RECEPTION',
     area: 0,
-    wPerM2: 0,
-    setpoint: 21,
-    massPerM2: 100,
+    wPerM2: 70,
+    setpoint: 20,
+    massPerM2: 200,
   },
   {
     id: 'changing',
     name: 'CHANGING',
     area: 0,
-    wPerM2: 0,
+    wPerM2: 110,
     setpoint: 24,
-    massPerM2: 100,
+    massPerM2: 200,
   },
   {
     id: 'dhw',
@@ -82,9 +84,18 @@ export const AREAS: readonly AreaHeating[] = [
     area: 0,
     wPerM2: 0,
     setpoint: 60,
-    massPerM2: 100,
+    massPerM2: 0,
   },
 ];
+
+/**
+ * The DHW calorifiers, for when the changing area is built (research §5):
+ * a 4,000 l store at 60 °C, recovering at up to 250 kW from the ring (k
+ * 12.5 kW/K at 80 °C), about 1 kWh a bather. Not on the ring yet. With
+ * the ring below about 70 °C it cannot reach 60 °C: a Legionella warning
+ * to come.
+ */
+export const DHW = { litres: 4000, setpoint: 60, recovery: 250 } as const;
 
 /** An area's figures: design load, kW; UA, kW/K; heaters' output, kW; capacity, kJ/K; conductance, kW/K. */
 export function areaParams(a: AreaHeating) {
