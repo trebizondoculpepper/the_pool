@@ -27,4 +27,4 @@ Boiler lockout, header low, no boiler available: on the boiler house's mimic, th
 
 ## Coordination
 
-`WORLD_VERSION` 72 is reserved for this mission. Work in the main checkout, no worktree, private index, `--maxWorkers=2`. `ahnaa_dmitrieva` is writing the boiler sounds as a pure state-to-sound mapping; wire them into the boiler room as part of this mission once they land, or leave a TODO.
+`WORLD_VERSION` 72 is reserved for this mission. Mission 102 may land first at 73 with a placeholder `71: (world) => world` step; if so, replace that placeholder with this mission's real 71→72 migration and keep 102's 72→73. Mission 102 also lands before this: keep `sounder.show(BoilerState)` per boiler (`ahnaa_dmitrieva`'s boiler sounds, `e3f8272e`) and the read-only `boilerHouseShown()` export in `boiler.ts` (`3779da55`, the control room's copies) working when the boilers move into the world. Work in the main checkout, no worktree, private index, `--maxWorkers=2`. `ahnaa_dmitrieva` is writing the boiler sounds as a pure state-to-sound mapping; wire them into the boiler room as part of this mission once they land, or leave a TODO.
