@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed
+
+- The macOS desktop build reaches the release again: the Release workflow's upload step used `mapfile`, which the macOS runners' bash 3.2 lacks, so v0.11.0's job failed after packaging; it now reads the file list with a loop, and `gh workflow run release.yml -f tag=vX.Y.Z -f desktop_only=true` rebuilds and attaches only a release's desktop files and checksums, leaving the GitHub release and itch.io alone.
+
 ## [0.11.0] - 2026-11-01
 
 ### Added
