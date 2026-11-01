@@ -87,6 +87,12 @@ export interface MimicSpec {
   /** LED readouts at the measured points, each with an LCD legend. */
   readouts: readonly { id: string; at: Point }[];
   /**
+   * Whether each readout has its one-line LCD legend under its digits:
+   * yes unless a board says not (the wet hall's water boards, the owner,
+   * 2026-11-01), when its housing is the digits' alone.
+   */
+  readoutLegends?: boolean;
+  /**
    * Push buttons set into the drawing, in line with the plant they work
    * (a pump's START and STOP beside its symbol), each named.
    */

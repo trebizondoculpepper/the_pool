@@ -27,7 +27,37 @@ const percent = (value: number, name: string): Reading => ({
 });
 
 /** WH-MP1: one boosted source fanning out to the four pool balance tanks. */
-export const freshWaterMimicSpec: MimicSpec = {
+/**
+ * The standard board's size (the owner, 2026-11-01: the Lounge pool
+ * filters mimic is the standard size; these two were drawn at 2.8 × 1.6 m,
+ * huge for what they show), and a board drawn on the larger grid brought
+ * onto it: every position closer by the same proportion, its symbols
+ * smaller with them; its readouts, lamps and buttons, real instruments,
+ * stay their own size.
+ */
+const STANDARD = { width: 2.4, height: 1.2 } as const;
+function standardBoard(spec: MimicSpec): MimicSpec {
+  const sx = STANDARD.width / spec.width;
+  const sy = STANDARD.height / spec.height;
+  const at = ([x, y]: Point): Point => [x * sx, y * sy];
+  return {
+    ...spec,
+    width: STANDARD.width,
+    height: STANDARD.height,
+    lines: spec.lines.map((l) => ({ ...l, points: l.points.map(at) })),
+    shapes: spec.shapes.map((s) => ({
+      ...s,
+      at: at(s.at),
+      ...(s.size === undefined ? {} : { size: s.size * Math.min(sx, sy) }),
+    })),
+    labels: spec.labels?.map((l) => ({ ...l, at: at(l.at) })),
+    lamps: spec.lamps.map((l) => ({ ...l, at: at(l.at) })),
+    readouts: spec.readouts?.map((r) => ({ ...r, at: at(r.at) })),
+    buttons: spec.buttons?.map((b) => ({ ...b, at: at(b.at) })),
+  };
+}
+
+export const freshWaterMimicSpec: MimicSpec = standardBoard({
   title: 'FRESH WATER DISTRIBUTION',
   width: 2.8,
   height: 1.6,
@@ -105,10 +135,12 @@ export const freshWaterMimicSpec: MimicSpec = {
     },
   ],
   modes: [{ id: 'flow', legend: 'FLOW' }],
-};
+  // The digits alone, no LCD legend under each (the owner, 2026-11-01).
+  readoutLegends: false,
+});
 
 /** WH-MP2: four waste branches converge on the pit, then pump to sewer. */
-export const dirtyWaterMimicSpec: MimicSpec = {
+export const dirtyWaterMimicSpec: MimicSpec = standardBoard({
   title: 'PIT INFLOW SOURCES',
   width: 2.8,
   height: 1.6,
@@ -162,7 +194,9 @@ export const dirtyWaterMimicSpec: MimicSpec = {
     ...POOL_IDS.map((id, i) => ({ id, at: pt(-0.85, rows[i] + 0.04) })),
   ],
   modes: [{ id: 'flow', legend: 'FLOW' }],
-};
+  // The digits alone, no LCD legend under each (the owner, 2026-11-01).
+  readoutLegends: false,
+});
 
 export interface WetHallWaterReading {
   wetHall: WetHallState;

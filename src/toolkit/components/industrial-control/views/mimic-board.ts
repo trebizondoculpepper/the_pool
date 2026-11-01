@@ -330,6 +330,7 @@ export function createMimicBoard(
     return { id: lamp.id, material, colour: LAMP_COLOURS[lamp.colour] };
   });
   // The readouts and their legends.
+  const withLegends = spec.readoutLegends !== false;
   const readouts = spec.readouts.map((readout) => {
     const [x, y] = readout.at;
     // Its housing, digits and legend, the one part.
@@ -343,10 +344,10 @@ export function createMimicBoard(
       holder,
       t.paint('#1a1b1c', 0.4),
       0.19,
-      0.13,
+      withLegends ? 0.13 : 0.075,
       0.012,
       x,
-      y - 0.025,
+      withLegends ? y - 0.025 : y,
       z - 0.002,
     );
     // Half the density of a close-up instrument's digits: a board is read
@@ -358,6 +359,7 @@ export function createMimicBoard(
     digits.group.position.set(x, y, z + 0.004);
     live(digits.group);
     holder.add(digits.group);
+    if (!withLegends) return { id: readout.id, digits, legend: null };
     const legend = createCharacterLcd(kit, {
       columns: LEGEND_COLUMNS,
       rows: 1,
@@ -519,7 +521,7 @@ export function createMimicBoard(
     for (const r of readouts) {
       const reading = state.readouts[r.id]?.[mode.value];
       r.digits.show(test.value ? '8.8.8.8.' : readoutText(reading));
-      r.legend.show(
+      r.legend?.show(
         [test.value ? '#'.repeat(LEGEND_COLUMNS) : legendText(reading)],
         true,
       );
