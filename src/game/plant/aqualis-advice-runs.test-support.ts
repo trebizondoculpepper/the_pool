@@ -69,8 +69,9 @@ export function closedLoop(
   advisor: Advisor = TRIO,
   rounds = 10,
   worse = 1,
+  co2 = false,
 ): LoopResult {
-  let w = scenarioWorld(s, pool, open);
+  let w = scenarioWorld(s, pool, open, co2);
   const t = w.aqualis[pool].settings.targets;
   const failures: string[] = [];
   const start = w.aqualis[pool].readings;
@@ -201,8 +202,9 @@ export function twin(
   advisor: Advisor = TRIO,
   /** Which advice to follow (the ranking test's): the top instruction by default. */
   pick: (a: Advice[]) => Advice | null = topInstruction,
+  co2 = false,
 ): TwinResult {
-  const w0 = scenarioWorld(s, pool, open);
+  const w0 = scenarioWorld(s, pool, open, co2);
   const t = w0.aqualis[pool].settings.targets;
   const top = pick(advisor(w0, pool));
   let maxPh = 0;

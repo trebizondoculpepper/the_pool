@@ -37,3 +37,16 @@ export const WHY = {
   scalingAccuracy:
     'the hand acid only stands in for the acid the pump would have given: followed less not is a third of its aim',
 } as const;
+
+/**
+ * Mission 118: what the CO₂ variant of the suite finds that acid alone
+ * does not (`aqualis-verification-co2.*.slow.test.ts`).
+ */
+export const CO2_WHY = {
+  co2CarriesPh:
+    'with CO₂ on the Trio the pH is carried by CO₂ whether the acid pump is put right or not, so following the advice is no nearer neutral after mixing than leaving it: the scenario’s fault no longer shows, and its advice (put the acid pump right) is not urgent',
+  bicarbThenCo2:
+    'the bicarbonate lifts the closed Lounge’s pH past its band and CO₂, taking no alkalinity, brings it back below before the pH integral unwinds: the pH swings once',
+  chlorineRoundOlympic:
+    'with CO₂ carrying the pH the bicarbonate round comes sooner, and the closed Olympic’s chlorine round that follows overshoots (2.1 to 3.8 mg/l) as its undersized hypochlorite pump catches up',
+} as const;

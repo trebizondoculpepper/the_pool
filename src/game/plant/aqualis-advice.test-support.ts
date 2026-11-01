@@ -303,18 +303,27 @@ export const SCENARIOS: readonly Scenario[] = [
 ];
 
 /** A Trio pool's world with a scenario set up, its analyser settled on it. */
-export function scenarioWorld(s: Scenario, pool: TrioPool, open = true): World {
+export function scenarioWorld(
+  s: Scenario,
+  pool: TrioPool,
+  open = true,
+  /** Its CO₂ dosing connected (mission 118's variant); acid alone by default. */
+  co2 = false,
+): World {
   const start = newWorld();
-  // This verification suite pins the pre-118 acid-only plant. The CO₂
-  // connected comparison gets its own suite after the loss-rate fix.
+  // The verification suite pins the pre-118 acid-only plant; its CO₂
+  // variant (`aqualis-verification-co2.*.slow.test.ts`) keeps the CO₂
+  // panels on their Trios, CO₂ first and acid trimming.
   let w = advance(
-    {
-      ...start,
-      co2: {
-        ...start.co2,
-        connected: { plant_pool_01: false, plant_pool_02: false },
-      },
-    },
+    co2
+      ? start
+      : {
+          ...start,
+          co2: {
+            ...start.co2,
+            connected: { plant_pool_01: false, plant_pool_02: false },
+          },
+        },
     600,
     10,
   );

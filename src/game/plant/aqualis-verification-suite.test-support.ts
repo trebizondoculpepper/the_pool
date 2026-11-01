@@ -25,20 +25,27 @@ export function verificationSuite(
   pool: TrioPool,
   open: boolean,
   known: Readonly<Record<string, string>>,
+  /** Mission 118's variant: the CO₂ panels on their Trios. */
+  co2 = false,
 ) {
   const loops = new Map<string, LoopResult>();
   const twins = new Map<string, TwinResult>();
   const loopOf = (s: Scenario) => {
-    if (!loops.has(s.id)) loops.set(s.id, closedLoop(s, pool, open));
+    if (!loops.has(s.id))
+      loops.set(
+        s.id,
+        closedLoop(s, pool, open, undefined, undefined, undefined, co2),
+      );
     return loops.get(s.id)!;
   };
   const twinOf = (s: Scenario) => {
-    if (!twins.has(s.id)) twins.set(s.id, twin(s, pool, open));
+    if (!twins.has(s.id))
+      twins.set(s.id, twin(s, pool, open, undefined, undefined, co2));
     return twins.get(s.id)!;
   };
   const test = (key: string) => (known[key] ? it.fails : it);
   const T = 240_000;
-  describe(`${pool} ${open ? 'OPEN' : 'CLOSED'}`, () => {
+  describe(`${pool} ${open ? 'OPEN' : 'CLOSED'}${co2 ? ' with CO₂' : ''}`, () => {
     for (const s of SCENARIOS)
       describe(`${s.id}: ${s.about}`, () => {
         test(`loop:${s.id}`)(
