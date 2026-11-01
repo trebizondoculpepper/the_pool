@@ -8,6 +8,7 @@ import { POOL_TARGET } from '../../../game/plant/pools';
 import { hallHandling } from '../../../game/plant/air-handling';
 import type { PoolId } from '../../../game/plant/pools';
 import { serviceAvailable } from '../../../game/plant/services';
+import { RING } from '../../../game/plant/lthw-ring';
 import type { IsolatorName, ServiceRoom } from '../../../game/plant/services';
 import { WET_HALL_PLANT } from '../../../game/plant/wet-hall';
 import { olympicFlowsOf } from '../../../game/plant/olympic-battery';
@@ -115,8 +116,9 @@ function readPlant(world: World, pool: PoolId): PlantReading {
   const uvIsolator = UV_ISOLATORS[pool];
   const uvOn = circulating && (uvIsolator ? plant.isolators[uvIsolator] : true);
   const dosing = circulating && serviceAvailable(plant, room, 'chemical');
-  const heat = Object.values(world.pools).reduce((t, p) => t + p.heating, 0);
-  const boilersFiring = heat > 1;
+  // The LTHW ring (mission 120): the boilers fire as its supply does.
+  const ring = world.lthw;
+  const boilersFiring = ring.firing;
   const airflow = hallHandling(world.airHandling)[pool].share;
   const airOn = serviceAvailable(plant, 'air_plant', 'power') && airflow > 0.05;
   const hallRh = water.hallRh;
@@ -171,7 +173,10 @@ function readPlant(world: World, pool: PoolId): PlantReading {
     learnerPool: world.pools.pool_01.temperature,
     spa: world.pools.pool_03.temperature,
     hallAir: water.hallAir,
-    lthw: boilersFiring ? 80 : 70,
+    lthw: ring.flow,
+    lthwReturn: ring.return,
+    heatDemand: ring.demand,
+    heatSupply: ring.supply,
     hallRh,
     chlorine: water.freeChlorine,
     ph: water.ph,
@@ -180,7 +185,9 @@ function readPlant(world: World, pool: PoolId): PlantReading {
       p2: s2 ? s2.current : amps(p2, 37),
       supply: airOn ? 29 * airflow : 0,
       extract: airOn ? 27 * airflow : 0,
-      boilers: boilersFiring ? 18 : 3,
+      // The boilers' fans and controls: 3 A standing, up to 18 A at full fire.
+      boilers:
+        3 + 15 * Math.min(1, ring.supply / (RING.boilers * RING.boilerKW)),
     },
     alarms,
     ...(pool === 'pool_01' || pool === 'pool_02'

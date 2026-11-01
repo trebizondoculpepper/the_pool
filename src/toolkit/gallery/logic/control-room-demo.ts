@@ -35,7 +35,16 @@ export interface PlantReading {
   learnerPool: number;
   spa: number;
   hallAir: number;
+  /** The LTHW ring's flow header, °C. */
   lthw: number;
+  /**
+   * The LTHW ring as the world has it (mission 120): its common return, °C,
+   * and its loads' demand and the boilers' supply, kW. The scripted loop
+   * gives none.
+   */
+  lthwReturn?: number;
+  heatDemand?: number;
+  heatSupply?: number;
   /** Hall relative humidity, %. */
   hallRh: number;
   /** Free chlorine, mg/l, and pH. */

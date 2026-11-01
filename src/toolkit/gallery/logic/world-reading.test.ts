@@ -93,4 +93,31 @@ describe('the plant as the world has it', () => {
     });
     expect(plantReadingOf(tested).alarms).toContain('gas-detected');
   });
+
+  it('reads the LTHW ring: its flow, its return, its demand and supply (mission 120)', () => {
+    const r = plantReadingOf(running);
+    expect(r.lthw).toBeCloseTo(running.lthw.flow, 9);
+    expect(r.lthw).toBeCloseTo(80, 0);
+    expect(r.lthwReturn).toBeLessThan(r.lthw);
+    expect(r.heatDemand).toBeGreaterThan(100);
+    // The supply gives the loads' draw and the ring's losses.
+    expect(r.heatSupply).toBeCloseTo(
+      running.lthw.delivered + running.lthw.losses,
+      -1,
+    );
+    expect(r.boilersFiring).toBe(true);
+    // With the gas cut the ring cools and the boilers do not fire.
+    const cut = advance(
+      applyAction(running, {
+        type: 'boiler-gas',
+        action: { act: 'ecv', open: false },
+      }),
+      600,
+      10,
+    );
+    const c = plantReadingOf(cut);
+    expect(c.boilersFiring).toBe(false);
+    expect(c.heatSupply).toBe(0);
+    expect(c.lthw).toBeLessThan(75);
+  });
 });
