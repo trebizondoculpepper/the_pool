@@ -18,11 +18,46 @@ export const onWall = (
 /** The dosing valve controller's backboard and its depth off the wall. */
 export const CO2_PANEL_SIZE = { w: 0.7, h: 0.9, d: 0.28 } as const;
 
+/**
+ * Its control cabinet, a Veldkamp CV-310 slimline (`co2-valve-controller.ts`;
+ * `doc/plans/co2-system.md`, "The control cabinet"): its middle (x, y) on the
+ * backboard, right of the gas train, and its size over its lift-off cover,
+ * `d` out from the backboard's face.
+ */
+export const CO2_CABINET = {
+  x: 0.17,
+  y: 0.04,
+  w: 0.3,
+  h: 0.6,
+  d: 0.1,
+} as const;
+
+/**
+ * The panel's cable trunking, 25 mm PVC, on the backboard's face: up its
+ * right edge beside the cabinet, from under the cabinet to the
+ * backboard's top, where the incoming conduits land; and along under the
+ * cabinet, under its glands.
+ */
+export const CO2_PANEL_TRUNKING = {
+  x: CO2_CABINET.x + CO2_CABINET.w / 2 + 0.0155,
+  /** The run under the cabinet: its middle's height, and its left end. */
+  y: CO2_CABINET.y - CO2_CABINET.h / 2 - 0.0525,
+  left: -0.005,
+  /** Its width, and its depth off the backboard. */
+  w: 0.025,
+  d: 0.04,
+} as const;
+
 /** Where its gas enters (top) and leaves (bottom): its copper's ends. */
 export const CO2_PANEL_PORTS = {
   inlet: [-0.17, CO2_PANEL_SIZE.h / 2, -0.08],
   outlet: [-0.17, -CO2_PANEL_SIZE.h / 2, -0.08],
-  /** Its detector's interlock cable into its control box's top. */
+  /**
+   * Its detector's interlock conduit's end, over the cabinet's top right
+   * corner: its cable goes on, red, into the side of the trunking beside
+   * it and down to the cabinet's EXT. INTERLOCK gland (the cabinet's cover
+   * hooks over its top, so nothing enters there).
+   */
   interlock: [0.3, 0.36, -0.03],
 } as const;
 
