@@ -11,6 +11,7 @@ import { createMicroLabel, kitGlow } from './eighties-controls';
 import type { PanelKit } from './eighties-controls';
 import { createCanvasTexture } from './screens';
 import { watchSign } from './display-reach';
+import { ledLensFace } from './led-lens';
 
 /**
  * Shared drawing tools for building fittings (fire, general safety and
@@ -76,13 +77,23 @@ export function tools(kit: PanelKit) {
     const material = kitGlow(kit, colour);
     const on = new Color(colour);
     const off = on.clone().multiplyScalar(0.2);
-    const mesh = cyl(parent, material, r, r * 0.6, x, y, z, axis, 12);
+    // Its sides plain; its face (the cylinder's top cap, group 1) shaded
+    // as a lens, by the one shared gradient (`led-lens.ts`).
+    const face = ledLensFace(kit, colour);
+    const mesh = new Mesh<CylinderGeometry, Material[]>(
+      new CylinderGeometry(r, r, r * 0.6, 12),
+      [material, face.material, material],
+    );
+    mesh.position.set(x, y, z);
+    if (axis === 'z') mesh.rotation.x = Math.PI / 2;
+    parent.add(mesh);
     material.color.copy(off);
     return {
       mesh,
       set(lit: boolean | number) {
         const level = typeof lit === 'number' ? lit : lit ? 1 : 0;
         material.color.copy(off).lerp(on, level);
+        face.set(level);
       },
     };
   };
