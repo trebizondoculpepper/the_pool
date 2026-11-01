@@ -19,6 +19,7 @@ import { DEFAULT_TARGETS } from '../../../game/plant/aqualis-types';
 import {
   newRigCo2,
   plugRigCo2,
+  actOnRigCo2,
   resetRigCo2,
   rigCo2Ports,
   setRigCo2Mode,
@@ -29,7 +30,10 @@ import {
 import type { RigCo2 } from '../../../game/plant/aqualis-co2-rig';
 import { portPressure } from '../../../game/plant/co2-distribution';
 import type { Co2PortId } from '../../../game/plant/co2-distribution';
-import type { Co2DoserMode } from '../../../game/plant/co2-dosing';
+import type {
+  Co2DoserMode,
+  Co2PanelAction,
+} from '../../../game/plant/co2-dosing';
 import type { Co2PanelReading } from '../views/co2-dosing-panel';
 import type {
   Advice,
@@ -210,6 +214,8 @@ export interface AqualisRoomHost {
   setCo2Mode(id: Co2PortId, mode: Co2DoserMode): void;
   setCo2Rate(id: Co2PortId, gh: number): void;
   resetCo2(id: Co2PortId): void;
+  /** Any other local control of a panel's (its mass flow controller's HAND · AUTO, OVERRIDE, OFF · ON). */
+  actOnCo2(id: Co2PortId, action: Co2PanelAction): void;
   setCo2Port(id: Co2PortId, open: boolean): void;
   /** Move the Trio's CO₂ control cable to this panel. */
   plugCo2(id: Co2PortId): void;
@@ -569,6 +575,9 @@ export function createAqualisRoomHost(
     },
     resetCo2(id) {
       co2 = resetRigCo2(co2, id);
+    },
+    actOnCo2(id, action) {
+      co2 = actOnRigCo2(co2, id, action);
     },
     setCo2Port(id, open) {
       co2 = setRigCo2Port(co2, id, open);

@@ -374,6 +374,9 @@ function modelFor(
         setMode: (mode) => act({ kind: 'mode', mode }),
         setManualRate: (gh) => act({ kind: 'rate', gh }),
         reset: () => act({ kind: 'reset' }),
+        setOn: (on) => act({ kind: 'on', on }),
+        setHand: (hand) => act({ kind: 'hand', hand }),
+        setOverride: (override) => act({ kind: 'override', override }),
       },
       item.label,
     );

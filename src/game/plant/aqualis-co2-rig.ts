@@ -1,12 +1,13 @@
 import { CO2_PORT_IDS, setPortOpen } from './co2-distribution';
 import type { Co2PortId } from './co2-distribution';
 import {
+  actOnCo2Doser,
   co2Feedback,
   resetCo2Doser,
   setCo2ManualRate,
   setCo2Mode,
 } from './co2-dosing';
-import type { Co2DoserMode } from './co2-dosing';
+import type { Co2DoserMode, Co2PanelAction } from './co2-dosing';
 import { newCo2Plant, stepCo2Plant } from './co2-plant';
 import type { Co2Plant } from './co2-plant';
 import { rigFlow, rigPorts, stepRig, withLineDose } from './aqualis-rig';
@@ -112,6 +113,13 @@ export const setRigCo2Mode = (co2: RigCo2, id: Co2PortId, mode: Co2DoserMode) =>
 /** A panel's manual rate, g/h. */
 export const setRigCo2Rate = (co2: RigCo2, id: Co2PortId, rate: number) =>
   withDoser(co2, id, (d) => setCo2ManualRate(d, rate));
+
+/** Any of a panel's local controls (its mass flow controller's among them). */
+export const actOnRigCo2 = (
+  co2: RigCo2,
+  id: Co2PortId,
+  action: Co2PanelAction,
+) => withDoser(co2, id, (d) => actOnCo2Doser(d, action));
 
 /** RESET at a panel. */
 export const resetRigCo2 = (co2: RigCo2, id: Co2PortId) =>

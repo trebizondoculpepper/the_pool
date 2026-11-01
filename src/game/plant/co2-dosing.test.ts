@@ -2,16 +2,22 @@ import { describe, expect, it } from 'vite-plus/test';
 import {
   CO2_DOSERS,
   CO2_FAULT_TEXT,
+  CO2_MFC,
   CO2_PANEL,
+  actOnCo2Doser,
   co2Feedback,
+  co2ValveDrive,
   demandToMa,
   maToDemand,
   newCo2Doser,
   openSeconds,
   pressureShare,
   resetCo2Doser,
+  setCo2Hand,
   setCo2ManualRate,
   setCo2Mode,
+  setCo2On,
+  setCo2Override,
   setCo2Power,
   setCo2Stuck,
   stepCo2Doser,
@@ -340,5 +346,97 @@ describe('with the Trio’s controller', () => {
       reason: 'switched-off',
     });
     expect(c.out.channels.co2.demand).toBeGreaterThan(0);
+  });
+});
+
+describe('the mass flow controller’s own controls (the owner, 2026-11-01)', () => {
+  it('HAND · AUTO: AUTO follows the Trio, HAND holds its local set point', () => {
+    const auto = run(olympic(), GOOD, 60).d;
+    expect(auto.mode).toBe('remote');
+    expect(auto.hand).toBe(false);
+    expect(auto.delivering).toBeCloseTo(0.5 * 2000, 6);
+    const hand = setCo2ManualRate(setCo2Hand(olympic(), true), 300);
+    expect(hand.mode).toBe('manual');
+    // In HAND the Trio is not listened to: a broken loop is no fault.
+    const cut = { ...GOOD, ma: 0, release: false };
+    const held = run(hand, cut, 60).d;
+    expect(held.delivering).toBeCloseTo(300, 6);
+    expect(held.fault).toBeNull();
+    expect(setCo2Hand(hand, false).mode).toBe('remote');
+  });
+
+  it('the panel’s OFF · ON keeps the toggle’s position, and ON brings its mode back', () => {
+    const off = setCo2On(setCo2Hand(olympic(), true), false);
+    expect(off.mode).toBe('off');
+    expect(off.hand).toBe(true);
+    expect(run(off, GOOD, 60).grams).toBe(0);
+    // The toggle thrown while off only moves the toggle.
+    const thrown = setCo2Hand(off, false);
+    expect(thrown.mode).toBe('off');
+    expect(setCo2On(thrown, true).mode).toBe('remote');
+    expect(setCo2On(off, true).mode).toBe('manual');
+    // The three-way selector's REMOTE and MANUAL set the toggle too.
+    expect(setCo2Mode(olympic(), 'manual').hand).toBe(true);
+    expect(setCo2Mode(setCo2Mode(olympic(), 'manual'), 'off').hand).toBe(true);
+  });
+
+  it('OVERRIDE CLOSE holds its valve shut whatever is asked, with no fault', () => {
+    const shut = setCo2Override(olympic(), 'close');
+    const s = run(shut, { ...GOOD, ...trioSignal(1) }, 120);
+    expect(s.grams).toBe(0);
+    expect(s.d.open).toBe(false);
+    expect(s.d.fault).toBeNull();
+    expect(s.d.latched).toBeNull();
+    expect(co2ValveDrive(s.d, 4)).toBe(0);
+    const hand = run(setCo2ManualRate(setCo2Hand(shut, true), 1500), GOOD, 60);
+    expect(hand.grams).toBe(0);
+  });
+
+  it('OVERRIDE OPEN drives its valve fully open whatever the set point, without latching VALVE STUCK', () => {
+    const open = setCo2Override(olympic(), 'open');
+    const s = run(open, { ...GOOD, ...trioSignal(0) }, 300);
+    expect(s.d.delivering).toBeCloseTo(2000 * CO2_MFC.purge, 6);
+    expect(s.grams).toBeCloseTo((2000 * CO2_MFC.purge * 300) / 3600, 6);
+    expect(s.d.fault).toBeNull();
+    expect(s.d.latched).toBeNull();
+    expect(co2ValveDrive(s.d, 4)).toBe(100);
+    // A broken loop does not stop it: its set point is not used.
+    const cut = { ...GOOD, ma: 0, release: false };
+    expect(run(open, cut, 60).d.delivering).toBeGreaterThan(0);
+    // Its totaliser counts what it gives.
+    expect(s.d.totalG).toBeCloseTo(s.grams, 6);
+    // Back to NORMAL, it follows its set point again.
+    const back = run(setCo2Override(s.d, 'normal'), GOOD, 60).d;
+    expect(back.delivering).toBeCloseTo(1000, 6);
+  });
+
+  it('OVERRIDE OPEN is still stopped by the gas interlock, the supply, the water flow, its power and OFF', () => {
+    const open = setCo2Override(olympic(), 'open');
+    const gas = run(open, { ...GOOD, gasAlarm: true }, 60);
+    expect(gas.grams).toBe(0);
+    expect(gas.d.fault).toBe('gas-alarm');
+    // The master valve tripped or the wall port shut: nothing to pass.
+    const master = run(open, { ...GOOD, inletBar: 0 }, 60);
+    expect(master.grams).toBe(0);
+    expect(master.d.fault).toBe('no-supply-pressure');
+    const dry = run(open, { ...GOOD, waterFlowing: false }, 60);
+    expect(dry.grams).toBe(0);
+    expect(dry.d.fault).toBe('no-water-flow');
+    expect(run(setCo2Power(open, false), GOOD, 60).grams).toBe(0);
+    expect(run(setCo2On(open, false), GOOD, 60).grams).toBe(0);
+  });
+
+  it('has no override on the Lounge’s solenoid panel', () => {
+    expect(setCo2Override(lounge(), 'open')).toEqual(lounge());
+  });
+
+  it('is worked through its panel’s actions', () => {
+    let d = olympic();
+    d = actOnCo2Doser(d, { kind: 'hand', hand: true });
+    expect(d.mode).toBe('manual');
+    d = actOnCo2Doser(d, { kind: 'on', on: false });
+    expect(d.mode).toBe('off');
+    d = actOnCo2Doser(d, { kind: 'override', override: 'close' });
+    expect(d.override).toBe('close');
   });
 });

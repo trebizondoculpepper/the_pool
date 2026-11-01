@@ -616,6 +616,22 @@ export function drawBrandMark(
       ctx.fill();
       break;
     }
+    case 'flowsquare': {
+      // A flow arrow passing straight through a square, as the gas through
+      // a flow body: the square in its main colour, the arrow in its second.
+      ctx.strokeStyle = main;
+      ctx.lineWidth = r * 0.14;
+      ctx.strokeRect(-r * 0.55, -r * 0.55, r * 1.1, r * 1.1);
+      ctx.fillStyle = second;
+      ctx.fillRect(-r * 0.95, -r * 0.12, r * 1.4, r * 0.24);
+      ctx.beginPath();
+      ctx.moveTo(r * 0.45, -r * 0.36);
+      ctx.lineTo(r * 0.98, 0);
+      ctx.lineTo(r * 0.45, r * 0.36);
+      ctx.closePath();
+      ctx.fill();
+      break;
+    }
     case 'tiles': {
       // Nine pale tiles in their grout, the bottom right one gone: behind
       // it, in the dark, a pipe bends round to a valve's handwheel.

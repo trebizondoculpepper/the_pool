@@ -57,9 +57,10 @@ const ALONG = [-9.6, -4.8, 0, 4.8, 9.6];
 // The north wall, clear of portals, takes one more.
 const NORTH = [-10, -6, -2, 2, 6, 10];
 const ENDS = [-4.5, -1.5, 1.5];
-// Eight, so every brand has a board (thirty-three, with Aqualis, mission
-// 114; Meridale retired to make room, 2026-10-31).
-const MIDDLE = [-10.5, -7.5, -4.5, -1.5, 1.5, 4.5, 7.5, 10.5];
+// Nine, so every brand has a board (thirty-four, with Veldkamp,
+// 2026-11-01; Meridale retired to make room, 2026-10-31), a board's
+// width and half a metre apart.
+const MIDDLE = Array.from({ length: 9 }, (_, i) => -10.5 + i * 2.625);
 /** How far each face of a freestanding board stands off its middle. */
 const STAND_OFF = 0.03;
 const HANGS: Hang[] = [
@@ -80,7 +81,7 @@ const HANGS: Hang[] = [
     facing: Math.PI / 2,
     off: WALL_OFF,
   })),
-  // The pool trade's brands and those after, on seven freestanding
+  // The pool trade's brands and those after, on nine freestanding
   // double-sided boards down the middle of the room: their south faces
   // west to east, then their north faces east to west.
   ...MIDDLE.map((x) => ({ x, z: 0, facing: 0, off: STAND_OFF })),

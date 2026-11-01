@@ -1,9 +1,15 @@
 import { CO2_PANEL_PORTS, CO2_PANEL_SIZE } from '../logic/co2-fittings';
 
-import { Group, Mesh, MeshStandardMaterial, SphereGeometry } from 'three';
+import {
+  CatmullRomCurve3,
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  SphereGeometry,
+  TubeGeometry,
+  Vector3,
+} from 'three';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
-import { createSevenSegment } from '../../components/core/views/eighties-controls';
-import type { SevenSegment } from '../../components/core/views/eighties-controls';
 import { createEngravedPlate } from '../../components/core/views/plant-signs';
 import { createBrandBadge } from '../../components/core/views/brand-badge';
 import { panelMakerMark } from '../../components/core/views/panel-maker-mark';
@@ -18,6 +24,12 @@ import {
 import type { PartSet } from '../../components/core/parts/parts';
 import { createSolenoidValve } from '../../components/plant/views/solenoid-valve';
 import {
+  MFC_CONNECTOR,
+  MFC_END,
+  MFC_SIZE,
+  createMassFlowController,
+} from './co2-mass-flow-controller';
+import {
   CO2_DOSERS,
   CO2_FAULT_TEXT,
   CO2_PANEL,
@@ -27,6 +39,7 @@ import type {
   Co2DoserKind,
   Co2DoserMode,
   Co2Fault,
+  Co2Override,
 } from '../../../game/plant/co2-dosing';
 
 /**
@@ -38,15 +51,18 @@ import type {
  * and its pressure switch with the INLET gauge, the second-stage regulator
  * with its WORKING gauge, the dosing valve (the Lounge's solenoid valve,
  * its coil's lamp lit while open; the Olympic's thermal mass flow
- * controller with its own LED readout of g/h), the flow meter (the
- * Lounge's glass-tube rotameter with its float and needle valve; the
- * Olympic's flow is on its controller's readout), and the non-return valve
- * before the line goes down to the injection point. On the right, its
- * control box: the POWER, DOSING and REMOTE lamps, a lamp for each fault,
- * the REMOTE · MANUAL · OFF selector (a local control), the manual rate
- * (a potentiometer on the Lounge's, ▲ and ▼ on the Olympic's, with its set
- * point shown), RESET for its latched faults, and the cable gland to the
- * Trio's CO₂ port.
+ * controller, `co2-mass-flow-controller.ts`, an instrument of its own on
+ * its bracket, the copper jogging out to its inlet fitting and back from
+ * its outlet, its signal cable looping to the control box), the flow
+ * meter (the Lounge's glass-tube rotameter with its float and needle
+ * valve; the Olympic's flow is on its controller's LCD), and the
+ * non-return valve before the line goes down to the injection point. On
+ * the right, its control box: the POWER, DOSING and REMOTE lamps, a lamp
+ * for each fault, the REMOTE · MANUAL · OFF selector on the Lounge's (OFF
+ * · ON on the Olympic's, whose controller's own HAND · AUTO toggle chooses
+ * MANUAL or REMOTE), the Lounge's manual rate potentiometer (the Olympic's
+ * set point is on its controller's ▲ ▼), RESET for its latched faults,
+ * and the cable gland to the Trio's CO₂ port.
  *
  * It holds nothing: `read` gives it its panel (`Co2Doser`) and its inlet
  * pressure each frame, and its controls call `controls`, which the world
@@ -64,6 +80,8 @@ export const CO2_PANEL_MODES: readonly Co2DoserMode[] = [
   'off',
 ];
 export const CO2_PANEL_LEGEND = 'REMOTE · MANUAL · OFF';
+/** The mass flow controller panel's switch, left to right as engraved. */
+export const CO2_PANEL_ON_LEGEND = 'OFF · ON';
 
 /** The fault lamps, in the order engraved down the control box. */
 export const CO2_PANEL_FAULTS: readonly Co2Fault[] = [
@@ -75,13 +93,16 @@ export const CO2_PANEL_FAULTS: readonly Co2Fault[] = [
   'valve-stuck',
 ];
 
-/** The Olympic's ▲ and ▼ step its manual set point by this, g/h. */
-export const CO2_PANEL_RATE_STEP = 100;
-
 export interface Co2PanelControls {
   setMode(mode: Co2DoserMode): void;
   setManualRate(gh: number): void;
   reset(): void;
+  /** The mass flow controller panel's OFF · ON switch. */
+  setOn(on: boolean): void;
+  /** The mass flow controller's HAND · AUTO toggle. */
+  setHand(hand: boolean): void;
+  /** The mass flow controller's valve OVERRIDE. */
+  setOverride(override: Co2Override): void;
 }
 
 export interface Co2PanelReading {
@@ -173,27 +194,90 @@ export function createCo2DosingPanel(
   // rotameter's glass, which carries the gas itself).
   const rotaTop = -0.13 + 0.15 / 2 + 0.017;
   const rotaFoot = -0.13 - 0.15 / 2 - 0.017;
-  for (const [y0, y1] of kind === 'solenoid'
-    ? [
-        [h / 2, rotaTop],
-        [rotaFoot, -h / 2],
-      ]
-    : [[h / 2, -h / 2]])
-    t.cyl(object, copper, r, y0 - y1, x, (y0 + y1) / 2, z, 'y', 12);
+  /** A run of copper through `points` (each leg along an axis), its bends rounded. */
+  const run = (points: readonly [number, number][], radius: number) => {
+    for (let k = 1; k < points.length; k++) {
+      const [x0, y0] = points[k - 1];
+      const [x1, y1] = points[k];
+      const along = x0 === x1 ? 'y' : 'x';
+      const l = Math.abs(along === 'y' ? y1 - y0 : x1 - x0);
+      t.cyl(
+        object,
+        copper,
+        radius,
+        l,
+        (x0 + x1) / 2,
+        (y0 + y1) / 2,
+        z,
+        along,
+        12,
+      );
+      if (k < points.length - 1) {
+        const bend = new Mesh(new SphereGeometry(radius, 12, 8), copper);
+        bend.position.set(x1, y1, z);
+        object.add(bend);
+      }
+    }
+  };
+  // The mass flow controller, on its bracket in the line's place: the
+  // copper jogs out to its inlet's fitting and back from its outlet's,
+  // reduced to its 10 mm tube and back.
+  const mfcAt = { x, y: 0 };
+  const jog = { top: 0.135, left: x - 0.105, foot: -0.065, right: x + 0.11 };
+  if (kind === 'solenoid')
+    for (const [y0, y1] of [
+      [h / 2, rotaTop],
+      [rotaFoot, -h / 2],
+    ])
+      t.cyl(object, copper, r, y0 - y1, x, (y0 + y1) / 2, z, 'y', 12);
+  else {
+    const tube = MFC_SIZE.tube;
+    const reducer = 0.012;
+    run(
+      [
+        [x, h / 2],
+        [x, jog.top + reducer],
+      ],
+      r,
+    );
+    run(
+      [
+        [x, jog.top + reducer],
+        [x, jog.top],
+        [jog.left, jog.top],
+        [jog.left, mfcAt.y],
+        [mfcAt.x - MFC_END + 0.004, mfcAt.y],
+      ],
+      tube,
+    );
+    run(
+      [
+        [mfcAt.x + MFC_END - 0.004, mfcAt.y],
+        [jog.right, mfcAt.y],
+        [jog.right, jog.foot],
+        [x, jog.foot],
+        [x, jog.foot - reducer],
+      ],
+      tube,
+    );
+    run(
+      [
+        [x, jog.foot - reducer],
+        [x, -h / 2],
+      ],
+      r,
+    );
+    // Its reducers, 15 mm to 10 mm and back.
+    for (const y of [jog.top + reducer, jog.foot - reducer])
+      t.cyl(object, brass, r + 0.0012, 0.016, x, y, z, 'y', 12);
+  }
   // Its clips to the backboard, and the grey CO₂ band at the inlet (BS 1710).
-  for (const y of [0.36, 0.0, -0.36])
+  for (const y of kind === 'solenoid'
+    ? [0.36, 0.0, -0.36]
+    : [0.36, -0.2, -0.36])
     t.box(object, steel, 0.03, 0.012, 0.06, x, y, (back + z) / 2 + 0.01);
   t.cyl(object, t.paint('#b9bcbc', 0.6), r + 0.0012, 0.05, x, 0.4, z, 'y', 12);
   t.label(object, 'CO₂', x + 0.035, 0.4, z, 0.016, '#1b1b1b', '#e9e9e4');
-
-  const fresh = <T>(show: (v: T) => void) => {
-    let last: T | undefined;
-    return (v: T) => {
-      if (v === last) return;
-      last = v;
-      show(v);
-    };
-  };
 
   // The inlet pressure switch and the INLET gauge.
   t.box(object, dark, 0.045, 0.05, 0.04, x + 0.045, 0.3, z);
@@ -225,24 +309,45 @@ export function createCo2DosingPanel(
 
   // The dosing valve: the solenoid valve, or the mass flow controller.
   let solenoid: ReturnType<typeof createSolenoidValve> | null = null;
-  let readout: SevenSegment | null = null;
+  let mfc: ReturnType<typeof createMassFlowController> | null = null;
   if (kind === 'solenoid') {
     solenoid = createSolenoidValve(kit, 0.03);
     solenoid.group.position.set(x, 0.05, z);
     object.add(solenoid.group);
     t.label(object, 'SOLENOID NC', x + 0.085, 0.05, z + 0.02, 0.011);
   } else {
-    const body = t.paint('#3e5566', 0.45, 0.2);
-    t.box(object, body, 0.1, 0.16, 0.08, x, 0.04, z + 0.015);
-    t.box(object, dark, 0.07, 0.03, 0.002, x, 0.085, z + 0.056);
-    readout = createSevenSegment(kit, 4, { digitHeight: 0.012 });
-    readout.group.position.set(x, 0.085, z + 0.058);
-    object.add(readout.group);
-    t.label(object, 'g/h', x + 0.04, 0.06, z + 0.056, 0.01, '#e9e9e4');
-    t.label(object, 'MASS FLOW', x, 0.02, z + 0.056, 0.012, '#e9e9e4');
-    t.label(object, '0–2 kg/h CO₂', x, 0.0, z + 0.056, 0.011, '#c9d4da');
+    mfc = createMassFlowController(
+      kit,
+      read,
+      {
+        setHand: (hand) => controls.setHand(hand),
+        setManualRate: (rate) => controls.setManualRate(rate),
+        setOverride: (o) => controls.setOverride(o),
+      },
+      parts,
+      `${name}: mass flow controller`,
+    );
+    mfc.object.position.set(mfcAt.x, mfcAt.y, z);
+    object.add(mfc.object);
+    // Its signal cable, grey, looping from its M12 connector over to the
+    // control box's side, where it goes in through a gland.
+    const from = new Vector3(...MFC_CONNECTOR).add(
+      new Vector3(mfcAt.x, mfcAt.y, z),
+    );
+    const boxSide = 0.02;
+    const cable = new CatmullRomCurve3([
+      from,
+      from.clone().add(new Vector3(0.004, 0.025, 0)),
+      new Vector3(from.x + 0.06, from.y + 0.03, z + 0.01),
+      new Vector3(boxSide - 0.05, 0.06, z + 0.01),
+      new Vector3(boxSide - 0.008, 0.02, z),
+      new Vector3(boxSide, 0.02, z),
+    ]);
+    object.add(
+      new Mesh(new TubeGeometry(cable, 40, 0.0028, 8), t.paint('#7a7f83', 0.7)),
+    );
+    t.cyl(object, dark, 0.006, 0.012, boxSide - 0.004, 0.02, z, 'x', 6);
   }
-  const showReadout = fresh<string>((s) => readout?.show(s));
 
   // The flow meter: the Lounge's glass-tube rotameter, its float and needle valve.
   let float: Mesh | null = null;
@@ -364,22 +469,33 @@ export function createCo2DosingPanel(
     return { f, l };
   });
   const mode = parts.add(
-    selector(kit, {
-      positions: 3,
-      bound: {
-        get value() {
-          return CO2_PANEL_MODES.indexOf(read().doser.mode);
-        },
-        set: (k: number) => controls.setMode(CO2_PANEL_MODES[k]),
-      },
-      legend: CO2_PANEL_LEGEND,
-      name: `${name}: ${CO2_PANEL_LEGEND} selector`,
-    }),
+    kind === 'solenoid'
+      ? selector(kit, {
+          positions: 3,
+          bound: {
+            get value() {
+              return CO2_PANEL_MODES.indexOf(read().doser.mode);
+            },
+            set: (k: number) => controls.setMode(CO2_PANEL_MODES[k]),
+          },
+          legend: CO2_PANEL_LEGEND,
+          name: `${name}: ${CO2_PANEL_LEGEND} selector`,
+        })
+      : selector(kit, {
+          positions: 2,
+          bound: {
+            get value() {
+              return read().doser.mode === 'off' ? 0 : 1;
+            },
+            set: (k: number) => controls.setOn(k === 1),
+          },
+          legend: CO2_PANEL_ON_LEGEND,
+          name: `${name}: ${CO2_PANEL_ON_LEGEND} selector`,
+        }),
   );
   mode.object.position.set(-0.07, -0.1, front);
   box.add(mode.object);
   const most = () => read().doser.spec.most;
-  let showSetPoint: ((s: string) => void) | null = null;
   if (kind === 'solenoid') {
     // A ten-turn potentiometer: the share of the needle valve's flow in MANUAL.
     const pot = parts.add(
@@ -397,37 +513,6 @@ export function createCo2DosingPanel(
     );
     pot.object.position.set(0.08, -0.1, front);
     box.add(pot.object);
-  } else {
-    // The manual set point, its readout and ▲ ▼.
-    const sp = createSevenSegment(kit, 4, { digitHeight: 0.01 });
-    sp.group.position.set(0.08, -0.068, front + 0.001);
-    box.add(sp.group);
-    t.label(box, 'MANUAL SP g/h', 0.08, -0.045, front, 0.009, '#30383e');
-    const showSp = fresh<string>((s) => sp.show(s));
-    const step = (sign: 1 | -1) =>
-      parts.add(
-        pushButton(kit, {
-          colour: 'grey',
-          symbol: sign > 0 ? '▲' : '▼',
-          name: `${name}: manual set point ${sign > 0 ? 'up' : 'down'}`,
-          action: () =>
-            controls.setManualRate(
-              Math.max(
-                0,
-                Math.min(
-                  most(),
-                  read().doser.manualRate + sign * CO2_PANEL_RATE_STEP,
-                ),
-              ),
-            ),
-        }),
-      );
-    const down = step(-1);
-    const up = step(1);
-    down.object.position.set(0.05, -0.12, front);
-    up.object.position.set(0.11, -0.12, front);
-    box.add(down.object, up.object);
-    showSetPoint = showSp;
   }
   const reset = parts.add(
     pushButton(kit, {
@@ -480,8 +565,7 @@ export function createCo2DosingPanel(
           solenoid.setOpen(open);
         }
       }
-      showSetPoint?.(gh(doser.manualRate));
-      if (readout) showReadout(doser.powered ? gh(doser.delivering) : '    ');
+      mfc?.update(delta);
       if (float) {
         // The float rides on the flow while the valve is open, damped.
         const flow = doser.open ? doser.delivering : 0;
@@ -495,7 +579,8 @@ export function createCo2DosingPanel(
     },
     status() {
       const { doser } = read();
-      return `${doser.mode.toUpperCase()} · ${Math.round(doser.delivering)} g/h${doser.fault ? ` · ${CO2_FAULT_TEXT[doser.fault]}` : ''}`;
+      const own = `${doser.mode.toUpperCase()} · ${Math.round(doser.delivering)} g/h${doser.fault ? ` · ${CO2_FAULT_TEXT[doser.fault]}` : ''}`;
+      return mfc ? `${own} · its controller: ${mfc.status()}` : own;
     },
     dispose() {
       parts.dispose();

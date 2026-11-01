@@ -338,6 +338,26 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   // written at 67 or 68 before mission 118's racks merged still has the
   // cylinders' shape; `fillDefaults` gives it two full racks.)
   67: (world) => world,
+  // 68 → 69: the Olympic's CO₂ mass flow controller's own controls (the
+  // owner, 2026-11-01): its valve OVERRIDE at NORMAL, its HAND · AUTO
+  // toggle where its panel's mode puts it (HAND for MANUAL, else AUTO),
+  // and its totaliser from nought; on both panels, so their shape is one.
+  68: (world) => {
+    const w = world as { co2?: { dosers?: Record<string, unknown> } };
+    const dosers = w.co2?.dosers;
+    if (!isRecord(dosers)) return world;
+    const next: Record<string, unknown> = {};
+    for (const [id, d] of Object.entries(dosers))
+      next[id] = isRecord(d)
+        ? {
+            ...d,
+            override: 'normal',
+            hand: d.mode === 'manual',
+            totalG: typeof d.totalG === 'number' ? d.totalG : 0,
+          }
+        : d;
+    return { ...w, co2: { ...w.co2, dosers: next } };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

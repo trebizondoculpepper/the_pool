@@ -6,7 +6,14 @@ import {
   trioWindows,
 } from './aqualis-annunciator';
 import { serviceAvailable } from './services';
-import { CO2_WINDOWS, CO2_WINDOW_TEXT, co2Windows } from './co2-annunciator';
+import {
+  CO2_OVERRIDE_TEXT,
+  CO2_OVERRIDE_WINDOW,
+  CO2_WINDOWS,
+  CO2_WINDOW_TEXT,
+  co2Overridden,
+  co2Windows,
+} from './co2-annunciator';
 import { dayTankLowAt } from './lounge-annunciator';
 import { plantReadingOf } from '../../toolkit/gallery/logic/world-reading';
 import type { AlarmId } from '../../toolkit/gallery/logic/control-room-demo';
@@ -52,13 +59,14 @@ export const OLYMPIC_ALARMS = [
   // to 30, two of them spare ways (as boards were bought with).
   ...TRIO_WINDOWS.pool_02,
   // Its CO₂ system's (mission 118, `co2-annunciator.ts`), the board grown
-  // from 30 windows to 36, one of them a spare way.
+  // from 30 windows to 36, one of them a spare way; that way now its mass
+  // flow controller's valve OVERRIDE (2026-11-01).
   ...CO2_WINDOWS,
-  'spare',
+  CO2_OVERRIDE_WINDOW,
 ] as const;
 export type OlympicAlarmId = (typeof OLYMPIC_ALARMS)[number];
 
-/** Each window's engraving, two short lines (the spare's blank). */
+/** Each window's engraving, two short lines. */
 export const OLYMPIC_ALARM_TEXT: Record<OlympicAlarmId, string> = {
   'bt-low': 'BALANCE TANK\nLOW',
   'circ-tripped': 'CIRC TRIPPED\nBT LOW-LOW',
@@ -84,7 +92,7 @@ export const OLYMPIC_ALARM_TEXT: Record<OlympicAlarmId, string> = {
   'power-fail': 'ROOM POWER\nFAIL',
   ...TRIO_WINDOW_TEXT,
   ...CO2_WINDOW_TEXT,
-  spare: '',
+  [CO2_OVERRIDE_WINDOW]: CO2_OVERRIDE_TEXT,
 };
 
 /** Free chlorine's band, mg/l, and pH's, as the main board's (`world-reading.ts`). */
@@ -133,6 +141,7 @@ export function olympicAlarms(world: World): OlympicAlarmId[] {
     ...Object.fromEntries(
       co2Windows(world.co2, 'plant_pool_02').map((w) => [w, true]),
     ),
+    [CO2_OVERRIDE_WINDOW]: co2Overridden(world.co2, 'plant_pool_02'),
   };
   return OLYMPIC_ALARMS.filter((id) => {
     const from = FROM_MAIN[id];

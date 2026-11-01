@@ -11,6 +11,58 @@ import { WORLD_VERSION, applyAction, newWorld } from './world';
 import { FOOTBATH, partOpen } from './plant/identification';
 
 describe('a save', () => {
+  it('brings a version 68 save’s CO₂ panels up with the override NORMAL and the toggle where the mode puts it', () => {
+    const old = newWorld();
+    const strip = (d: Record<string, unknown>) => {
+      const { override: _o, hand: _h, totalG: _t, ...rest } = d;
+      return rest;
+    };
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 68,
+        savedAt: 5,
+        world: {
+          ...old,
+          co2: {
+            ...old.co2,
+            dosers: {
+              plant_pool_01: strip({ ...old.co2.dosers.plant_pool_01 }),
+              plant_pool_02: strip({
+                ...old.co2.dosers.plant_pool_02,
+                mode: 'manual',
+              }),
+            },
+          },
+        },
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    const { plant_pool_01: lounge, plant_pool_02: olympic } =
+      loaded.world.co2.dosers;
+    expect(olympic.override).toBe('normal');
+    expect(olympic.hand).toBe(true);
+    expect(olympic.mode).toBe('manual');
+    expect(olympic.totalG).toBe(0);
+    expect(lounge.override).toBe('normal');
+    expect(lounge.hand).toBe(false);
+  });
+
+  it('keeps the Olympic’s mass flow controller’s override through a save, a world action', () => {
+    const world = applyAction(newWorld(), {
+      type: 'co2/panel',
+      room: 'plant_pool_02',
+      action: { kind: 'override', override: 'open' },
+    });
+    expect(world.co2.dosers.plant_pool_02.override).toBe('open');
+    const loaded = deserialiseWorld(serialiseWorld(world, 5));
+    expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
+      'open',
+    );
+    expect(WORLD_VERSION).toBe(69);
+  });
+
   it('installs the normal CO₂ system when a version 65 save is loaded', () => {
     const { co2: _, ...before } = newWorld();
     const loaded = deserialiseWorld(

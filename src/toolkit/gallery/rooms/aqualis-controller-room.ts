@@ -621,6 +621,10 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
         setMode: (mode) => host.setCo2Mode(id, mode),
         setManualRate: (gh) => host.setCo2Rate(id, gh),
         reset: () => host.resetCo2(id),
+        setOn: (on) => host.actOnCo2(id, { kind: 'on', on }),
+        setHand: (hand) => host.actOnCo2(id, { kind: 'hand', hand }),
+        setOverride: (override) =>
+          host.actOnCo2(id, { kind: 'override', override }),
       },
       `${pool} pool CO₂ dosing valve controller`,
     );

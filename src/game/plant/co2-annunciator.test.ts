@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { newWorld, stepWorld } from '../world';
+import { applyAction, newWorld, stepWorld } from '../world';
+import { alarmEvents } from '../events/alarm-events';
+import type { GameEvent } from '../events/game-event';
 import { co2MimicLamps, co2Windows } from './co2-annunciator';
 import { newCo2Plant } from './co2-plant';
 import { setMaster, setPortOpen, tripMaster } from './co2-distribution';
@@ -90,5 +92,37 @@ describe('the CO₂ system’s windows and mimic lamps', () => {
     // A rack changed over is routine, logged ON and OFF; the rest are faults.
     expect('co2-bank-empty' in INFORMATIONAL_INDICATIONS).toBe(true);
     expect('co2-exhausted' in INFORMATIONAL_INDICATIONS).toBe(false);
+  });
+
+  it('shows the Olympic’s mass flow controller’s valve OVERRIDE in its spare way, logged ON and OFF, not an alarm', () => {
+    const w = newWorld();
+    expect(olympicAlarms(w)).not.toContain('co2-mfc-override');
+    const forced = applyAction(w, {
+      type: 'co2/panel',
+      room: 'plant_pool_02',
+      action: { kind: 'override', override: 'open' },
+    });
+    expect(olympicAlarms(forced)).toContain('co2-mfc-override');
+    expect(loungeAlarms(forced)).not.toContain('co2-mfc-override');
+    expect('co2-mfc-override' in INFORMATIONAL_INDICATIONS).toBe(true);
+    const on = stepWorld(forced, 1);
+    const out: GameEvent[] = [];
+    alarmEvents(w, on, undefined, out);
+    const line = out.find((e) => e.text.includes('OVERRIDDEN'));
+    expect(line?.text).toMatch(/: ON$/);
+    expect(line?.severity).toBe('info');
+    const back = stepWorld(
+      applyAction(on, {
+        type: 'co2/panel',
+        room: 'plant_pool_02',
+        action: { kind: 'override', override: 'normal' },
+      }),
+      1,
+    );
+    const off: GameEvent[] = [];
+    alarmEvents(on, back, undefined, off);
+    expect(off.find((e) => e.text.includes('OVERRIDDEN'))?.text).toMatch(
+      /: OFF$/,
+    );
   });
 });

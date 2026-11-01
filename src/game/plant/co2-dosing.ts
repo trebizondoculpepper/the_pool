@@ -19,9 +19,15 @@ import type { ChannelFeedback } from './aqualis-types';
  *   opening: open for demand × `cycle` seconds in each cycle, so the
  *   average is demand × the needle valve's setting (its `most`).
  * - **'mass-flow'** (the Olympic, the modern panel): a thermal mass flow
- *   controller (after Bronkhorst's EL-FLOW or Brooks's SLA series), its
+ *   controller (after Bronkhorst's EL-FLOW, Brooks's SLA5850 and Alicat's
+ *   MC; `doc/plans/co2-system.md`, "The mass flow controller"), its
  *   proportional valve and its meter in one body, holding the flow at
- *   demand × its range whatever the inlet pressure, while it can.
+ *   demand × its range whatever the inlet pressure, while it can. On its
+ *   own face: a HAND · AUTO toggle (AUTO is REMOTE, HAND is MANUAL at its
+ *   local set point) and a guarded valve OVERRIDE, CLOSE · NORMAL · OPEN,
+ *   as the real ones' valve override input (Brooks's VOR, Alicat's valve
+ *   hold and exhaust): forced shut, or fully open whatever the set point
+ *   says, but still shut by every interlock (`command`).
  *
  * Its local selector is REMOTE · MANUAL · OFF (`ChannelFeedback.mode`): in
  * REMOTE it doses as the Trio's 4–20 mA asks while the Trio's release
@@ -110,6 +116,30 @@ export const CO2_FAULT_TEXT: Record<Co2Fault, string> = {
   'valve-stuck': 'VALVE STUCK',
 };
 
+/**
+ * A mass flow controller's valve override (`doc/plans/co2-system.md`):
+ * NORMAL, its valve follows its set point; CLOSE, held shut (Alicat's
+ * "hold valve closed", Brooks's VOR below 0.3 V); OPEN, driven fully open
+ * (Alicat's exhaust, Brooks's VOR above 4.8 V), whatever its set point.
+ */
+export type Co2Override = 'close' | 'normal' | 'open';
+
+/** The override's positions, as engraved down its switch: OPEN at the top. */
+export const CO2_OVERRIDES: readonly Co2Override[] = [
+  'close',
+  'normal',
+  'open',
+];
+
+/**
+ * The mass flow controller's own figures. `purge`: what its valve passes
+ * fully open, a share of its range at working pressure (a real one's valve
+ * is sized with headroom over its range; Alicat's meter reads to 128 % of
+ * full scale, so its meter still shows it). `driveAtRange`: its valve drive
+ * at full scale on working pressure, %.
+ */
+export const CO2_MFC = { purge: 1.25, driveAtRange: 60 } as const;
+
 /** The faults it latches until RESET at the panel. */
 const LATCHING: readonly Co2Fault[] = ['flow-not-proved', 'valve-stuck'];
 
@@ -118,6 +148,17 @@ export type Co2DoserMode = ChannelFeedback['mode'];
 export interface Co2Doser {
   spec: Co2DoserSpec;
   mode: Co2DoserMode;
+  /**
+   * The mass flow controller's HAND · AUTO toggle at HAND (MANUAL) or AUTO
+   * (REMOTE): where it stands, kept while the panel is switched OFF so
+   * switching on brings back the mode it shows. For the solenoid panel it
+   * follows its selector.
+   */
+  hand: boolean;
+  /** The mass flow controller's valve override (NORMAL on the solenoid panel). */
+  override: Co2Override;
+  /** Its totaliser: grams it has dosed, ever. */
+  totalG: number;
   /** MANUAL's rate, g/h (0 to its most). */
   manualRate: number;
   powered: boolean;
@@ -144,6 +185,9 @@ export function newCo2Doser(spec: Co2DoserSpec): Co2Doser {
   return {
     spec,
     mode: 'remote',
+    hand: false,
+    override: 'normal',
+    totalG: 0,
     manualRate: spec.most / 2,
     powered: true,
     stuck: null,
@@ -254,12 +298,22 @@ export function openSeconds(
   return open;
 }
 
-/** What it is told to dose, g/h, and the fault stopping it, if any. */
+/**
+ * What it is told to dose, g/h, and the fault stopping it, if any. The
+ * override acts on the valve in place of its set point, as a real mass
+ * flow controller's valve override input does: it bypasses the set point
+ * (the Trio's 4–20 mA and release, HAND's rate, and so SIGNAL LOST, which
+ * is only about the set point), but not the panel: unpowered, OFF, the gas
+ * alarm's interlock, no supply, no water flowing at the injection point
+ * and a latched fault all still shut it, OPEN or not. Upstream, a shut
+ * wall port or master valve leaves it nothing to pass.
+ */
 function command(
   d: Co2Doser,
   i: Co2DoserInputs,
 ): { rate: number; fault: Co2Fault | null } {
   if (!d.powered) return { rate: 0, fault: null };
+  const forced = d.override !== 'normal';
   const blocked: Co2Fault | null = i.gasAlarm
     ? 'gas-alarm'
     : d.latched
@@ -268,12 +322,14 @@ function command(
         ? 'no-supply-pressure'
         : !i.waterFlowing
           ? 'no-water-flow'
-          : d.mode === 'remote' && i.ma < CO2_PANEL.brokenLoop
+          : d.mode === 'remote' && !forced && i.ma < CO2_PANEL.brokenLoop
             ? 'signal-lost'
             : null;
   if (blocked) return { rate: 0, fault: blocked };
   const most = d.spec.most;
   if (d.mode === 'off') return { rate: 0, fault: null };
+  if (d.override === 'close') return { rate: 0, fault: null };
+  if (d.override === 'open') return { rate: most * CO2_MFC.purge, fault: null };
   if (d.mode === 'manual')
     return { rate: Math.max(0, Math.min(most, d.manualRate)), fault: null };
   return { rate: i.release ? maToDemand(i.ma) * most : 0, fault: null };
@@ -306,25 +362,32 @@ export function stepCo2Doser(
     phase = (phase + dt) % spec.cycle;
     open = rate > 0 && phase < on;
   }
+  // Its valve's most: its range (its purge, driven fully open), less as
+  // the inlet falls.
+  const most = spec.most * (d.override === 'open' ? CO2_MFC.purge : 1);
   let flow =
     d.stuck === 'shut'
       ? 0
       : d.stuck === 'open'
         ? spec.most * share
-        : Math.min(expected, spec.most * share);
+        : Math.min(expected, most * share);
   if (d.stuck === 'shut') open = false;
   if (d.stuck === 'open') open = true;
   if (flow < 1e-9) flow = 0;
 
   // Proving: open and short (only the time it should be flowing counts);
-  // or flowing beyond what it was told.
-  const short = expected > 0 && flow < CO2_PANEL.proveShare * expected;
+  // or flowing beyond what it was told. Not while its valve is overridden:
+  // its controller knows the valve is forced, as a real one's alarms do.
+  const proving = d.override === 'normal';
+  const short =
+    proving && expected > 0 && flow < CO2_PANEL.proveShare * expected;
   const unproved = short
     ? d.unproved + dt
-    : rate > 0 && expected <= 0
+    : proving && rate > 0 && expected <= 0
       ? d.unproved
       : 0;
-  const flowingShut = flow > expected + CO2_PANEL.stuckShare * spec.most;
+  const flowingShut =
+    proving && flow > expected + CO2_PANEL.stuckShare * spec.most;
   const unwanted = flowingShut && d.powered ? d.unwanted + dt : 0;
   let latched = d.latched;
   if (!latched && d.powered) {
@@ -345,6 +408,7 @@ export function stepCo2Doser(
       open,
       delivering: flow,
       asked: rate,
+      totalG: d.totalG + (flow * dt) / 3600,
     },
     grams: (flow * dt) / 3600,
   };
@@ -360,8 +424,56 @@ export const co2Draw = (d: Co2Doser, i: Co2DoserInputs, dt: number) =>
 
 // ---- What can be done to it ------------------------------------------------------
 
+/** Its selector turned: REMOTE or MANUAL also set the HAND · AUTO toggle's position. */
 export const setCo2Mode = (d: Co2Doser, mode: Co2DoserMode): Co2Doser =>
-  d.mode === mode ? d : { ...d, mode };
+  d.mode === mode
+    ? d
+    : { ...d, mode, hand: mode === 'off' ? d.hand : mode === 'manual' };
+
+/**
+ * The mass flow controller's HAND · AUTO toggle: HAND is MANUAL, at its
+ * local set point (▲ ▼); AUTO is REMOTE, following the Trio's 4–20 mA.
+ * With the panel switched OFF it only moves the toggle.
+ */
+export const setCo2Hand = (d: Co2Doser, hand: boolean): Co2Doser =>
+  d.hand === hand
+    ? d
+    : {
+        ...d,
+        hand,
+        mode: d.mode === 'off' ? 'off' : hand ? 'manual' : 'remote',
+      };
+
+/**
+ * The mass flow controller panel's ON · OFF switch (its control box's, in
+ * place of the solenoid panel's three-way selector's OFF): on, it doses in
+ * the mode its HAND · AUTO toggle shows.
+ */
+export const setCo2On = (d: Co2Doser, on: boolean): Co2Doser =>
+  setCo2Mode(d, on ? (d.hand ? 'manual' : 'remote') : 'off');
+
+/** The mass flow controller's valve override (the solenoid panel has none). */
+export const setCo2Override = (d: Co2Doser, override: Co2Override): Co2Doser =>
+  d.spec.kind !== 'mass-flow' || d.override === override
+    ? d
+    : { ...d, override };
+
+/**
+ * The mass flow controller's valve drive, %, as its display shows it: 0
+ * shut, 100 driven fully open (OVERRIDE OPEN, or straining against a
+ * falling inlet), else in proportion to its flow, `driveAtRange` at full
+ * scale on working pressure.
+ */
+export function co2ValveDrive(d: Co2Doser, inletBar: number): number {
+  if (!d.powered || !d.open) return 0;
+  if (d.override === 'open') return 100;
+  const share = pressureShare(inletBar);
+  if (share <= 0) return 100;
+  return Math.min(
+    100,
+    (CO2_MFC.driveAtRange * d.asked) / (d.spec.most * share),
+  );
+}
 
 /** MANUAL's rate, g/h, clamped to 0 and its most. */
 export const setCo2ManualRate = (d: Co2Doser, rate: number): Co2Doser => ({
@@ -394,6 +506,9 @@ export const resetCo2Doser = (d: Co2Doser): Co2Doser =>
 /** What can be done at a panel itself (its local controls), as one world action. */
 export type Co2PanelAction =
   | { kind: 'mode'; mode: Co2DoserMode }
+  | { kind: 'hand'; hand: boolean }
+  | { kind: 'on'; on: boolean }
+  | { kind: 'override'; override: Co2Override }
   | { kind: 'rate'; gh: number }
   | { kind: 'reset' };
 
@@ -402,6 +517,12 @@ export function actOnCo2Doser(d: Co2Doser, a: Co2PanelAction): Co2Doser {
   switch (a.kind) {
     case 'mode':
       return setCo2Mode(d, a.mode);
+    case 'hand':
+      return setCo2Hand(d, a.hand);
+    case 'on':
+      return setCo2On(d, a.on);
+    case 'override':
+      return setCo2Override(d, a.override);
     case 'rate':
       return setCo2ManualRate(d, a.gh);
     case 'reset':

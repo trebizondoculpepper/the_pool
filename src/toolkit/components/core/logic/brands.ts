@@ -83,7 +83,9 @@ export type BrandMark =
   /** A gas cylinder, its shoulder banded. */
   | 'cylinder'
   /** A glossy water orb, a leaf curled round its foot. */
-  | 'orb';
+  | 'orb'
+  /** A flow arrow passing straight through a square. */
+  | 'flowsquare';
 
 /** Every brand's id: a part names its maker by one of these. */
 export type BrandId =
@@ -119,7 +121,8 @@ export type BrandId =
   | 'plantrooms'
   | 'stannard'
   | 'arncliffe'
-  | 'aqualis';
+  | 'aqualis'
+  | 'veldkamp';
 
 export interface Brand {
   id: BrandId;
@@ -593,6 +596,24 @@ export const BRANDS: readonly Brand[] = [
       'A pool that diagnoses itself: every reading, from a single sample, in real time',
     mark: 'orb',
     colours: ['#1d86c6', '#86d143', '#0d2f4a'],
+    type: 'sans',
+  },
+  {
+    // The Olympic's CO₂ mass flow controller's maker (the owner,
+    // 2026-11-01): a Dutch maker of thermal mass flow instruments, after
+    // Bronkhorst, from rural Gelderland. Our own invention; the owner may
+    // rename it, here only.
+    id: 'veldkamp',
+    name: 'Veldkamp Massflow B.V.',
+    wordmark: 'VELDKAMP',
+    tagline: 'Every gram counted',
+    founded: 1984,
+    country: 'Netherlands',
+    makes:
+      'Thermal mass flow meters and controllers for gases and liquids: the MF series',
+    promise: 'A flow measured by its mass, held to its set point, gram by gram',
+    mark: 'flowsquare',
+    colours: ['#8a9096', '#1f5fa8', '#111315'],
     type: 'sans',
   },
 ];

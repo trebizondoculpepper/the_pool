@@ -411,9 +411,17 @@ function said(
         text:
           a.kind === 'mode'
             ? `CO₂ dosing panel turned to ${a.mode.toUpperCase()}`
-            : a.kind === 'rate'
-              ? `CO₂ dosing panel’s manual rate set to ${Math.round(d.manualRate)} g/h`
-              : 'CO₂ dosing panel RESET',
+            : a.kind === 'on'
+              ? `CO₂ dosing panel switched ${a.on ? 'ON' : 'OFF'}`
+              : a.kind === 'hand'
+                ? `CO₂ mass flow controller switched to ${a.hand ? 'HAND' : 'AUTO'}`
+                : a.kind === 'override'
+                  ? a.override === 'normal'
+                    ? 'CO₂ mass flow controller’s valve OVERRIDE back to NORMAL'
+                    : `CO₂ mass flow controller’s valve OVERRIDE to ${a.override.toUpperCase()}: its valve forced ${a.override === 'open' ? 'fully open' : 'shut'}`
+                  : a.kind === 'rate'
+                    ? `CO₂ dosing panel’s manual rate set to ${Math.round(d.manualRate)} g/h`
+                    : 'CO₂ dosing panel RESET',
       };
     }
     case 'co2/swap': {

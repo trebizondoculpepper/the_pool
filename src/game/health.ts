@@ -544,4 +544,9 @@ export const INFORMATIONAL_INDICATIONS = {
   // SUPPLY EXHAUSTED, with neither rack left, is the fault.
   'co2-bank-empty':
     'a CO₂ rack spent and the manifold changed over to the full one: routine, a delivery is due',
+  // The owner, 2026-11-01: the Olympic's mass flow controller's valve
+  // forced OPEN or CLOSE at its own face, a deliberate act, the interlocks
+  // still stopping it: shown and logged, not an alarm.
+  'co2-mfc-override':
+    'the CO₂ mass flow controller’s valve forced open or shut at its own face: an operator’s deliberate act, the interlocks still in force',
 } as const;

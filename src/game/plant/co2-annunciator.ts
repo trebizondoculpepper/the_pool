@@ -68,6 +68,24 @@ export function co2Windows(co2: Co2Plant, room: Co2PortId): Co2WindowId[] {
 }
 
 /**
+ * The Olympic's board's window for its mass flow controller's valve
+ * OVERRIDE (the owner, 2026-11-01), in its spare way: lit while the
+ * override is at OPEN or CLOSE on a powered controller. A status window,
+ * not an alarm (`INFORMATIONAL_INDICATIONS`): forcing the valve is an
+ * operator's deliberate act at the panel, and the interlocks still stop
+ * it, so it is shown and logged ON and OFF, as a forced point is on a
+ * control system, rather than sounded.
+ */
+export const CO2_OVERRIDE_WINDOW = 'co2-mfc-override';
+export const CO2_OVERRIDE_TEXT = 'CO₂ MFC VALVE\nOVERRIDDEN';
+
+/** Whether `room`'s panel's valve is overridden now, as its window shows. */
+export function co2Overridden(co2: Co2Plant, room: Co2PortId): boolean {
+  const d = co2.dosers[room];
+  return d.powered && d.override !== 'normal';
+}
+
+/**
  * The water-treatment mimics' CO₂ section's two warning lamps (decision
  * 10): CO₂ PRESSURE LOW from the line's LINE PRESSURE LOW or its room's
  * wall port's own NO SUPPLY PRESSURE (its panel's inlet switch, which
