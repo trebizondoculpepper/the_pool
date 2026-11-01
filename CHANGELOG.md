@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.12.0] - 2026-11-01
+
 ### Added
 
 - Three ready-to-upload YouTube channel banners and two square logo treatments for The Pool, with editable source, using the approved roundel and a mobile-safe central title area (`doc/marketing/youtube/`).
@@ -1154,7 +1156,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.8.0...v0.9.0
