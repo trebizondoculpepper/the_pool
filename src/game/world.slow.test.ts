@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, appealOf, applyAction, newWorld } from './world';
 import { POOL_IDS, POOL_TARGET } from './plant/pools';
+import { serviceAvailable } from './plant/services';
 import { runOut } from './world.test-support';
 
 describe('the bathers and the water', () => {
@@ -110,4 +111,32 @@ describe('the mains water off', () => {
     // About 50 s alone; with the advice verification suite beside it in a full
     // run, over two minutes.
   }, 300_000);
+});
+
+// Ten hours of world time, then twenty minutes more: over 5 s on CI's runner.
+describe('the main incoming switch off', () => {
+  it('takes every service from every room, stops every pool and the booster set, and gives them back', () => {
+    let w = advance(newWorld(), 10 * 3600, 10);
+    w = applyAction(w, { type: 'plant/source', utility: 'power', on: false });
+    for (const room of Object.keys(
+      w.plant.feeders,
+    ) as (keyof typeof w.plant.feeders)[])
+      for (const utility of [
+        'power',
+        'water',
+        'heat',
+        'air',
+        'chemical',
+      ] as const)
+        expect(
+          serviceAvailable(w.plant, room, utility),
+          `${room} ${utility}`,
+        ).toBe(false);
+    w = advance(w, 600, 10);
+    for (const id of POOL_IDS) expect(w.pools[id].flow, id).toBeLessThan(1);
+    expect(w.wetHall.boosterRunning).toBe(false);
+    w = applyAction(w, { type: 'plant/source', utility: 'power', on: true });
+    w = advance(w, 600, 10);
+    for (const id of POOL_IDS) expect(w.pools[id].flow, id).toBeGreaterThan(5);
+  });
 });

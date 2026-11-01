@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Fixed
+
+- The release build no longer times out on GitHub's slower runner: the main incoming switch test (ten hours of world time) and the thermostat's heating and cooling tests (hours each) have moved to `*.slow.test.ts` files, which CI skips and `npm test` still runs locally.
+
 ## [0.10.0] - 2026-11-01
 
 ### Added

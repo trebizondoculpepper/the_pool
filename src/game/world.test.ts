@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from './world';
 import { roomRunning, serviceAvailable } from './plant/services';
-import { POOL_IDS } from './plant/pools';
 
 describe('the world', () => {
   it('carries the Jacuzzi fibre illuminator controls between rooms', () => {
@@ -80,33 +79,6 @@ describe('the world', () => {
     );
     expect(later.pools.pool_01.ph).toBeGreaterThan(initial.pools.pool_01.ph);
     expect(later.pools.pool_02.flow).toBeGreaterThan(600);
-  });
-});
-
-describe('the main incoming switch off', () => {
-  it('takes every service from every room, stops every pool and the booster set, and gives them back', () => {
-    let w = advance(newWorld(), 10 * 3600, 10);
-    w = applyAction(w, { type: 'plant/source', utility: 'power', on: false });
-    for (const room of Object.keys(
-      w.plant.feeders,
-    ) as (keyof typeof w.plant.feeders)[])
-      for (const utility of [
-        'power',
-        'water',
-        'heat',
-        'air',
-        'chemical',
-      ] as const)
-        expect(
-          serviceAvailable(w.plant, room, utility),
-          `${room} ${utility}`,
-        ).toBe(false);
-    w = advance(w, 600, 10);
-    for (const id of POOL_IDS) expect(w.pools[id].flow, id).toBeLessThan(1);
-    expect(w.wetHall.boosterRunning).toBe(false);
-    w = applyAction(w, { type: 'plant/source', utility: 'power', on: true });
-    w = advance(w, 600, 10);
-    for (const id of POOL_IDS) expect(w.pools[id].flow, id).toBeGreaterThan(5);
   });
 });
 
