@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Research on how a UK leisure centre's boiler house is controlled (sequence controller, staging, lead rotation, ignition sequence) with a proposal for the game's boiler sequencer and boiler sounds: `doc/research/boiler-house-control.md`.
+
 ### Changed
 
 - The wet hall's Fresh Water Distribution and Pit Inflow Sources mimics are the standard board's size, 2.4 × 1.2 m like the Lounge pool filters mimic, their layouts drawn closer, and their readouts show the digits alone, without the one-line LCD under each (the owner, 2026-11-01: they were huge for very little information); a mimic may now leave out its readouts' legends (`readoutLegends: false`).
