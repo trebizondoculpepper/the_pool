@@ -15,7 +15,11 @@ import {
 } from '../../components/core/parts/parts';
 import type { PartSet } from '../../components/core/parts/parts';
 import { createSolenoidValve } from '../../components/plant/views/solenoid-valve';
-import { CO2_FAULT_TEXT, CO2_PANEL } from '../../../game/plant/co2-dosing';
+import {
+  CO2_DOSERS,
+  CO2_FAULT_TEXT,
+  CO2_PANEL,
+} from '../../../game/plant/co2-dosing';
 import type {
   Co2Doser,
   Co2DoserKind,
@@ -248,7 +252,11 @@ export function createCo2DosingPanel(
   let float: Mesh | null = null;
   const tube = 0.15;
   /** The rotameter's range: its needle valve's setting as built, g/h. */
-  const range = Math.max(1, read().doser.spec.most);
+  const range = Math.max(
+    1,
+    (kind === 'solenoid' ? CO2_DOSERS.plant_pool_01 : CO2_DOSERS.plant_pool_02)
+      .most,
+  );
   const floatLow = -0.13 - tube * 0.42;
   if (kind === 'solenoid') {
     const glass = new MeshStandardMaterial({
@@ -362,7 +370,6 @@ export function createCo2DosingPanel(
   const mode = parts.add(
     selector(kit, {
       positions: 3,
-      initial: CO2_PANEL_MODES.indexOf(read().doser.mode),
       bound: {
         get value() {
           return CO2_PANEL_MODES.indexOf(read().doser.mode);
@@ -382,7 +389,6 @@ export function createCo2DosingPanel(
     const pot = parts.add(
       potentiometer(kit, {
         steps: 10,
-        initial: read().doser.manualRate / Math.max(1, most()),
         bound: {
           get value() {
             return Math.round((read().doser.manualRate / most()) * 10);
@@ -441,7 +447,7 @@ export function createCo2DosingPanel(
   t.cyl(box, dark, 0.011, 0.03, 0.09, -bh / 2 - 0.015, bd / 2, 'y', 12);
   t.label(
     box,
-    'TO TRIO CO₂ PORT',
+    'CABLE TO TRIO · CO₂',
     -0.03,
     -bh / 2 + 0.02,
     front,

@@ -327,14 +327,14 @@ function modelFor(
   const pool = /^plant_(pool_0[1-4])$/.exec(room)?.[1] as PoolId | undefined;
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-panel') {
     const port = `plant_${pool}` as const;
-    const store = roomWorld();
+    const store = () => roomWorld();
     const act = (action: Co2PanelAction) =>
-      store.dispatch({ type: 'co2/panel', room: port, action });
+      store().dispatch({ type: 'co2/panel', room: port, action });
     const panel = createCo2DosingPanel(
       kit,
       CO2_DOSERS[port].kind,
       () => {
-        const co2 = store.world.value.co2;
+        const co2 = store().world.value.co2;
         return {
           doser: co2.dosers[port],
           inletBar: portPressure(co2.distribution, port),
