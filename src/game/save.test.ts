@@ -95,7 +95,38 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(71);
+    expect(WORLD_VERSION).toBe(73);
+  });
+
+  it('replaces an old Olympic DMX state with the commissioned DMH at 72 → 73', () => {
+    const old = newWorld();
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 72,
+        savedAt: 5,
+        world: {
+          ...old,
+          dosingPumps: {
+            ...old.dosingPumps,
+            pool_02: {
+              ...old.dosingPumps.pool_02,
+              hypochlorite: {
+                ...old.dosingPumps.pool_01.hypochlorite,
+                deliveredL: 42,
+              },
+            },
+          },
+        },
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.world.dosingPumps.pool_02.hypochlorite).toMatchObject({
+      kind: 'motor',
+      state: { strokeLength: 0.6, mode: 'analog', head: 'degassing' },
+      deliveredL: 0,
+    });
   });
 
   it('installs the normal CO₂ system when a version 65 save is loaded', () => {

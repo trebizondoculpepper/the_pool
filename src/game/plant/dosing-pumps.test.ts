@@ -33,19 +33,26 @@ function run(
 }
 
 describe('each pool’s dosing pumps in the world', () => {
-  it('are the pumps the rooms draw: DMX 1602 for hypochlorite, DDS 7.5-16 for acid, the spas’ ideal', () => {
+  it('has one commissioned DMH in the Olympic, with the lounge DMX and the acid DDS pumps', () => {
     const p = newDosingPumps();
-    expect(p.pool_02.hypochlorite.kind).toBe('solenoid');
+    expect(p.pool_01.hypochlorite.kind).toBe('solenoid');
+    expect(p.pool_02.hypochlorite.kind).toBe('motor');
+    expect(p.pool_02.hypochlorite.state).toMatchObject({
+      strokeLength: 0.6,
+      mode: 'analog',
+      head: 'degassing',
+    });
     expect(p.pool_02.acid.kind).toBe('stepper');
     expect(p.pool_03.hypochlorite.kind).toBe('ideal');
-    expect(pumpMost('pool_02', 'hypochlorite')).toBeCloseTo(2.1);
+    expect(pumpMost('pool_02', 'hypochlorite')).toBeCloseTo(21);
   });
 
-  it('give the Olympic no more than its DMX’s 2.1 l/h when its controller asks for everything', () => {
+  it('gives the Olympic the DMH’s commissioned 12.6 l/h when fully demanded', () => {
     const r = run(newDosingPumps(), all(1, 0), 600);
-    expect(r.litres.pool_02.hypochlorite).toBeGreaterThan(0.34);
-    expect(r.litres.pool_02.hypochlorite).toBeLessThanOrEqual(0.35);
-    expect(r.pumps.pool_02.hypochlorite.meanLh).toBeGreaterThan(2);
+    // The degassing head sends roughly 7 % of its stroke back to the tank.
+    expect(r.litres.pool_02.hypochlorite).toBeGreaterThan(1.9);
+    expect(r.litres.pool_02.hypochlorite).toBeLessThanOrEqual(2.1);
+    expect(r.pumps.pool_02.hypochlorite.meanLh).toBeGreaterThan(11);
     // The spas' ideal heads give exactly their most.
     expect(r.litres.pool_03.hypochlorite).toBeCloseTo(0.5 / 6, 4);
   });
@@ -54,6 +61,19 @@ describe('each pool’s dosing pumps in the world', () => {
     const r = stepDosingPumps(newDosingPumps(), all(1, 1), {}, 60);
     for (const id of POOL_IDS)
       expect(r.rates[id]).toEqual({ hypochlorite: 0, acid: 0 });
+  });
+
+  it('turns the Olympic DMH stroke dial one local detent at a time', () => {
+    const p = actOnDosingPumps(newDosingPumps(), {
+      act: 'stroke',
+      pool: 'pool_02',
+      chemical: 'hypochlorite',
+      direction: 1,
+    });
+    expect(p.pool_02.hypochlorite.state).toMatchObject({ strokeLength: 0.65 });
+    expect(newDosingPumps().pool_02.hypochlorite.state).toMatchObject({
+      strokeLength: 0.6,
+    });
   });
 
   it('stop a gas-locked DMX on its own detection, until it is bled and acknowledged', () => {

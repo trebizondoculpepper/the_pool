@@ -91,7 +91,7 @@ const SIZE = {
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
   // PL2's annunciator (mission 099), the twin of the control room's.
-  annunciator: { w: 1.25, d: 0.2, h: 0.83 },
+  annunciator: { w: 1.25, d: 0.2, h: 1.19 },
 } as const;
 
 /** The dosing's fixing heights on the wall (as the room's equipment has them). */

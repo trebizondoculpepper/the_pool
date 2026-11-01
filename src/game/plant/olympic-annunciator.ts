@@ -63,6 +63,13 @@ export const OLYMPIC_ALARMS = [
   // flow controller's valve OVERRIDE (2026-11-01).
   ...CO2_WINDOWS,
   CO2_OVERRIDE_WINDOW,
+  // The DMH's own error relay. Five unengraved ways complete the new row.
+  'hypo-pump-fault',
+  'spare-1',
+  'spare-2',
+  'spare-3',
+  'spare-4',
+  'spare-5',
 ] as const;
 export type OlympicAlarmId = (typeof OLYMPIC_ALARMS)[number];
 
@@ -93,6 +100,12 @@ export const OLYMPIC_ALARM_TEXT: Record<OlympicAlarmId, string> = {
   ...TRIO_WINDOW_TEXT,
   ...CO2_WINDOW_TEXT,
   [CO2_OVERRIDE_WINDOW]: CO2_OVERRIDE_TEXT,
+  'hypo-pump-fault': 'HYPO PUMP\nFAULT',
+  'spare-1': '',
+  'spare-2': '',
+  'spare-3': '',
+  'spare-4': '',
+  'spare-5': '',
 };
 
 /** Free chlorine's band, mg/l, and pH's, as the main board's (`world-reading.ts`). */
@@ -142,6 +155,7 @@ export function olympicAlarms(world: World): OlympicAlarmId[] {
       co2Windows(world.co2, 'plant_pool_02').map((w) => [w, true]),
     ),
     [CO2_OVERRIDE_WINDOW]: co2Overridden(world.co2, 'plant_pool_02'),
+    'hypo-pump-fault': world.dosingPumps.pool_02.hypochlorite.fault !== null,
   };
   return OLYMPIC_ALARMS.filter((id) => {
     const from = FROM_MAIN[id];

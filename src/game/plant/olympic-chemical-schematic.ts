@@ -56,6 +56,12 @@ export const OLYMPIC_CHEMICAL_LINKS: readonly PlumbEdge[] = [
     link(`${Name} supply line`, [`${c}-day`, 'out'], [k, 'in'], 'chemical'),
     link(`${Name} dose line`, [k, 'out'], ['uv', 'dose'], 'chemical'),
   ]),
+  link(
+    'Hypochlorite return line',
+    ['hypo', 'return'],
+    ['hypochlorite-day', 'return'],
+    'chemical',
+  ),
 ];
 
 export const OLYMPIC_CHEMICAL_FITTINGS: readonly SchematicFitting[] = [
@@ -82,6 +88,13 @@ export const OLYMPIC_CHEMICAL_FITTINGS: readonly SchematicFitting[] = [
       'dosing non-return',
     ),
   ]),
+  chemicalValve(
+    `${OLYMPIC_CODE}.hypo.return.bleed`,
+    'Hypochlorite return line',
+    'source',
+    'integral relief and bleed',
+    { normally: 'closed' },
+  ),
 ];
 
 let expanded: Expansion | undefined;

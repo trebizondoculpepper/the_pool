@@ -1,6 +1,6 @@
 # 102: The Olympic's new hypochlorite pump, installed
 
-Status: partly done (2026-10-28): designed, built in dev44, and the pump family linked to the world; installing the DMH waits for the owner. The pump is designed and working in dev44 (see "Built so far"); installing it waits until the owner has seen the before picture of the undersized pump, which mission 101 (the chemistry model in the world, another agent's) is making by keeping the DMX 1602 and watching how the Olympic goes wrong.
+Status: installed (2026-11-01): the owner asked for one larger Olympic pump. The Grundflow DMH 21-10 replaces the drawn DMX pair; BOOST remains a separate idea for later. The pump's accessory details still have open design questions below.
 
 You are working on "The Pool", a browser game in TypeScript and Three.js simulating a leisure centre's pool plant (this repository). Read `CLAUDE.md` first; its rules apply, above all that the enhanced network is the one source of truth (every valve in the schematic before anything is drawn, tags derived, never written), that the world state lives in `src/game/world.ts` with a migration for any change of shape, that `logic/` folders are pure and tested beside them, and that displays redraw only when what they show changes.
 
@@ -96,6 +96,8 @@ On mission 101's `water-treatment.ts` (`50f90566`), as the owner asked ("link it
 ## Open questions for the owner (ask one at a time)
 
 Answered by the owner, 2026-10-28: the maker is Grundflow, not a new brand; the fascia's lettering smaller; one pump, not a duty pair; and the pumps a family on the ideal pump (below).
+
+Installation decision, 2026-11-01: the owner chose the DMH as one pump in the Olympic. It uses the model's default degassing head, 60 % stroke dial and nominal-rate display; local keys, dial and bleed operate on the saved world state. Its return line is part of the Olympic chemical schematic and routed back to the day tank; its error relay has a HYPO PUMP FAULT annunciator way. The calibration column and its three-way valve, accessory isolations, back-pressure behavior and physical damper behavior remain to be modelled and fitted in a follow-up. They are omitted from the installed board until they work as plant components.
 
 1. Install the DMH, or put in the existing PERI 30 (peristaltic, which cannot gas-lock) or DDS (after the DDA) instead? The DMH is designed for the gas problem's gameplay; the others are what a cautious engineer would fit.
 2. Standard heads or degassing heads? Degassing makes gas-locking rare (only a big slug or a closed bleed on a long standstill); standard makes it a regular chore.

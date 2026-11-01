@@ -364,7 +364,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 71;
+export const WORLD_VERSION = 73;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -791,6 +791,16 @@ export function applyAction(world: World, action: WorldAction): World {
       };
     case 'plant/valve': {
       const installed = installedValveByCommandId(action.id);
+      if (installed?.assetId === 'PL2.hypo.return.bleed')
+        return applyAction(world, {
+          type: 'dosing-pump',
+          action: {
+            act: 'bleed',
+            pool: 'pool_02',
+            chemical: 'hypochlorite',
+            open: action.open,
+          },
+        });
       // The jacuzzi's drain valve is its drain-down (prompt 064): one
       // fitting of its model, its state the pool's drain-down too.
       if (installed?.assetId === JACUZZI_VALVES.drain)
@@ -1070,6 +1080,19 @@ export function applyAction(world: World, action: WorldAction): World {
     }
     case 'dosing-pump': {
       const dosingPumps = actOnDosingPumps(world.dosingPumps, action.action);
+      if (
+        action.action.act === 'bleed' &&
+        action.action.pool === 'pool_02' &&
+        action.action.chemical === 'hypochlorite'
+      )
+        return {
+          ...world,
+          dosingPumps,
+          installedValves: {
+            ...world.installedValves,
+            'PL2.hypo.return.bleed': action.action.open,
+          },
+        };
       return dosingPumps === world.dosingPumps
         ? world
         : { ...world, dosingPumps };

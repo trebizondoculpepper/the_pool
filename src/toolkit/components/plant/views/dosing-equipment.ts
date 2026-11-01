@@ -10,7 +10,10 @@ import { createNotice, createTag } from './chemicals-signs';
 import { CHEMICAL_COLOUR } from './chemicals-storage';
 import { createDiaphragmPump } from './diaphragm-pump';
 import type { DiaphragmPump } from './diaphragm-pump';
+import { createMotorDosingPump } from './motor-dosing-pump';
+import type { MotorPumpBinding } from './motor-dosing-pump';
 import { createPartSet } from '../../core/parts/parts';
+import { createDialGauge } from '../../industrial-control/views/dial-gauge';
 
 /**
  * A pool's dosing plant, in metres, each piece at the size of the
@@ -235,6 +238,103 @@ export function createHypochloriteBoard(kit: PanelKit): DosingBoard {
       pumps[1].update(delta, { running: false, rate: asked.rate }, powered);
     },
     status: () => pumps.map((p) => p.status()).join('; '),
+  };
+}
+
+/** The Olympic's single DMH 21-10, installed where the two DMX pumps stood. */
+export function createOlympicHypochloriteBoard(
+  kit: PanelKit,
+  bind: MotorPumpBinding,
+) {
+  const t = plantTools(kit);
+  const group = new Group();
+  t.box(group, t.paint('#ecece6', 0.7), 1.2, 1, 0.02, 0, 0, 0.01);
+  const tray = t.paint('#2a2d2f', 0.6);
+  t.box(group, tray, 1, 0.02, 0.29, 0, -0.26, 0.15);
+  t.box(group, tray, 1, 0.05, 0.01, 0, -0.235, 0.29);
+  const pump = createMotorDosingPump(kit, 'PL2-DP1-P1', bind);
+  const pumpAt: Point = [0.02, -0.25, 0.15];
+  put(group, pump.object, pumpAt);
+  const atPump = (p: readonly [number, number, number]): Point => [
+    pumpAt[0] + p[0],
+    pumpAt[1] + p[1],
+    pumpAt[2] + p[2],
+  ];
+  // Flooded suction from the day tank; the calibration column branches at
+  // its three-way valve. The short return runs separately to the tank.
+  const suction = atPump(pump.suctionAt);
+  tube(t, group, [
+    suction,
+    [suction[0], suction[1], BOARD_SUCTION_Z],
+    [suction[0], HYPO_SUCTION_Y, BOARD_SUCTION_Z],
+    [HYPO_PORTS.supply[0], HYPO_SUCTION_Y, BOARD_SUCTION_Z],
+    [HYPO_PORTS.supply[0], HYPO_SUCTION_Y, HYPO_PORTS.supply[2]],
+    [...HYPO_PORTS.supply],
+  ]);
+  const discharge = atPump(pump.dischargeAt);
+  tube(t, group, [
+    discharge,
+    [discharge[0], 0.2, discharge[2]],
+    [discharge[0], 0.2, 0.06],
+    [HYPO_PORTS.dose[0], 0.2, 0.06],
+    [HYPO_PORTS.dose[0], HYPO_PORTS.dose[1], 0.06],
+    [...HYPO_PORTS.dose],
+  ]);
+  const returned = atPump(pump.returnAt);
+  tube(t, group, [
+    returned,
+    [returned[0] - 0.09, returned[1], returned[2]],
+    [-0.4, returned[1], 0.06],
+    [-0.4, 0.48, 0.06],
+  ]);
+  // A live discharge gauge on a short tapping from the dose line. The
+  // passive accessories remain an explicit follow-up in mission 102.
+  t.cyl(
+    group,
+    t.paint('#ecebe4', 0.4),
+    0.008,
+    0.05,
+    0.41,
+    0.175,
+    0.08,
+    'y',
+    16,
+  );
+  const gauge = createDialGauge(kit, {
+    dia: 0.063,
+    max: 16,
+    legend: 'DISCHARGE',
+  });
+  gauge.group.position.set(0.41, 0.11, 0.11);
+  group.add(gauge.group);
+  put(group, createTag(t, 'PL2-DP1-P1 · DMH 21-10', 0.32), [0, -0.38, 0.021]);
+  put(
+    group,
+    createTag(t, 'SODIUM HYPOCHLORITE · DOSING', 0.5, {
+      plate: CHEMICAL_COLOUR.hypochlorite,
+    }),
+    [0, 0.42, 0.021],
+  );
+  put(group, createTag(t, 'FROM DAY TANK ↑', 0.2), [0.1, 0.469, 0.021]);
+  put(group, createTag(t, 'TO INJECTION ↓', 0.18), [0.42, -0.3, 0.021]);
+  let phase = bind.state().phase;
+  let delivered = bind.state().deliveredL;
+  return {
+    object: group,
+    parts: pump.parts,
+    update(delta: number) {
+      const s = bind.state();
+      const input = bind.inputs();
+      pump.show(delta, {
+        began: s.phase < phase ? 1 : 0,
+        delivering: s.deliveredL > delivered ? 1 : 0,
+      });
+      phase = s.phase;
+      delivered = s.deliveredL;
+      gauge.set(input.powered ? input.dischargeBar : 0);
+      gauge.update(delta);
+    },
+    status: pump.status,
   };
 }
 

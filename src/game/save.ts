@@ -389,6 +389,28 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   // running, its six boilers in service, the museum at its thermostat's
   // setting (`fillDefaults` adds it).
   70: (world) => world,
+  // 71 → 72: reserved for mission 121's boiler cascade; its owner will
+  // replace this pass-through when that migration lands.
+  71: (world) => world,
+  // 72 → 73: the Olympic's one DMH 21-10 takes the place of its DMX pair.
+  // A solenoid head's saved state cannot become a motor pump's, so the new
+  // unit begins primed at its commissioned 60 % stroke; the pool and day
+  // tank keep their saved chemistry and stock.
+  72: (world) => {
+    if (!isRecord(world) || !isRecord(world.dosingPumps)) return world;
+    const pumps = world.dosingPumps;
+    if (!isRecord(pumps.pool_02)) return world;
+    return {
+      ...world,
+      dosingPumps: {
+        ...pumps,
+        pool_02: {
+          ...pumps.pool_02,
+          hypochlorite: newWorld().dosingPumps.pool_02.hypochlorite,
+        },
+      },
+    };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

@@ -429,6 +429,9 @@ export function machinePorts(item: Item): MachinePort[] {
     return [
       port('dose', [...HYPO_PORTS.dose], [0, 0, 1], 0.012, 'chemical'),
       port('supply', [...HYPO_PORTS.supply], [0, 1, 0], 0.012, 'chemical'),
+      ...(item.label === 'Hypochlorite dosing pumps'
+        ? [port('return', [-0.4, 0.48, 0.06], [0, 1, 0], 0.012, 'chemical')]
+        : []),
     ];
   if (kind === 'acid-pump')
     return [
@@ -466,6 +469,17 @@ export function machinePorts(item: Item): MachinePort[] {
           ),
           drawn: true,
         },
+        ...(item.key === 'chem-day:hypochlorite:pool_02'
+          ? [
+              port(
+                'return',
+                [(L + 0.4) / 2 - 0.25, riser + 0.04, back],
+                [0, 1, 0],
+                0.012,
+                'chemical',
+              ),
+            ]
+          : []),
       ];
     }
     const { d, h } = bottleSize(litres);

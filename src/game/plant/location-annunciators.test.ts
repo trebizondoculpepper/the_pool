@@ -34,6 +34,24 @@ describe('every location annunciator', () => {
     expect(wetHallAlarmsIn(w)).toEqual([]);
     expect(olympicAlarms(w).filter((a) => a !== 'day-tank-low')).toEqual([]);
   });
+
+  it('lights HYPO PUMP FAULT from the Olympic DMH error relay', () => {
+    const w = newWorld();
+    const fault = {
+      ...w,
+      dosingPumps: {
+        ...w.dosingPumps,
+        pool_02: {
+          ...w.dosingPumps.pool_02,
+          hypochlorite: {
+            ...w.dosingPumps.pool_02.hypochlorite,
+            fault: 'flow',
+          },
+        },
+      },
+    };
+    expect(olympicAlarms(fault)).toContain('hypo-pump-fault');
+  });
 });
 
 describe('the Olympic annunciator’s windows', () => {

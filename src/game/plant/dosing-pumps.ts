@@ -15,6 +15,7 @@ import type { MotorPumpState } from '../../toolkit/components/plant/logic/motor-
 import {
   admitGas,
   pressMotorKey,
+  turnStrokeDial,
 } from '../../toolkit/components/plant/logic/motor-dosing-pump';
 import type { MotorPumpKey } from '../../toolkit/components/plant/logic/motor-dosing-pump';
 import { pressKey } from '../../toolkit/components/plant/logic/diaphragm-pump';
@@ -48,10 +49,9 @@ import type { Chemical } from './chemicals';
  * its controller's ask × its most) goes into the day tank's draw and the
  * water. Pure.
  *
- * - The lounge's and the Olympic's hypochlorite: the DMX 1602 the rooms
- *   draw (`solenoid`), 2.1 l/h. The Olympic's is undersized (the owner,
- *   2026-10-28: kept, to watch it fail). Its board's duty pump is the one
- *   modelled; the standby stands as its board draws it.
+ * - The lounge's hypochlorite: the DMX 1602 (`solenoid`), 2.1 l/h.
+ * - The Olympic's hypochlorite: one DMH 21-10 (`motor`), its stroke dial
+ *   commissioned at 60 % for 12.6 l/h at full controller output.
  * - Their acid: the DDS 7.5-16 (`stepper`), 7.5 l/h.
  * - The spa cabinets' heads stay ideal at their sizes until their pumps are
  *   chosen (mission 101, question 8).
@@ -67,7 +67,7 @@ import type { Chemical } from './chemicals';
 /** Each pool's pumps' kinds. */
 export const POOL_PUMP_KINDS: Record<PoolId, Record<Chemical, MeteringKind>> = {
   pool_01: { hypochlorite: 'solenoid', acid: 'stepper' },
-  pool_02: { hypochlorite: 'solenoid', acid: 'stepper' },
+  pool_02: { hypochlorite: 'motor', acid: 'stepper' },
   pool_03: { hypochlorite: 'ideal', acid: 'ideal' },
   pool_04: { hypochlorite: 'ideal', acid: 'ideal' },
 };
@@ -234,6 +234,8 @@ export type DosingPumpAction =
     }
   /** Its bleed (priming, deaeration) valve opened or shut. */
   | { act: 'bleed'; pool: PoolId; chemical: Chemical; open: boolean }
+  /** One 5 % detent of the DMH's local stroke-length dial. */
+  | { act: 'stroke'; pool: PoolId; chemical: Chemical; direction: number }
   | { act: 'gas'; pool: PoolId; chemical: Chemical; ml: number };
 
 export function actOnDosingPumps(
@@ -262,6 +264,13 @@ export function actOnDosingPumps(
       const s = state as KeyedDiaphragmState;
       state = { ...s, head: { ...s.head, bleedOpen: a.open } };
     }
+  } else if (a.act === 'stroke') {
+    if (
+      pump.kind === 'motor' &&
+      Number.isFinite(a.direction) &&
+      a.direction !== 0
+    )
+      state = turnStrokeDial(state as MotorPumpState, a.direction);
   } else if (pump.kind === 'motor')
     state = admitGas(state as MotorPumpState, a.ml);
   else if (pump.kind === 'solenoid' || pump.kind === 'stepper') {

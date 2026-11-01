@@ -1426,7 +1426,7 @@ export function roomEquipment(
             'Olympic pool annunciator',
             1.25,
             0.2,
-            0.83,
+            1.19,
             1.8,
             { walls: ['west', 'east'], over: true },
           ),

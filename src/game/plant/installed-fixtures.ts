@@ -25,6 +25,15 @@ export interface InstalledFixture {
 }
 
 export const INSTALLED_FIXTURES: Readonly<Record<string, InstalledFixture>> = {
+  'PL2-DP1-P1': {
+    assetId: 'asset-1305',
+    room: 'plant_pool_02',
+    name: 'Olympic hypochlorite motor dosing pump',
+    kind: 'hypo-pumps',
+    brand: 'grundflow',
+    model: 'DMH 21-10',
+    purpose: 'Meters sodium hypochlorite into the Olympic pool return line.',
+  },
   ...Object.fromEntries(
     CORRIDOR_WATER_SCHEMATIC.nodes
       .filter((node) => node.kind === 'branch-flowmeter')

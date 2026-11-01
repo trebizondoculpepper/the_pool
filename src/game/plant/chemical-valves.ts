@@ -81,8 +81,9 @@ const BULK: Record<Chemical, number> = { hypochlorite: 3, acid: 1 };
  * tank's fill and outlet valves, every transfer skid's, every selector
  * outlet's, and a framed day tank's actuated inlet and outlet valves.
  */
-export const EQUIPMENT_VALVES: ReadonlySet<string> = new Set(
-  CHEMICALS.flatMap((c) => [
+export const EQUIPMENT_VALVES: ReadonlySet<string> = new Set([
+  'PL2.hypo.return.bleed',
+  ...CHEMICALS.flatMap((c) => [
     ...Array.from({ length: BULK[c] }, (_, k) => {
       const v = bulkTankValves(c, k + 1);
       return [v.fill.id, v.outlet.id];
@@ -98,7 +99,7 @@ export const EQUIPMENT_VALVES: ReadonlySet<string> = new Set(
         : [];
     }),
   ]),
-);
+]);
 
 /** How each chemical's way through its valves stands: out of its store, and on to each day tank. */
 export interface DistributionPaths {

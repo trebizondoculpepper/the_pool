@@ -466,7 +466,9 @@ function said(
             ? `bleed valve ${openShut(a.open)}`
             : a.act === 'key'
               ? `${a.key.toUpperCase()} pressed`
-              : `${a.ml} ml of gas let into its head`;
+              : a.act === 'stroke'
+                ? `stroke dial turned ${a.direction > 0 ? 'up' : 'down'}`
+                : `${a.ml} ml of gas let into its head`;
       return {
         subject: `${a.pool} ${a.chemical} pump`,
         text: `${a.pool} ${a.chemical} dosing pump: ${what}`,

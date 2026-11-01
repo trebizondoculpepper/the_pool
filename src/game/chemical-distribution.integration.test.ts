@@ -83,7 +83,9 @@ describe('the chemical distribution, end to end', () => {
 
     // Undosed, the Olympic's chlorine falls.
     w = advance(w, 3 * 3600, 10);
-    expect(w.pools.pool_02.freeChlorine).toBeLessThan(chlorineAtStart * 0.5);
+    // The larger DMH leaves more residual chlorine when the tank runs dry,
+    // but three undosed hours still take a visible toll.
+    expect(w.pools.pool_02.freeChlorine).toBeLessThan(chlorineAtStart * 0.85);
 
     // The fix: both transfer pumps back to AUTO. The empty tanks call, the
     // selectors serve them, they fill and their pools dose again.

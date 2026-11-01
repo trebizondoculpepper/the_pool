@@ -46,11 +46,11 @@ describe('a dosing pump’s faults in the water (prompt 102)', () => {
     expect(c.dosingPumps.pool_01.hypochlorite.meanLh).toBeGreaterThan(0.5);
   }, 60_000);
 
-  it('the Olympic’s DMX runs flat out at its 2.1 l/h through a busy day', () => {
+  it('the Olympic’s DMH meets a busy day without running flat out', () => {
     const w = advance(newWorld(), 18 * 3600, 10);
     const p = w.dosingPumps.pool_02.hypochlorite;
     expect(p.fault).toBe(null);
-    expect(p.deliveredL).toBeGreaterThan(5);
-    expect(p.deliveredL).toBeLessThan(18 * 2.1);
+    expect(p.deliveredL).toBeGreaterThan(18 * 2.1);
+    expect(p.deliveredL).toBeLessThan(18 * 12.6);
   }, 60_000);
 });

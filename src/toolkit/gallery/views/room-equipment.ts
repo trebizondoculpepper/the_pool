@@ -238,7 +238,12 @@ import { loungeFlowsOf } from '../../../game/plant/lounge-valves';
 import {
   createAcidBoard,
   createHypochloriteBoard,
+  createOlympicHypochloriteBoard,
 } from '../../components/plant/views/dosing-equipment';
+import { newMotorPumpState } from '../../components/plant/logic/motor-dosing-pump';
+import type { MotorPumpState } from '../../components/plant/logic/motor-dosing-pump';
+import { trioSignals } from '../../../game/plant/aqualis-world';
+import { dayTankStock } from '../../../game/plant/chemical-distribution';
 import { createRoomTrio } from './aqualis-room-cabinet';
 import type {
   DosingBoard,
@@ -554,6 +559,80 @@ function modelFor(
       if (!p) return dosing(chemical)();
       return { running: p.running || !!p.fault, rate: p.setLh, fault: p.fault };
     };
+    if (kind === 'hypo-pumps' && pool === 'pool_02') {
+      let trial = newMotorPumpState();
+      const state = () =>
+        typeof window === 'undefined'
+          ? trial
+          : (world().dosingPumps.pool_02.hypochlorite.state as MotorPumpState);
+      return createOlympicHypochloriteBoard(kit, {
+        state,
+        change: (f) => {
+          const before = state();
+          const after = f(before);
+          if (typeof window === 'undefined') {
+            trial = after;
+            return;
+          }
+          if (
+            after.strokeLength === before.strokeLength &&
+            after.bleedOpen === before.bleedOpen &&
+            after.mode === before.mode &&
+            after.shows === before.shows &&
+            after.manual === before.manual &&
+            after.on === before.on &&
+            after.error === before.error
+          )
+            return;
+          const action =
+            after.strokeLength !== before.strokeLength
+              ? {
+                  act: 'stroke' as const,
+                  direction: after.strokeLength - before.strokeLength,
+                }
+              : after.bleedOpen !== before.bleedOpen
+                ? { act: 'bleed' as const, open: after.bleedOpen }
+                : after.mode !== before.mode
+                  ? { act: 'key' as const, key: 'mode' as const }
+                  : after.shows !== before.shows
+                    ? { act: 'key' as const, key: 'info' as const }
+                    : after.manual !== before.manual
+                      ? {
+                          act: 'key' as const,
+                          key:
+                            after.manual > before.manual
+                              ? ('up' as const)
+                              : ('down' as const),
+                        }
+                      : { act: 'key' as const, key: 'startStop' as const };
+          roomWorld().dispatch({
+            type: 'dosing-pump',
+            action: { ...action, pool: 'pool_02', chemical: 'hypochlorite' },
+          });
+        },
+        inputs: () => {
+          if (typeof window === 'undefined')
+            return {
+              powered: true,
+              release: true,
+              signalMa: 8,
+              level: 'ok',
+              dischargeBar: 2,
+            };
+          const w = world();
+          const signal = trioSignals(w.aqualis.pool_02).hypochlorite;
+          return {
+            powered: serviceAvailable(w.plant, 'plant_pool_02', 'chemical'),
+            release: signal.release,
+            signalMa: 4 + 16 * signal.demand,
+            level: dayTankStock(w.distribution, 'pool_02').hypochlorite
+              ? 'ok'
+              : 'empty',
+            dischargeBar: 2,
+          };
+        },
+      });
+    }
     if (kind === 'hypo-pumps')
       return board(createHypochloriteBoard(kit), pumpShown('hypochlorite'));
     if (kind === 'acid-pump')

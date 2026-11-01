@@ -735,6 +735,25 @@ export function plumbOlympic(
         [supply.at[0], CHEMICAL_IN, supply.at[2]],
         supply.at,
       ]);
+      if (k === 'hypo') {
+        const relief = port('hypo', 'return');
+        const tankReturn = placedPort(day, 'return');
+        rule(
+          'Hypochlorite return line',
+          'Hypochlorite return line',
+          'chemical',
+          0.012,
+          [
+            relief.at,
+            [relief.at[0], CHEMICAL_IN + 1.3, relief.at[2]],
+            [relief.at[0], CHEMICAL_IN + 1.3, relief.at[2] - 0.44],
+            [-3.5, CHEMICAL_IN + 1.3, relief.at[2] - 0.44],
+            [tankReturn.at[0], CHEMICAL_IN + 1.3, relief.at[2] - 0.44],
+            [tankReturn.at[0], CHEMICAL_IN + 1.3, tankReturn.at[2]],
+            tankReturn.at,
+          ],
+        );
+      }
     }
   }
 

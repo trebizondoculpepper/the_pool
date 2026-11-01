@@ -100,9 +100,10 @@ describe('a Trio in the world', () => {
       const s = trioSignals(w.aqualis[id]);
       expect(s.hypochlorite.release).toBe(true);
       expect(s.hypochlorite.demand).toBeGreaterThan(0.05);
-      // The DMX 1602, 2.1 l/h at full signal.
+      // The Lounge DMX is 2.1 l/h; the Olympic DMH is dialled to 60 %
+      // and its degassing head sends roughly 7 % back to the day tank.
       expect(w.dosingPumps[id].hypochlorite.meanLh).toBeCloseTo(
-        s.hypochlorite.demand * 2.1,
+        s.hypochlorite.demand * (id === 'pool_02' ? 12.6 * 0.93 : 2.1),
         0,
       );
       expect(w.aqualis[id].channels.hypochlorite.delivering).toBeCloseTo(
@@ -111,8 +112,8 @@ describe('a Trio in the world', () => {
       );
       expect(s.co2.demand).toBe(0);
     }
-    // The Olympic's undersized DMX (mission 101) is asked for most of it.
-    expect(trioSignals(w.aqualis.pool_02).hypochlorite.demand).toBeGreaterThan(
+    // The larger Olympic DMH has room to answer more demand.
+    expect(trioSignals(w.aqualis.pool_02).hypochlorite.demand).toBeLessThan(
       0.5,
     );
   });

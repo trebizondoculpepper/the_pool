@@ -1,0 +1,7 @@
+# Olympic DMH installed
+
+The owner chose one larger hypochlorite pump for the Olympic plant room and deferred BOOST. I installed the dev44-tested Grundflow DMH 21-10 in place of the drawn DMX pair, using the existing motor-diaphragm pump model and its default degassing head, EXT control and 60 % stroke setting. Local keys, dial and bleed now act on the saved world pump; its return line runs through the Olympic chemical schematic back to the day tank, and its fault relay lights HYPO PUMP FAULT on the Olympic annunciator. The room board has a working discharge gauge.
+
+The degassing head returns roughly 7 % of its stroke, so full signal delivers about 11.7 l/h despite the 12.6 l/h nominal setting. The larger pump now holds the Olympic near its chlorine set point over three days, but fault recovery and thiosulphate scenarios show controller overshoot. Those, the accessory train and the exact commissioning setting remain in TODO.md; the accessories are absent from the installed board until their models work. BOOST remains a separate future idea.
+
+The owner's project brief was absent from its documented Downloads path and from a Spotlight search. The README, mission 102 and linked plant guidance supplied the available context. The migration replaces only the Olympic pump state, preserving pool water and chemical stock; WORLD_VERSION 73 is reserved for this change, with 72 held for mission 121's later boiler-cascade migration.
