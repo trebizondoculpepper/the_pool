@@ -413,36 +413,37 @@ export function safetyLayer(id: MuseumHallId): SafetyFitting[] {
       HEIGHTS.bulkhead,
     );
   }
-  // Along an exhibit hall: signs hung from the street side's track at
-  // 3.0 m, a quarter and three quarters along, each facing into the hall
-  // (away from the way out's wall), read by those walking out towards that
-  // wall; arrow towards the way out as they see it (BS 5499-4, `arrowTo`);
-  // their backs plain. (Hall 4, 2026-10-31: its way out is in a side wall,
-  // across the hall's long axis, and its signs had faced along that axis,
-  // their backs to most of the hall.)
+  // Along an exhibit hall: two signs hung at 3.0 m down the hall's middle
+  // from the way out's wall, a third and two thirds of the way across the
+  // hall from it, each facing into the hall (away from that wall), read by
+  // those walking out towards it; arrow towards the way out as they see it
+  // (BS 5499-4, `arrowTo`); their backs plain. (Hall 4, 2026-10-31: they
+  // had faced along the hall's axis, across it. Hall 5, 2026-11-01: its way
+  // out is in a side wall by a corner, and signs set along the hall's own
+  // axis hung at its far side, behind most of the hall.)
   if (!welcome && exit) {
-    const along = ax.along;
-    const across = ax.across;
-    // Those walking out face out of the hall through the way out's wall.
-    const walkingOut = [-exit.into[0], -exit.into[1]] as const;
-    for (const s of [-ax.length / 4, ax.length / 4]) {
-      // The street side's track: the courtyard side has the panels.
-      const c = -(ax.width / 4 + 1);
+    const into = exit.into;
+    // How far the hall reaches from the way out's wall.
+    const { w, d } = hallSize(id);
+    const deep = Math.abs(into[0]) ? w : d;
+    // Those walking out face the way out's wall.
+    const walkingOut = [-into[0], -into[1]] as const;
+    // The hall's middle line, measured across the walk.
+    const sideways = Math.abs(into[0]) ? 'z' : 'x';
+    for (const k of [1 / 3, 2 / 3]) {
+      const x = sideways === 'x' ? o.x : exit.at.x + into[0] * deep * k;
+      const z = sideways === 'z' ? o.z : exit.at.z + into[1] * deep * k;
       out.push({
         kind: 'exit-hanging',
         room: id,
-        x: o.x + along[0] * s + across[0] * c,
+        x,
         y: 3.0,
-        z: o.z + along[1] * s + across[1] * c,
+        z,
         // Its face into the hall, towards those coming.
-        yaw: Math.atan2(exit.into[0], exit.into[1]),
+        yaw: Math.atan2(into[0], into[1]),
         // Towards the way out as they see it: straight on when it is
         // ahead, up and aside when off to one side, aside when beside.
-        arrow: arrowTo(
-          walkingOut,
-          exit.at.x - (o.x + along[0] * s + across[0] * c),
-          exit.at.z - (o.z + along[1] * s + across[1] * c),
-        ),
+        arrow: arrowTo(walkingOut, exit.at.x - x, exit.at.z - z),
       });
     }
   }

@@ -11,6 +11,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The museum halls' hanging fire exit signs hang down each hall's middle from its way out, a third and two thirds of the way across, facing those walking out (the owner, 2026-11-01): in Hall 5, whose way out is in a side wall by a corner, they had hung at the far side facing away from most of the hall.
 - Ctrl/Cmd+Shift+K now copies the current frame during held camera cinematics, including Museum 5's skimmer reveal and its “You got…” card.
 - Ctrl/Cmd+Shift+K now copies a clean screenshot from a `?record=<shot>` camera view, as it does during title animations and normal play.
 
