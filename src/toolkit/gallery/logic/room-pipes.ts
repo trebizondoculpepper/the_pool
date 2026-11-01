@@ -5,7 +5,7 @@ import { dayTankPlumbing } from './day-tank-plumbing';
 import { chemicalLineFittings } from './chemical-line-fittings';
 import { MODEL_VALVES } from '../../../game/plant/model-valves';
 import { CO2_DETECTOR_LINK } from '../../../game/plant/co2-schematic';
-import { CO2_PANEL_PORTS } from './co2-fittings';
+import { CO2_PANEL_PORTS, CO2_PANEL_SIZE, onWall } from './co2-fittings';
 import {
   LOUNGE_TRIO_SITE,
   SAMPLE_POINT,
@@ -1429,10 +1429,12 @@ export function poolPlantPipework(room: string): {
     // ceiling and down onto the panel's control box.
     const co2Detector = by('CO₂ detector');
     const alarm = port(co2Detector, 'alarm');
+    const lock = onWall(CO2_PANEL_PORTS.interlock, CO2_PANEL_SIZE);
+    // Turned with the panel (it faces north, its +x to the west).
     const interlock: Vec3 = [
-      co2Panel.x - CO2_PANEL_PORTS.interlock[0],
-      co2Panel.y + CO2_PANEL_PORTS.interlock[1],
-      co2Panel.z - CO2_PANEL_PORTS.interlock[2],
+      co2Panel.x - lock[0],
+      co2Panel.y + lock[1],
+      co2Panel.z - lock[2],
     ];
     tube(
       `${CO2_DETECTOR_LINK}, from the detector`,

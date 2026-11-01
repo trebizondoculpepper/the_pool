@@ -16,6 +16,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The plant rooms' and the loading bay's CO₂ fittings stand out from their walls: the dosing panels, wall ports, detectors, wall inlet and master valve were built about their middles but hung by their backs, so half of each, the Lounge's panel and wall port wholly, stood inside the wall. Their connections move with them; the Olympic's line to its nozzle steps off the wall, clear of the hypochlorite supply, and the loading bay's detector moves east of the inlet, out of the dock's doorway.
+
 - The Lounge plant room's Trio supply isolator (PL1-CP2-IS1) moved along the south wall to clear wall the owner chose: beside the Trio it stood over the CO₂ dosing panel.
 - No display appears all at once (the owner, 2026-11-01): coming into reading distance, or going out of it, a display (seven-segment readouts, LCDs and the rest) fades between its flat stand-in and its picture over 1.2 s on the same smoothstep curve as signs' lettering.
 - Jacuzzi and Footbath cabinet/filter waste schematics now point to the wet-hall pit. Jacuzzi tank drain water enters the pit in the simulation; the Olympic tank drain goes directly to sewer instead of disappearing from the water balance.

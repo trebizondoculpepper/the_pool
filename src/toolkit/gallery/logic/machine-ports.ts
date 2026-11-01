@@ -1,7 +1,11 @@
 import {
   CO2_DETECTOR_PORTS,
+  CO2_DETECTOR_SIZE,
   CO2_PANEL_PORTS,
+  CO2_PANEL_SIZE,
   CO2_WALL_PORT_PORTS,
+  CO2_WALL_PORT_SIZE,
+  onWall,
 } from './co2-fittings';
 
 import {
@@ -604,22 +608,46 @@ export function machinePorts(item: Item): MachinePort[] {
   if (kind === 'co2-panel')
     return [
       {
-        ...port('in', [...CO2_PANEL_PORTS.inlet], [0, 1, 0], 0.015, 'gas'),
+        ...port(
+          'in',
+          onWall(CO2_PANEL_PORTS.inlet, CO2_PANEL_SIZE),
+          [0, 1, 0],
+          0.015,
+          'gas',
+        ),
         drawn: true,
       },
       {
-        ...port('out', [...CO2_PANEL_PORTS.outlet], [0, -1, 0], 0.015, 'gas'),
+        ...port(
+          'out',
+          onWall(CO2_PANEL_PORTS.outlet, CO2_PANEL_SIZE),
+          [0, -1, 0],
+          0.015,
+          'gas',
+        ),
         drawn: true,
       },
     ];
   if (kind === 'co2-wall-port')
     return [
       {
-        ...port('in', [...CO2_WALL_PORT_PORTS.in], [0, 0, -1], 0.015, 'gas'),
+        ...port(
+          'in',
+          onWall(CO2_WALL_PORT_PORTS.in, CO2_WALL_PORT_SIZE),
+          [0, 0, -1],
+          0.015,
+          'gas',
+        ),
         drawn: true,
       },
       {
-        ...port('out', [...CO2_WALL_PORT_PORTS.out], [0, -1, 0], 0.015, 'gas'),
+        ...port(
+          'out',
+          onWall(CO2_WALL_PORT_PORTS.out, CO2_WALL_PORT_SIZE),
+          [0, -1, 0],
+          0.015,
+          'gas',
+        ),
         drawn: true,
       },
     ];
@@ -628,7 +656,7 @@ export function machinePorts(item: Item): MachinePort[] {
       {
         ...port(
           'alarm',
-          [...CO2_DETECTOR_PORTS.alarm],
+          onWall(CO2_DETECTOR_PORTS.alarm, CO2_DETECTOR_SIZE),
           [0, 1, 0],
           0.02,
           'control',

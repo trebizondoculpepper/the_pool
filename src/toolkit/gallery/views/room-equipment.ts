@@ -13,9 +13,19 @@ import {
 } from './co2-room-fittings';
 import type { FittingView } from './co2-room-fittings';
 
-/** A CO₂ fitting as a room's working exhibit. */
-const liveFitting = (f: FittingView) => ({
-  object: f.object,
+/**
+ * A CO₂ fitting as a room's working exhibit: built about its middle, set
+ * out from the wall by half its depth, as a room hangs a wall item by its
+ * back (`room-equipment.ts`).
+ */
+const liveFitting = (f: FittingView, depth: number) => {
+  const object = new Group();
+  object.add(f.object);
+  f.object.position.z = depth / 2;
+  return liveOf(f, object);
+};
+const liveOf = (f: FittingView, object: Object3D) => ({
+  object,
   parts: f.parts,
   update: (delta: number) => f.update(delta),
   status: () => f.status(),
@@ -367,12 +377,7 @@ function modelFor(
       },
       item.label,
     );
-    return {
-      object: panel.object,
-      parts: panel.parts,
-      update: (delta: number) => panel.update(delta),
-      status: () => panel.status(),
-    };
+    return liveFitting(panel, item.d);
   }
   // The loading bay's CO₂ inlet, master valve and detector (mission 118).
   if (room === 'loading_bay' && kind === 'co2-wall-inlet')
@@ -385,6 +390,7 @@ function modelFor(
         (open) => roomWorld().dispatch({ type: 'co2/isolation', open }),
         item.label,
       ),
+      item.d,
     );
   if (room === 'loading_bay' && kind === 'co2-master')
     return liveFitting(
@@ -402,6 +408,7 @@ function modelFor(
         (act) => roomWorld().dispatch({ type: 'co2/master', act }),
         item.label,
       ),
+      item.d,
     );
   if (room === 'loading_bay' && kind === 'co2-detector')
     return liveFitting(
@@ -416,6 +423,7 @@ function modelFor(
           }),
         item.label,
       ),
+      item.d,
     );
   // Its CO₂ wall port and detector (mission 118), from the world.
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-wall-port') {
@@ -429,7 +437,7 @@ function modelFor(
       (open) => roomWorld().dispatch({ type: 'co2/port', room: port, open }),
       item.label,
     );
-    return liveFitting(fitting);
+    return liveFitting(fitting, item.d);
   }
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-detector') {
     const port = `plant_${pool}` as const;
@@ -441,6 +449,7 @@ function modelFor(
           roomWorld().dispatch({ type: 'co2/detector', room: port, act }),
         item.label,
       ),
+      item.d,
     );
   }
   if (pool && kind === 'pump-pair') return pumpPairExhibit(pool).build(kit);

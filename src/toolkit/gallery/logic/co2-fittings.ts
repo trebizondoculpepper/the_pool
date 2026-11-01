@@ -5,6 +5,16 @@
  * at z = −d/2. Pure.
  */
 
+/**
+ * A point in a fitting's own frame (centred) in the frame a room places a
+ * wall item by (`room-equipment.ts`): its origin on the wall, behind its
+ * middle, +z out of the wall.
+ */
+export const onWall = (
+  at: readonly [number, number, number],
+  size: { d: number },
+): [number, number, number] => [at[0], at[1], at[2] + size.d / 2];
+
 /** The dosing valve controller's backboard and its depth off the wall. */
 export const CO2_PANEL_SIZE = { w: 0.7, h: 0.9, d: 0.28 } as const;
 
@@ -28,7 +38,7 @@ export const CO2_WALL_PORT_Y = 2.0;
 
 export const CO2_WALL_PORT_PORTS = {
   /** The building line, out of the wall behind it. */
-  in: [0, 0.06, -CO2_WALL_PORT_SIZE.d / 2],
+  in: [0, 0.06, -CO2_WALL_PORT_SIZE.d / 2 + 0.005],
   /** Its feed, down out of its foot to its room's panel. */
   out: [0, -CO2_WALL_PORT_SIZE.h / 2, -CO2_WALL_PORT_SIZE.d / 2 + 0.06],
 } as const;
@@ -68,7 +78,8 @@ export const CO2_MASTER_SIZE = { w: 0.5, h: 0.42, d: 0.2 } as const;
 export const CO2_LOADING_BAY = {
   inlet: 5.9,
   master: 5.1,
-  detector: 4.2,
+  // East of the inlet, clear of the dock's door west of the master.
+  detector: 6.5,
   y: 1.5,
   /** The line's height through them. */
   line: 1.62,

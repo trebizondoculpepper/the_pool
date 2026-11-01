@@ -2,7 +2,7 @@ import {
   CO2_DETECTOR_LINK,
   CO2_NOZZLE_NODE,
 } from '../../../game/plant/co2-schematic';
-import { CO2_PANEL_PORTS } from './co2-fittings';
+import { CO2_PANEL_PORTS, CO2_PANEL_SIZE, onWall } from './co2-fittings';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { chemicalLineFittings } from './chemical-line-fittings';
 import {
@@ -1253,8 +1253,9 @@ export function plumbOlympic(
     const uvOutlet = port('uv', 'outlet').at;
     const nozzle: Vec3 = [uvOutlet[0] + 0.22, uvOutlet[1], uvOutlet[2]];
     const gasY = 3.15;
-    const side = round(footprintOf(co2Board).maxX + 0.05);
+    const side = round(footprintOf(co2Board).minX - 0.05);
     const low = round(panelOut.at[1] - 0.1);
+    const off = round(panelOut.at[2] - 0.15);
     rule(
       'CO₂ to the injection nozzle',
       'CO₂ to the injection nozzle',
@@ -1263,8 +1264,10 @@ export function plumbOlympic(
       [
         panelOut.at,
         [panelOut.at[0], low, panelOut.at[2]],
-        [side, low, panelOut.at[2]],
-        [side, gasY, panelOut.at[2]],
+        // Out from the wall, clear of the hypochlorite supply along it.
+        [panelOut.at[0], low, off],
+        [side, low, off],
+        [side, gasY, off],
         [side, gasY, uvOutlet[2]],
         [nozzle[0], gasY, uvOutlet[2]],
         nozzle,
@@ -1283,10 +1286,14 @@ export function plumbOlympic(
       uvOutlet,
     ]);
     const alarmOut = port('co2-detector', 'alarm');
+    const lock = onWall(CO2_PANEL_PORTS.interlock, CO2_PANEL_SIZE);
     const interlock: Vec3 = [
-      round(co2Board.x - CO2_PANEL_PORTS.interlock[0]),
-      round((co2Board.y ?? 0) + CO2_PANEL_PORTS.interlock[1]),
-      round(co2Board.z - CO2_PANEL_PORTS.interlock[2]),
+      round(co2Board.x - lock[0]),
+      round((co2Board.y ?? 0) + lock[1]),
+      round(
+        panelIn.at[2] -
+          (lock[2] - onWall(CO2_PANEL_PORTS.inlet, CO2_PANEL_SIZE)[2]),
+      ),
     ];
     rule(CO2_DETECTOR_LINK, CO2_DETECTOR_LINK, 'control', 0.02, [
       alarmOut.at,
