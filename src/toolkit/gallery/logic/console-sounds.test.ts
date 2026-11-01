@@ -18,7 +18,7 @@ describe('console sounds', () => {
     const have = new Set(
       Object.keys(
         import.meta.glob(
-          '../../../../resources/sound/effects/frutiger-aero/*.ogg',
+          '../../../../resources/sound/effects/frutiger-aero/*.mp3',
           { query: '?url', import: 'default', eager: true },
         ),
       ).map((p) => p.slice(p.lastIndexOf('/') + 1)),
@@ -26,7 +26,7 @@ describe('console sounds', () => {
     expect(have.size).toBeGreaterThan(30);
     for (const { files, level } of Object.values(CONSOLE_SOUNDS)) {
       expect(level).toBeLessThanOrEqual(0.4);
-      for (const f of files) expect(have.has(`${f}.ogg`)).toBe(true);
+      for (const f of files) expect(have.has(`${f}.mp3`)).toBe(true);
     }
   });
 

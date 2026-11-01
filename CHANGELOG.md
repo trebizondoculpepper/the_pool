@@ -17,6 +17,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Sound on an iPad (the owner, 2026-11-01: no title music in Safari): every Ogg Vorbis sound (the title theme, the bridge's theme and room tone, the Frutiger Aero console sounds) is now MP3, which Safari plays, and sound starts on a tap's end or click as well as on a press, as iPad Safari requires.
 - An iPad's trackpad can look round (the owner, 2026-11-01): Safari there neither grants nor refuses pointer capture, so a click that has not captured it within 0.7 s counts as refused and the trackpad drags to look, as a mouse does where capture is not allowed; on a touch screen the crosshair shows with the twin sticks, but not while a finger drags the view.
 - Touch screens (the owner, 2026-11-01, on an iPad): INSPECT sits beside CROUCH instead of over it, and the crosshair is shown, since what is at the centre is what USE works.
 - The plant rooms' and the loading bay's CO₂ fittings stand out from their walls: the dosing panels, wall ports, detectors, wall inlet and master valve were built about their middles but hung by their backs, so half of each, the Lounge's panel and wall port wholly, stood inside the wall. Their connections move with them; the Olympic's line to its nozzle steps off the wall, clear of the hypochlorite supply, and the loading bay's detector moves east of the inlet, out of the dock's doorway.

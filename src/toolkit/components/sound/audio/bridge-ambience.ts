@@ -302,7 +302,7 @@ export function bridgeAmbience(
 }
 
 /** The owner's own synthesised room tone (2026-10-27): a minute of it, looped. */
-const ROOM_TONE = new URL('./assets/bridge-room-tone.ogg', import.meta.url);
+const ROOM_TONE = new URL('./assets/bridge-room-tone.mp3', import.meta.url);
 /** Its playing level: the recording is far louder than the synthesis. */
 const ROOM_TONE_LEVEL = 0.12;
 const roomToneBuffers = new WeakMap<AudioContext, Promise<AudioBuffer>>();

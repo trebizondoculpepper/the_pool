@@ -148,6 +148,11 @@ const awaitGesture = () => {
   const onGesture = () => start();
   window.addEventListener('pointerdown', onGesture, { capture: true });
   window.addEventListener('keydown', onGesture, { capture: true });
+  // Safari on an iPad or iPhone lets sound start only on the end of a tap
+  // or its click, not on the press (the owner, 2026-11-01: no title music
+  // on an iPad).
+  window.addEventListener('touchend', onGesture, { capture: true });
+  window.addEventListener('click', onGesture, { capture: true });
   // Try now: where the browser allows sound before a gesture it plays at
   // once; elsewhere its context waits, suspended, for the first gesture.
   if (typeof AudioContext !== 'undefined') queueMicrotask(() => start(true));

@@ -9,7 +9,7 @@ export function createTitleMusic() {
     [
       {
         url: new URL(
-          '../../../resources/sound/music/title/Ripple Equilibrium - Suspended Circulation - Treblo.ogg',
+          '../../../resources/sound/music/title/Ripple Equilibrium - Suspended Circulation - Treblo.mp3',
           import.meta.url,
         ),
         title: 'Suspended Circulation — Treblo',

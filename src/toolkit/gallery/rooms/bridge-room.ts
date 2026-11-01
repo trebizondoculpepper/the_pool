@@ -559,7 +559,7 @@ const bridgeTheme = (() => {
       [
         {
           url: new URL(
-            '../../../../resources/sound/music/bridge/boldly-into-the-deep-end.ogg',
+            '../../../../resources/sound/music/bridge/boldly-into-the-deep-end.mp3',
             import.meta.url,
           ),
           title: 'Boldly Into the Deep End — Treblo',

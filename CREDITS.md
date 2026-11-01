@@ -4,7 +4,7 @@ The program is licensed under the GNU General Public License, version 3 or later
 
 ## Owner-supplied title music
 
-`resources/sound/music/title/Ripple Equilibrium - Suspended Circulation - Treblo.ogg` was supplied by the owner on 2026-10-24 and copied unchanged. The filename identifies Treblo as the artist, Ripple Equilibrium as the collection and Suspended Circulation as the track. It loops on the title screen. Licence and additional provenance have not been specified; the software's GPL notice does not establish a separate licence for this recording.
+`resources/sound/music/title/Ripple Equilibrium - Suspended Circulation - Treblo.mp3` was supplied by the owner on 2026-10-24 and copied unchanged. The filename identifies Treblo as the artist, Ripple Equilibrium as the collection and Suspended Circulation as the track. It loops on the title screen. Licence and additional provenance have not been specified; the software's GPL notice does not establish a separate licence for this recording.
 
 `resources/sound/music/title/90s_indie_pop.mp3` and `swing.mp3` were supplied by the owner on 2026-10-31 and copied unchanged, as candidates for the title screen; they are not yet played. Artist, licence and provenance have not been specified.
 
@@ -68,7 +68,7 @@ The 37 sounds in `resources/sound/effects/frutiger-aero/` are from [Interface So
 
 ## Hall 4's won and lost sounds
 
-`won-fanfare.ogg` and `lost-trombone.ogg` in `resources/sound/effects/frutiger-aero/` are original to this project, synthesised on 2026-10-31 by `scripts/console-fanfares.mjs` (FM bells and additive tones, no samples), and are under the project's own licence.
+`won-fanfare.mp3` and `lost-trombone.mp3` in `resources/sound/effects/frutiger-aero/` are original to this project, synthesised on 2026-10-31 by `scripts/console-fanfares.mjs` (FM bells and additive tones, no samples), and are under the project's own licence.
 
 ## Textures and code
 
@@ -92,9 +92,9 @@ The 37 sounds in `resources/sound/effects/frutiger-aero/` are from [Interface So
 - **joernweissenborn/lcars**, a CSS framework, by Garrett (2014) and Jörn Weißenborn (2020): MIT licence. Copyright (c) 2014 Garrett - original edition and some remaining portions; Copyright (c) 2020 Jörn Weißenborn (joernweissenborn) all other portions. Its palette (the named colours of `lcars/stylus/lcars_colors.styl`, its highlight as the pressed colour) and its proportions (`lcars_variables.styl`, `lcars_element.styl`, `lcars_elbow.styl`, `lcars_bar.styl`) are taken into the 2D touch-panel kit `src/ui2d/` (`theme.ts`, `components.ts`), which is this project's own code; its full notice is in `src/ui2d/README.md`. Source: https://github.com/joernweissenborn/lcars
 - **LCARS-Javascript-Framework**, by Perry Spagnola (agent-P): MIT licence. Copyright (c) 2019 Perry Spagnola. The outline of its corner component (`LCARSCorner.prototype.drawShape` in `js/LCARS_Components.js`: column and arm joined by quadratic curves) is adapted into `elbowPath` in `src/ui2d/geometry.ts`; its button proportions, label inset and blink periods into `src/ui2d/theme.ts` and `components.ts`; its full notice is in `src/ui2d/README.md`. Source: https://github.com/agent-P/LCARS-Javascript-Framework
 
-The bridge's room tone, `src/toolkit/components/sound/audio/assets/bridge-room-tone.ogg`, is the owner's own synthesis (2026-10-27), a one-minute loop cut from it (`assets/README.md`).
+The bridge's room tone, `src/toolkit/components/sound/audio/assets/bridge-room-tone.mp3`, is the owner's own synthesis (2026-10-27), a one-minute loop cut from it (`assets/README.md`).
 
-`resources/sound/music/bridge/boldly-into-the-deep-end.ogg` was supplied by the owner on 2026-10-27 as "Space theme - Boldly Into the Deep End - Treblo.ogg", made by them with a music generator from their own prompt; renamed, otherwise unchanged (Opus, 2:07). The game plays its first minute, then fades it out slowly over 12 seconds, on the walker's first visit to the bridge.
+`resources/sound/music/bridge/boldly-into-the-deep-end.mp3` was supplied by the owner on 2026-10-27 as "Space theme - Boldly Into the Deep End - Treblo.mp3", made by them with a music generator from their own prompt; renamed, otherwise unchanged (Opus, 2:07). The game plays its first minute, then fades it out slowly over 12 seconds, on the walker's first visit to the bridge.
 
 ## Hall 8's photographs: owner-generated with Midjourney
 
@@ -113,3 +113,7 @@ The boxed _The Pool_ front, back and spine at `doc/marketing/box-art/` were gene
 ## VibeTopList's vote badge
 
 `resources/images/vibetoplist/vibetoplist-badge.svg` is VibeTopList's "Featured on VibeTopList" badge for the game (https://vibetoplist.com/badge/the-pool.svg), downloaded unchanged on 2026-10-31 and shown, as VibeTopList offers it to listed games, on the title screen and the pause menu, linked to the game's vote page. The robot (`vibetoplist-robot.png`) is the badge's own image, taken out of it unchanged; the pause menu's panel redraws the badge around it as a rectangular button. Both are VibeTopList's, not covered by the game's licence.
+
+## Sound files as MP3
+
+Every sound that was an Ogg Vorbis file (the title theme, the bridge's theme and room tone, and the Frutiger Aero console sounds) was converted to MP3 on 2026-11-01 (ffmpeg, LAME VBR quality 2), unchanged otherwise, because Safari on an iPad would not play them (the owner, 2026-11-01). Their credits above are as before.

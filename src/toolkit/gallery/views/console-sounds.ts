@@ -7,11 +7,11 @@ import {
 } from '../logic/console-sounds';
 import type { ChallengeMoment, ConsoleSound } from '../logic/console-sounds';
 
-/** The Frutiger Aero sounds, by file name without `.ogg`, bundled as Vite assets. */
+/** The Frutiger Aero sounds, by file name without `.mp3`, bundled as Vite assets. */
 const FILES = Object.fromEntries(
   Object.entries(
     import.meta.glob(
-      '../../../../resources/sound/effects/frutiger-aero/*.ogg',
+      '../../../../resources/sound/effects/frutiger-aero/*.mp3',
       {
         eager: true,
         query: '?url',

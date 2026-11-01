@@ -3,6 +3,12 @@ import type { ReadonlySignal } from '@preact/signals-core';
 import type { LoopRecipe } from '../../core/audio/part-audio';
 import type { MusicSourceState } from '../logic/music-source';
 
+/**
+ * The gestures a refused track tries again on: Safari on an iPad lets a
+ * track start only on a tap's end or its click (the owner, 2026-11-01).
+ */
+const GESTURES = ['pointerdown', 'keydown', 'touchend', 'click'] as const;
+
 /** Stream one track at a time through the shared spatial/master audio output. */
 export function musicPlaylist(
   tracks: readonly { url: URL; title: string }[],
@@ -33,8 +39,8 @@ export function musicPlaylist(
     let stopped = false;
     let awaitingGesture = false;
     const clearGesture = () => {
-      document.removeEventListener('pointerdown', retry, true);
-      document.removeEventListener('keydown', retry, true);
+      for (const type of GESTURES)
+        document.removeEventListener(type, retry, true);
       awaitingGesture = false;
     };
     const attemptPlay = () => {
@@ -43,8 +49,8 @@ export function musicPlaylist(
         if ((error as { name?: string })?.name === 'NotAllowedError') {
           if (!awaitingGesture) {
             awaitingGesture = true;
-            document.addEventListener('pointerdown', retry, true);
-            document.addEventListener('keydown', retry, true);
+            for (const type of GESTURES)
+              document.addEventListener(type, retry, true);
           }
         } else console.warn('Music could not play.', error);
       });
