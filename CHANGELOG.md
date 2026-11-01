@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-11-01
+
 ### Added
 
 - The engineer's office chair can be sat in, as the bridge's chairs can: use it and you sit facing the Gateway 3000's screen; walk or crouch to stand.
@@ -1094,7 +1096,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.9.0...v0.10.0
 [0.9.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.6.0...v0.7.0
