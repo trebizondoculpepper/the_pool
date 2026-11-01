@@ -219,6 +219,7 @@ export function co2Feedback(
     fault: d.fault ? CO2_FAULT_TEXT[d.fault] : null,
     delivering: d.delivering,
     most: d.spec.most,
+    ...(d.spec.kind === 'solenoid' ? { pulsed: true } : {}),
   };
 }
 

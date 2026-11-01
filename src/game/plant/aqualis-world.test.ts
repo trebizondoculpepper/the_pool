@@ -76,7 +76,7 @@ describe('the Trios as a new world has them', () => {
       );
       expect(t.sample.flowing).toBe(true);
       expect(t.inhibit).toBeNull();
-      expect(t.channels.co2.status).toEqual({ kind: 'unconnected' });
+      expect(t.channels.co2.status).toEqual({ kind: 'online' });
       expect(t.channels.hypochlorite.status).toEqual({ kind: 'online' });
       expect(t.channels.acid.status).toEqual({ kind: 'online' });
     }

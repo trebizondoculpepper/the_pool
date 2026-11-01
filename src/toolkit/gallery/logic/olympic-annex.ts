@@ -4,6 +4,7 @@ import {
   OLYMPIC_CHEMICAL_NODES,
   olympicChemicalExpansion,
 } from '../../../game/plant/olympic-chemical-schematic';
+import { OLYMPIC_CO2 } from '../../../game/plant/co2-schematic';
 import {
   OLYMPIC_TRIO,
   olympicTrioExpansion,
@@ -62,6 +63,7 @@ export const OLYMPIC_ANNEX = {
     // Its chemical lines' (prompt 085): its day tanks, filled from the wet
     // hall's selectors, and its dosing pumps.
     ...CHEMICAL_NODES,
+    ...OLYMPIC_CO2.nodes,
     { id: 'switch-fuse', kind: 'switch-fuse', name: 'Room supply switch-fuse' },
     { id: 'room-supply', kind: 'room-supply', name: 'Room supply' },
     { id: 'ozone-monitor', kind: 'ozone-monitor', name: 'Ozone monitor' },
@@ -119,6 +121,7 @@ export const OLYMPIC_ANNEX = {
     // manifold and back to the balance tank, its control of each dosing
     // pump, its alarms to PL2-CP1, its supply off the busbar.
     ...OLYMPIC_TRIO.links,
+    ...OLYMPIC_CO2.links,
     link('ozone', ['generator', 'ozone'], ['contact', 'ozone'], 'gas'),
     // The pumps' drain to the backwash floor channel (the owner, 2026-10-25).
     link(
@@ -162,5 +165,6 @@ export const OLYMPIC_ANNEX = {
     ...olympicChemicalExpansion().fittings.map((f) => f.id),
     // The Trio's sample valves (mission 114).
     ...olympicTrioExpansion().fittings.map((f) => f.id),
+    ...OLYMPIC_CO2.fittings.map((f) => f.id),
   ],
 };

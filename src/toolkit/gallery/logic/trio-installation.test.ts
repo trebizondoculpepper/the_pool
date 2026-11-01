@@ -5,6 +5,7 @@ import {
   OLYMPIC_TRIO,
   OLYMPIC_TRIO_SITE,
   SAMPLE_POINT,
+  TRIO_LINKS,
   TRIO_CABINET_VALVES,
   TRIO_UNLINKED_PORTS,
   trioCabinetValve,
@@ -105,15 +106,15 @@ describe.each(ROOMS)('$room’s Trio', ({ room, site, parts }) => {
       );
   });
 
-  it('leaves its blanked CO₂ gland unlinked and undrawn', () => {
-    for (const id of TRIO_UNLINKED_PORTS)
-      expect(
-        parts.links.some(
-          (l) =>
-            (l.sourceId === site.cabinet && l.sourcePort === id) ||
-            (l.targetId === site.cabinet && l.targetPort === id),
-        ),
-      ).toBe(false);
+  it('links and draws its CO₂ control cable', () => {
+    expect(TRIO_UNLINKED_PORTS.size).toBe(0);
+    expect(parts.links.some((l) => l.id === TRIO_LINKS.co2)).toBe(true);
+    expect(
+      runs.some((r) => {
+        const b = bindingOf(r);
+        return 'link' in b && b.link === TRIO_LINKS.co2;
+      }),
+    ).toBe(true);
   });
 });
 

@@ -47,6 +47,7 @@ export default defineConfig({
   test: {
     exclude: [
       ...configDefaults.exclude,
+      '**/.claude/worktrees/**',
       ...(fastOnly ? ['**/*.slow.test.ts'] : []),
     ],
   },

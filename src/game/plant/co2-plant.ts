@@ -44,6 +44,8 @@ export interface Co2Plant {
   distribution: Co2Distribution;
   dosers: Record<Co2PortId, Co2Doser>;
   detectors: Record<Co2RoomId, Co2DetectorState>;
+  /** Each Trio's control cable to its room's dosing panel. */
+  connected: Record<Co2PortId, boolean>;
 }
 
 export function newCo2Plant(ambient = 15): Co2Plant {
@@ -53,6 +55,7 @@ export function newCo2Plant(ambient = 15): Co2Plant {
       plant_pool_01: newCo2Doser(CO2_DOSERS.plant_pool_01),
       plant_pool_02: newCo2Doser(CO2_DOSERS.plant_pool_02),
     },
+    connected: { plant_pool_01: true, plant_pool_02: true },
     detectors: Object.fromEntries(
       CO2_ROOM_IDS.map((id) => [id, newCo2Detector(CO2_ROOMS[id])]),
     ) as Record<Co2RoomId, Co2DetectorState>,
@@ -131,7 +134,12 @@ export function stepCo2Plant(
     );
   }
   return {
-    state: { distribution: line.state, dosers, detectors },
+    state: {
+      distribution: line.state,
+      dosers,
+      detectors,
+      connected: p.connected,
+    },
     grams,
     leaked: line.leaked,
   };

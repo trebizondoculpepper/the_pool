@@ -77,6 +77,7 @@ const SIZE = {
   controller: { w: 0.6, d: 0.3, h: 1.8 },
   hypo: { w: 1.2, d: 0.3, h: 1.0 },
   acid: { w: 0.7, d: 0.35, h: 0.8 },
+  'co2-panel': { w: 0.7, d: 0.28, h: 0.9 },
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
 } as const;
@@ -86,6 +87,7 @@ const WALL_HEIGHT: Record<string, number> = {
   tankPanel: 1.45,
   hypo: 1.3,
   acid: 1.3,
+  'co2-panel': 1.4,
 };
 
 /** The gap behind the pump pair, along the west wall, metres. */
@@ -341,6 +343,7 @@ export function olympicPlan(): PlanItem[] {
   for (const [key, label, size] of [
     ['hypo', 'Hypochlorite dosing pumps', SIZE.hypo],
     ['acid', 'Acid dosing pump', SIZE.acid],
+    ['co2-panel', 'CO₂ dosing valve controller', SIZE['co2-panel']],
   ] as const) {
     out.push({
       ...item(

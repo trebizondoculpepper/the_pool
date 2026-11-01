@@ -80,12 +80,12 @@ describe('the Trios in AUTO, three days with bathers', () => {
     expect(Math.max(...ph)).toBeLessThan(7.45);
   });
 
-  it('keep every channel but CO₂ online, the CO₂ unconnected, and no alarm but what the water calls for', () => {
+  it('keeps every channel online, with no alarm but what the water calls for', () => {
     for (const id of ['pool_01', 'pool_02'] as const) {
       const t = w.aqualis[id];
       expect(t.channels.hypochlorite.status.kind).toBe('online');
       expect(t.channels.acid.status.kind).toBe('online');
-      expect(t.channels.co2.status.kind).toBe('unconnected');
+      expect(t.channels.co2.status.kind).toBe('online');
       const on = trioAlarms(t).map((a) => a.id);
       expect(on).not.toContain('dosing-offline');
       expect(on).not.toContain('sample-flow-low');

@@ -24,6 +24,8 @@ export interface Co2SupplyPart extends Part {
   readonly supply: Co2Supply;
   /** Draw `kg` of CO₂ through the line (a trial's stand-in for a dosing plant room). */
   draw(kg: number): void;
+  /** Follow the world's cylinder supply while installed in the goods yard. */
+  sync(state: Co2Supply): void;
   /** The cage round it, its door working. */
   readonly cage: MeshCagePart;
 }
@@ -40,6 +42,7 @@ export interface Co2SupplyPart extends Part {
 export function createCo2SupplyPart(
   kit: PanelKit,
   initial: Co2Supply = newCo2Supply(),
+  controls?: { throwLever(): void; setIsolation(open: boolean): void },
 ): Co2SupplyPart {
   const view = createCo2Cage(kit);
   // The cage round it, its door working.
@@ -78,7 +81,8 @@ export function createCo2SupplyPart(
     [
       view.leverHandle,
       () => {
-        supply = throwLever(supply);
+        if (controls) controls.throwLever();
+        else supply = throwLever(supply);
         show();
         emit('detent');
       },
@@ -86,9 +90,11 @@ export function createCo2SupplyPart(
     [
       view.isolationHandle,
       () => {
-        supply = setIsolation(supply, !supply.isolation);
+        const open = !supply.isolation;
+        if (controls) controls.setIsolation(open);
+        else supply = setIsolation(supply, open);
         show();
-        emit(supply.isolation ? 'on' : 'off');
+        emit(open ? 'on' : 'off');
       },
     ],
   ]);
@@ -99,6 +105,11 @@ export function createCo2SupplyPart(
     cage,
     get supply() {
       return supply;
+    },
+    sync(state) {
+      if (supply === state) return;
+      supply = state;
+      show();
     },
     draw(kg) {
       supply = drawCo2(supply, kg);

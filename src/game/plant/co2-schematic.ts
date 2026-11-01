@@ -1,0 +1,101 @@
+import { link } from './schematic-parts';
+import type { PlumbEdge } from './plumbing-expansion';
+import type { SchematicFitting, SchematicNode } from './schematics';
+
+/** The low-pressure CO₂ branch shared by Plant 1 and Plant 2 (mission 118). */
+export function co2RoomParts(
+  code: 'PL1' | 'PL2',
+  pool: string,
+  injection: [string, string],
+): {
+  nodes: SchematicNode[];
+  links: PlumbEdge[];
+  fittings: SchematicFitting[];
+} {
+  const inlet = 'CO₂ from the building line';
+  const feed = 'CO₂ low-pressure feed';
+  const dose = 'CO₂ to the injection nozzle';
+  return {
+    nodes: [
+      {
+        id: 'co2-wall-port',
+        kind: 'gas-wall-port',
+        code: 'WP1',
+        name: `${pool} CO₂ wall port`,
+      },
+      {
+        id: 'co2-panel',
+        kind: 'co2-dosing-panel',
+        code: 'CP4',
+        name: `${pool} CO₂ dosing valve controller`,
+      },
+      {
+        id: 'co2-injection',
+        kind: 'co2-injection-nozzle',
+        code: 'INJ1',
+        name: `${pool} CO₂ injection nozzle`,
+      },
+      {
+        id: 'co2-building-line',
+        kind: 'gas-main',
+        name: 'Low-pressure CO₂ building line',
+      },
+    ],
+    links: [
+      link(inlet, ['co2-building-line', 'out'], ['co2-wall-port', 'in'], 'gas'),
+      link(feed, ['co2-wall-port', 'out'], ['co2-panel', 'in'], 'gas'),
+      link(dose, ['co2-panel', 'out'], ['co2-injection', 'in'], 'gas'),
+      link(
+        'CO₂ injection into the circulation',
+        ['co2-injection', 'out'],
+        injection,
+        'chemical',
+      ),
+      link(
+        'CO₂ panel power',
+        ['switch-fuse', 'co2'],
+        ['co2-panel', 'power'],
+        'power',
+      ),
+    ],
+    fittings: [
+      {
+        id: `${code}.co2-wall-port.out.iso`,
+        kind: 'isolating-valve',
+        edge: feed,
+        end: 'source',
+        normally: 'open',
+        role: 'CO₂ room isolation',
+        operator: 'lever',
+        keptBy: 'distribution',
+      },
+      {
+        id: `${code}.co2-panel.out.valve`,
+        kind: 'isolating-valve',
+        edge: dose,
+        end: 'source',
+        normally: 'closed',
+        role: 'Trio-controlled CO₂ dosing valve',
+        operator: 'solenoid',
+        keptBy: 'distribution',
+      },
+      {
+        id: `${code}.co2-injection.in.nrv`,
+        kind: 'non-return-valve',
+        edge: 'CO₂ injection into the circulation',
+        end: 'source',
+        normally: 'open',
+        role: 'injection non-return',
+      },
+    ],
+  };
+}
+
+export const LOUNGE_CO2 = co2RoomParts('PL1', 'Lounge pool', [
+  'heated-main',
+  'co2',
+]);
+export const OLYMPIC_CO2 = co2RoomParts('PL2', 'Olympic pool', [
+  'uv',
+  'co2-dose',
+]);

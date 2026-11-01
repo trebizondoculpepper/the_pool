@@ -13,6 +13,15 @@ import {
   triosFor,
 } from './plant/aqualis-world';
 import type { TrioAction, TrioPool, Trios } from './plant/aqualis-world';
+import { newCo2Plant, stepCo2Plant } from './plant/co2-plant';
+import type { Co2Plant } from './plant/co2-plant';
+import { co2Feedback } from './plant/co2-dosing';
+import { setPortOpen } from './plant/co2-distribution';
+import type { Co2PortId } from './plant/co2-distribution';
+import {
+  setIsolation,
+  throwLever,
+} from '../toolkit/components/plant/logic/co2-supply';
 import { pumpFeedback, pumpInputs } from './plant/aqualis-ports';
 import type { PumpInputsByPool } from './plant/dosing-pumps';
 import { INJECTION_BAR, pumpModel } from './plant/dosing-pumps';
@@ -336,7 +345,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 65;
+export const WORLD_VERSION = 66;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -387,6 +396,8 @@ export interface World {
    * driving its pool's dosing pumps in place of the unseen controller.
    */
   aqualis: Trios;
+  /** The low-pressure CO₂ supply and the Trio-controlled dosing valves in Plants 1 and 2. */
+  co2: Co2Plant;
   /** The dosing chemicals left in their stores, litres. */
   chemicals: ChemicalStores;
   /**
@@ -509,6 +520,7 @@ export function newWorld(): World {
     treatment,
     dosingPumps: newDosingPumps(),
     aqualis: triosFor(treatment, newPools()),
+    co2: newCo2Plant(),
     chemicals: newChemicalStores(),
     distribution: newChemicalDistribution(),
     chemControl: newChemControlBox(),
@@ -640,6 +652,9 @@ export type WorldAction =
   | { type: 'dosing-pump'; action: DosingPumpAction }
   /** At a Dr Aqualis Trio: its knob, switches, touch screen, or a scenario's crash (mission 114). */
   | { type: 'aqualis'; pool: TrioPool; action: TrioAction }
+  | { type: 'co2/isolation'; open: boolean }
+  | { type: 'co2/lever' }
+  | { type: 'co2/port'; room: Co2PortId; open: boolean }
   /** The chemical transfer control box worked: a terminal's command, its isolator or MCB, or a fault. */
   | { type: 'chem-control'; action: ChemControlAction }
   | { type: 'booster/changeover'; action: ChangeoverAction }
@@ -926,6 +941,40 @@ export function applyAction(world: World, action: WorldAction): World {
         ? world
         : { ...world, aqualis: { ...world.aqualis, [action.pool]: trio } };
     }
+    case 'co2/isolation':
+      return {
+        ...world,
+        co2: {
+          ...world.co2,
+          distribution: {
+            ...world.co2.distribution,
+            supply: setIsolation(world.co2.distribution.supply, action.open),
+          },
+        },
+      };
+    case 'co2/lever':
+      return {
+        ...world,
+        co2: {
+          ...world.co2,
+          distribution: {
+            ...world.co2.distribution,
+            supply: throwLever(world.co2.distribution.supply),
+          },
+        },
+      };
+    case 'co2/port':
+      return {
+        ...world,
+        co2: {
+          ...world.co2,
+          distribution: setPortOpen(
+            world.co2.distribution,
+            action.room,
+            action.open,
+          ),
+        },
+      };
     case 'dosing-pump': {
       const dosingPumps = actOnDosingPumps(world.dosingPumps, action.action);
       return dosingPumps === world.dosingPumps
@@ -1366,7 +1415,11 @@ function stepTrios(
   motors: World['motors'],
   jacuzzi: Parameters<typeof dosedByPool>[5],
   loungeValvePositions: World['loungeValvePositions'],
-): { aqualis: Trios; driven: PumpInputsByPool } {
+): {
+  aqualis: Trios;
+  driven: PumpInputsByPool;
+  co2Demand: Record<TrioPool, number>;
+} {
   // The pools that may be dosed, their day tanks' stock aside: a dry tank
   // is the pump's level switch's to see.
   const interlocks = dosedByPool(
@@ -1379,6 +1432,7 @@ function stepTrios(
   );
   const aqualis = { ...world.aqualis };
   const driven: PumpInputsByPool = {};
+  const co2Demand = {} as Record<TrioPool, number>;
   for (const id of TRIO_POOLS) {
     const room = `plant_${id}` as const;
     const pumpsPowered = serviceAvailable(world.plant, room, 'chemical');
@@ -1405,13 +1459,13 @@ function stepTrios(
             pumpsPowered,
           ),
           acid: pumpFeedback(pumps.acid, pumpModel(id, 'acid'), pumpsPowered),
-          // The CO₂ gland is blanked: nothing connected yet.
-          co2: null,
+          co2: co2Feedback(world.co2.dosers[room], world.co2.connected[room]),
         },
       },
       delta,
     );
     aqualis[id] = r.trio;
+    co2Demand[id] = r.signals.co2.demand;
     const tanks = dayTankStock(world.distribution, id);
     driven[id] = {
       hypochlorite: pumpInputs(
@@ -1434,7 +1488,7 @@ function stepTrios(
       ),
     };
   }
-  return { aqualis, driven };
+  return { aqualis, driven, co2Demand };
 }
 
 function stepPlant(world: World, delta: number): World {
@@ -1630,6 +1684,24 @@ function stepPlant(world: World, delta: number): World {
   );
   const pumps = dosing.rates;
   const pools = withSolids(world, water.pools, delta);
+  const co2 = stepCo2Plant(
+    world.co2,
+    {
+      rooms: {
+        plant_pool_01: {
+          demand: trios.co2Demand.pool_01,
+          connected: world.co2.connected.plant_pool_01,
+          waterFlowing: pools.pool_01.flow > 0.5,
+        },
+        plant_pool_02: {
+          demand: trios.co2Demand.pool_02,
+          connected: world.co2.connected.plant_pool_02,
+          waterFlowing: pools.pool_02.flow > 0.5,
+        },
+      },
+    },
+    delta,
+  );
   const treatment = stepWaterTreatment(
     world.treatment,
     Object.fromEntries(
@@ -1642,6 +1714,12 @@ function stepPlant(world: World, delta: number): World {
           evaporated: water.flows[id].evaporated,
           bathers: world.bathers.pools[id].now,
           pumps: pumps[id],
+          co2:
+            id === 'pool_01'
+              ? co2.grams.plant_pool_01
+              : id === 'pool_02'
+                ? co2.grams.plant_pool_02
+                : 0,
         },
       ]),
     ) as Record<PoolId, StepFlows>,
@@ -1669,6 +1747,7 @@ function stepPlant(world: World, delta: number): World {
     treatment,
     dosingPumps: dosing.pumps,
     aqualis: trios.aqualis,
+    co2: co2.state,
     airHandling,
     motors,
     jacuzzi: stepJacuzzi(

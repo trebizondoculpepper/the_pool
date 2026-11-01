@@ -307,6 +307,9 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
       treatment: { ...t, circuits, charges: {} },
     };
   },
+  // 65 → 66: low-pressure CO₂ supply and dosing in Plants 1 and 2;
+  // `fillDefaults` installs the normal, full system in existing saves.
+  65: (world) => world,
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

@@ -11,8 +11,7 @@ import type { ChannelId } from './aqualis-types';
  * and every dosing point), the sample line to the cabinet and its return
  * to the balance tank, a control link to each dosing pump, its alarm
  * output to the room's annunciator and its power feed. Its CO₂ control
- * port is declared and left unlinked (the blanked gland) until CO₂ dosing
- * exists: the seam the CO₂ valve controller's control input links to.
+ * port links to the room's CO₂ dosing panel (mission 118).
  * Every fitting is given, so the plumber adds none; tags derive from the
  * nodes' codes as every room's do (`model-valves.ts`). Pure.
  */
@@ -38,10 +37,8 @@ export const TRIO_PORTS: readonly TrioPort[] = [
   { id: 'power', medium: 'power' },
 ];
 
-/** The ports left unlinked until their system exists: the CO₂ channel's. */
-export const TRIO_UNLINKED_PORTS: ReadonlySet<TrioPort['id']> = new Set([
-  'co2',
-]);
+/** Every Trio port has its plant connection. */
+export const TRIO_UNLINKED_PORTS: ReadonlySet<TrioPort['id']> = new Set();
 
 /** Where a room's Trio meets its plant: each by a node and its port. */
 export interface TrioSite {
@@ -171,6 +168,7 @@ export const LOUNGE_TRIO_SITE: TrioSite = {
   devices: {
     hypochlorite: ['hypo-pumps', 'control'],
     acid: ['acid-pump', 'control'],
+    co2: ['co2-panel', 'control'],
   },
   alarm: ['annunciator', 'dosing'],
   power: {
@@ -196,6 +194,7 @@ export const OLYMPIC_TRIO_SITE: TrioSite = {
   devices: {
     hypochlorite: ['hypo', 'control'],
     acid: ['acid', 'control'],
+    co2: ['co2-panel', 'control'],
   },
   alarm: ['panel', 'dosing'],
   power: { from: ['bus', 'feed'], link: 'power-controller', isolator: false },
@@ -250,6 +249,12 @@ export const OLYMPIC_TRIO_NODES: readonly SchematicNode[] = [
     code: 'DP1',
   },
   { id: 'acid', kind: 'acid-pump', name: 'Acid dosing pump', code: 'DP2' },
+  {
+    id: 'co2-panel',
+    kind: 'co2-dosing-panel',
+    code: 'CP4',
+    name: 'Olympic pool CO₂ dosing valve controller',
+  },
   { id: 'panel', kind: 'panel', name: 'Olympic pool local control panel' },
   { id: 'bus', kind: 'supply', name: 'Busbar' },
 ];

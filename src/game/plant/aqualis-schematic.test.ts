@@ -133,7 +133,7 @@ describe.each(ROOMS)('the Trio in $name', (g) => {
     expect(point?.code).toBe('SP1');
   });
 
-  it('links every port of the cabinet but its CO₂ channel’s, which is declared and unlinked', () => {
+  it('links every port of the cabinet, including CO₂ to its dosing panel', () => {
     for (const p of TRIO_PORTS) {
       const links = at(site.cabinet, p.id);
       if (TRIO_UNLINKED_PORTS.has(p.id)) expect(links).toEqual([]);
@@ -143,7 +143,7 @@ describe.each(ROOMS)('the Trio in $name', (g) => {
       }
     }
     expect(TRIO_PORTS.some((p) => p.id === 'co2')).toBe(true);
-    expect(g.links.some((l) => l.id === TRIO_LINKS.co2)).toBe(false);
+    expect(linkNamed(TRIO_LINKS.co2)?.targetId).toBe('co2-panel');
   });
 
   it('taps its sample from the pump discharge, upstream of the filters and of every dosing point', () => {

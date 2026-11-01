@@ -11,6 +11,27 @@ import { WORLD_VERSION, applyAction, newWorld } from './world';
 import { FOOTBATH, partOpen } from './plant/identification';
 
 describe('a save', () => {
+  it('installs the normal CO₂ system when a version 65 save is loaded', () => {
+    const { co2: _, ...before } = newWorld();
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 65,
+        savedAt: 5,
+        world: before,
+      }),
+    );
+    expect(
+      loaded.ok && loaded.world.co2.distribution.ports.plant_pool_01.open,
+    ).toBe(true);
+    expect(
+      loaded.ok && loaded.world.co2.distribution.ports.plant_pool_02.open,
+    ).toBe(true);
+    expect(loaded.ok && loaded.world.co2.dosers.plant_pool_01.mode).toBe(
+      'remote',
+    );
+  });
+
   it('brings back the world it saved', () => {
     const world = applyAction(newWorld(), { type: 'demo/set', on: true });
     const loaded = deserialiseWorld(serialiseWorld(world, 1000));
@@ -117,6 +138,7 @@ describe('a save', () => {
       treatment: newWorld().treatment,
       dosingPumps: newWorld().dosingPumps,
       aqualis: newWorld().aqualis,
+      co2: newWorld().co2,
       chemicals: newWorld().chemicals,
       distribution: newWorld().distribution,
       chemControl: newWorld().chemControl,

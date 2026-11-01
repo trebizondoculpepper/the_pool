@@ -1,4 +1,6 @@
 import { createBackwashPitWater } from '../../components/plant/views/backwash-pit-water';
+import { createCo2DosingPanel } from './co2-dosing-panel';
+import { portPressure } from '../../../game/plant/co2-distribution';
 import type { PitPumpAction } from '../../../game/plant/wet-hall';
 import { decorativeKind } from '../logic/world-in-model';
 import { createSpaSandFilter } from '../../components/plant/views/spa-pack-parts';
@@ -321,6 +323,22 @@ function modelFor(
   // A pool plant room's pumps and their panel: its own pool's, from the
   // world (`live-plant.ts`).
   const pool = /^plant_(pool_0[1-4])$/.exec(room)?.[1] as PoolId | undefined;
+  if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-panel') {
+    const panel = createCo2DosingPanel(kit);
+    const port = `plant_${pool}` as const;
+    return {
+      object: panel.group,
+      update: (delta: number) => {
+        const co2 = roomWorld().world.value.co2;
+        panel.show(co2.dosers[port], portPressure(co2.distribution, port));
+        panel.update(delta);
+      },
+      status: () => {
+        const d = roomWorld().world.value.co2.dosers[port];
+        return `${d.mode.toUpperCase()} · ${Math.round(d.delivering)} g/h${d.fault ? ` · ${d.fault}` : ''}`;
+      },
+    };
+  }
   if (pool && kind === 'pump-pair') return pumpPairExhibit(pool).build(kit);
   if (pool && kind === 'pump-panel') return pumpPanelExhibit(pool).build(kit);
   // Each location's annunciator (mission 099), in its own place and in

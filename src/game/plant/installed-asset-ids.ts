@@ -58,6 +58,10 @@ export const INSTALLED_ASSET_IDS: Readonly<
   // tag the same (asset-0010, the old controller, retired).
   'plant_pool_01|dosing-controller|Lounge pool dosing controller, Dr Aqualis Trio':
     { assetId: 'asset-0156', tag: 'PL1-CP2' },
+  'plant_pool_01|co2-panel|Lounge pool CO₂ dosing valve controller': {
+    assetId: 'asset-0157',
+    tag: 'PL1-CP4',
+  },
   'plant_pool_01|hypo-pumps|Lounge pool hypochlorite dosing pumps': {
     assetId: 'asset-0011',
     tag: 'PL1-DP1',
@@ -383,6 +387,10 @@ export const INSTALLED_ASSET_IDS: Readonly<
       assetId: 'asset-0155',
       tag: 'PL2-CP2',
     },
+  'plant_pool_02|co2-panel|Olympic pool CO₂ dosing valve controller': {
+    assetId: 'asset-0158',
+    tag: 'PL2-CP4',
+  },
   'plant_pool_02|hypo-pumps|Olympic pool hypochlorite dosing pumps': {
     assetId: 'asset-0104',
     tag: 'PL2-DP1',

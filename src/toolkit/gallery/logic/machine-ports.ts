@@ -380,7 +380,7 @@ export function machinePorts(item: Item): MachinePort[] {
     const back = CABINET.d / 2;
     const at = ([x, y, z]: readonly [number, number, number]) =>
       [x, y, z - back] as const;
-    // Its blanked CO₂ gland is no connection until CO₂ dosing exists.
+    // Only ports explicitly left unlinked by the schematic are omitted.
     return (
       Object.entries(portsOf('trio')) as [
         PortId,

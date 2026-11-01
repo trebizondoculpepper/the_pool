@@ -977,12 +977,26 @@ function yardLpgCage(kit: ReturnType<typeof createPanelKit>): Part {
  * own until the world holds it.
  */
 function yardCo2Cage(kit: ReturnType<typeof createPanelKit>): Part {
-  const part = createCo2SupplyPart(kit);
+  const store = roomWorld();
+  const part = createCo2SupplyPart(
+    kit,
+    store.world.value.co2.distribution.supply,
+    {
+      throwLever: () => store.dispatch({ type: 'co2/lever' }),
+      setIsolation: (open) => store.dispatch({ type: 'co2/isolation', open }),
+    },
+  );
   part.object.position.set(
     YARD_CO2.x,
     YARD.level,
     INTAKE.wallZ - CO2_CAGE.gap - CO2_CAGE.d / 2,
   );
   part.object.rotation.y = Math.PI;
-  return part;
+  return {
+    ...part,
+    update(delta) {
+      part.sync(store.world.value.co2.distribution.supply);
+      part.update?.(delta);
+    },
+  };
 }

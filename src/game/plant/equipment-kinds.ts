@@ -138,6 +138,14 @@ export const PLACED_KINDS = {
     class: 'plant',
     purpose: 'Measures water samples and commands chemical dosing.',
   },
+  'co2-panel': {
+    type: 'CO₂ dosing valve controller',
+    status: 'none',
+    code: 'CP',
+    class: 'plant',
+    purpose: 'Meters low-pressure CO₂ into the pool return under the Trio.',
+    brand: 'chlorella',
+  },
   'hypo-pumps': {
     type: 'Dosing pump set',
     status: 'none',

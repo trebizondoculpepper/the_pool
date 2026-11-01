@@ -1,6 +1,7 @@
 import type { PlumbEdge } from './plumbing-expansion';
 import { dayTanks } from './schematic-parts';
 import { LOUNGE_TRIO } from './aqualis-schematic';
+import { LOUNGE_CO2 } from './co2-schematic';
 import type {
   RoomSchematic,
   SchematicFitting,
@@ -59,6 +60,7 @@ const nodes: SchematicNode[] = [
   },
   // Its sample point on the pump discharge main (mission 114).
   ...LOUNGE_TRIO.nodes,
+  ...LOUNGE_CO2.nodes,
   machine('panel', 'pump-panel', 'Lounge pool local control panel'),
   // Its annunciator (the owner, 2026-10-28; `lounge-annunciator.ts`).
   machine('annunciator', 'annunciator', 'Lounge pool annunciator'),
@@ -257,6 +259,7 @@ const links: PlumbEdge[] = [
   // before the filters and any dosing, and back to the balance tank; its
   // control of each dosing pump, its alarms to the annunciator, its supply.
   ...LOUNGE_TRIO.links,
+  ...LOUNGE_CO2.links,
   link(
     'Control panel supply',
     ['switch-fuse', 'panel'],
@@ -399,6 +402,7 @@ export const LOUNGE_SCHEMATIC: RoomSchematic = {
     ...DAY_TANKS.fittings,
     // The Trio's sample valves and its isolator (mission 114).
     ...LOUNGE_TRIO.fittings,
+    ...LOUNGE_CO2.fittings,
     isolator('P-201A isolator', 'P-201A power'),
     isolator('P-201B isolator', 'P-201B power'),
     isolator('Lounge UV unit isolator', 'UV unit power'),

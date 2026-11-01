@@ -160,6 +160,19 @@ export const LOADING_BAY_SCHEMATIC = backRoom(
     // (the owner, 2026-10-27).
     machine('hypo-main', 'chemical-main', 'Hypochlorite main to the wet hall'),
     machine('acid-main', 'chemical-main', 'Acid main to the wet hall'),
+    {
+      ...machine('co2-cage', 'co2-supply', 'CO₂ cylinder cage and regulator'),
+      code: 'GS1',
+    },
+    {
+      ...machine('co2-wall-inlet', 'gas-wall-port', 'CO₂ wall inlet'),
+      code: 'WP1',
+    },
+    {
+      ...machine('co2-master', 'co2-master-panel', 'CO₂ master valve panel'),
+      code: 'CP2',
+    },
+    machine('co2-building-line', 'gas-main', 'Low-pressure CO₂ building line'),
   ],
   [
     link(
@@ -193,19 +206,65 @@ export const LOADING_BAY_SCHEMATIC = backRoom(
       ['acid-main', 'in'],
       'chemical',
     ),
+    link(
+      'CO₂ cage to wall inlet',
+      ['co2-cage', 'out'],
+      ['co2-wall-inlet', 'in'],
+      'gas',
+    ),
+    link(
+      'CO₂ inlet to master valve',
+      ['co2-wall-inlet', 'out'],
+      ['co2-master', 'in'],
+      'gas',
+    ),
+    link(
+      'CO₂ low-pressure main',
+      ['co2-master', 'out'],
+      ['co2-building-line', 'in'],
+      'gas',
+    ),
   ],
-  [],
+  [machine('co2-master', 'co2-master-panel', 'CO₂ master valve panel')],
   // Each fill port's isolating valve, kept shut between deliveries, and
   // its fill line's non-return valve, from the port outward (plan 085).
-  (['hypochlorite', 'acid'] as const).flatMap((c) => {
-    const line = `${c === 'acid' ? 'Acid' : 'Hypochlorite'} delivery line`;
-    return [
-      chemicalValve(`LB.fill.${c}.iso`, line, 'source', 'fill port isolation', {
-        normally: 'closed',
-      }),
-      chemicalCheck(`LB.fill.${c}.nrv`, line, 'source', 'fill non-return'),
-    ];
-  }),
+  [
+    ...(['hypochlorite', 'acid'] as const).flatMap((c) => {
+      const line = `${c === 'acid' ? 'Acid' : 'Hypochlorite'} delivery line`;
+      return [
+        chemicalValve(
+          `LB.fill.${c}.iso`,
+          line,
+          'source',
+          'fill port isolation',
+          {
+            normally: 'closed',
+          },
+        ),
+        chemicalCheck(`LB.fill.${c}.nrv`, line, 'source', 'fill non-return'),
+      ];
+    }),
+    {
+      id: 'LB.co2-wall-inlet.out.iso',
+      kind: 'isolating-valve',
+      edge: 'CO₂ inlet to master valve',
+      end: 'source',
+      normally: 'open',
+      role: 'emergency CO₂ isolation',
+      operator: 'lever',
+      keptBy: 'distribution',
+    },
+    {
+      id: 'LB.co2-master.out.valve',
+      kind: 'isolating-valve',
+      edge: 'CO₂ low-pressure main',
+      end: 'source',
+      normally: 'closed',
+      role: 'master CO₂ shut-off',
+      operator: 'solenoid',
+      keptBy: 'distribution',
+    },
+  ],
 );
 
 /** The air plant's stacks: their units and the hall they serve (`air_plant`'s layout). */

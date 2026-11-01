@@ -369,6 +369,7 @@ export const WORLD_HEALTH_COVERAGE = {
     'not checked itself: the dosing pumps; one gas-locked or worn shows in its pool’s chemistry',
   aqualis:
     'not checked itself: the Dr Aqualis Trios; one off, crashed or offline shows in its pool’s chemistry, and its alarms on its annunciator',
+  co2: 'not checked itself: its supply and dosing faults show through the Trios and pool chemistry',
   chemicals: 'chemicals: stock against capacity',
   distribution:
     'not checked: the day tanks; one run dry shows in its pool’s chemistry',
@@ -443,6 +444,7 @@ export const KIND_HEALTH_COVERAGE = {
   'contact-tank': 'pools: treatment flow through it',
   'dosing-controller':
     'pools: pH and free chlorine in band (the Lounge’s and Olympic’s, Dr Aqualis Trios, mission 114)',
+  'co2-panel': 'co2: line pressure, valve delivery and detector interlock',
   'hypo-pumps': 'pools: free chlorine in band; chemicals: stock',
   'acid-pump': 'pools: pH in band; chemicals: stock',
   'jacuzzi-pack': 'jacuzzi: cabinet powered, no trip',

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { advance, newWorld } from './world';
+import { advance, applyAction, newWorld } from './world';
 import { POOL_IDS } from './plant/pools';
 import { runOut } from './world.test-support';
 
@@ -8,6 +8,9 @@ import { runOut } from './world.test-support';
 describe('the dosing chemicals in the world', () => {
   it('run down as the pools are dosed, and a dry acid store lets the pH rise', () => {
     let world = newWorld();
+    // Isolate the new CO₂ branches so this remains an acid-only test.
+    for (const room of ['plant_pool_01', 'plant_pool_02'] as const)
+      world = applyAction(world, { type: 'co2/port', room, open: false });
     // The lounge's hypochlorite day tank, part full, dosing down.
     const day = world.distribution.hypochlorite.tanks[0].litres;
     // The acid all but gone: its day tanks empty, its store too little to

@@ -187,6 +187,8 @@ export interface ChannelFeedback {
   /** What it delivers now, and the most it can, in its channel's unit. */
   delivering: number;
   most: number;
+  /** A time-proportional valve proves its own flow; zero between pulses is normal. */
+  pulsed?: boolean;
 }
 
 export type ChannelPorts = Record<ChannelId, ChannelFeedback | null>;

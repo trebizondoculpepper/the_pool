@@ -1307,6 +1307,67 @@ export function poolPlantPipework(room: string): {
       'CONTROL',
     );
     cable(TRIO_LINKS.acid, 'acid', by('acid dosing pump'), 0.55, 'CONTROL');
+    cable(
+      TRIO_LINKS.co2,
+      'co2',
+      by('CO₂ dosing valve controller'),
+      0.35,
+      'CO₂ CONTROL',
+    );
+    // The building's low-pressure main enters beside the CO₂ panel; the
+    // panel's valve feeds a nozzle into the heated return after the filters.
+    const co2Panel = by('CO₂ dosing valve controller');
+    const co2Wall: Vec3 = [co2Panel.x, 1.5, hz + WALL];
+    const co2Port: Vec3 = [co2Panel.x, 1.5, hz - 0.12];
+    const co2Face: Vec3 = [co2Panel.x, 1.5, co2Panel.footprint.minZ - 0.05];
+    tube(
+      'CO₂ from the building line',
+      'CO₂ from the building line',
+      [co2Wall, co2Port],
+      'gas',
+      'CO₂',
+      'copper',
+      0.015,
+      ['CO₂ low-pressure feed'],
+    );
+    tube(
+      'CO₂ low-pressure feed',
+      'CO₂ low-pressure feed',
+      [co2Port, co2Face],
+      'gas',
+      'CO₂',
+      'copper',
+      0.015,
+      ['CO₂ to the injection nozzle'],
+    );
+    const co2Nozzle: Vec3 = [pheOut1[0] + 0.22, QUILL_Y, pheOut1[2]];
+    const co2Roof = INTO_CEILING - 0.03;
+    tube(
+      'CO₂ to the injection nozzle',
+      'CO₂ to the injection nozzle',
+      [
+        co2Face,
+        [co2Face[0], co2Roof, co2Face[2]],
+        [co2Nozzle[0], co2Roof, co2Face[2]],
+        [co2Nozzle[0], QUILL_Y, co2Face[2]],
+        co2Nozzle,
+      ],
+      'gas',
+      'CO₂',
+      'copper',
+      0.015,
+      ['CO₂ injection into the circulation'],
+    );
+    tube(
+      'CO₂ injection into the circulation',
+      'CO₂ injection into the circulation',
+      [co2Nozzle, [pheOut1[0], QUILL_Y, pheOut1[2]]],
+      'gas',
+      'CO₂',
+      'copper',
+      0.015,
+      ['Heat exchanger to the ozone contact tank'],
+    );
     const annunciator = layout.placed.find((p) =>
       p.item.key.startsWith('annunciator'),
     );

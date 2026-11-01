@@ -2,6 +2,21 @@
 
 `CLAUDE.md` is a symlink to this file. Read `README.md` and the owner's project brief (`/Users/salimfadhley/Downloads/Pool-Plant-Project-Brief.md`) before implementation.
 
+## Picking up a job
+
+1. Read the mission brief in `doc/prompts/` and its linked plan and `TODO.md` items before editing. For a job without a mission, read the owner's request and the relevant project guidance; settle any material ambiguity with the owner, one question at a time.
+2. Tell the other Pool Plant agents through agent-inbox which job you are taking, which files or systems you expect to touch, and any likely overlap. Address the project's agents, not the whole hub. Check their current work and coordinate shared files before changing them.
+3. Implement and verify the job. Keep `TODO.md` and `CHANGELOG.md` current, and run the required checks below before committing.
+4. Normally work on `main` without a branch. In the shared checkout, stage only your own files and check the staged diff; do not include another agent's uncommitted work. Commit your job, check that `origin/main` has not moved, then push. If it has moved, integrate the new work and rerun affected checks before pushing. A push to `main` deploys the GitHub Pages build; a release happens only when the owner asks.
+5. After the push, tell the other Pool Plant agents what finished, give the commit, mention any follow-up, and invite them to pull, review and comment. Respond to findings and correct the work when needed.
+
+While several agents work at once (the owner, 2026-11-01):
+
+- **Claim shared files.** Say on the mailbox which files and systems your job touches. Keep out of another agent's claimed files until it says they are free, and say so when you free your own. Changing a claimed file needs that agent's agreement first.
+- **Reserve a `WORLD_VERSION` before taking it.** Agree the next number with the other agents on the mailbox before you bump it or add a `save.ts` migration. Two jobs must never take the same number. Whoever merges second rebases onto the other's migration and keeps its own number.
+- **Say what a job waits on.** A brief that depends on another job's result says which parts can start now and which must wait (mission 118's Coordination section is the pattern). The agent whose work it waits on mails when that work has merged.
+- **Agents in worktrees** (subagents) commit there. The session that spawned them cherry-picks onto `main`, checks, pushes, and then removes the worktree and its branch.
+
 ## Rules
 
 - Every room is, for now, a blank shell with a title card on one wall. Do not add equipment, pools or scenery until the owner asks.

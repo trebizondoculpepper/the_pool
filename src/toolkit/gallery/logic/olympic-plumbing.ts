@@ -175,6 +175,7 @@ const ITEM: Record<string, { key: string }> = {
   controller: { key: 'dosing-controller' },
   hypo: { key: 'hypo-pumps' },
   acid: { key: 'acid-pump' },
+  'co2-panel': { key: 'co2-panel' },
   tankPanel: { key: 'balance-tank-panel' },
 };
 const itemOf = (p: PlanItem): Item => ({
@@ -319,6 +320,7 @@ const TRIO_Y = {
   return: 2.13,
   hypochlorite: 2.35,
   acid: 2.25,
+  co2: 2.55,
   alarm: 5.62,
   mains: 2.4,
 } as const;
@@ -343,6 +345,7 @@ const pipeOf: Record<string, { kind: Kind; joint: PipeJoint; medium: Medium }> =
     heating: { kind: 'lagged-heating', joint: 'flange', medium: 'water' },
     makeup: { kind: 'copper', joint: 'socket', medium: 'water' },
     chemical: { kind: 'chemical-tube', joint: 'socket', medium: 'chemical' },
+    co2: { kind: 'copper', joint: 'socket', medium: 'gas' },
     // A day tank's branch from the wet hall's selector: PVC-U, rigid.
     transfer: { kind: 'pvc-pressure', joint: 'socket', medium: 'chemical' },
     ozone: { kind: 'stainless', joint: 'socket', medium: 'gas' },
@@ -1206,6 +1209,53 @@ export function plumbOlympic(
       [acidX, TRIO_Y.acid, acidZ],
       [acidX, topOf(acidBoard), acidZ],
     ]);
+    const co2 = port('controller', 'co2');
+    const co2Board = board('co2-panel');
+    const co2X = round(co2Board.x + 0.12);
+    const co2Z = round(co2.at[2] - 0.4);
+    rule(TRIO_LINKS.co2, TRIO_LINKS.co2, 'control', 0.02, [
+      co2.at,
+      [co2.at[0], TRIO_Y.co2, co2.at[2]],
+      [co2.at[0], TRIO_Y.co2, co2Z],
+      [co2X, TRIO_Y.co2, co2Z],
+      [co2X, topOf(co2Board), co2Z],
+    ]);
+    const wallPort: Vec3 = [co2Board.x, 1.5, hz - 0.12];
+    const panelFace: Vec3 = [co2Board.x, 1.5, co2Board.z - 0.18];
+    rule(
+      'CO₂ from the building line',
+      'CO₂ from the building line',
+      'co2',
+      0.015,
+      [[co2Board.x, 1.5, hz + 0.2], wallPort],
+    );
+    rule('CO₂ low-pressure feed', 'CO₂ low-pressure feed', 'co2', 0.015, [
+      wallPort,
+      panelFace,
+    ]);
+    const uvOutlet = port('uv', 'outlet').at;
+    const nozzle: Vec3 = [uvOutlet[0] + 0.22, uvOutlet[1], uvOutlet[2]];
+    const gasY = 3.15;
+    rule(
+      'CO₂ to the injection nozzle',
+      'CO₂ to the injection nozzle',
+      'co2',
+      0.015,
+      [
+        panelFace,
+        [panelFace[0], gasY, panelFace[2]],
+        [panelFace[0], gasY, uvOutlet[2]],
+        [nozzle[0], gasY, uvOutlet[2]],
+        nozzle,
+      ],
+    );
+    rule(
+      'CO₂ injection into the circulation',
+      'CO₂ injection into the circulation',
+      'co2',
+      0.015,
+      [nozzle, uvOutlet],
+    );
     // Its alarm to the local panel on the east wall: up over the landing's
     // headroom, under the busbar, north of the stair and across, and down
     // the wall behind the gantry.

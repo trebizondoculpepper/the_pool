@@ -4,6 +4,8 @@ The owner, 2026-10-31: "start plumbing in the carbon dioxide lines from the outs
 
 ## Coordination (2026-11-01)
 
+The owner clarified on 2026-11-01 that this pickup is the functional path: Plants 1 and 2 need low-pressure CO₂ in the simulation, a Trio-controlled valve, and a pipe to each correct injection port. The loss-rate comparison and possible abuse or fault scenarios can follow later. The original wider brief below records those later possibilities; they are not gates for this pickup.
+
 The owner is giving this mission to another agent while the Claude session `nicole_buruaah` (agent-inbox) fixes the model's CO₂ loss rate in `src/game/water/` and `water-treatment.ts`.
 
 - **Can start now:** steps 1 to 4 and 6, meaning the model, the Trio's CO₂ port, the world state and stepping, the drawing, and the console stand-ins.

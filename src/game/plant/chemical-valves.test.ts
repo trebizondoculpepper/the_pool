@@ -102,8 +102,9 @@ describe('the chemical valves, in the model (plan 085)', () => {
       normal: 'closed',
     });
     const actuated = MODEL_VALVES.filter((v) => v.keptBy === 'distribution');
-    // Each selector outlet's, and the Olympic's framed day tank's inlet.
-    expect(actuated.length).toBe(8 + 1);
+    // Selector outlets, the Olympic day tank inlet, and four CO₂ valves
+    // kept by the CO₂ distribution rather than this valve register.
+    expect(actuated.length).toBe(8 + 1 + 4);
     for (const v of actuated)
       expect(
         Object.values(INSTALLED_VALVES).some((i) => i.assetId === v.id),

@@ -4,6 +4,15 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Mission 118 connects the low-pressure CO₂ supply to the world and to the Lounge and Olympic Trios. Their valves meter CO₂ into the modelled circulation injection points, and copper lines, the control cables and live dosing panels are installed in Plants 1 and 2.
+
+### Changed
+
+- The agent job workflow now calls for a mission read, a project-agent notice before work, a checked commit and push on `main`, and a completion notice inviting review.
+- Local test runs exclude other agents' `.claude/worktrees` so shared-checkout checks cover this checkout alone.
+
 ### Fixed
 
 - The release build no longer times out on GitHub's slower runner: the main incoming switch test (ten hours of world time) and the thermostat's heating and cooling tests (hours each) have moved to `*.slow.test.ts` files, which CI skips and `npm test` still runs locally.

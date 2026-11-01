@@ -137,6 +137,8 @@ export interface PendingFlows {
   /** Litres pumped of each chemical. */
   hypochlorite: number;
   acid: number;
+  /** CO₂ delivered through the return-side injection point, g. */
+  co2?: number;
 }
 
 /**
@@ -264,6 +266,7 @@ const nothingPending = (): PendingFlows => ({
   batherSeconds: 0,
   hypochlorite: 0,
   acid: 0,
+  co2: 0,
 });
 
 /**
@@ -506,6 +509,8 @@ export interface StepFlows {
   bathers: number;
   /** The pumps' rates during the step, l/h. */
   pumps: Record<Chemical, number>;
+  /** CO₂ delivered by the room's valve controller during this step, g. */
+  co2?: number;
 }
 
 /** The chemistry's dosing summed over a world step of `dt` seconds. */
@@ -520,6 +525,7 @@ function accumulate(p: PendingFlows, f: StepFlows, dt: number): PendingFlows {
     batherSeconds: p.batherSeconds + Math.max(0, f.bathers) * dt,
     hypochlorite: p.hypochlorite + f.pumps.hypochlorite * hours,
     acid: p.acid + f.pumps.acid * hours,
+    co2: (p.co2 ?? 0) + (f.co2 ?? 0),
   };
 }
 
@@ -587,6 +593,7 @@ export function stepCircuit(
     hypochlorite: hypo,
     chlorate: hypo * STRENGTH.chlorate,
     hcl: p.acid * STRENGTH.acid,
+    co2: p.co2 ?? 0,
   };
   const reacted = cells.map((w, i) => {
     const v = vPool * POOL_CELL_SHARES[i];

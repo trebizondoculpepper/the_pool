@@ -82,11 +82,9 @@ import type { PoolId, PoolsState } from './pools';
  * (`aqualis-ports.ts`); each pump's state comes back as its channel's
  * feedback.
  *
- * Its CO₂ channel's port is unlinked (the blanked gland): its feedback is
- * null, so the controller corrects pH with acid alone. The seam: the
- * world passes `ports.co2` (the CO₂ valve controller's `co2Feedback`) and
- * takes `signals.co2` (to its `trioSignal`) when the link is made; nothing
- * here changes.
+ * Each CO₂ channel is linked to its room's valve controller. The world
+ * passes `ports.co2` from that controller's `co2Feedback` and sends
+ * `signals.co2` to its `trioSignal`.
  */
 
 export type TrioPool = 'pool_01' | 'pool_02';

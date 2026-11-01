@@ -713,6 +713,17 @@ function poolPlant(
     wall('acid-pump', `${name} acid dosing pump`, 0.7, 0.35, 0.8, 1.3, {
       walls: ['east', 'west'],
     }),
+    wall(
+      'co2-panel',
+      `${name} CO₂ dosing valve controller`,
+      0.7,
+      0.28,
+      0.9,
+      1.4,
+      {
+        walls: ['south'],
+      },
+    ),
   ];
 }
 
@@ -1853,10 +1864,17 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
     // Keep the acid pump with the other dosing supply on the south wall,
     // clear of the control panel on the east wall and its vertical conduit.
     const acid = at('acid dosing pump');
+    const acidPlaced = put(box, acid, {
+      wall: 'south',
+      along: hypoPlaced.footprint.minX - WALL_GAP - 2 * apart - acid.w / 2,
+    });
+    out.push(acidPlaced);
+    // Between the Trio and the acid board, on the same dosing wall.
+    const trioPlaced = out.find((p) => p.item === trio)!;
     out.push(
-      put(box, acid, {
+      put(box, at('CO₂ dosing valve controller'), {
         wall: 'south',
-        along: hypoPlaced.footprint.minX - WALL_GAP - 2 * apart - acid.w / 2,
+        along: (trioPlaced.footprint.maxX + acidPlaced.footprint.minX) / 2,
       }),
     );
     // The annunciator on the south wall, just west of the door (the owner,

@@ -212,6 +212,7 @@ export function stepController(
     const f = ports[id];
     return takesDemand(f) &&
       s.demands[id] > NOT_DELIVERING_DEMAND &&
+      !f!.pulsed &&
       f!.delivering <= 0
       ? s.starved[id] + dt
       : 0;

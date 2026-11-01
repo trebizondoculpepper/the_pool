@@ -4,6 +4,7 @@ import { describeTankCommand } from '../plant/chem-control';
 import type { World, WorldAction } from '../world';
 import type { GameEvent } from './game-event';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
+import { MODEL_VALVES } from '../plant/model-valves';
 import { identifiedPart } from '../plant/identification';
 import { MOTORS } from '../plant/motor-starters';
 import { amountText, handChemical, rateText } from '../plant/hand-dose';
@@ -40,6 +41,8 @@ export function partLabel(world: World, id: string) {
 
 const onOff = (on: boolean) => (on ? 'on' : 'off');
 const openShut = (open: boolean) => (open ? 'opened' : 'shut');
+const modelTag = (id: string) =>
+  MODEL_VALVES.find((valve) => valve.id === id)?.tag ?? 'CO₂';
 
 /** Subject and text for an action, before anything is said about change. */
 function said(
@@ -358,6 +361,23 @@ function said(
         text: `${action.pool} Dr Aqualis Trio: ${what}`,
       };
     }
+    case 'co2/isolation':
+      return {
+        subject: modelTag('LB.co2-wall-inlet.out.iso'),
+        text: `CO₂ emergency isolation ${openShut(action.open)}`,
+      };
+    case 'co2/lever':
+      return {
+        subject: 'CO₂ SUPPLY',
+        text: `CO₂ changeover lever turned to ${after.co2.distribution.supply.service}`,
+      };
+    case 'co2/port':
+      return {
+        subject: modelTag(
+          `${action.room === 'plant_pool_01' ? 'PL1' : 'PL2'}.co2-wall-port.out.iso`,
+        ),
+        text: `CO₂ wall port ${openShut(action.open)}`,
+      };
     case 'dosing-pump': {
       const a = action.action;
       const what =
