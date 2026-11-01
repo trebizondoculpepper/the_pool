@@ -6,7 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
-- Episode 1's YouTube materials in one folder: the dead-rat thumbnail, a transcript and draft timed captions of `welcome_to_the_pool.mp4`, and an extended description (`doc/marketing/youtube/episodes/ep1_should_i_stoop_making_this_game/`).
+- Episode 1's YouTube materials in one folder: the dead-rat source screenshot and thumbnail, a transcript and draft timed captions of `welcome_to_the_pool.mp4`, and an extended description (`doc/marketing/youtube/episodes/ep1_should_i_stoop_making_this_game/`, with the source screenshot in `doc/marketing/screenshots/skimmer_game/`).
 - Report a bug, in the dev panel's World state box (the owner, 2026-11-01): it downloads the game's state file and opens a GitHub issue prefilled with the version, build, world time, location and browser, asking for the file to be dragged in; nothing is sent until the reporter submits it.
 
 ### Fixed
