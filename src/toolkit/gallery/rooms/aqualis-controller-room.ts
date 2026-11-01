@@ -1088,11 +1088,20 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
         minZ: -half(d),
         maxZ: (-d / 2 + CABINET.d + 0.25) * m,
       },
-      // The CO₂ bay along the front wall: its panels and the cylinder.
+      // The CO₂ bay along the front wall: its panels, as deep as what
+      // stands proudest of them (the mass flow controller on its line),
+      // so a player can walk up close to read and work them; and the
+      // cylinder, standing further out, on its own.
       {
         minX: -1.5 * m,
         maxX: 1.5 * m,
-        minZ: (d / 2 - 0.5) * m,
+        minZ: (d / 2 - 0.3) * m,
+        maxZ: half(d),
+      },
+      {
+        minX: -0.2 * m,
+        maxX: 0.2 * m,
+        minZ: (d / 2 - 0.45) * m,
         maxZ: half(d),
       },
     ],
