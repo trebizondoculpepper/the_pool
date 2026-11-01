@@ -1,4 +1,5 @@
 import { frameLayout } from './toolkit/settings/logic/graphics';
+import { createWorldTransferPanel } from './toolkit/save/world-transfer-panel';
 import {
   reportError,
   startErrorReporting,
@@ -1486,6 +1487,9 @@ const openRoom = async () => {
       titleScreen.hide();
       directoryShell.hidden = false;
       directory.querySelector('.plant-manual')?.remove();
+      // At the top: download or upload a save slot (the owner, 2026-11-01).
+      directory.querySelector('.world-transfer')?.remove();
+      directory.prepend(createWorldTransferPanel());
       directory.hidden = false;
       document.title = 'The Pool — Dev panel';
     } else {

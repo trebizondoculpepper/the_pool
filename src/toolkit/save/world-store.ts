@@ -88,6 +88,66 @@ function storage(): Storage | null {
 }
 
 const stores = new Map<string, WorldStore>();
+/** Each open slot's way to take up an uploaded save in this tab. */
+const imported = new Map<string, (text: string) => void>();
+
+/**
+ * The save slots kept in this browser (the dev panel's download and
+ * upload, the owner, 2026-11-01): `game` and `dev` always, and any other
+ * slot with a save, but not their backups.
+ */
+export function listSlots(): string[] {
+  const s = storage();
+  const found = new Set(['game', 'dev']);
+  if (s)
+    for (let i = 0; i < s.length; i++) {
+      const k = s.key(i) ?? '';
+      const m = /^pool-plant:([^:]+)$/.exec(k);
+      if (m && s.getItem(k)?.includes('"pool-plant-save"')) found.add(m[1]);
+    }
+  return [...found];
+}
+
+/**
+ * A slot's save as a file's text, for inspection or debugging: the world
+ * this tab is running for it if it has the slot open (so it is current),
+ * else what is stored; null if the slot has no save.
+ */
+export function exportSlot(slot: string): string | null {
+  const open = stores.get(slot);
+  if (open) return serialiseWorld(open.world.value, Date.now());
+  return storage()?.getItem(key(slot)) ?? null;
+}
+
+/**
+ * Put an uploaded save into a slot: read and migrated as on loading, and
+ * refused with the reason if it cannot be; the slot's last save kept as
+ * its `:previous`; dated now, so it is not caught up for the time since it
+ * was made; and taken up by every tab with the slot open, this one too.
+ */
+export function importSlot(
+  slot: string,
+  text: string,
+): { ok: true } | { ok: false; reason: string } {
+  const loaded = deserialiseWorld(text);
+  if (!loaded.ok) return loaded;
+  const s = storage();
+  if (!s) return { ok: false, reason: 'storage is blocked here' };
+  const fresh = serialiseWorld(loaded.world, Date.now());
+  try {
+    const last = s.getItem(key(slot));
+    if (last) s.setItem(`${key(slot)}:previous`, last);
+    s.setItem(key(slot), fresh);
+    // Other tabs hear this; one whose value is unchanged would not, so
+    // it is removed again once heard.
+    s.setItem(`${key(slot)}:import`, fresh);
+    s.removeItem(`${key(slot)}:import`);
+  } catch {
+    return { ok: false, reason: 'storage is full' };
+  }
+  imported.get(slot)?.(fresh);
+  return { ok: true };
+}
 
 /** The world kept in save slot `slot` ("game", or "dev" for the dev rooms). */
 export function worldStore(slot: string): WorldStore {
@@ -235,6 +295,23 @@ function openWorldStore(slot: string): WorldStore {
     typeof BroadcastChannel === 'undefined'
       ? null
       : new BroadcastChannel(key(slot));
+  /** An uploaded save, taken up here, and saved if this tab holds the slot. */
+  const takeImported = (text: string) => {
+    const loaded = deserialiseWorld(text);
+    if (!loaded.ok) return;
+    world.value = loaded.world;
+    events.value = appendEvents(events.value, [
+      {
+        time: loaded.world.time,
+        kind: 'system',
+        severity: 'notice',
+        subject: 'SAVE',
+        text: 'world replaced by a save uploaded on the dev panel',
+      },
+    ]);
+    save();
+  };
+  imported.set(slot, takeImported);
   const save = () => {
     if (!s || !holding.value) return false;
     try {
@@ -277,6 +354,12 @@ function openWorldStore(slot: string): WorldStore {
   window.addEventListener('pagehide', () => {
     save();
     release();
+  });
+  // A save uploaded on the dev panel (`importSlot`), in this tab or
+  // another: every tab with the slot open takes it up, the holder saving it.
+  window.addEventListener('storage', (event) => {
+    if (event.key !== `${key(slot)}:import` || !event.newValue) return;
+    takeImported(event.newValue);
   });
   // A follower tab takes up what the holder saves.
   window.addEventListener('storage', (event) => {

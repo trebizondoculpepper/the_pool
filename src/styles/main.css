@@ -1166,3 +1166,33 @@ canvas {
     0 0 0 #3b1580,
     0 1px 2px rgb(0 0 0 / 0.5);
 }
+
+/* The dev panel's World state box (src/toolkit/save/world-transfer-panel.ts). */
+.world-transfer {
+  margin: 0 0 18px;
+  padding: 12px 14px;
+  border: 1px solid #baac80;
+  background: #20282299;
+}
+.world-transfer h2 {
+  margin: 0 0 8px;
+  font: bold 14px monospace;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.world-transfer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.world-transfer-row select,
+.world-transfer-row button {
+  font: 13px monospace;
+  padding: 6px 10px;
+}
+.world-transfer-status {
+  margin: 8px 0 0;
+  font: 12px monospace;
+  opacity: 0.8;
+}

@@ -1,7 +1,7 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { newWorld, applyAction } from '../../game/world';
 import { deserialiseWorld, serialiseWorld } from '../../game/save';
-import { worldStore } from './world-store';
+import { exportSlot, importSlot, listSlots, worldStore } from './world-store';
 import { createGameSession } from './game-session';
 import { healthFaults } from '../../game/health';
 
@@ -81,4 +81,47 @@ it('does not replay scenario parameters or bad coordinates on Continue', () => {
   expect(reset).not.toHaveBeenCalled();
   session.start();
   expect(reset).toHaveBeenCalledTimes(1);
+});
+
+it('downloads a slot and uploads one: validated, the last kept, the open world replaced', () => {
+  vi.useFakeTimers();
+  const data = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => void data.set(key, value),
+    removeItem: (key: string) => void data.delete(key),
+    get length() {
+      return data.size;
+    },
+    key: (i: number) => [...data.keys()][i] ?? null,
+  };
+  vi.stubGlobal('window', { localStorage: storage, addEventListener: vi.fn() });
+  vi.stubGlobal('document', { addEventListener: vi.fn() });
+  vi.stubGlobal('navigator', {});
+  const theirs = applyAction(newWorld(), { type: 'plant/full-off' });
+  theirs.pools.pool_01.ph = 7.9;
+  storage.setItem('pool-plant:transfer-a', serialiseWorld(theirs, Date.now()));
+  // A slot not open here: its stored save, as stored.
+  expect(exportSlot('transfer-a')).toBe(
+    storage.getItem('pool-plant:transfer-a'),
+  );
+  expect(exportSlot('nothing-here')).toBeNull();
+  expect(listSlots()).toEqual(
+    expect.arrayContaining(['game', 'dev', 'transfer-a']),
+  );
+  // Uploaded into an open slot: the world there replaced, the last kept.
+  const store = worldStore('transfer-b');
+  const before = storage.getItem('pool-plant:transfer-b');
+  expect(importSlot('transfer-b', exportSlot('transfer-a')!)).toEqual({
+    ok: true,
+  });
+  expect(store.world.value.pools.pool_01.ph).toBe(7.9);
+  if (before)
+    expect(storage.getItem('pool-plant:transfer-b:previous')).toBe(before);
+  expect(storage.getItem('pool-plant:transfer-b:import')).toBeNull();
+  // Nonsense is refused, and nothing is changed.
+  const now = storage.getItem('pool-plant:transfer-b');
+  expect(importSlot('transfer-b', '{"not":"a save"}').ok).toBe(false);
+  expect(importSlot('transfer-b', 'garbage').ok).toBe(false);
+  expect(storage.getItem('pool-plant:transfer-b')).toBe(now);
 });
