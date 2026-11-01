@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- The balance tank hall's doors carry their own warning signs, current UK style after ISO 7010, on both faces of both leaves: Authorised Personnel Only, Danger Deep Water (risk of drowning), Danger Confined Space (tank entry by permit only), Caution Slippery Surface and Fire Door Keep Shut (a new `tank-hall` door warning preset), in the Olympic tank hall and on any plant room shell's tank doors.
+
 ## [0.9.0] - 2026-10-31
 
 ### Added

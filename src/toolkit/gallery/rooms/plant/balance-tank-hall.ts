@@ -598,7 +598,7 @@ export function buildHall(
   wall(d1, TANK.maxZ, 0, HALL.height);
   wall(d0, d1, DOORWAY.height, HALL.height);
   // The doorway's doors: the equipment doors, as between every plant room, pulled open from the bay.
-  const doors = equipmentDoors(kit, 'BALANCE TANK');
+  const doors = equipmentDoors(kit, 'BALANCE TANK', 'tank-hall');
   doors.object.rotation.y = -Math.PI / 2;
   doors.object.position.set(TANK.minX - PARTITION, 0, DOORWAY.z);
   object.add(doors.object);

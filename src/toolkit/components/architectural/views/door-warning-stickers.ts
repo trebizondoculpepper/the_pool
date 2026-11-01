@@ -60,6 +60,18 @@ const SIGNS: Record<
     pictogram: 'no-flames',
     words: ['NO SMOKING', 'or naked flames'],
   },
+  'deep-water': {
+    pictogram: 'general',
+    words: ['DANGER', 'Deep water: risk of drowning'],
+  },
+  'confined-space': {
+    pictogram: 'confined',
+    words: ['DANGER: CONFINED SPACE', 'Tank entry by permit only'],
+  },
+  'slippery-surface': {
+    pictogram: 'slippery',
+    words: ['CAUTION', 'Slippery surface'],
+  },
   'fire-door': { pictogram: 'door-shut', words: ['FIRE DOOR', 'KEEP SHUT'] },
 };
 

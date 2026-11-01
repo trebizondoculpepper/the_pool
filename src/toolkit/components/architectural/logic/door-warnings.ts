@@ -11,6 +11,9 @@ export type DoorStickerId =
   | 'ear-protection'
   | 'chemical-ppe'
   | 'no-flames'
+  | 'deep-water'
+  | 'confined-space'
+  | 'slippery-surface'
   | 'fire-door';
 
 export type DoorWarningPreset =
@@ -18,7 +21,8 @@ export type DoorWarningPreset =
   | 'furnace'
   | 'chemical'
   | 'electrical'
-  | 'noisy-plant';
+  | 'noisy-plant'
+  | 'tank-hall';
 export type DoorWarningSelection = DoorWarningPreset | readonly DoorStickerId[];
 
 export const DOOR_WARNING_PRESETS: Record<
@@ -47,6 +51,16 @@ export const DOOR_WARNING_PRESETS: Record<
     'authorised',
     'ear-protection',
     'moving-machinery',
+    'fire-door',
+  ],
+  // A balance tank's hall: open deep water below a wet grating, and the
+  // tank itself a confined space (Confined Spaces Regulations 1997), so
+  // entry into it is by permit only.
+  'tank-hall': [
+    'authorised',
+    'deep-water',
+    'confined-space',
+    'slippery-surface',
     'fire-door',
   ],
 };

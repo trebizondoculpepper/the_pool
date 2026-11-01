@@ -14,6 +14,7 @@ import {
 } from 'three';
 import type { Material, Object3D } from 'three';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
+import type { DoorWarningSelection } from '../../components/architectural/logic/door-warnings';
 import { createServiceCeiling } from '../../components/site-dressing/views/service-ceiling';
 import { createIndustrialAccess } from '../../components/architectural/views/industrial-access';
 import {
@@ -308,9 +309,14 @@ export function createPlantRoomShell(
 
   // The equipment doors through to the main plant: the standard pair
   // (`equipment-doors.ts`), pulled open from in here.
-  const placeDoors = (d: ShellDoorway, label: string, lobby: string) => {
+  const placeDoors = (
+    d: ShellDoorway,
+    label: string,
+    lobby: string,
+    warnings: DoorWarningSelection = 'plant',
+  ) => {
     const f = wallFrame(plan, d.wall, d.at);
-    const part = equipmentDoors(kit, label);
+    const part = equipmentDoors(kit, label, warnings);
     part.object.position.set(f.x, floor, f.z);
     part.object.rotation.y = yawToward([-f.out[0], -f.out[1]]);
     group.add(part.object);
@@ -320,7 +326,12 @@ export function createPlantRoomShell(
   const equipment = placeDoors(plan.equipment, 'MAIN PLANT', 'equipment lobby');
   // The balance tank hall's doors, the same pair; beyond them, until the hall is built, a dark lobby.
   const tankDoors = plan.tankDoor
-    ? placeDoors(plan.tankDoor, 'BALANCE TANK', 'balance tank lobby')
+    ? placeDoors(
+        plan.tankDoor,
+        'BALANCE TANK',
+        'balance tank lobby',
+        'tank-hall',
+      )
     : null;
 
   // Engraved laminate (the owner, 2026-10-26).

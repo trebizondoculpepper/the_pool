@@ -14,6 +14,14 @@ describe('door warning sticker selection', () => {
     expect(doorWarningStickers('chemical')).toContain('keep-chemicals-apart');
     expect(doorWarningStickers('chemical')).toContain('chemical-ppe');
     expect(doorWarningStickers('electrical')).toContain('live-electrical');
+    // A tank hall's doors warn of its deep water and its confined space.
+    expect(doorWarningStickers('tank-hall')).toEqual([
+      'authorised',
+      'deep-water',
+      'confined-space',
+      'slippery-surface',
+      'fire-door',
+    ]);
     // Every plant room's door is a fire door, and says so.
     for (const preset of [
       'plant',
@@ -21,6 +29,7 @@ describe('door warning sticker selection', () => {
       'chemical',
       'electrical',
       'noisy-plant',
+      'tank-hall',
     ] as const)
       expect(doorWarningStickers(preset), preset).toContain('fire-door');
   });

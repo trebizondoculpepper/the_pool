@@ -49,6 +49,9 @@ const SIGN_WORDS: Record<DoorStickerId, string> = {
   'ear-protection': 'Hearing protection zone: ear protection must be worn',
   'chemical-ppe': 'Chemical PPE must be worn',
   'no-flames': 'No smoking or naked flames',
+  'deep-water': 'Danger: deep water, risk of drowning',
+  'confined-space': 'Danger: confined space, tank entry by permit only',
+  'slippery-surface': 'Caution: slippery surface',
   'fire-door': 'Fire door: keep shut',
 };
 
