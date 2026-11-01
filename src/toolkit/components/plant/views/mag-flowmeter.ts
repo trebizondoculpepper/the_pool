@@ -75,3 +75,46 @@ export function createMagFlowmeter(
     },
   };
 }
+
+/** A wall-mounted converter for a transmitter whose wetted spool is in
+ * an underfloor waste line. Its cable and spool are placed with the room's
+ * pipework; the same world reading drives this legible head. */
+export function createRemoteMagConverter(kit: PanelKit, tag: string) {
+  const t = plantTools(kit);
+  const group = new Group();
+  group.name = `Kessler-Moody remote converter ${tag}`;
+  const body = t.paint('#2f5f8f', 0.5, 0.2);
+  const grey = t.paint('#c9cbc6', 0.6, 0.4);
+  t.box(group, body, 0.25, 0.19, 0.08, 0, 0, 0);
+  t.box(group, grey, 0.23, 0.17, 0.008, 0, 0, 0.044);
+  const lcd = createCharacterLcd(kit, {
+    columns: 16,
+    rows: 2,
+    cell: 0.0036,
+    backlight: true,
+  });
+  lcd.group.position.set(0, 0.012, 0.051);
+  group.add(lcd.group);
+  const mark = createMicroLabel(kit, 'KESSLER-MOODY', {
+    height: 0.009,
+    ink: '#2d3438',
+    maxWidth: 0.18,
+  });
+  mark.position.set(0, -0.065, 0.051);
+  group.add(mark);
+  let shown = '';
+  return {
+    group,
+    show(flow: number) {
+      const arrow = flow > 0.05 ? '->' : '  ';
+      const lines = [
+        `${tag} PIT WASTE`.slice(0, 16),
+        `${Math.abs(flow).toFixed(1).padStart(7)} m3/h ${arrow}`,
+      ];
+      const key = lines.join('|');
+      if (key === shown) return;
+      shown = key;
+      lcd.show(lines);
+    },
+  };
+}

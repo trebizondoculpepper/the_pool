@@ -60,6 +60,16 @@ export const OLYMPIC_ANNEX = {
     { id: 'inlet-header', kind: 'header', name: 'Inlet header' },
     { id: 'outlet-header', kind: 'header', name: 'Outlet header' },
     { id: 'backwash-header', kind: 'header', name: 'Backwash header' },
+    {
+      id: 'foul-sewer-outlet',
+      kind: 'boundary',
+      name: 'Tank drain direct foul-sewer outlet',
+    },
+    {
+      id: 'pit-waste-outlet',
+      kind: 'boundary',
+      name: 'Filter waste outlet to corridor pit main',
+    },
     // Its chemical lines' (prompt 085): its day tanks, filled from the wet
     // hall's selectors, and its dosing pumps.
     ...CHEMICAL_NODES,
@@ -69,7 +79,13 @@ export const OLYMPIC_ANNEX = {
     { id: 'ozone-monitor', kind: 'ozone-monitor', name: 'Ozone monitor' },
   ],
   links: [
-    link('tank.drain', ['tank', 'drain'], ['main-plant', 'drain'], 'water'),
+    link('tank.drain', ['tank', 'drain'], ['foul-sewer-outlet', 'in'], 'water'),
+    link(
+      'Collected Olympic filter waste to corridor',
+      ['main-plant', 'drain-out'],
+      ['pit-waste-outlet', 'in'],
+      'water',
+    ),
     link(
       'tank.level-signal',
       ['tank-level-transmitter', 'signal'],

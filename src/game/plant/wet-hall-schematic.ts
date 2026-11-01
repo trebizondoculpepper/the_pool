@@ -116,6 +116,9 @@ export const WET_HALL_SCHEMATIC: RoomSchematic = {
     makeUpRecorder,
     machine('town-main', 'water-main', 'Town main'),
     machine('plant-rooms', 'pool-plant-rooms', 'Pool plant rooms'),
+    machine('jacuzzi-pit-inlet', 'boundary', 'Jacuzzi gravity waste inlet'),
+    machine('footbath-pit-inlet', 'boundary', 'Footbath gravity waste inlet'),
+    machine('olympic-foul-inlet', 'boundary', 'Olympic tank foul drain inlet'),
     machine('sewer', 'sewer', 'Sewer'),
     machine('waste', 'gully', 'Drain to waste'),
     // The chemical distribution's selectors (plan 085).
@@ -163,6 +166,24 @@ export const WET_HALL_SCHEMATIC: RoomSchematic = {
       'Backwash main to the holding tank',
       ['plant-rooms', 'backwash'],
       ['holding', 'inlet'],
+      'water',
+    ),
+    link(
+      'Jacuzzi gravity waste into pit',
+      ['jacuzzi-pit-inlet', 'out'],
+      ['holding', 'jacuzzi-inlet'],
+      'water',
+    ),
+    link(
+      'Footbath gravity waste into pit',
+      ['footbath-pit-inlet', 'out'],
+      ['holding', 'footbath-inlet'],
+      'water',
+    ),
+    link(
+      'Olympic tank drain to foul sewer',
+      ['olympic-foul-inlet', 'out'],
+      ['sewer', 'tank-drain'],
       'water',
     ),
     link(

@@ -90,7 +90,9 @@ const gravity = (link: PlumbEdge) =>
 
 /** The water and air links the router lays (the rest are signals and power). */
 export const ROUTED_LINKS: readonly PlumbEdge[] = JACUZZI_LINKS.filter(
-  (l) => l.medium === 'water' || l.medium === 'air',
+  (l) =>
+    (l.medium === 'water' || l.medium === 'air') &&
+    l.id !== 'Collected pit waste to corridor',
 );
 
 /** Each routed link's two ends in the room, from its machines' ports. */

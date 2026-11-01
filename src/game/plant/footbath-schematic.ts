@@ -40,6 +40,11 @@ const nodes: SchematicNode[] = [
     kind: 'backwash-main',
     name: 'Waste branch to wet hall pit',
   },
+  {
+    id: 'corridor-waste',
+    kind: 'boundary',
+    name: 'Pit-waste outlet to corridor',
+  },
   // Its sand filter, outside the cabinet beside it (the owner, 2026-10-25).
   {
     id: 'filter',
@@ -105,6 +110,12 @@ const links: PlumbEdge[] = [
     'Filter wash to waste',
     ['filter', 'waste'],
     ['pit-waste', 'in'],
+    'water',
+  ),
+  link(
+    'Collected pit waste to corridor',
+    ['pit-waste', 'out'],
+    ['corridor-waste', 'in'],
     'water',
   ),
   link(

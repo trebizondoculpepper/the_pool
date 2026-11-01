@@ -1,4 +1,9 @@
 import { chemicalOf, wetHallPlumbing } from './wet-hall-plumbing';
+import {
+  wetHallLargePoolWasteRun,
+  wetHallOlympicFoulRun,
+  wetHallSpaWasteRuns,
+} from './wet-hall-spa-waste';
 import { storePlumbing } from './store-plumbing';
 import { loadingBayPlumbing } from './loading-bay-plumbing';
 import { dayTankPlumbing } from './day-tank-plumbing';
@@ -1698,12 +1703,38 @@ export function poolPlantPipework(room: string): {
 /** The pipework of a room, if it has any laid out yet. */
 export function roomPipes(room: string): PipeRun[] {
   // The Olympic's, plumbed and routed by the pipeline (prompt 033).
-  if (room === 'plant_pool_02') return olympicRoom().runs;
+  if (room === 'plant_pool_02') {
+    const runs = olympicRoom().runs;
+    const channel = runs.find(
+      (run) => run.name === 'Backwash drop and floor channel',
+    );
+    if (!channel) throw new Error('Olympic backwash channel has no outlet');
+    const end = channel.points.at(-1)!;
+    const outlet: PipeRun = {
+      name: 'Collected Olympic filter waste to corridor',
+      kind: 'pvc-drain',
+      od: 0.315,
+      points: [end, [end[0], end[1] - 0.1, end[2] + 0.3]],
+      joins: ['backwash-header', 'pit-waste-outlet'],
+      service: 'drainage',
+      label: 'OLYMPIC PIT WASTE',
+      through: [],
+      valves: [],
+      model: { link: 'Collected Olympic filter waste to corridor' },
+    };
+    return [...runs, outlet];
+  }
   // A retired room's pipes and ducts are frozen (`retired-rooms.ts`).
   const retired = retiredPipes(room);
   if (retired) return retired;
   if (room === 'boiler_house') return boilerHousePipework().runs;
-  if (room === 'wet_hall') return wetHallPipework().runs;
+  if (room === 'wet_hall')
+    return [
+      ...wetHallPipework().runs,
+      ...wetHallSpaWasteRuns(),
+      wetHallLargePoolWasteRun(),
+      wetHallOlympicFoulRun(),
+    ];
   if (room === 'hypo_store' || room === 'acid_store')
     return storePlumbing(room).runs;
   if (room === 'loading_bay') return loadingBayPlumbing();
@@ -1713,6 +1744,37 @@ export function roomPipes(room: string): PipeRun[] {
     return dayTankPlumbing(room).runs;
   // A room being laid out afresh has no pipework yet (`BEING_LAID_OUT`).
   if (BEING_LAID_OUT.includes(room)) return [];
+  if (room === 'plant_pool_01') {
+    const laid = poolPlantPipework(room);
+    const halfZ = layoutRoom(room)!.box.d / 2;
+    const channel = laid.channels.find((c) => c.to[2] >= halfZ - 0.01);
+    if (!channel)
+      throw new Error('Lounge waste channel has no south-wall outlet');
+    const collected: PipeRun = {
+      name: 'Collected Lounge waste to corridor',
+      kind: 'pvc-drain',
+      od: 0.16,
+      points: [
+        [channel.to[0], -0.15, halfZ - 0.35],
+        [0, -0.22, halfZ - 0.35],
+        [0, -0.3, halfZ + 0.2],
+      ],
+      joins: ['waste', 'pit-waste-outlet'],
+      service: 'drainage',
+      label: 'LOUNGE PIT WASTE',
+      through: [
+        {
+          at: [0, -0.285, halfZ + 0.1],
+          normal: [0, 0, 1],
+          thickness: 0.2,
+          kind: 'fire-collar',
+        },
+      ],
+      valves: [],
+      model: { link: 'Collected Lounge waste to corridor' },
+    };
+    return [...laid.runs, collected];
+  }
   return room in ROUTED ? poolPlantPipework(room).runs : [];
 }
 

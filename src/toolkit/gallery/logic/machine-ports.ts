@@ -214,13 +214,13 @@ export function machinePorts(item: Item): MachinePort[] {
     if (kind === 'backwash-tank' && item.pit) {
       // The wet hall's backwash pit (prompt 036), about its opening's
       // middle (its footprint shifted east for its davit): the backwash
-      // in down through its gratings at its west end, over its water (an
-      // air break); its pump's discharge riser up out of its sump through
+      // in through its west wall above the top water (an air break); its
+      // pump's discharge riser up out of its sump through
       // a sleeve in its gratings just west of its hatch, not through the
       // hatch's lid (the owner, 2026-10-26: its stub showed on the lid).
       // No gravity drain or overflow: it is emptied by its pump. Both its
-      // ports stand up 150 mm through its gratings, flanged stubs from
-      // below, so a pipe meets each clear of the floor.
+      // discharge port stands up 150 mm through its gratings. The low
+      // gravity inlet opens through the wall, clear of the water.
       const P = BACKWASH_PIT;
       const ox = -WET_HALL_LAYOUT.pitDavitShift;
       // Its header's middle, between its two risers.
@@ -228,9 +228,9 @@ export function machinePorts(item: Item): MachinePort[] {
       return [
         port(
           'inlet',
-          [ox - P.length / 2 + 1.2, 0.15, 0],
-          [0, 1, 0],
-          0.16,
+          [ox - P.length / 2 + 0.1, -0.42, -P.width / 2 + 0.5],
+          [-1, 0, 0],
+          0.25,
           'drain',
         ),
         // Its pump station's outlet, over the header joining its two

@@ -10,6 +10,7 @@ import { JACUZZI_SCHEMATIC } from './jacuzzi-schematic';
 import { FOOTBATH_SCHEMATIC } from './footbath-schematic';
 import { LOUNGE_SCHEMATIC } from './lounge-schematic';
 import { WET_HALL_SCHEMATIC } from './wet-hall-schematic';
+import { CORRIDOR_WATER_SCHEMATIC } from './corridor-water-schematic';
 import { BOILER_HOUSE_SCHEMATIC } from './boiler-house-schematic';
 import { SWITCH_ROOM_SCHEMATIC } from './switch-room-schematic';
 import {
@@ -65,6 +66,7 @@ export const SCHEMATICS: Readonly<Record<string, RoomSchematic>> = {
   [FOOTBATH_SCHEMATIC.room]: FOOTBATH_SCHEMATIC,
   [LOUNGE_SCHEMATIC.room]: LOUNGE_SCHEMATIC,
   [WET_HALL_SCHEMATIC.room]: WET_HALL_SCHEMATIC,
+  [CORRIDOR_WATER_SCHEMATIC.room]: CORRIDOR_WATER_SCHEMATIC,
   [BOILER_HOUSE_SCHEMATIC.room]: BOILER_HOUSE_SCHEMATIC,
   [SWITCH_ROOM_SCHEMATIC.room]: SWITCH_ROOM_SCHEMATIC,
   ...Object.fromEntries(

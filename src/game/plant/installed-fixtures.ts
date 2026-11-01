@@ -1,6 +1,7 @@
 import { condensingBoilerModel } from '../../toolkit/components/plant/logic/boiler-house';
 import type { BrandId } from '../../toolkit/components/core/logic/brands';
 import type { KindId } from './equipment-kinds';
+import { CORRIDOR_WATER_SCHEMATIC } from './corridor-water-schematic';
 
 /**
  * Installed equipment drawn outside a room's equipment layout: by its
@@ -24,6 +25,21 @@ export interface InstalledFixture {
 }
 
 export const INSTALLED_FIXTURES: Readonly<Record<string, InstalledFixture>> = {
+  ...Object.fromEntries(
+    CORRIDOR_WATER_SCHEMATIC.nodes
+      .filter((node) => node.kind === 'branch-flowmeter')
+      .map((node, index) => [
+        `${CORRIDOR_WATER_SCHEMATIC.code}-${node.code}`,
+        {
+          assetId: `asset-${1194 + index}`,
+          room: CORRIDOR_WATER_SCHEMATIC.room,
+          name: node.name,
+          kind: 'flowmeter',
+          brand: 'kessler-moody',
+          purpose: 'Measures one pool branch for the wet-hall water mimics.',
+        },
+      ]),
+  ),
   // Individual boilers within the three installed cascades, under their existing plates.
   ...Object.fromEntries(
     [1, 2, 3, 4, 5, 6].map((n) => [

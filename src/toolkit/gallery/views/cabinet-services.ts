@@ -68,6 +68,7 @@ import type { PanelValve } from '../../components/plant/views/valve-control-pane
 import { installedValveFor } from '../../../game/plant/installed-valves';
 import { markComponent } from '../../components/core/views/component-identity';
 import { retiredFrom } from '../logic/retired-rooms';
+import { spaWasteCollector } from '../logic/spa-waste-collector';
 import type { ComponentIdentity } from '../../components/core/views/component-identity';
 import {
   MODELLED_VALVE_ROOMS,
@@ -139,6 +140,16 @@ export function cabinetServices(
     const valve = link && modelled ? modelValveOn(room, link) : undefined;
     return valve ? { model: { fitting: valve.id } } : {};
   };
+  for (const branch of spaWasteCollector(room)) {
+    const pipe = createPipe('pvc-drain', branch.od, branch.points.map(lift));
+    pipe.name = `${branch.link} underfloor`;
+    group.add(
+      markComponent(pipe, {
+        name: pipe.name,
+        model: { link: branch.link },
+      }),
+    );
+  }
   for (const run of runs) {
     const points = run.points.map(lift);
     const pipe = createPipe(run.kind, run.od, points, {

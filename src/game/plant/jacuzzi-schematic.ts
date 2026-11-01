@@ -60,6 +60,11 @@ export const JACUZZI_NODES: readonly SchematicNode[] = [
     kind: 'backwash-main',
     name: 'Waste branch to wet hall pit',
   },
+  {
+    id: 'corridor-waste',
+    kind: 'boundary',
+    name: 'Pit-waste outlet to corridor',
+  },
   { id: 'busbar', kind: 'busbar', name: 'Busbar' },
   { id: 'switch-fuse', kind: 'switch-fuse', name: 'Room supply switch-fuse' },
   { id: 'valve-panel', kind: 'valve-panel', name: 'Valve panel' },
@@ -187,6 +192,12 @@ export const JACUZZI_LINKS: readonly PlumbEdge[] = [
     'Balance tank drain to waste',
     ['tank', 'drain'],
     ['pit-waste', 'in'],
+    'water',
+  ),
+  link(
+    'Collected pit waste to corridor',
+    ['pit-waste', 'out'],
+    ['corridor-waste', 'in'],
     'water',
   ),
   link(

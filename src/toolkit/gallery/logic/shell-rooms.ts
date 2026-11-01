@@ -418,11 +418,11 @@ export const WET_HALL_LAYOUT = {
   makeUpMainOut: { x: 5.2, y: 3.0 },
   /**
    * The backwash main in from the pool plant rooms (the owner, 2026-10-26:
-   * by the north wall, with the outside world's other services), west of
-   * the make-up bay so foul water never crosses it, high enough to pass
-   * over the ramp's head.
+   * by the north wall, west of the make-up bay. The large-pool filter
+   * drains and Lounge tank drain require a gravity fall through the
+   * corridor; the inlet therefore stays low and clear of the ramp.
    */
-  backwashMainIn: { x: -5.5, y: 4.2 },
+  backwashMainIn: { x: -5.5, y: 0.5 },
   /** The north wall's thickness, from the hall's side to its inside face. */
   northWall: SHELL_WALL,
   /** The foul sewer's connection in the floor, east of the pit: its pump's discharge goes down it. */

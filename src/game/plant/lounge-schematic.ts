@@ -86,6 +86,11 @@ const nodes: SchematicNode[] = [
   machine('heating', 'heating-main', 'Heating main'),
   machine('water', 'water-service', 'Water service'),
   machine('waste', 'gully', 'Drain to waste'),
+  machine(
+    'pit-waste-outlet',
+    'boundary',
+    'Lounge pit-waste outlet to corridor',
+  ),
   // Its day tanks, filled from the wet hall's selectors (plan 085).
   ...DAY_TANKS.nodes,
   machine('switch-fuse', 'switch-fuse', 'Room supply switch-fuse'),
@@ -227,6 +232,12 @@ const links: PlumbEdge[] = [
     'Balance tank drain to waste',
     ['tank', 'drain'],
     ['waste', 'in'],
+    'water',
+  ),
+  link(
+    'Collected Lounge waste to corridor',
+    ['waste', 'out'],
+    ['pit-waste-outlet', 'in'],
     'water',
   ),
   ...DAY_TANKS.links,

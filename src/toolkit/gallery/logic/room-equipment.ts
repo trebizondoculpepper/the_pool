@@ -1880,10 +1880,11 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
         y: at('mimic-wet').y ?? 1.6,
       },
       // On the aisle face of the make-up bay's partition, centred in the
-      // owner's view from (-0.28, -0.42) looking north (2026-11-01).
+      // owner's view from (-0.28, -0.42) looking north (2026-11-01);
+      // shifted east so its whole title and left branch labels fit.
       {
         ...put(box, at('mimic-wet-dirty'), {
-          x: -0.28,
+          x: 0.1,
           z: L.bay.maxZ + L.partition.thickness + at('mimic-wet-dirty').d / 2,
           face: 'south',
         }),

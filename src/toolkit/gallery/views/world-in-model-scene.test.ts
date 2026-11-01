@@ -12,6 +12,7 @@ import { Group } from 'three';
 import { createPanelKit } from '../../components/core/views/eighties-controls';
 import { createRoomEquipment } from './room-equipment';
 import { cabinetServices } from './cabinet-services';
+import { createCorridorWaterBranches } from './corridor-water-branches';
 import { unboundInScene } from './world-in-model-scene';
 import { SCHEMATICS } from '../../../game/plant/schematics';
 import { buildPoolHallContents } from '../rooms/pool-hall-room';
@@ -94,6 +95,12 @@ it('registers the lounge ozone station and supports its ACCEPT and RESET control
 });
 
 describe('everything the scene draws is in the model (prompt 064)', () => {
+  it('the corridor water pipes and all eight transmitters bind to its enhanced network', () => {
+    const kit = createPanelKit();
+    const branch = createCorridorWaterBranches(kit);
+    expect(branch.parts).toHaveLength(8);
+    expect(unboundInScene('main_corridor', branch.group)).toEqual([]);
+  });
   it('the jacuzzi plant room’s machines and services: every mesh bound, or decorative', () => {
     expect(unboundInScene('plant_pool_03', built('plant_pool_03'))).toEqual([]);
   });

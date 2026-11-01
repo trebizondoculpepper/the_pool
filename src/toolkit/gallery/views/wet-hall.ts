@@ -2,6 +2,7 @@ import { withIntake } from '../../../game/plant/site-intake';
 import { installedValveByCommandId } from '../../../game/plant/installed-valves';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createMimicBoard } from '../../components/industrial-control/views/mimic-board';
+import type { MimicState } from '../../components/industrial-control/logic/mimic';
 import { createBoosterSet } from '../../components/plant/views/booster-set';
 import type { BoosterFeed } from '../../components/plant/views/booster-set';
 import { createWaterMeterSet } from '../../components/plant/views/balance-plant';
@@ -131,11 +132,26 @@ export function createFreshWaterMimic(
         );
     },
   });
+  let lastWetHall: WetHallWaterReading['wetHall'] | null = null;
+  let lastMains = false;
+  let visible = '';
+  let state: MimicState | null = null;
   return {
     object: board.group,
     parts: board.parts,
     update() {
-      board.show(freshWaterMimicState(w.reading()));
+      const reading = w.reading();
+      if (reading.wetHall !== lastWetHall || reading.mains !== lastMains) {
+        lastWetHall = reading.wetHall;
+        lastMains = reading.mains;
+        const next = freshWaterMimicState(reading);
+        const key = JSON.stringify(next);
+        if (key !== visible) {
+          visible = key;
+          state = next;
+        }
+      }
+      board.show(state!);
     },
   };
 }
@@ -144,11 +160,24 @@ export function createFreshWaterMimic(
 export function createDirtyWaterMimic(kit: PanelKit, standalone = false) {
   const w = wetHallWorld(standalone);
   const board = createMimicBoard(kit, dirtyWaterMimicSpec);
+  let lastWetHall: WetHallWaterReading['wetHall'] | null = null;
+  let visible = '';
+  let state: MimicState | null = null;
   return {
     object: board.group,
     parts: board.parts,
     update() {
-      board.show(dirtyWaterMimicState(w.reading()));
+      const reading = w.reading();
+      if (reading.wetHall !== lastWetHall) {
+        lastWetHall = reading.wetHall;
+        const next = dirtyWaterMimicState(reading);
+        const key = JSON.stringify(next);
+        if (key !== visible) {
+          visible = key;
+          state = next;
+        }
+      }
+      board.show(state!);
     },
   };
 }

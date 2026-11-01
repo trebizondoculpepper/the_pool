@@ -81,8 +81,6 @@ describe('the services through the ring corridor (prompt 088)', () => {
       'LTHW return to the boiler house',
       'Cold water main to the boiler house',
       'Hot water flow to the building',
-      'Backwash main to the wet hall',
-      'Backwash from plant_pool_02',
       'Hypochlorite main to the wet hall',
       'Acid main to the wet hall',
     ])
@@ -141,10 +139,6 @@ describe('the services through the ring corridor (prompt 088)', () => {
       )!;
       expect(into(branch, branch.points.at(-1)!)).toBe(true);
     }
-    const backwash = runs.find(
-      (r) => r.name === 'Backwash main to the wet hall',
-    )!;
-    expect(backwash.points.at(-1)![2]).toBeGreaterThan(MAIN_CORRIDOR.width);
   });
 
   it('fire-stops every wall it passes through', () => {

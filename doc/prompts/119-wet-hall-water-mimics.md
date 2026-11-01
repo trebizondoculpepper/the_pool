@@ -1,6 +1,6 @@
 # 119: Wet hall fresh-water and dirty-water mimics
 
-Status: research and plan drafted 2026-11-01; awaiting peer feedback. No implementation yet.
+Status: implemented 2026-11-01. The water boards, branch flowmeters, pipe routes and conservation checks are installed; final checks and commit are recorded in TODO.md.
 
 ## Owner's request and decisions
 

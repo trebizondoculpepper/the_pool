@@ -64,6 +64,10 @@ export function createCorridorServices(kit: PanelKit) {
   const runs = corridorServices();
   // One marker built per chemical, cloned wherever it is wanted.
   const markers = new Map<string, Object3D>();
+  const modelledWater = new Set([
+    'Make-up from the wet hall',
+    ...[1, 2, 3, 4].map((n) => `Make-up to plant_pool_0${n}`),
+  ]);
   const markerFor = (r: CorridorRun) => {
     const key = `${r.service} ${outerOf(r)}`;
     let m = markers.get(key);
@@ -78,6 +82,8 @@ export function createCorridorServices(kit: PanelKit) {
     return m.clone();
   };
   for (const r of runs) {
+    if (modelledWater.has(r.name) || r.name.startsWith('Make-up ring,'))
+      continue;
     const od = outerOf(r);
     // A chemical line in its containment, drawn as the containment.
     const kind = r.contained ? 'double-contained' : r.kind;

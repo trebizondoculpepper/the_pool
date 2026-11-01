@@ -16,6 +16,7 @@ import { createServiceCeiling } from '../../components/site-dressing/views/servi
 import { corridorContainment } from '../logic/cable-containment';
 import { createContainment } from './cable-containment';
 import { createCorridorServices } from './corridor-services';
+import { createCorridorWaterBranches } from './corridor-water-branches';
 import {
   EQUIPMENT_DOORS,
   equipmentDoors,
@@ -182,6 +183,8 @@ export function createMainCorridor(metre: number, kit: PanelKit) {
   group.add(createContainment(kit, cables.runs, cables.entries, H));
   // The wet services round the ring, below it (prompt 088): decoration.
   group.add(createCorridorServices(kit));
+  const waterBranches = createCorridorWaterBranches(kit);
+  group.add(waterBranches.group);
   // The services ceiling over each side, and the wall battens and lights.
   strips.forEach(([minX, maxX, minZ, maxZ], i) =>
     group.add(
@@ -305,6 +308,7 @@ export function createMainCorridor(metre: number, kit: PanelKit) {
   }
   return {
     group,
+    waterMeters: waterBranches.parts,
     doors: doors as {
       door: CorridorDoor;
       part: EquipmentDoorsPart;

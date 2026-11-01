@@ -101,8 +101,9 @@ export function startMainCorridorRoom(canvas: HTMLCanvasElement) {
   scene.add(new HemisphereLight('#e9f3f1', '#65716f', 0.45));
   const kit = createPanelKit();
   const parts = createPartSet();
-  const { group: rooms, doors } = createMainCorridor(metre, kit);
+  const { group: rooms, doors, waterMeters } = createMainCorridor(metre, kit);
   for (const d of doors) parts.add(d.part);
+  for (const meter of waterMeters) parts.add(meter);
   // In development, a console handle to work a door by the room it leads
   // to (`window.mainCorridor.useDoor('control_room')`), for checking what
   // is seen through it without walking up to it.

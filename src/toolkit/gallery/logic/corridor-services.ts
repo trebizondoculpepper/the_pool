@@ -12,8 +12,7 @@ import type { CorridorDoor } from './main-corridor';
  * the other side, on brackets along the wet hall's walls, and never above
  * the electrics: top down, the heating flow and return ring (DN80, the
  * boiler house's own size, lagged), the boosted make-up ring (76.1 mm
- * copper), the backwash main (160 mm PVC-U) from the Lounge's and the
- * Olympic's plant rooms, and lowest the chemical lines (32 mm PVC-U in
+ * copper), and lowest the chemical lines (32 mm PVC-U in
  * their containment): the two mains from the stores (beyond the loading
  * bay) to the wet hall, and the eight branches from the wet hall to the
  * four pool plant rooms. Each room takes its lines straight across the
@@ -21,6 +20,9 @@ import type { CorridorDoor } from './main-corridor';
  * line of its tier stepping over or under it. Levels between rooms do
  * not matter (the owner, 2026-10-27): each line runs at its tier's height
  * and goes into a wall at it.
+ *
+ * The pool waste branches are real modelled low pipes in
+ * `corridor-water-runs.ts`, so they can carry gravity drains into the pit.
  *
  * Pure: metres, the corridor's frame (the ring's north-west outside
  * corner at the origin, x east, z south, the floor at y = 0); every run's
@@ -77,7 +79,6 @@ export const TIER = {
   heatingUnder: 3.95,
   makeUp: 3.65,
   cold: 3.4,
-  backwash: 3.15,
   /** Where a chemical line steps up to, to cross the others of its tier. */
   chemicalOver: 3.0,
   chemical: 2.9,
@@ -88,7 +89,6 @@ const INSET = {
   flow: 0.2,
   return: 0.48,
   makeUp: 0.2,
-  backwash: 0.3,
   /** The two chemical mains, hypochlorite then acid. */
   main: [0.15, 0.45],
   /** The first branch, and the spacing of the eight. */
@@ -422,54 +422,6 @@ export function corridorServices(): CorridorRun[] {
       points: reversed(w.points),
       through: [w.through],
       rooms: ['wet_hall'],
-    });
-  }
-
-  // ---- The backwash: from the Lounge's plant room, round by the west and
-  // the north, joined by the Olympic's, into the wet hall. --------------
-  {
-    const l = loop(INSET.backwash);
-    const pl1 = doorOf('plant_pool_01');
-    const start = across(
-      l,
-      'south',
-      pl1.at - inward(pl1) * 3.1,
-      TIER.backwash,
-      'outer',
-    );
-    const main = l.path(
-      l.of('south', pl1.at - inward(pl1) * 3.1),
-      l.of('north', 8.5),
-      TIER.backwash,
-    );
-    const end = across(l, 'north', 8.5, TIER.backwash, 'inner');
-    add({
-      name: 'Backwash main to the wet hall',
-      kind: 'pvc-pressure',
-      od: 0.16,
-      service: 'drainage',
-      label: 'BACKWASH',
-      points: [...reversed(start.points), ...main.slice(1, -1), ...end.points],
-      through: [start.through, end.through],
-      rooms: ['plant_pool_01', 'wet_hall'],
-    });
-    const pl2 = doorOf('plant_pool_02');
-    const b = across(
-      l,
-      'north',
-      pl2.at - inward(pl2) * 3.1,
-      TIER.backwash,
-      'outer',
-    );
-    add({
-      name: 'Backwash from plant_pool_02',
-      kind: 'pvc-pressure',
-      od: 0.11,
-      service: 'drainage',
-      label: 'BACKWASH',
-      points: reversed(b.points),
-      through: [b.through],
-      rooms: ['plant_pool_02'],
     });
   }
 

@@ -64,7 +64,14 @@ const nodeKind = new Map(WET_HALL_SCHEMATIC.nodes.map((n) => [n.id, n.kind]));
 
 /** The water links the router lays (the rest are signals and power). */
 export const WET_HALL_ROUTED = WET_HALL_SCHEMATIC.links.filter(
-  (l) => l.medium === 'water' || l.medium === 'chemical',
+  (l) =>
+    (l.medium === 'water' || l.medium === 'chemical') &&
+    ![
+      'Jacuzzi gravity waste into pit',
+      'Footbath gravity waste into pit',
+    ].includes(l.id) &&
+    l.id !== 'Olympic tank drain to foul sewer' &&
+    l.id !== 'Backwash main to the holding tank',
 );
 
 /** A chemical line's chemical, by its link's name. */

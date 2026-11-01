@@ -1,6 +1,6 @@
 # 119 plan: water destinations and sources in the wet hall
 
-Status: draft for agent review, 2026-11-01. This plan follows the owner's decisions in [mission 119](../prompts/119-wet-hall-water-mimics.md) and the wet hall's [existing layout plan](036-wet-hall-tanks.md).
+Status: implemented 2026-11-01. This plan follows the owner's decisions in [mission 119](../prompts/119-wet-hall-water-mimics.md) and the wet hall's [existing layout plan](036-wet-hall-tanks.md).
 
 ## Two boards
 
@@ -44,5 +44,9 @@ Prototype both boards in dev39 or another suitable development room. Add pure te
 Nicole and Ahnaa checked the first draft against the code. Both confirmed the spa schematic/corridor mismatch and recommended distinct pit-waste boundary outlets before the common main, with deck gullies retained separately. Ahnaa noted the 160 mm main must be checked under simultaneous spa drain and large-pool wash. Nicole found Lounge dump, rinse and tank/filter drains in its pit-bound `toWaste`, the Olympic and Jacuzzi tank drains going unaccounted into `spilt`, possible one-step daily-wash spikes, and the need for short transmitter damping and rounded display values. The plan above incorporates those findings. Nicole also confirmed that keeping WH-MP1's installed key preserves its identity and suggested WH-MP2 for the second board. WORLD_VERSION 67 is reserved for parallel mission 118 work; mission 119 must take the next free version if it persists sensors.
 
 Nicole's review of commit d9f318e1 then identified the Olympic tank's capacity as too large for the pit. The plan now routes that tank drain directly to foul sewer, keeps the Jacuzzi's small tank drain and the Lounge's existing tank drain on the pit route, and calls for the sewer monitor's tests to follow those paths.
+
+## Installed topology and validation
+
+The main corridor has an enhanced water network (`corridor-water-schematic.ts`) with MC-FT1–8, each in series with its own fresh or pit-waste branch and each linked by a control signal to its wet-hall mimic. The Kessler-Moody meters reuse the flowmeter type already tried in development rooms dev26 and dev37; the two Penfold boards were tried in dev39. The installed fixtures register gives the new meters permanent asset IDs. The corridor and room views draw their pipes and instruments from network links or nodes. Spa cabinet waste enters separate underfloor collector runs, then reaches the wet hall pit; the Olympic balance-tank drain continues to foul sewer outside the pit. The shared large-pool waste inlet enters the pit above its top water level. The 600-second water-balance test checks that the four actual branch rates reconcile to each aggregate on every world step. The mimic benchmark passed with zero idle and running texture uploads while unchanged.
 
 Ahnaa's review of the same commit called out the required old-control-room copies, Penfold maker marks and branded transmitters, development-room trials, model-derived tags, honest meter status and a long-run conservation check. The mission and plan now include those requirements. A damped meter state is justified because the displayed instrument must respond gradually to each new measured flow; recomputing it from one current step would lose its history. It therefore needs a world migration, coordinated after mission 118's version 67.
