@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.13.0] - 2026-11-01
+
 ### Added
 
 - Episode 1's YouTube materials in one folder: the dead-rat source screenshot and thumbnail, a transcript and draft timed captions of `welcome_to_the_pool.mp4`, and an extended description (`doc/marketing/youtube/episodes/ep1_should_i_stoop_making_this_game/`, with the source screenshot in `doc/marketing/screenshots/skimmer_game/`).
@@ -1167,7 +1169,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.13.0...HEAD
+[0.13.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.9.0...v0.10.0
