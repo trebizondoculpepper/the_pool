@@ -129,3 +129,61 @@ describe('the pools as the world runs them', () => {
     expect(water.flows.pool_04.pitWaste).toBe(0);
   });
 });
+
+describe('the pools’ heat from the LTHW ring (mission 120)', () => {
+  /** Every pool a degree cold, so each heater asks its full output. */
+  const cold = () => {
+    const pools = newPools();
+    for (const p of Object.values(pools)) {
+      p.temperature -= 1;
+      p.hallAir -= 1;
+    }
+    return pools;
+  };
+  const step = (ring?: { flow: number; circulating: boolean }) =>
+    stepPoolsWater(
+      cold(),
+      newPlantServices(),
+      10,
+      0,
+      undefined,
+      1,
+      undefined,
+      0,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      ring,
+    ).heat;
+  const total = (h: ReturnType<typeof step>) =>
+    Object.values(h).reduce((t, p) => t + p.water + p.air, 0);
+
+  it('gives each pool what it asks from a hot ring, as a bottomless supply would', () => {
+    const hot = step({ flow: 80, circulating: true });
+    const bottomless = step();
+    for (const [id, h] of Object.entries(hot)) {
+      expect(h.water, id).toBeCloseTo(h.waterAsked, 6);
+      expect(h.water, id).toBeCloseTo(
+        bottomless[id as keyof typeof hot].water,
+        6,
+      );
+    }
+  });
+
+  it('gives less from a cool ring, the asks unchanged', () => {
+    const hot = step({ flow: 80, circulating: true });
+    const cool = step({ flow: 45, circulating: true });
+    expect(total(cool)).toBeLessThan(0.7 * total(hot));
+    expect(cool.pool_02.waterAsked).toBeCloseTo(hot.pool_02.waterAsked, 6);
+    // Below the jacuzzi's water, nothing to it.
+    expect(step({ flow: 35, circulating: true }).pool_03.water).toBe(0);
+  });
+
+  it('gives nothing with the ring’s pumps stopped', () => {
+    expect(total(step({ flow: 80, circulating: false }))).toBe(0);
+  });
+});

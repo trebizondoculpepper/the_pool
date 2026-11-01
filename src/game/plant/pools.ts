@@ -314,6 +314,14 @@ export interface JacuzziCirculation {
   drainOpen?: boolean;
 }
 
+/** A pool's heat in a step, kW: its water's and hall's heaters' delivered, and what their thermostats asked. */
+export interface PoolHeat {
+  water: number;
+  air: number;
+  waterAsked: number;
+  airAsked: number;
+}
+
 /** Whether each chemical is to be had: its store not run dry. */
 export type ChemicalStock = Record<Chemical, boolean>;
 /**
@@ -475,6 +483,13 @@ export function stepPoolsWater(
    * drawn from its tank, none to the spa (`spa-filter.ts`).
    */
   spaWash?: Partial<Record<PoolId, number>>,
+  /**
+   * The LTHW ring (`lthw-ring.ts`, mission 120): its flow temperature, °C,
+   * and whether its pumps move it. Each pool's heaters get what their
+   * thermostats ask only as far as the ring can give it, and nothing
+   * while it stands still. Without it, a bottomless supply, as before.
+   */
+  ring?: { flow: number; circulating: boolean },
 ): {
   pools: PoolsState;
   drawn: number;
@@ -486,6 +501,8 @@ export function stepPoolsWater(
    * its make-up and evaporation, m³, and whether its UV (or ozone) was lit.
    */
   flows: Record<PoolId, PoolStepFlows>;
+  /** Each pool's heat this step, kW: what its water's and its hall's heaters asked, and what the ring delivered. */
+  heat: Record<PoolId, PoolHeat>;
 } {
   const share =
     makeUp ?? (serviceAvailable(plant, 'wet_hall', 'water') ? 1 : 0);
@@ -511,6 +528,8 @@ export function stepPoolsWater(
   const drainRate = toSewer.length ? sewer / toSewer.length : 0;
   const next = {} as PoolsState;
   const flows = {} as Record<PoolId, PoolStepFlows>;
+  const heats = {} as Record<PoolId, PoolHeat>;
+  const ringMoving = ring?.circulating ?? true;
   for (const id of POOL_IDS) {
     const room = `plant_${id}` as ServiceRoom;
     const old = pools[id];
@@ -551,6 +570,7 @@ export function stepPoolsWater(
       circulation &&
       loungeMoving &&
       serviceAvailable(plant, room, 'heat') &&
+      ringMoving &&
       // The jacuzzi's heat exchanger, through its heating valves.
       (id !== 'pool_03' || !jacuzzi || jacuzzi.heat);
     // Its treatment's flow: none while it is drained down to the sewer.
@@ -672,7 +692,10 @@ export function stepPoolsWater(
     const units = air?.[id];
     const airShare = units ? (handled ? units.share : 0) : 1;
     const heatAir =
-      handled && airShare > 0.01 && serviceAvailable(plant, room, 'heat');
+      handled &&
+      airShare > 0.01 &&
+      serviceAvailable(plant, room, 'heat') &&
+      ringMoving;
     const hallRh = units
       ? stepHallRh(old.hallRh, handled ? units : { share: 0, drying: 0 }, dt)
       : old.hallRh;
@@ -691,9 +714,16 @@ export function stepPoolsWater(
         ...(units ? { humidity: hallRh / 100, airShare } : {}),
         madeUp: water.madeUp,
         waterSet: old.setpoint ?? POOL_TARGET[id].temp,
+        ...(ring ? { ring: ring.flow } : {}),
       },
       dt,
     );
+    heats[id] = {
+      water: thermal.waterHeat / 1000,
+      air: thermal.airHeat / 1000,
+      waterAsked: thermal.waterAsked / 1000,
+      airAsked: thermal.airAsked / 1000,
+    };
     const temperature = thermal.water;
     const hallAir = thermal.air;
     const heating = (thermal.waterHeat + thermal.airHeat) / 1000;
@@ -717,5 +747,5 @@ export function stepPoolsWater(
       setpoint: old.setpoint ?? POOL_TARGET[id].temp,
     };
   }
-  return { pools: next, drawn, backwashed, drained, flows };
+  return { pools: next, drawn, backwashed, drained, flows, heat: heats };
 }
