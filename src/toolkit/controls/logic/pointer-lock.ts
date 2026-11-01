@@ -11,3 +11,11 @@ export const RELOCK_COOLDOWN_MS = 2000;
 export function lockUnavailable(sinceRelease: number) {
   return sinceRelease > RELOCK_COOLDOWN_MS;
 }
+
+/**
+ * How long after asking for the pointer, ms, a lock not granted counts as
+ * refused: some browsers neither grant nor refuse it (Safari on an iPad
+ * with a trackpad, the owner, 2026-11-01), and a click that only asks
+ * again would leave the player unable to look at all.
+ */
+export const LOCK_SILENCE_MS = 700;

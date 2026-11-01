@@ -20,7 +20,7 @@ import type { FlightBounds } from '../logic/noclip';
 import { createObjectHandling } from './object-handling';
 import type { DropPlacement, TargetFeedback } from './object-handling';
 import type { PortableObject, SupportSurface } from './object-handling';
-import { lockUnavailable } from '../logic/pointer-lock';
+import { LOCK_SILENCE_MS, lockUnavailable } from '../logic/pointer-lock';
 import { cutOpenings, slide } from '../logic/walk-collision';
 import type { Footprint } from '../logic/walk-collision';
 import { climb, ladderToUse } from '../logic/ladder-zone';
@@ -1045,9 +1045,24 @@ export function createFirstPerson(options: FirstPersonOptions) {
     if (event.pointerType === 'mouse' && !lockRefused) {
       if (event.button !== 0) return;
       if (locked()) heldUse('mouse', 0, 0);
-      else
-        void Promise.resolve(lockTarget.requestPointerLock()).catch(refuseLock);
-      return;
+      else {
+        // Asked for and not granted soon after is refused too: then this
+        // click and the rest drag to look and use where they land.
+        const ask = lockTarget.requestPointerLock as
+          | (() => Promise<void> | void)
+          | undefined;
+        if (!ask) {
+          lockRefused = true;
+        } else {
+          void Promise.resolve()
+            .then(() => ask.call(lockTarget))
+            .catch(refuseLock);
+          setTimeout(() => {
+            if (!locked()) refuseLock();
+          }, LOCK_SILENCE_MS);
+        }
+      }
+      if (!lockRefused) return;
     }
     canvas.setPointerCapture(event.pointerId);
     drag = {
@@ -1800,7 +1815,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
         input === 'gamepad' ||
         // On a touch screen too: what is at the centre is what the USE
         // button works (the owner, 2026-11-01, on an iPad).
-        input === 'touch' ||
+        // Not while a finger drags the view round, when it would only be in
+        // the way; with the twin sticks it is shown.
+        (input === 'touch' && !drag?.moved) ||
         handling?.holding()
       );
       if (!crosshair.hidden) {
