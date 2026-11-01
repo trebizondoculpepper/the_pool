@@ -1,4 +1,5 @@
 import { effect } from '@preact/signals-core';
+import { gearIcon } from '../controls/input/hud-icons';
 import { paused } from '../controls/logic/paused';
 import { listenMenu } from '../controls/input/menu-input';
 import { controlsHelp } from '../controls/logic/controls';
@@ -29,11 +30,8 @@ import { createVoteBadge } from '../title/vote-badge';
  * Saving is Minecraft's: the world saves itself; Save is for reassurance.
  */
 
-/** The gear, as an icon in the HUD's style. */
-export const GEAR_ICON = `<svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-<path d="M13.4 3h5.2l.8 3.6 2.4 1 3.1-2 3.7 3.7-2 3.1 1 2.4 3.4.8v5.2l-3.6.8-1 2.4 2 3.1-3.7 3.7-3.1-2-2.4 1-.8 3.4h-5.2l-.8-3.6-2.4-1-3.1 2-3.7-3.7 2-3.1-1-2.4L3 18.6v-5.2l3.6-.8 1-2.4-2-3.1 3.7-3.7 3.1 2 2.4-1z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-<circle cx="16" cy="16" r="4.5" fill="none" stroke="currentColor" stroke-width="2"/>
-</svg>`;
+/** The gear, as an icon in the HUD's style (`hud-icons.ts`). */
+export const GEAR_ICON = gearIcon();
 
 /** A wrench, as an icon in the HUD's style: the developers' panel. */
 const WRENCH_ICON = `<svg viewBox="0 0 32 32" width="20" height="20" aria-hidden="true">

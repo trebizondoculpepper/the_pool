@@ -38,7 +38,9 @@ import {
  * it, or none sees it from in front and large enough to read, and its
  * redraws meanwhile are held back, uploaded once it is shown again;
  * as the view comes round towards its face's normal it fades up from
- * flat to full, over angles set by its kind (a CRT's 85° to 80°). A kind
+ * flat to full, over angles set by its kind (a CRT's 85° to 80°). Every
+ * change of how much is shown, coming into reach or going out of it,
+ * fades over `SIGN_FADE` on the signs' curve, never at once. A kind
  * with a wash (an LCD's, `LCD_WASH`) is washed out per pixel by the
  * material showing it, patched once as it is first found in a scene
  * (`lcdWashPatch`): nothing more is uploaded for it, at any angle. The component drawing it is untouched: it keeps drawing
@@ -55,6 +57,14 @@ interface Watched {
   updates: number;
   /** How much of it is shown: 0 flat, 1 in full, between a fade. */
   level: number;
+  /**
+   * The level it is fading to, and the level and time (ms) the fade began
+   * at: never all at once (the owner, 2026-11-01: "no display should
+   * suddenly appear"), eased as signs' lettering is (`SIGN_FADE`).
+   */
+  target: number;
+  fadeFrom: number;
+  fadeSince: number;
   /** Until when (ms) the last sighting of it holds. */
   seenUntil: number;
   /** When it last showed a new picture, ms, and whether one is waiting. */
@@ -89,6 +99,9 @@ export function watchDisplay(
     maxHz,
     updates: 0,
     level: 1,
+    target: 1,
+    fadeFrom: 1,
+    fadeSince: 0,
     seenUntil: 0,
     shownAt: -Infinity,
     waiting: false,
@@ -290,6 +303,30 @@ function refresh(w: Watched) {
   else compose(w);
 }
 
+/** The displays fading in or out now. */
+const displayFades = new Set<Watched>();
+
+/**
+ * Fade a display towards `target`, from wherever it is now, over
+ * `SIGN_FADE` on the signs' smoothstep curve; stepped at each check.
+ */
+function fadeTo(w: Watched, target: number, now: number) {
+  if (w.target !== target) {
+    w.fadeFrom = w.level;
+    w.target = target;
+    w.fadeSince = now;
+  }
+  if (w.level === target) {
+    displayFades.delete(w);
+    return;
+  }
+  const k = Math.min(1, (now - w.fadeSince) / SIGN_FADE);
+  const eased = k * k * (3 - 2 * k);
+  if (k >= 1) displayFades.delete(w);
+  else displayFades.add(w);
+  setLevel(w, k >= 1 ? target : w.fadeFrom + (target - w.fadeFrom) * eased);
+}
+
 function setLevel(w: Watched, level: number) {
   if (w.level === level) return;
   w.level = level;
@@ -395,7 +432,8 @@ export const SIGN_FADE = 1200;
 const fading = new Map<Sign, number>();
 
 /**
- * Whether any sign is fading from one step to another: the component
+ * Whether any sign is fading from one step to another, or any display in
+ * or out (`fadeTo`): the component
  * benchmark waits for its component's signs to settle on the step its
  * camera sees them at before it measures it idle, so a fade begun by its
  * framing is not counted as uploads with nothing changing. A fade no
@@ -405,7 +443,9 @@ const fading = new Map<Sign, number>();
 export function signsFading(now = performance.now()) {
   for (const [sign, since] of fading)
     if (now - since > SIGN_FADE + 2 * CHECK) fading.delete(sign);
-  return fading.size > 0;
+  for (const w of displayFades)
+    if (now - w.fadeSince > SIGN_FADE + 2 * CHECK) displayFades.delete(w);
+  return fading.size > 0 || displayFades.size > 0;
 }
 
 function setStep(sign: Sign, step: number, now: number) {
@@ -572,13 +612,13 @@ function check(scene: Scene, camera: Camera, screenPixels: number) {
     const profile = withinRoomLimits(profileOf(w), roomLimits.get(scene));
     const level = Math.max(
       ...objects.map((o) =>
-        displayVisibility(w.level > 0, sighting(o), profile),
+        displayVisibility(w.target > 0, sighting(o), profile),
       ),
     );
     // A sighting holds a while, so another renderer drawing it that
     // cannot see it does not flatten it at once.
     if (level > 0) w.seenUntil = now + SIGHTING;
-    setLevel(w, level > 0 || now >= w.seenUntil ? level : w.level);
+    fadeTo(w, level > 0 || now >= w.seenUntil ? level : w.target, now);
   }
 }
 

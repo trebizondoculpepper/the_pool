@@ -1,4 +1,5 @@
 import type { Box3, Object3D, PerspectiveCamera } from 'three';
+import { torchIcon } from './hud-icons';
 import {
   NO_INSPECTION,
   inspectionText,
@@ -118,12 +119,8 @@ const HOLD_MS = 250;
 /** A tap of an on-screen turn turns this far, and one held this fast. */
 const TAP_TURN_RADIANS = Math.PI / 12;
 const HUD_TURN_RADIANS_PER_SECOND = 1.6;
-/** The torch, as an icon: Half-Life's style, a torch and its beam. */
-const TORCH_ICON = `<svg viewBox="0 0 32 32" width="26" height="26" aria-hidden="true">
-<rect x="3" y="13" width="13" height="7" rx="1.5" fill="none" stroke="currentColor" stroke-width="2"/>
-<path d="M16 11.5 L20 10 L20 23 L16 21.5 Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-<path class="hud-torch-beam" d="M22 11 L30 6 M22 16.5 L30 16.5 M22 22 L30 27" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-</svg>`;
+/** The torch, as an icon (`hud-icons.ts`). */
+const TORCH_ICON = torchIcon(32);
 export const RUN_METRES_PER_SECOND = 4.2;
 export const LOOK_RADIANS_PER_PIXEL = 0.0022;
 export const PITCH_LIMIT = 1.45;

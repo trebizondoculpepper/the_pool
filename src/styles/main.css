@@ -321,6 +321,11 @@ canvas {
   padding: 8px;
   cursor: pointer;
 }
+/* Its icon (`hud-icons.ts`), centred in it. */
+.location-pin-button svg {
+  display: block;
+  margin: 0 auto;
+}
 .location-pin-button:focus-visible {
   outline: 3px solid #d3ad55;
   outline-offset: 2px;

@@ -212,6 +212,13 @@ export interface FloorChannel {
 export const PUMP_HEADER = 2.4;
 /** The Lounge Trio's supply's feed across over its glands' cables' feet, m (mission 114). */
 const TRIO_FEED_Y = 2.4;
+/**
+ * The Trio's feed from its isolator's place on the south wall (the owner,
+ * 2026-11-01): along at this height, this far out from the wall, clear of
+ * the dosing lines, the sample line and the CO₂ tube.
+ */
+const TRIO_FEED_LOW_Y = 2.0;
+const TRIO_FEED_OUT = 0.35;
 /** Its sample tube's foot by the pumps' header, where its tapping valve is worked, m. */
 const TRIO_TAP_LOW = 1.95;
 /** A duct's pipe runs this far under the floor. */
@@ -298,6 +305,8 @@ export interface IsolatorPlace {
 }
 
 /** An isolator's box (`createPowerIsolator`): about 115 × 160 × 105 mm, its middle this high. */
+/** Where along the Lounge plant room's south wall the Trio's supply isolator stands, metres (the owner, 2026-11-01). */
+const LOUNGE_TRIO_ISOLATOR_X = 3.98;
 export const ISOLATOR_Y = 1.5;
 const ISOLATOR_BOX = { h: POWER_ISOLATOR.h, d: POWER_ISOLATOR.d };
 
@@ -1379,13 +1388,17 @@ export function poolPlantPipework(room: string): {
         annunciator.item.w - 0.12,
         'ALARM',
       );
-    // Its isolator on a stand against the wall beside it, east of its
-    // sample tubes, facing into the room; its supply down out of the
-    // ceiling, its feed up, across in front of the glands' cables, and down
-    // onto its mains gland.
+    // Its isolator on a stand against the south wall, facing into the
+    // room, on the clear wall where the owner put it (2026-11-01: beside
+    // the Trio it stood over the CO₂ dosing panel); its supply down out of
+    // the ceiling, its feed up, across in front of the glands' cables, and
+    // down onto its mains gland.
     const power = placedPort(trio, 'power');
     const facing: Vec3 = [0, 0, -1];
-    const stand: [number, number] = [outX + 0.17, trio.footprint.maxZ];
+    const stand: [number, number] = [
+      LOUNGE_TRIO_ISOLATOR_X,
+      trio.footprint.maxZ,
+    ];
     const isoAt: Vec3 = [
       stand[0],
       ISOLATOR_Y,
@@ -1419,10 +1432,13 @@ export function poolPlantPipework(room: string): {
       powerLink,
       [
         feedOut,
-        [feedOut[0], TRIO_FEED_Y, feedOut[2]],
-        // Out in front of the sample tubes and the glands' cables.
-        [feedOut[0], TRIO_FEED_Y, power.at[2] - 0.12],
-        [power.at[0], TRIO_FEED_Y, power.at[2] - 0.12],
+        // Up, out from the wall, along to the Trio in front of its sample
+        // tubes (from its isolator's new place, the owner, 2026-11-01), and
+        // in onto its mains gland.
+        [feedOut[0], TRIO_FEED_LOW_Y, feedOut[2]],
+        [feedOut[0], TRIO_FEED_LOW_Y, feedOut[2] - TRIO_FEED_OUT],
+        [power.at[0], TRIO_FEED_LOW_Y, feedOut[2] - TRIO_FEED_OUT],
+        [power.at[0], TRIO_FEED_Y, feedOut[2] - TRIO_FEED_OUT],
         [power.at[0], TRIO_FEED_Y, power.at[2]],
         [...power.at],
       ],

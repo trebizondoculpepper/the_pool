@@ -29,6 +29,7 @@ import {
   throughDoor,
 } from './toolkit/gallery/logic/door-joins';
 import { firstPersonOn } from './toolkit/controls/input/first-person';
+import { cameraIcon, pinIcon } from './toolkit/controls/input/hud-icons';
 import {
   setCopyHandler,
   setNoclipToggle,
@@ -204,13 +205,13 @@ positionOverlay.classList.add('location-overlay');
 const roomName = document.createElement('span');
 const positionButton = document.createElement('button');
 positionButton.type = 'button';
-positionButton.textContent = '📍';
+positionButton.innerHTML = pinIcon();
 positionButton.title = 'Copy a link to this view';
 positionButton.setAttribute('aria-label', 'Copy a link to this view');
 positionButton.className = 'location-pin-button';
 const screenshotButton = document.createElement('button');
 screenshotButton.type = 'button';
-screenshotButton.textContent = '▣';
+screenshotButton.innerHTML = cameraIcon();
 screenshotButton.title = 'Copy a screenshot (Ctrl/Cmd+Shift+K)';
 screenshotButton.setAttribute('aria-label', 'Copy screenshot without overlays');
 screenshotButton.className = 'location-pin-button screenshot-button';
@@ -774,7 +775,7 @@ effect(() => {
   const label = camera
     ? 'Copy a link to this camera shot'
     : 'Copy a link to this view';
-  positionButton.textContent = camera ? '📷' : '📍';
+  positionButton.innerHTML = pinIcon();
   positionButton.title = `${label} (Ctrl/Cmd+P)`;
   positionButton.setAttribute('aria-label', label);
   // Leaving noclip, a reload walks again, whatever link it came by. (Only
