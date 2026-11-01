@@ -7,6 +7,7 @@ import { panelMakerMark } from '../../components/core/views/panel-maker-mark';
 import { tools } from '../../components/core/views/fitting-tools';
 import { createDialGauge } from '../../components/industrial-control/views/dial-gauge';
 import { createGasBallValve } from '../../components/plant/views/gas-fittings';
+import { createSolenoidValve } from '../../components/plant/views/solenoid-valve';
 import { createPartSet, pushButton } from '../../components/core/parts/parts';
 import type { PartSet } from '../../components/core/parts/parts';
 import { co2DetectorAlarms } from '../../../game/plant/co2-detection';
@@ -15,6 +16,9 @@ import {
   CO2_DETECTOR_PARTS,
   CO2_DETECTOR_PORTS,
   CO2_DETECTOR_SIZE,
+  CO2_INLET_SIZE,
+  CO2_LOADING_BAY,
+  CO2_MASTER_SIZE,
   CO2_WALL_PORT_PORTS,
   CO2_WALL_PORT_SIZE,
 } from '../logic/co2-fittings';
@@ -311,7 +315,7 @@ export interface MasterPanelReading {
  * RESET (refused while a detector still holds the trip), and the building
  * line's gauge. 0.36 × 0.42 m, facing +z, centred on its origin.
  */
-export const CO2_MASTER_PANEL_SIZE = { w: 0.36, h: 0.42, d: 0.14 } as const;
+export const CO2_MASTER_PANEL_SIZE = { w: 0.36, h: 0.3, d: 0.12 } as const;
 
 export function createCo2MasterPanel(
   kit: PanelKit,
@@ -330,22 +334,22 @@ export function createCo2MasterPanel(
     width: 0.26,
     height: 0.035,
   });
-  title.position.set(-0.03, h / 2 - 0.03, front);
+  title.position.set(-0.03, h / 2 - 0.025, front);
   object.add(title);
   panelMakerMark(kit, object, { width: w, height: h, z: front });
   const gauge = createDialGauge(kit, {
-    dia: 0.09,
+    dia: 0.07,
     max: 6,
     unit: 'bar',
     legend: 'CO₂ LINE',
     entry: 'back',
   });
-  gauge.group.position.set(-0.09, 0.07, front + 0.015);
+  gauge.group.position.set(-0.11, 0.02, front + 0.015);
   object.add(gauge.group);
-  const open = t.led(object, '#3ddc5a', 0.01, 0.06, 0.1, front + 0.003);
-  const tripped = t.led(object, '#ff3b2f', 0.01, 0.12, 0.1, front + 0.003);
-  t.label(object, 'OPEN', 0.06, 0.075, front, 0.01, '#30383e');
-  t.label(object, 'TRIPPED', 0.12, 0.075, front, 0.01, '#30383e');
+  const open = t.led(object, '#3ddc5a', 0.01, 0.04, 0.04, front + 0.003);
+  const tripped = t.led(object, '#ff3b2f', 0.01, 0.11, 0.04, front + 0.003);
+  t.label(object, 'OPEN', 0.04, 0.018, front, 0.01, '#30383e');
+  t.label(object, 'TRIPPED', 0.11, 0.018, front, 0.01, '#30383e');
   const button = (
     colour: 'green' | 'red' | 'black',
     legend: string,
@@ -360,7 +364,7 @@ export function createCo2MasterPanel(
         action: () => act(a),
       }),
     );
-    b.object.position.set(x, -0.1, front);
+    b.object.position.set(x, -0.085, front);
     object.add(b.object);
   };
   button('green', 'ON', 'on', -0.11);
@@ -382,5 +386,151 @@ export function createCo2MasterPanel(
       const r = read();
       return `${r.on ? 'ON' : 'OFF'} · ${r.tripped ? 'TRIPPED' : r.open ? 'OPEN' : 'SHUT'} · ${r.lineBar.toFixed(1)} bar`;
     },
+  };
+}
+
+// ---- The loading bay: the line's way in ---------------------------------------------
+
+/** The line's height in an item's frame, its middle at `CO2_LOADING_BAY.y`. */
+const lineY = () => CO2_LOADING_BAY.line - CO2_LOADING_BAY.y;
+
+/**
+ * The wall inlet (`LB-WP1`): the copper line from the cage out in the yard
+ * through its sealed sleeve, and on it the emergency isolation valve, a
+ * red-handled lever ball valve with its sign (mission 109's design), then
+ * on west to the master valve. Facing +z, its back on the wall.
+ */
+export function createCo2WallInlet(
+  kit: PanelKit,
+  read: () => { open: boolean },
+  setOpen: (open: boolean) => void,
+  name = 'CO₂ wall inlet',
+): FittingView {
+  const t = tools(kit);
+  const object = new Group();
+  object.name = name;
+  const parts = createPartSet();
+  const { w, d } = CO2_INLET_SIZE;
+  const back = -d / 2;
+  const z = back + CO2_LOADING_BAY.off;
+  const y = lineY();
+  const copper = t.paint('#b8734a', 0.35, 0.8);
+  // The sleeve's collar on the wall, the stub out of it, the elbow west.
+  t.cyl(
+    object,
+    t.paint('#4a4f52', 0.6),
+    0.025,
+    0.012,
+    0.12,
+    y,
+    back + 0.006,
+    'z',
+    16,
+  );
+  t.cyl(object, copper, 0.0075, z - back, 0.12, y, (back + z) / 2, 'z', 12);
+  t.cyl(
+    object,
+    copper,
+    0.0075,
+    0.12 + w / 2,
+    (0.12 - w / 2) / 2,
+    y,
+    z,
+    'x',
+    12,
+  );
+  t.cyl(object, t.paint('#b9bcbc', 0.6), 0.009, 0.04, 0.07, y, z, 'x', 12);
+  const valve = parts.add(
+    createGasBallValve(kit, {
+      pipeRadius: 0.0075,
+      name: `${name}: emergency isolation valve`,
+      lever: '#c8102e',
+      binding: { open: () => read().open, set: setOpen },
+    }),
+  );
+  valve.object.position.set(-0.04, y, z);
+  object.add(valve.object);
+  const sign = createEngravedPlate(kit, ['CO₂ EMERGENCY', 'ISOLATION VALVE'], {
+    colour: 'red',
+    width: 0.26,
+    height: 0.07,
+  });
+  sign.position.set(0, y - 0.15, back + 0.003);
+  object.add(sign);
+  return {
+    object,
+    parts,
+    update() {},
+    status: () => (read().open ? 'OPEN' : 'SHUT'),
+  };
+}
+
+/**
+ * The master valve (`LB-CP2`): the normally closed solenoid valve on the
+ * line, its coil's lamp lit while it is open, the line on into the wall to
+ * the plant rooms, and its Penfold panel below the line (`createCo2MasterPanel`).
+ * The line comes in from the east, from the wall inlet `gap` along.
+ */
+export function createCo2MasterValve(
+  kit: PanelKit,
+  read: () => MasterPanelReading,
+  act: (a: 'on' | 'off' | 'reset') => void,
+  name = 'CO₂ master valve panel',
+): FittingView {
+  const t = tools(kit);
+  const object = new Group();
+  object.name = name;
+  const { w, d } = CO2_MASTER_SIZE;
+  const back = -d / 2;
+  const z = back + CO2_LOADING_BAY.off;
+  const y = lineY();
+  const copper = t.paint('#b8734a', 0.35, 0.8);
+  // From the wall inlet, east, to the solenoid, and on into the wall.
+  const from =
+    CO2_LOADING_BAY.inlet - CO2_LOADING_BAY.master - CO2_INLET_SIZE.w / 2;
+  const valveX = -w / 2 + 0.06;
+  t.cyl(
+    object,
+    copper,
+    0.0075,
+    from - valveX,
+    (from + valveX) / 2,
+    y,
+    z,
+    'x',
+    12,
+  );
+  t.cyl(object, copper, 0.0075, 0.05, valveX - 0.025, y, z, 'x', 12);
+  t.cyl(
+    object,
+    copper,
+    0.0075,
+    z - back,
+    valveX - 0.05,
+    y,
+    (z + back) / 2,
+    'z',
+    12,
+  );
+  const solenoid = createSolenoidValve(kit, 0.03);
+  solenoid.group.rotation.z = Math.PI / 2;
+  solenoid.group.position.set(valveX, y, z);
+  object.add(solenoid.group);
+  const panel = createCo2MasterPanel(kit, read, act, name);
+  panel.object.position.set(
+    w / 2 - CO2_MASTER_PANEL_SIZE.w / 2,
+    y - 0.05 - CO2_MASTER_PANEL_SIZE.h / 2,
+    back + CO2_MASTER_PANEL_SIZE.d / 2,
+  );
+  object.add(panel.object);
+  const showOpen = fresh<boolean>((on) => solenoid.setOpen(on));
+  return {
+    object,
+    parts: panel.parts,
+    update(delta) {
+      panel.update(delta);
+      showOpen(read().open);
+    },
+    status: () => panel.status(),
   };
 }

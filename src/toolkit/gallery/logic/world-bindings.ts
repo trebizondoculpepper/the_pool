@@ -44,6 +44,12 @@ export const WORLD_BINDINGS: Readonly<Record<string, WorldBinding>> = {
   'co2-wall-port': world(
     'its room’s CO₂ wall port (world.co2): its isolating valve and the line’s pressure',
   ),
+  'co2-wall-inlet': world(
+    'the CO₂ line’s emergency isolation valve (world.co2.distribution.supply.isolation)',
+  ),
+  'co2-master': world(
+    'the CO₂ master valve (world.co2.distribution.master): ON, OFF, its trip and RESET',
+  ),
   'co2-detector': world(
     'its room’s CO₂ detector (world.co2): its reading, A1, A2, ACCEPT and RESET',
   ),

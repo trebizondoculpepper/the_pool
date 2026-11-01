@@ -240,6 +240,18 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0145',
     tag: 'LB-FX1',
   },
+  'loading_bay|co2-wall-inlet|CO₂ wall inlet': {
+    assetId: 'asset-0163',
+    tag: 'LB-WP1',
+  },
+  'loading_bay|co2-master|CO₂ master valve panel': {
+    assetId: 'asset-0164',
+    tag: 'LB-CP2',
+  },
+  'loading_bay|co2-detector|Loading bay CO₂ detector': {
+    assetId: 'asset-0165',
+    tag: 'LB-GD2',
+  },
   'switch_room|lv-switchboard|LV main switchboard': {
     assetId: 'asset-0063',
     tag: 'SR-DB1',

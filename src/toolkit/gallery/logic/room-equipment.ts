@@ -1,6 +1,9 @@
 import {
   CO2_DETECTOR_SIZE,
   CO2_DETECTOR_Y,
+  CO2_INLET_SIZE,
+  CO2_LOADING_BAY,
+  CO2_MASTER_SIZE,
   CO2_PANEL_PORTS,
   CO2_WALL_PORT_SIZE,
   CO2_WALL_PORT_Y,
@@ -1230,6 +1233,37 @@ export function roomEquipment(
             1.3,
             { walls: ['east'] },
           ),
+          // The CO₂ line's way in from the cage in the goods yard (mission
+          // 118): its wall inlet with the emergency isolation valve, the
+          // master valve and its panel, and the bay's CO₂ detector, along
+          // the outside (north) wall's east end.
+          wall(
+            'co2-wall-inlet',
+            'CO₂ wall inlet',
+            CO2_INLET_SIZE.w,
+            CO2_INLET_SIZE.d,
+            CO2_INLET_SIZE.h,
+            CO2_LOADING_BAY.y,
+            { walls: ['north'] },
+          ),
+          wall(
+            'co2-master',
+            'CO₂ master valve panel',
+            CO2_MASTER_SIZE.w,
+            CO2_MASTER_SIZE.d,
+            CO2_MASTER_SIZE.h,
+            CO2_LOADING_BAY.y,
+            { walls: ['north'] },
+          ),
+          wall(
+            'co2-detector',
+            'Loading bay CO₂ detector',
+            CO2_DETECTOR_SIZE.w,
+            CO2_DETECTOR_SIZE.d,
+            CO2_DETECTOR_SIZE.h,
+            CO2_DETECTOR_Y,
+            { walls: ['north'] },
+          ),
         ],
       };
     case 'switch_room':
@@ -1630,6 +1664,28 @@ export const TANK_SURROUND = 0.8;
  * 2026-10-23; that room is kept as `retired0`.)
  */
 const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
+  // The loading bay: its fill cabinet and generator cabinet where they
+  // always stood, and the CO₂ line's fittings along the north wall's east
+  // end, side by side as the line runs (mission 118).
+  loading_bay: (box, items) => {
+    const at = (key: string) => items.find((item) => item.key === key)!;
+    return [
+      put(box, at('fill-cabinet'), { wall: 'west', along: -5.55 }),
+      put(box, at('generator-point'), { wall: 'east', along: -5.59 }),
+      put(box, at('co2-wall-inlet'), {
+        wall: 'north',
+        along: CO2_LOADING_BAY.inlet,
+      }),
+      put(box, at('co2-master'), {
+        wall: 'north',
+        along: CO2_LOADING_BAY.master,
+      }),
+      put(box, at('co2-detector'), {
+        wall: 'north',
+        along: CO2_LOADING_BAY.detector,
+      }),
+    ];
+  },
   engineers_office: (box, items) => {
     const at = (key: string) => items.find((item) => item.key === key)!;
     const onWall = (

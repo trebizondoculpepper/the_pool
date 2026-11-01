@@ -155,6 +155,24 @@ export const PLACED_KINDS = {
       'Brings the low-pressure CO₂ line through the wall, with its isolating valve and gauge.',
     brand: 'arncliffe',
   },
+  'co2-wall-inlet': {
+    type: 'CO₂ wall inlet',
+    status: 'none',
+    code: 'WP',
+    class: 'plant',
+    purpose:
+      'Brings the CO₂ line in from the cylinder cage, with its emergency isolation valve.',
+    brand: 'arncliffe',
+  },
+  'co2-master': {
+    type: 'CO₂ master valve panel',
+    status: 'none',
+    code: 'CP',
+    class: 'plant',
+    purpose:
+      'Opens and shuts the whole building’s CO₂ supply; tripped shut by a high gas alarm.',
+    brand: 'penfold',
+  },
   'co2-detector': {
     type: 'CO₂ gas detector',
     status: 'none',

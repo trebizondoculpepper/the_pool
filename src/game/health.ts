@@ -447,6 +447,8 @@ export const KIND_HEALTH_COVERAGE = {
   'co2-panel': 'co2: line pressure, valve delivery and detector interlock',
   'co2-wall-port': 'co2: its isolating valve open, the line at pressure',
   'co2-detector': 'co2: the room’s air clear, no A1 or A2',
+  'co2-wall-inlet': 'co2: its emergency isolation valve open',
+  'co2-master': 'co2: the master valve on, open and not tripped',
   'hypo-pumps': 'pools: free chlorine in band; chemicals: stock',
   'acid-pump': 'pools: pH in band; chemicals: stock',
   'jacuzzi-pack': 'jacuzzi: cabinet powered, no trip',

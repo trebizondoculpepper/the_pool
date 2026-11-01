@@ -173,6 +173,12 @@ export const LOADING_BAY_SCHEMATIC = backRoom(
       code: 'CP2',
     },
     machine('co2-building-line', 'gas-main', 'Low-pressure CO₂ building line'),
+    // Its CO₂ detector beside the master valve (mission 118): its high
+    // alarm trips the master valve for the whole building.
+    {
+      ...machine('co2-detector', 'co2-detector', 'Loading bay CO₂ detector'),
+      code: 'GD2',
+    },
   ],
   [
     link(
@@ -223,6 +229,12 @@ export const LOADING_BAY_SCHEMATIC = backRoom(
       ['co2-master', 'out'],
       ['co2-building-line', 'in'],
       'gas',
+    ),
+    link(
+      'CO₂ detector interlock to the master valve',
+      ['co2-detector', 'alarm'],
+      ['co2-master', 'interlock'],
+      'control',
     ),
   ],
   [machine('co2-master', 'co2-master-panel', 'CO₂ master valve panel')],

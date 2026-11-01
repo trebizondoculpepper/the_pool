@@ -52,3 +52,26 @@ export const CO2_DETECTOR_PORTS = {
   /** Its interlock cable, up out of its top. */
   alarm: [0.07, CO2_DETECTOR_SIZE.h / 2, -CO2_DETECTOR_SIZE.d / 2 + 0.05],
 } as const;
+
+// ---- The loading bay (the line's way in) ------------------------------------------
+
+/** The wall inlet: the sleeve, the emergency isolation valve and its sign. */
+export const CO2_INLET_SIZE = { w: 0.34, h: 0.4, d: 0.2 } as const;
+/** The master valve's panel, its solenoid valve on the line beside it. */
+export const CO2_MASTER_SIZE = { w: 0.5, h: 0.42, d: 0.2 } as const;
+
+/**
+ * Where they stand along the bay's north wall (x), east to west as the line
+ * runs, and the line's height: in from the yard at the inlet, through the
+ * master valve, and into the wall west of it to the plant rooms.
+ */
+export const CO2_LOADING_BAY = {
+  inlet: 5.9,
+  master: 5.1,
+  detector: 4.2,
+  y: 1.5,
+  /** The line's height through them. */
+  line: 1.62,
+  /** Its depth off the wall. */
+  off: 0.06,
+} as const;

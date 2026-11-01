@@ -2,9 +2,15 @@ import { createBackwashPitWater } from '../../components/plant/views/backwash-pi
 import { createCo2DosingPanel } from './co2-dosing-panel';
 import {
   linePressure,
+  masterOpen,
   portPressure,
 } from '../../../game/plant/co2-distribution';
-import { createCo2Detector, createCo2WallPort } from './co2-room-fittings';
+import {
+  createCo2Detector,
+  createCo2MasterValve,
+  createCo2WallInlet,
+  createCo2WallPort,
+} from './co2-room-fittings';
 import type { FittingView } from './co2-room-fittings';
 
 /** A CO₂ fitting as a room's working exhibit. */
@@ -368,6 +374,49 @@ function modelFor(
       status: () => panel.status(),
     };
   }
+  // The loading bay's CO₂ inlet, master valve and detector (mission 118).
+  if (room === 'loading_bay' && kind === 'co2-wall-inlet')
+    return liveFitting(
+      createCo2WallInlet(
+        kit,
+        () => ({
+          open: roomWorld().world.value.co2.distribution.supply.isolation,
+        }),
+        (open) => roomWorld().dispatch({ type: 'co2/isolation', open }),
+        item.label,
+      ),
+    );
+  if (room === 'loading_bay' && kind === 'co2-master')
+    return liveFitting(
+      createCo2MasterValve(
+        kit,
+        () => {
+          const d = roomWorld().world.value.co2.distribution;
+          return {
+            on: d.master.on,
+            open: masterOpen(d),
+            tripped: d.master.tripped,
+            lineBar: linePressure(d),
+          };
+        },
+        (act) => roomWorld().dispatch({ type: 'co2/master', act }),
+        item.label,
+      ),
+    );
+  if (room === 'loading_bay' && kind === 'co2-detector')
+    return liveFitting(
+      createCo2Detector(
+        kit,
+        () => roomWorld().world.value.co2.detectors.loading_bay,
+        (act) =>
+          roomWorld().dispatch({
+            type: 'co2/detector',
+            room: 'loading_bay',
+            act,
+          }),
+        item.label,
+      ),
+    );
   // Its CO₂ wall port and detector (mission 118), from the world.
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-wall-port') {
     const port = `plant_${pool}` as const;
