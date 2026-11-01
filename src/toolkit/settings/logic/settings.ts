@@ -69,9 +69,9 @@ export const DEFAULT_SETTINGS: Settings = {
   overlayScale: 1,
   // Baked ambient occlusion by default (the owner, 2026-10-30): no live GTAO.
   aoMode: 'simple',
-  // LIVE's quality, should it be chosen: the look every room was tuned with.
-  ambientOcclusion: 'high',
-  bloom: 'high',
+  // Medium's, as the default preset is (the owner, 2026-11-01).
+  ambientOcclusion: 'medium',
+  bloom: 'medium',
   filmEffects: true,
   resolutionCap: '1024x768',
   aspectFit: 'letterbox',
@@ -109,12 +109,21 @@ export const choosePreset = (preset: GraphicsPreset): Partial<Settings> => ({
   ...PRESET_CHOICES[preset],
 });
 
+/**
+ * What a save from before the graphics presets was playing (the owner,
+ * 2026-10-29): High, its effects at their highest. A save keeps it; only a
+ * first run, with nothing saved, takes the defaults' Medium (2026-11-01).
+ */
+const OLD_SAVE_LOOK = {
+  ambientOcclusion: 'high',
+  bloom: 'high',
+  graphics: 'high',
+} as const;
+
 /** Settings from whatever was stored: each value checked, else its default. */
 export function cleanSettings(stored: unknown): Settings {
-  const s =
-    stored && typeof stored === 'object'
-      ? (stored as Record<string, unknown>)
-      : {};
+  const saved = Boolean(stored && typeof stored === 'object');
+  const s = saved ? (stored as Record<string, unknown>) : {};
   const num = (key: keyof typeof RANGES) =>
     typeof s[key] === 'number' && Number.isFinite(s[key])
       ? clamp(s[key] as number, RANGES[key])
@@ -122,7 +131,9 @@ export function cleanSettings(stored: unknown): Settings {
   const level = (key: 'ambientOcclusion' | 'bloom'): EffectLevel =>
     EFFECT_LEVELS.includes(s[key] as EffectLevel)
       ? (s[key] as EffectLevel)
-      : DEFAULT_SETTINGS[key];
+      : saved
+        ? OLD_SAVE_LOOK[key]
+        : DEFAULT_SETTINGS[key];
   const bool = (key: 'invertY' | 'filmEffects') =>
     typeof s[key] === 'boolean' ? (s[key] as boolean) : DEFAULT_SETTINGS[key];
   return {
@@ -159,7 +170,10 @@ export function cleanSettings(stored: unknown): Settings {
     aspectFit: ASPECT_FITS.includes(s.aspectFit as AspectFit)
       ? (s.aspectFit as AspectFit)
       : DEFAULT_SETTINGS.aspectFit,
-    // A save from before the presets is High, the look it was playing.
-    graphics: parsePreset(s.graphics) ?? DEFAULT_GRAPHICS,
+    // A save from before the presets is High, the look it was playing; a
+    // first run Medium.
+    graphics:
+      parsePreset(s.graphics) ??
+      (saved ? OLD_SAVE_LOOK.graphics : DEFAULT_GRAPHICS),
   };
 }

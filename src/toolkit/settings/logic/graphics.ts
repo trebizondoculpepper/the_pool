@@ -231,7 +231,8 @@ export const GRAPHICS_PRESETS: readonly GraphicsPreset[] = [
   'high',
 ];
 
-export const DEFAULT_GRAPHICS: GraphicsPreset = 'high';
+/** Medium on a first run, wherever the game is opened from (the owner, 2026-11-01). */
+export const DEFAULT_GRAPHICS: GraphicsPreset = 'medium';
 
 /**
  * How ambient occlusion is drawn (the owner, 2026-10-30): LIVE, screen-space

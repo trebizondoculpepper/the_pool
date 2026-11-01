@@ -108,8 +108,9 @@ describe('the costlier effects’ settings', () => {
       filmEffects: 'yes',
       resolutionCap: '4k',
     });
-    expect(bad.ambientOcclusion).toBe(DEFAULT_SETTINGS.ambientOcclusion);
-    expect(bad.bloom).toBe(DEFAULT_SETTINGS.bloom);
+    // A save's nonsense gets the old look, as a save's missing value does.
+    expect(bad.ambientOcclusion).toBe('high');
+    expect(bad.bloom).toBe('high');
     expect(bad.filmEffects).toBe(true);
     expect(bad.resolutionCap).toBe('1024x768');
     const good = cleanSettings({
@@ -128,25 +129,26 @@ describe('the costlier effects’ settings', () => {
 });
 
 describe('graphics presets', () => {
-  it('default to High, the look the game has always had', () => {
-    expect(DEFAULT_GRAPHICS).toBe('high');
-    expect(DEFAULT_SETTINGS.graphics).toBe('high');
+  it('default a first run to Medium (the owner, 2026-11-01), with High as it was', () => {
+    expect(DEFAULT_GRAPHICS).toBe('medium');
+    expect(DEFAULT_SETTINGS.graphics).toBe('medium');
+    expect(cleanSettings(null)).toMatchObject({
+      graphics: 'medium',
+      ambientOcclusion: 'medium',
+      bloom: 'medium',
+      renderLevel: 3,
+    });
     expect(GRAPHICS.high).toMatchObject({
       pixelRatioCap: 2,
       antialias: true,
       refraction: true,
       shadows: true,
     });
-    // High chooses the player's own settings at their defaults, but for
-    // render quality, middling (Medium's) by default (the owner, 2026-10-29).
-    for (const [key, value] of Object.entries(PRESET_CHOICES.high))
-      if (key !== 'renderLevel')
-        expect(DEFAULT_SETTINGS[key as keyof typeof DEFAULT_SETTINGS]).toBe(
-          value,
-        );
-    expect(DEFAULT_SETTINGS.renderLevel).toBe(
-      PRESET_CHOICES.medium.renderLevel,
-    );
+    // The defaults are Medium's own choices, every one.
+    for (const [key, value] of Object.entries(PRESET_CHOICES.medium))
+      expect(DEFAULT_SETTINGS[key as keyof typeof DEFAULT_SETTINGS]).toBe(
+        value,
+      );
   });
 
   it('cost less at each step down', () => {
