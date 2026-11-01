@@ -27,6 +27,8 @@ export function createIdealVessel(
     water,
     name,
     ports,
+    stencil = 'IDEAL',
+    caption = name.toUpperCase(),
   }: {
     w: number;
     d: number;
@@ -34,6 +36,10 @@ export function createIdealVessel(
     /** Its water's level, m above the floor. */
     water: number;
     name: string;
+    /** The big word stencilled on its front: IDEAL unless it says otherwise. */
+    stencil?: string;
+    /** The line under it: its name unless it says otherwise. */
+    caption?: string;
     /** Each port: where its flange is, the way it faces, and its pipe's outside diameter. */
     ports: readonly {
       at: readonly [number, number, number];
@@ -76,7 +82,7 @@ export function createIdealVessel(
   top.rotation.x = -Math.PI / 2;
   top.position.y = Math.min(water, h - 0.05);
   group.add(top);
-  // The stencilled IDEAL and its name on its front.
+  // The stencilled IDEAL (or its own word) and its name on its front.
   const front = t.printed(
     Math.min(w * 0.9, 2.4),
     0.5,
@@ -85,10 +91,10 @@ export function createIdealVessel(
       c.fillStyle = '#1f5fa6';
       c.textAlign = 'center';
       c.font = `bold ${ch * 0.44}px ${SANS}`;
-      c.fillText('IDEAL', cw / 2, ch * 0.45);
+      c.fillText(stencil, cw / 2, ch * 0.45, cw * 0.96);
       c.font = `bold ${ch * 0.2}px ${SANS}`;
       c.fillStyle = '#16191b';
-      c.fillText(name.toUpperCase(), cw / 2, ch * 0.82);
+      c.fillText(caption, cw / 2, ch * 0.82, cw * 0.96);
     },
     512,
   );

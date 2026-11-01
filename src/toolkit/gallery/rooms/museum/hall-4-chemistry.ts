@@ -30,7 +30,9 @@ import {
   METER_PLACES,
   SCALE,
   TAGS,
+  LAB_POOL,
   TANKS,
+  VOLUME,
   balanceTerms,
   meterValue,
   readWater,
@@ -666,8 +668,12 @@ export function buildHallExhibit(kit: PanelKit): HallExhibit {
     d: POOL.d,
     h: POOL.h,
     water: POOL.h - 0.15,
-    name: 'Ideal pool',
+    name: 'Swimming pool',
     ports: [],
+    // What it holds, for visitors working out their own doses (the owner,
+    // 2026-11-01): the pool and its balancing tank are one water circuit.
+    stencil: 'SWIMMING POOL',
+    caption: `${LAB_POOL.volume} m³ POOL + ${LAB_POOL.balanceTank} m³ TANK = ${VOLUME} m³ OF WATER`,
   });
   turnTo(pool.group, POOL.x, 0, POOL.z, FACE_SOUTH);
   // Its balancing tank (the model's pool includes its 30 m³), an ideal
@@ -677,8 +683,10 @@ export function buildHallExhibit(kit: PanelKit): HallExhibit {
     d: BALANCE_TANK.d,
     h: BALANCE_TANK.h,
     water: BALANCE_TANK.h - 0.2,
-    name: 'Ideal balance tank',
+    name: 'Balance tank',
     ports: [],
+    stencil: 'BALANCE TANK',
+    caption: `${LAB_POOL.balanceTank} m³, PART OF THE POOL'S WATER`,
   });
   turnTo(balanceTank.group, BALANCE_TANK.x, 0, BALANCE_TANK.z, FACE_SOUTH);
   balanceTank.show(['BALANCE TANK'.padEnd(16), '30m3'.padEnd(16)]);
@@ -690,7 +698,7 @@ export function buildHallExhibit(kit: PanelKit): HallExhibit {
   );
   object.add(
     markComponent(still(pool.group), {
-      name: `${TAGS['pool']} ideal pool (25 × 12.5 m, 470 m³, with its 30 m³ tank)`,
+      name: `${TAGS['pool']} swimming pool (25 × 12.5 m, ${LAB_POOL.volume} m³, with its ${LAB_POOL.balanceTank} m³ tank)`,
       model: { node: 'pool' },
       status: () =>
         `its display shows free chlorine ${reading.fc.toFixed(2)}, pH ${reading.ph.toFixed(2)}`,
@@ -699,7 +707,7 @@ export function buildHallExhibit(kit: PanelKit): HallExhibit {
   updates.push(() =>
     pool.show([
       `FC ${reading.fc.toFixed(2)} PH ${reading.ph.toFixed(2)}`.padEnd(16),
-      `500m3 ${state().swimmers.toUpperCase()}`.padEnd(16),
+      `${VOLUME}m3 ${state().swimmers.toUpperCase()}`.padEnd(16),
     ]),
   );
 

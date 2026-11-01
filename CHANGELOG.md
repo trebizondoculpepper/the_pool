@@ -10,6 +10,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - Dr Aqualis's bicarbonate no longer leaves the Lounge's pH low for hours: the Trio's pH integral has anti-windup. It is bounded by what its acid and CO₂ can deliver, stops integrating while they are flat out, and holds while a hand dose is being fed (and for a tenth of a turnover after), as an operator dosing by hand would hold the controller. The sample, at the balance tank, sees the feed before it is mixed, and the integral used to wind the acid up against it.
 - Hall 4's "The acid pump failed" card says the pump stopped about two weeks ago, not two days: with the CO₂ loss corrected, the lab's pool takes 13 to 14 days without acid to creep from its set point to the card's pH 7.9 (two days reach 7.60). The card's water and puzzle are unchanged.
 
+### Changed
+
+- Hall 4's pool says what it is and holds (the owner, 2026-11-01): stencilled SWIMMING POOL instead of IDEAL, with its water, 470 m³ pool + 30 m³ tank = 500 m³, so visitors can work out their own doses; its balancing tank reads BALANCE TANK, 30 m³, part of the pool's water.
+
 ## [0.11.0] - 2026-11-01
 
 ### Added
