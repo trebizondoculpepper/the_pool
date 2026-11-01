@@ -223,10 +223,10 @@ export function createLiveBoilerCascade(
           delta,
         );
       }
-      sounders.forEach((sounder, offset) => {
-        sounder.show(house.boilers[first + offset]);
-        sounder.update(delta);
-      });
+      // What each boiler's sounds follow; the room updates its parts.
+      sounders.forEach((sounder, offset) =>
+        sounder.show(house.boilers[first + offset]),
+      );
       // Each display says GAS while no gas reaches its boiler, firing or not.
       panels.forEach((panel, offset) =>
         panel.show(

@@ -85,13 +85,16 @@ export const IGNITER: LoopRecipe = (context, out) => {
   const gate = context.createGain();
   gate.gain.value = 0;
   const pulse = context.createOscillator();
-  pulse.type = 'square';
+  pulse.type = 'sawtooth';
   pulse.frequency.value = 6;
-  // Square waves of ±1 opened only on their top half, briefly: a tick.
+  // A ramp opened only at its very top, its last fortieth: about 4 ms a
+  // cycle, a tick, not a hiss (farhad_taphrale's review, 2026-11-01).
   const shaper = context.createWaveShaper();
-  shaper.curve = new Float32Array([0, 0, 0, 0, 0.05]);
+  const curve = new Float32Array(41);
+  curve[40] = 1;
+  shaper.curve = curve;
   const depth = context.createGain();
-  depth.gain.value = 0.05;
+  depth.gain.value = 0.02;
   pulse.connect(shaper).connect(depth).connect(gate.gain);
   crack.connect(high).connect(gate).connect(out);
   crack.start();
