@@ -10,12 +10,19 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The old control room's mimics hang in one line, all 1.2 m tall and centred 2.0 m up, the highest the reach rule allows, their bottoms level with the operator's desk; its readout board, CR-CP4, is 30 cm higher, over the BMS outstation (the owner, 2026-11-01).
 - The wet hall's Fresh Water Distribution and Pit Inflow Sources mimics are the standard board's size, 2.4 × 1.2 m like the Lounge pool filters mimic, their layouts drawn closer, and their readouts show the digits alone, without the one-line LCD under each (the owner, 2026-11-01: they were huge for very little information); a mimic may now leave out its readouts' legends (`readoutLegends: false`).
 
 ### Fixed
 
+- WASH-O-TRON NOT IN AUTO lights only while the Wash-O-Tron's programme is off (the owner, 2026-11-01): it lit for any one filter taken out of the programme, so it stayed on after RESET while the controller showed AUTO.
+- The old control room's Fresh Water Distribution mimic (CR-MP4) is drawn, a remote copy without the booster's RESET: it had been a placeholder (the owner, 2026-11-01).
 - The Olympic plant room has its own annunciator again, PL2-CP5, the twin of the control room's: on the south wall over the deck-level landing, at eye height for someone standing on the landing by the pool door, fed from the room's local control panel (the owner, 2026-11-01: mission 099 had put PL2's annunciator only in the control room and on the bridge).
 - Release uploads use the game's current itch.io account after its page moved from `salimfadhley` to `trebizondoculpepper` (the owner, 2026-11-01).
+
+### Removed
+
+- The control room's BMS outstation, CR-CP5, which did nothing (bound to nothing in the world), and the bridge's unused parody page of it (the owner, 2026-11-01).
 
 ## [0.13.0] - 2026-11-01
 

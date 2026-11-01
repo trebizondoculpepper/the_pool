@@ -354,10 +354,8 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0087',
     tag: 'CR-CP4',
   },
-  'control_room|bms-outstation|BMS outstation': {
-    assetId: 'asset-0088',
-    tag: 'CR-CP5',
-  },
+  // The BMS outstation, CR-CP5 (asset-0088, retired): it did nothing,
+  // bound to nothing in the world (the owner, 2026-11-01).
   'control_room|fire-repeater|Fire alarm repeater': {
     assetId: 'asset-0089',
     tag: 'CR-CP6',

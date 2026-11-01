@@ -1354,24 +1354,35 @@ export function roomEquipment(
           floor('water-test-kit', 'Water-test kit', 0.8, 0.5, 1.1, {
             back: 0.1,
           }),
-          wall('mimic-pool', 'Mimic: main pool circuit', 2.5, 0.08, 1.3, 1.7, {
-            walls: ['north', 'west', 'east'],
-          }),
-          wall('mimic-heating', 'Mimic: heating', 2.1, 0.08, 1.2, 1.7, {
+          // The mimics in one line, all 1.2 m tall and centred 2.0 m up,
+          // the highest a panel may be reached, their bottoms level with
+          // the operator's desk's top (the owner, 2026-11-01).
+          wall(
+            'mimic-pool',
+            'Mimic: main pool circuit',
+            2.5,
+            0.08,
+            1.2,
+            MIMIC_Y,
+            {
+              walls: ['north', 'west', 'east'],
+            },
+          ),
+          wall('mimic-heating', 'Mimic: heating', 2.1, 0.08, 1.2, MIMIC_Y, {
             walls: ['north', 'west', 'east'],
           }),
           // Its board is 2.2 m (`air-mimic.ts`), its frame round it, and
           // 5 cm more clear of the corner.
-          wall('mimic-air', 'Mimic: air handling', 2.4, 0.08, 1.3, 1.7, {
+          wall('mimic-air', 'Mimic: air handling', 2.4, 0.08, 1.2, MIMIC_Y, {
             walls: ['north', 'west', 'east'],
           }),
           wall(
             'mimic-wet-fresh',
             'Fresh Water Distribution mimic',
-            2.8,
+            2.5,
             0.08,
-            1.6,
-            1.7,
+            1.2,
+            MIMIC_Y,
             {
               walls: ['north', 'west', 'east'],
             },
@@ -1379,10 +1390,10 @@ export function roomEquipment(
           wall(
             'mimic-wet-dirty',
             'Pit Inflow Sources mimic',
-            2.8,
+            2.5,
             0.08,
-            1.6,
-            1.7,
+            1.2,
+            MIMIC_Y,
             {
               walls: ['north', 'west', 'east'],
             },
@@ -1430,7 +1441,6 @@ export function roomEquipment(
           ),
           wall('chart-recorders', 'Chart recorders', 1.3, 0.2, 0.6, 1.5),
           wall('readout-board', 'Readout board', 1.3, 0.12, 0.55, 1.5),
-          wall('bms-outstation', 'BMS outstation', 0.62, 0.75, 0.78, 1.4),
           wall('fire-repeater', 'Fire alarm repeater', 0.34, 0.1, 0.26, 1.5, {
             walls: ['east'],
           }),
@@ -1503,6 +1513,9 @@ export const EQUIPPED_ROOMS = [
 /** Where every equipped room's feeder isolator hangs, on its west wall, m. */
 export const FEEDER_ISOLATOR = { fromSouth: 1.1, y: 1.5 } as const;
 
+/** Where the control room's mimics hang: their middles, m up (the owner, 2026-11-01: all at one height), the highest the reach rule allows. */
+const MIMIC_Y = 2.0;
+
 /** The wall space the feeder isolator takes, kept clear of other things. */
 export function feederIsolatorSpace(box: RoomBox): Footprint {
   const z = box.d / 2 - FEEDER_ISOLATOR.fromSouth;
@@ -1564,12 +1577,20 @@ export function layoutRoomLive(room: string) {
     room === 'control_room'
       ? r.items.find((item) => item.key === 'mimic-wet-dirty')
       : undefined;
+  // CR-CP4, the readout board, kept to its place over the BMS outstation
+  // (below), not packed elsewhere, where it took the fire repeater's room.
+  const readoutBoard =
+    room === 'control_room'
+      ? r.items.find((item) => item.key === 'readout-board')
+      : undefined;
   const layout = fixed
     ? { placed: fixed, failed: [] }
     : packRoom(
         r.box,
         controlBoard
-          ? r.items.filter((item) => item !== controlBoard)
+          ? r.items.filter(
+              (item) => item !== controlBoard && item !== readoutBoard,
+            )
           : r.items,
       );
   if (controlBoard) {
@@ -1579,17 +1600,21 @@ export function layoutRoomLive(room: string) {
     const north = put(r.box, controlBoard, { wall: 'north', along: -1.3 });
     layout.placed.push({
       ...north,
-      y: 2.4,
+      y: MIMIC_Y,
       access: { minX: -2.7, maxX: 0.1, minZ: -3.7, maxZ: -2.8 },
     });
     // The extra water boards take the last full-width wall spans. Two
     // smaller passive displays share the south wall vertically with its
     // BMS cabinet and chart recorders.
     for (const [key, along, y] of [
-      ['readout-board', -2.04, 2.0],
+      // CR-CP4 30 cm higher (the owner, 2026-11-01).
+      ['readout-board', -2.04, 2.3],
       ['sign:staff-noticeboard', 2.0, 2.2],
     ] as const) {
-      const item = layout.failed.find((candidate) => candidate.key === key);
+      const item =
+        key === 'readout-board'
+          ? readoutBoard
+          : layout.failed.find((candidate) => candidate.key === key);
       if (!item) continue;
       layout.failed = layout.failed.filter((candidate) => candidate !== item);
       layout.placed.push({ ...put(r.box, item, { wall: 'south', along }), y });

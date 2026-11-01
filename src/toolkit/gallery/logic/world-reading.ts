@@ -132,8 +132,10 @@ function readPlant(world: World, pool: PoolId): PlantReading {
   filterDp.forEach((dp, i) => {
     if (i < perFilter.length && dp > FILTER_DP_LIMIT) alarms.push(perFilter[i]);
   });
-  // The Olympic's Wash-O-Tron with a filter out of AUTO.
-  if (pool === 'pool_02' && world.washOTron.filters.some((f) => !f.auto))
+  // The Olympic's Wash-O-Tron with its programme out of AUTO (the owner,
+  // 2026-11-01: not a single filter taken out of it, which lit the window
+  // while the controller itself showed AUTO).
+  if (pool === 'pool_02' && !world.washOTron.running)
     alarms.push('wot-not-auto');
   if (circulating && uvIsolator && !plant.isolators[uvIsolator])
     alarms.push('uv-fail');

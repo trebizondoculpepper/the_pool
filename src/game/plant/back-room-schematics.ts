@@ -378,7 +378,6 @@ const instruments = [
   machine('annunciator-wh', 'annunciator', 'Wet hall annunciator'),
   machine('chart-recorders', 'chart-recorders', 'Chart recorders'),
   machine('readout-board', 'readout-board', 'Readout board'),
-  machine('bms-outstation', 'bms-outstation', 'BMS outstation'),
   machine('fire-repeater', 'fire-repeater', 'Fire alarm repeater'),
   machine('cctv', 'cctv', 'CCTV monitor'),
 ];

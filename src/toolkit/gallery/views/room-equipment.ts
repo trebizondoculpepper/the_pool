@@ -168,6 +168,7 @@ import { createContainment } from './cable-containment';
 import type { MainsFeed } from '../../components/plant/views/main-switch';
 import {
   createDirtyWaterMimic,
+  createFreshWaterMimic,
   createWetHallMimic,
   createWorldBoosterSet,
   createWorldWaterMeter,
@@ -577,6 +578,11 @@ function modelFor(
   if (kind === 'water-meter') return createWorldWaterMeter(kit);
   if (kind === 'mimic-wet') return createWetHallMimic(kit);
   if (kind === 'mimic-wet-dirty') return createDirtyWaterMimic(kit);
+  // The fresh water board, WH-MP1's twin (mission 119): it was drawn as a
+  // placeholder here (the owner, 2026-11-01). Away from the wet hall a
+  // remote copy, without the booster's RESET, which stays local.
+  if (kind === 'mimic-wet-fresh')
+    return createFreshWaterMimic(kit, false, room !== 'wet_hall');
   // Our own make-up flowmeter, its converter reading the world's flow.
   if (kind === 'make-up-flowmeter') {
     const meter = createMakeUpFlowmeter(kit);

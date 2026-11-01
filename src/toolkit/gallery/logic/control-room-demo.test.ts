@@ -91,7 +91,9 @@ it('lights a window for each Olympic filter over its DP limit, and the Wash-O-Tr
   const { OLYMPIC_DIRT_REF } =
     await import('../../../game/plant/olympic-battery');
   const w = newWorld();
-  const manual = {
+  // Its window is the programme's AUTO, not a single filter's (the owner,
+  // 2026-11-01).
+  const oneOut = {
     ...w,
     washOTron: {
       ...w.washOTron,
@@ -100,7 +102,11 @@ it('lights a window for each Olympic filter over its DP limit, and the Wash-O-Tr
       ),
     },
   };
-  expect(plantReadingOf(manual, 'pool_02').alarms).toContain('wot-not-auto');
+  const off = { ...w, washOTron: { ...w.washOTron, running: false } };
+  expect(plantReadingOf(off, 'pool_02').alarms).toContain('wot-not-auto');
+  expect(plantReadingOf(oneOut, 'pool_02').alarms).not.toContain(
+    'wot-not-auto',
+  );
   expect(plantReadingOf(w, 'pool_02').alarms).not.toContain('wot-not-auto');
   // A bed loaded well past its reference: its own window, and the summary.
   const dirty = {

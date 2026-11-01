@@ -206,10 +206,13 @@ describe.each(EQUIPPED_ROOMS)('%s', (room) => {
           ? 3.5
           : 0;
       expect(y - floorY, p.item.label).toBeGreaterThanOrEqual(0.5);
-      // The read-only pit board is above the operator's desk in the
-      // owner's chosen sightline; it has no local controls to reach.
+      // Read-only boards placed where the owner chose, with nothing to
+      // reach: the control room's readout board, CR-CP4, 30 cm over its
+      // old 2.0 m (2026-11-01).
+      const readOnly =
+        room === 'control_room' && p.item.key === 'readout-board';
       expect(y - floorY, p.item.label).toBeLessThanOrEqual(
-        room === 'control_room' && p.item.key === 'mimic-wet-dirty' ? 2.4 : 2.0,
+        readOnly ? 2.3 : 2.0,
       );
     }
   });

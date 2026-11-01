@@ -1151,40 +1151,6 @@ export const PARODY_SPECS: readonly ParodySpec[] = [
     ],
   },
   {
-    original: 'THE BMS OUTSTATION (AFTER TREND IQ4)',
-    title: 'AUTONOMOUS BUILDING INTELLIGENCE',
-    code: 'CR-CP5',
-    shape: 'rounded',
-    pages: [
-      {
-        name: 'POINTS',
-        columns: [
-          [
-            {
-              kind: 'list',
-              rows: [
-                'S1 OUTSIDE AIR',
-                'S2 HALL AIR',
-                'S3 HALL RH',
-                'K1 SUPPLY FAN',
-                'K2 EXTRACT FAN',
-                'D1 FRESH AIR DAMPER',
-              ],
-            },
-          ],
-          [
-            { kind: 'lamps', labels: ['CPU RUN', 'COMMS', 'BATTERY LOW'] },
-            {
-              kind: 'buttons',
-              labels: ['OCCUPIED', 'UNOCCUPIED'],
-              latch: true,
-            },
-          ],
-        ],
-      },
-    ],
-  },
-  {
     original: 'THE FIRE ALARM REPEATER (AFTER SYNCRO VIEW)',
     title: 'COMBUSTION EVENT REPEATER',
     code: 'CR-CP6',
