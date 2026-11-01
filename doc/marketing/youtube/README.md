@@ -15,3 +15,7 @@ All banners are 2560 × 1440 JPEGs under 6 MB. Their lettering and emblem sit wi
 To upload: in [YouTube Studio](https://studio.youtube.com/), open **Customization → Profile**, change the banner and profile picture, check the crop preview, then **Publish**. YouTube uses the same banner file with different crops on different devices.
 
 The two new cutaway backgrounds are in [`source/`](source/) beside the editable [`artwork.html`](source/artwork.html) and [`render.mjs`](source/render.mjs). The marks reuse the project's approved vector logo at `resources/images/title/the-pool-logo.svg`, and the caustics background reuses the itch.io artwork. On the project Mac, run `node doc/marketing/youtube/source/render.mjs` to rebuild all five deliverables with headless Chrome and `sips`.
+
+## Episodes
+
+Keep each episode's thumbnail, description, transcript and captions together under `episodes/epN_<slug>/`. [Episode 1](episodes/ep1_should_i_stoop_making_this_game/) has the upload-ready 1280 × 720 JPEG, its larger PNG source, the description, a lightly edited transcript and draft SRT captions.

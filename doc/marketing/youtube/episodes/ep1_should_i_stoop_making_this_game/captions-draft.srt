@@ -1,0 +1,575 @@
+1
+00:00:00,000 --> 00:00:13,740
+Hey, I've been making this really bizarre video game about swimming pools and today I'd like your assistance.
+
+2
+00:00:13,740 --> 00:00:20,880
+The first question I have for the audience is, is this something that I should be making?
+
+3
+00:00:20,880 --> 00:00:33,540
+Because I've spent the last few weeks hacking away, trying to create something that is beautiful, informative, educational, also funny in some places.
+
+4
+00:00:33,940 --> 00:00:41,280
+But that's just my opinion and you know what, I've been wrong about an awful lot of things.
+
+5
+00:00:42,220 --> 00:00:48,340
+So please, I'm going to quickly show you what I've been working on this new video game, The Pool.
+
+6
+00:00:49,560 --> 00:00:50,120
+The Pool
+
+7
+00:00:50,120 --> 00:01:02,400
+I was enjoying one of those pool rooms games, you know the sort of liminal space games where you wander around a virtual space that's sort of tiled and clean.
+
+8
+00:01:03,180 --> 00:01:07,060
+There's a whole flavour of them set in swimming pool-like spaces.
+
+9
+00:01:07,260 --> 00:01:17,360
+They're called The Pool Rooms and there's about nine different creators who've all given their video game take on what The Pool Rooms might be.
+
+10
+00:01:18,320 --> 00:01:20,100
+And so as I was playing this I started wondering.
+
+11
+00:01:20,120 --> 00:01:24,720
+Hey, imagine if The Pool Rooms were real.
+
+12
+00:01:26,560 --> 00:01:46,380
+What sort of engineering would have to exist in order for that bizarre, liminal, whimsical space to actually have everything it needed to produce sort of inviting, clean, warm, safe water.
+
+13
+00:01:46,940 --> 00:01:49,380
+And as a bit of a background to this.
+
+14
+00:01:49,380 --> 00:01:54,500
+I'd been working on some other, we'll call them game adjacent things.
+
+15
+00:01:54,760 --> 00:02:00,540
+I had picked up video game development about two months ago.
+
+16
+00:02:00,840 --> 00:02:09,380
+And I'd started making little toy games, like little jokes or trying to recreate the animation style of PaRappa the Rapper.
+
+17
+00:02:09,780 --> 00:02:15,500
+And in one I thought, wouldn't it be funny to make a bizarre machine that you could interact with.
+
+18
+00:02:15,560 --> 00:02:19,340
+So I took the lore from the VX Junkies
+
+19
+00:02:19,460 --> 00:02:20,300
+subreddit.
+
+20
+00:02:20,380 --> 00:02:25,620
+And I thought, wouldn't it be fun to make a nonsensical but hugely complicated machine.
+
+21
+00:02:26,340 --> 00:02:29,640
+And then after that, that was really fun to create.
+
+22
+00:02:30,500 --> 00:02:31,880
+Also, barely a game.
+
+23
+00:02:32,360 --> 00:02:35,820
+I had this idea, well maybe I'll make a more complicated machine.
+
+24
+00:02:35,820 --> 00:02:41,080
+So I took the lure of the Rockwell Turbo Encabulator.
+
+25
+00:02:41,240 --> 00:02:44,960
+That viral, nonsensical engineering fiction.
+
+26
+00:02:45,500 --> 00:02:46,820
+And I'll make...
+
+27
+00:02:47,820 --> 00:02:49,220
+I'll try and realise what that...
+
+28
+00:02:49,220 --> 00:02:49,360
+I'll try and realise what that...
+
+29
+00:02:49,360 --> 00:02:54,380
+machine would be if all of the nonsensical claims about it were true.
+
+30
+00:02:55,120 --> 00:03:01,260
+And that was fun as well, to creating a realistic looking engineering object.
+
+31
+00:03:01,880 --> 00:03:09,700
+Then I thought, maybe it would be more satisfying if the object were real.
+
+32
+00:03:10,060 --> 00:03:18,660
+What kind of object looks really simple from the outside but actually turns out to be incredibly complicated.
+
+33
+00:03:19,360 --> 00:03:20,900
+And well, it turns out...
+
+34
+00:03:20,900 --> 00:03:31,460
+Swimming pools are a perfect example because this is just some of the infrastructure you'd need to keep a swimming pool of that size going.
+
+35
+00:03:31,460 --> 00:03:35,240
+We've got some ozone filtering stuff here.
+
+36
+00:03:35,240 --> 00:03:38,860
+We've got the ozone generators and chemical supplies.
+
+37
+00:03:40,000 --> 00:03:52,580
+Pumps, a tank to hold the water that spills into the gutters, and valves and hundreds of valves and machines to control them and things to analyze the water.
+
+38
+00:03:54,320 --> 00:04:00,820
+I really enjoyed making all kinds of buttons and control panels and screens.
+
+39
+00:04:00,820 --> 00:04:11,380
+One of the ideas I had for this game is I wanted to make it all about machines and user interfaces through the ages.
+
+40
+00:04:11,380 --> 00:04:19,240
+So this sort of screen here, this has got a very kind of, I guess, early 2000s aesthetic.
+
+41
+00:04:19,440 --> 00:04:23,960
+It's a two line LCD display and some some cabinets you can control.
+
+42
+00:04:24,560 --> 00:04:28,560
+And I also wanted to make it so that nothing in the game should be fake.
+
+43
+00:04:28,560 --> 00:04:31,880
+so here's the control system for a small jacuzzi
+
+44
+00:04:31,880 --> 00:04:33,700
+we've got the dosing system
+
+45
+00:04:33,700 --> 00:04:35,740
+we've got one of the pumps
+
+46
+00:04:35,740 --> 00:04:37,980
+there's an air blower, there's the jets
+
+47
+00:04:37,980 --> 00:04:39,380
+everything
+
+48
+00:04:39,380 --> 00:04:41,640
+in the system should work
+
+49
+00:04:41,640 --> 00:04:43,500
+even if there's music
+
+50
+00:04:43,500 --> 00:04:44,340
+well
+
+51
+00:04:44,340 --> 00:04:49,880
+there should be a real
+
+52
+00:04:49,880 --> 00:04:51,840
+music player in the system to do it
+
+53
+00:04:51,840 --> 00:04:53,680
+nothing is fake
+
+54
+00:04:53,680 --> 00:04:55,780
+that's the whole idea of this game
+
+55
+00:04:55,780 --> 00:05:03,340
+which means though there's an awful lot to simulate in it so this this is a a leisure
+
+56
+00:05:03,340 --> 00:05:11,060
+center with two pools and a foot bath that there's i think i've bitten off a little bit
+
+57
+00:05:11,060 --> 00:05:17,720
+more than i could chew i didn't realize how complicated the the facilities you'd need
+
+58
+00:05:17,720 --> 00:05:24,640
+well this is now for an olympic size pool so we've got five of these sand filters and each
+
+59
+00:05:24,640 --> 00:05:29,200
+these filters we can look into them and see what the condition is so this one says it's well it's
+
+60
+00:05:29,200 --> 00:05:37,520
+clean and you can see the sand that's inside the um this tank settled as the dirt comes in from the
+
+61
+00:05:37,520 --> 00:05:43,040
+pool water more dirt will accumulate in this thing and here's what i mean about simulating machines
+
+62
+00:05:43,040 --> 00:05:51,600
+through the ages so this one i wanted it to look like something from the late 1970s or early 80s
+
+63
+00:05:51,600 --> 00:05:54,520
+something that would have been cutting edge then.
+
+64
+00:05:56,580 --> 00:06:00,080
+It's, you know, horrendous LED displays.
+
+65
+00:06:01,540 --> 00:06:07,280
+You can see here I'm switching the valves on one of the filtering systems.
+
+66
+00:06:07,980 --> 00:06:13,000
+Now, I see you could be saving Hyrule in the latest Legend of Zelda,
+
+67
+00:06:13,280 --> 00:06:18,000
+or you could be watching the observation glass of a sand filter
+
+68
+00:06:18,000 --> 00:06:26,880
+as we run it in reverse to clean out all the muck into the into the this the sump
+
+69
+00:06:26,880 --> 00:06:33,140
+ditch of of the wet room you know I'm just going to put that back into
+
+70
+00:06:33,140 --> 00:06:41,420
+and I need to or mustn't forget to yeah leave that leave that on auto otherwise
+
+71
+00:06:41,420 --> 00:06:46,580
+bad things are going bad things are going to happen let's have a look what
+
+72
+00:06:46,580 --> 00:06:55,660
+What else we've got in this facility? Well, this swimming pool is so big it needs a gigantic
+
+73
+00:06:55,660 --> 00:07:01,860
+balance tank all of its own. And that's what this is. Any time the water spills from the
+
+74
+00:07:01,860 --> 00:07:10,040
+gutter, it goes down these pipes into this holding tank here. And there's a little radar
+
+75
+00:07:10,040 --> 00:07:17,240
+there that measures the level and you can see on this control panel here what's going
+
+76
+00:07:17,240 --> 00:07:24,140
+on in the balance tank. So it says it is 3 metres full storing 171 cubic metres and you
+
+77
+00:07:24,140 --> 00:07:29,400
+can see the input and output rate. Here are the two pumps, they're pumping the fluid out
+
+78
+00:07:29,400 --> 00:07:37,000
+from the balance tank room. Here's a tank of sodium hypochlorite, that's what makes
+
+79
+00:07:37,000 --> 00:07:45,000
+the chlorine in your swimming pool this is the ultraviolet treatment system here's uh this this
+
+80
+00:07:45,000 --> 00:07:51,720
+is a the inlet system that allows carbon dioxide to be added to the pool and we've got the
+
+81
+00:07:52,440 --> 00:07:59,320
+hydrochloric acid station here sodium hydrochloric not everything in this game is a real machine
+
+82
+00:07:59,320 --> 00:08:06,680
+though this one this one is a kind of work of fantasy just because i hadn't got round to
+
+83
+00:08:06,680 --> 00:08:13,640
+animating how pool test kits work. I imagined what if there was a sort of the Theranos of
+
+84
+00:08:14,200 --> 00:08:19,720
+swimming pool management and what if it was created in the early 2000s perhaps the
+
+85
+00:08:20,520 --> 00:08:27,560
+the windows vista era when everything was like cutesy characters and organic shapes. So
+
+86
+00:08:27,560 --> 00:08:34,120
+yeah I've kind of gone through this that we've got from this one here is sort of like like
+
+87
+00:08:34,120 --> 00:08:42,880
+very discrete logic all the way to this thing here which is kind of standard industrial control from
+
+88
+00:08:42,880 --> 00:08:49,660
+the 90s to the well almost the present day now you might be wondering I how on earth will you
+
+89
+00:08:49,660 --> 00:08:55,840
+get your head around something as complicated as this swimming I mean maybe you're you're probably
+
+90
+00:08:55,840 --> 00:09:02,620
+thinking like why would you want to do that which is also a valid thought but fortunately I've
+
+91
+00:09:02,620 --> 00:09:06,080
+I've created a sort of training system.
+
+92
+00:09:06,080 --> 00:09:08,400
+There's a sort of swimming pool university
+
+93
+00:09:08,400 --> 00:09:10,000
+built into the game,
+
+94
+00:09:10,000 --> 00:09:14,160
+but we need to travel up to the fourth floor
+
+95
+00:09:15,000 --> 00:09:17,100
+to experience that.
+
+96
+00:09:17,100 --> 00:09:18,180
+Bear with me a moment.
+
+97
+00:09:18,180 --> 00:09:19,360
+It's a large building,
+
+98
+00:09:19,360 --> 00:09:24,360
+and you'll hopefully find what I put on top
+
+99
+00:09:25,920 --> 00:09:30,640
+quite instructional and edifying.
+
+100
+00:09:30,640 --> 00:09:36,140
+Maybe the sort of place you'd want to take your children to if it were a wet bank holiday weekend.
+
+101
+00:09:36,140 --> 00:09:45,240
+Because I imagined what would a, let's say, a technology museum in an industrial town,
+
+102
+00:09:45,640 --> 00:09:49,080
+how would they want to cash in on the whole pool rooms craze?
+
+103
+00:09:49,180 --> 00:09:51,680
+Well, this is it, the plant rooms.
+
+104
+00:09:51,680 --> 00:10:00,440
+It's basically a three-dimensional interactive experience in which you can interact with all
+
+105
+00:10:00,440 --> 00:10:05,720
+of the basics of how a swimming pool works. So this one here is heating and let's go through
+
+106
+00:10:05,720 --> 00:10:15,120
+to the next one. The next one is filtration. I'm going to skip through there but you see all the
+
+107
+00:10:15,120 --> 00:10:22,120
+basic components there. There's the mains water, compressed air being fed into this
+
+108
+00:10:22,120 --> 00:10:30,680
+system. We've got a sand filter there. There's an ozone generator. You've got the ozone contact
+
+109
+00:10:30,680 --> 00:10:37,240
+type and a carbon deozoniser to get rid of all that ozone. And it eventually goes via
+
+110
+00:10:37,240 --> 00:10:43,000
+this UV lamp system and into the pool.
+
+111
+00:10:43,000 --> 00:10:45,000
+What fun.
+
+112
+00:10:45,000 --> 00:10:50,080
+Clear, clean water just for your children to splash around in.
+
+113
+00:10:50,080 --> 00:10:54,880
+And here we've got another exhibit about how the chemical dosing system works.
+
+114
+00:10:54,880 --> 00:11:00,480
+This is a virtual chemistry lab where you can practice your skills as a pool person
+
+115
+00:11:00,480 --> 00:11:02,400
+at two levels of difficulty.
+
+116
+00:11:02,400 --> 00:11:08,060
+You can do challenges all the way from simple ones like unstable pH
+
+117
+00:11:08,060 --> 00:11:11,920
+all the way to my absolute favourite, the faecal incident.
+
+118
+00:11:12,860 --> 00:11:15,520
+Once the floater is fished out, what are we going to do?
+
+119
+00:11:16,060 --> 00:11:18,640
+Well, you can figure it out and if you know the answer,
+
+120
+00:11:18,800 --> 00:11:21,620
+feed it into this lovely Windows Vista terminal
+
+121
+00:11:21,620 --> 00:11:25,260
+and it will tell you if you've got the right answer.
+
+122
+00:11:25,900 --> 00:11:31,300
+We're going to end the tour of the museum with perhaps my favourite exhibit,
+
+123
+00:11:31,300 --> 00:11:36,300
+which is swimming pool maintenance through the ages.
+
+124
+00:11:36,300 --> 00:11:41,300
+Of course we've got an interactive thing here. You can try for yourself cleaning out
+
+125
+00:11:41,300 --> 00:11:46,300
+the gutter, the little skimmer here.
+
+126
+00:11:54,300 --> 00:11:58,300
+Wow, a clump of hair. I wonder what other exciting objects will be found.
+
+127
+00:11:58,300 --> 00:12:00,180
+and you can just throw that away.
+
+128
+00:12:00,400 --> 00:12:00,940
+Isn't that fun?
+
+129
+00:12:01,220 --> 00:12:06,980
+Well, that's it for today's tour of the pool.
+
+130
+00:12:08,040 --> 00:12:12,180
+I just want to know, like, have I gone mad, right?
+
+131
+00:12:13,240 --> 00:12:17,060
+If you were going to rate, like, from zero being, like,
+
+132
+00:12:17,140 --> 00:12:20,380
+the most dull thing in the world to 100,
+
+133
+00:12:20,780 --> 00:12:25,420
+which is, I don't know, you're seeing your favourite band
+
+134
+00:12:25,420 --> 00:12:32,520
+live at the best possible venue and you're you're high as fuck at the same time and like everything
+
+135
+00:12:32,520 --> 00:12:40,080
+is great you're with your most beloved person who you really fancy so between that spectrum of like
+
+136
+00:12:40,080 --> 00:12:48,460
+from absolute worst like i don't know you imagine if it was a car parking attendant simulator
+
+137
+00:12:48,460 --> 00:12:54,520
+version zero uh all the way to like that best possible experience where does this lie and i
+
+138
+00:12:54,520 --> 00:12:59,520
+I need that input because should I stop making this game?
+
+139
+00:12:59,640 --> 00:13:04,640
+Is this pure trash fantasy from a truly broken mind?
+
+140
+00:13:08,240 --> 00:13:10,540
+Only you can help me stop.
+
+141
+00:13:10,540 --> 00:13:15,440
+And if you think I should not be making this game,
+
+142
+00:13:16,480 --> 00:13:21,480
+tell me now and put me and it out of its misery.
+
+143
+00:13:23,400 --> 00:13:24,300
+Yeah, thank you.
+
+144
+00:13:24,520 --> 00:13:26,570
+Thank you.

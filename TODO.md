@@ -61,7 +61,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ### Marketing
 
-- [x] Create Episode 1 YouTube thumbnail from the skimmer game's dead-rat screenshot, titled “Should I Keep Making this Game?” (done 2026-11-01, this commit): upload-ready 1280 × 720 JPEG and high-resolution PNG in `doc/marketing/youtube/thumbnails/`.
+- [x] Create Episode 1 YouTube thumbnail from the skimmer game's dead-rat screenshot, titled “Should I Keep Making this Game?” (done 2026-11-01, `b1926844`): upload-ready 1280 × 720 JPEG and high-resolution PNG, now with the episode's transcript, draft captions and description in `doc/marketing/youtube/episodes/ep1_should_i_stoop_making_this_game/`.
 - [x] Create YouTube channel artwork for The Pool (the owner, 2026-11-01): three 2560 × 1440 banners and two 800 × 800 channel icons, with editable source and an upload guide in [`doc/marketing/youtube/`](doc/marketing/youtube/) (done 2026-11-01, `63b7ede4`).
 - [ ] Choose a banner and icon from the YouTube artwork set and upload them to the channel (the owner, 2026-11-01).
 
