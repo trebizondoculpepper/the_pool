@@ -151,7 +151,8 @@ describe('a balance tank’s own drain to waste', () => {
   it('empties the tank by gravity, the pumps stopped, in a few minutes from its float', () => {
     const open = stopped(JACUZZI_TANK_DRAIN.coefficient);
     expect(open.tankVolume).toBeLessThan(0.005);
-    expect(open.spilt).toBeCloseTo(spa.tank * spa.float, 2);
+    expect(open.tankDrained).toBeCloseTo(spa.tank * spa.float, 2);
+    expect(open.spilt).toBe(0);
     // Not all at once: after a minute and a half, still some way to go.
     const partway = stepWater(
       spa,
@@ -172,6 +173,7 @@ describe('a balance tank’s own drain to waste', () => {
   it('holds its water with the drain shut', () => {
     const shut = stopped(0);
     expect(shut.tankVolume).toBeCloseTo(spa.tank * spa.float, 6);
+    expect(shut.tankDrained).toBe(0);
     expect(shut.spilt).toBe(0);
   });
 

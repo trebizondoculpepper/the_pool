@@ -42,7 +42,7 @@ export interface PoolWaterState {
   hallRh: number;
   /** The heat its water's and its hall's heaters are giving now, kW (`thermal.ts`). */
   heating: number;
-  /** Whether it is being drained down to the sewer (its drain-down valves open). */
+  /** Whether its drain-down valve is open (spas drain to the pit, large pools to sewer). */
   drainDown: boolean;
   /** Its water's thermostat's setting, °C: its design temperature until someone sets it (`pool/setpoint`). */
   setpoint: number;
@@ -58,6 +58,14 @@ export type PoolsState = Record<PoolId, PoolWaterState>;
 export interface PoolStepFlows {
   madeUp: number;
   evaporated: number;
+  /** Water sent from this pool's waste branch to the wet-hall pit, m³. */
+  pit: number;
+  /** Filter and tank waste within `pit`, m³. */
+  pitWaste: number;
+  /** Spa pool/tank drain-down within `pit`, m³. */
+  pitDrain: number;
+  /** Water sent directly to foul sewer, bypassing the pit, m³. */
+  sewer: number;
   uv: boolean;
 }
 
@@ -589,6 +597,7 @@ export function stepPoolsWater(
           : {}),
         drained: 0,
         spilt: 0,
+        tankDrained: 0,
         backwashed: 0,
         evaporated: 0,
         madeUp: 0,
@@ -608,9 +617,13 @@ export function stepPoolsWater(
                   : {}),
               }
             : {}),
-        // A spa's filter washing: its pump's water to drain, from its tank.
-        ...((spaWash?.[id] ?? 0) > 0
-          ? { pumpFlow: 0, toWaste: spaWash![id] }
+        // Once the spa cabinet is modelled, its wash is the measured valve-
+        // driven flow. Passing zero suppresses the generic daily wash lump.
+        ...(spaWash && INTO_THE_PIT.has(id)
+          ? {
+              toWaste: spaWash[id] ?? 0,
+              ...((spaWash[id] ?? 0) > 0 ? { pumpFlow: 0 } : {}),
+            }
           : {}),
       },
       dt / 3600,
@@ -621,16 +634,34 @@ export function stepPoolsWater(
       Math.min(dt, 5) / 3600,
     );
     drawn += water.madeUp;
-    // A spa's drain-down goes into the backwash pit with its washes.
-    backwashed += water.backwashed + (INTO_THE_PIT.has(id) ? water.drained : 0);
-    drained += INTO_THE_PIT.has(id) ? 0 : water.drained;
+    // Spa pool drain-downs and the Jacuzzi's small balance-tank drain
+    // join the pit's waste branch. The Olympic's large balance-tank drain
+    // bypasses the pit for the direct foul sewer, as its pool drain does.
+    const pitWaste = water.backwashed;
+    const pitDrain =
+      (INTO_THE_PIT.has(id) ? water.drained : 0) +
+      (id === 'pool_03' ? water.tankDrained : 0);
+    const pit = pitWaste + pitDrain;
+    const directSewer =
+      (INTO_THE_PIT.has(id) ? 0 : water.drained) +
+      (id === 'pool_02' ? water.tankDrained : 0);
+    backwashed += pit;
+    drained += directSewer;
     // Tripped on low-low, the pumps restart once the tank has recovered.
     const balance = water.tankVolume / params.tank;
     const tripped = water.tripped && balance < params.float * 0.8;
     const level = water.level;
     // Its water's chemistry is its circuit's (`water-treatment.ts`, mission
     // 101): the world steps it, and sets these readings from it.
-    flows[id] = { madeUp: water.madeUp, evaporated: water.evaporated, uv };
+    flows[id] = {
+      madeUp: water.madeUp,
+      evaporated: water.evaporated,
+      pit,
+      pitWaste,
+      pitDrain,
+      sewer: directSewer,
+      uv,
+    };
     // The water's and the hall's heat (`thermal.ts`): the water heated
     // while it circulates and the heating is on; the hall's air while its
     // air handling and the heating are on, by its units' coils in

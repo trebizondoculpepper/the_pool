@@ -6,6 +6,10 @@ import { createLoungeFilterMimic } from '../../views/lounge-filter-mimic';
 import { createScenarioStore } from '../../../save/world-store';
 import { newWorld } from '../../../../game/world';
 import { createChemControlPrototype } from '../../../components/plant/views/chem-control-prototype';
+import {
+  createDirtyWaterMimic,
+  createFreshWaterMimic,
+} from '../../views/wet-hall';
 
 /** What this room is for, printed on its title card. */
 export const PURPOSE =
@@ -77,6 +81,20 @@ const cycle = (seconds: number): FlowState =>
   (['forward', 'still', 'back', 'still'] as const)[Math.floor(seconds / 4) % 4];
 
 export const EXHIBITS: readonly PlantExhibit[] = [
+  {
+    title: 'Fresh Water Distribution mimic',
+    reference:
+      'Mission 119: Penfold Controls four-branch fresh-water board, tried here before its wet-hall installation',
+    size: { w: 2.8, d: 0.08, h: 1.6, mount: 'wall', y: 1.6 },
+    build: (kit) => createFreshWaterMimic(kit, true),
+  },
+  {
+    title: 'Pit Inflow Sources mimic',
+    reference:
+      'Mission 119: Penfold Controls four-branch pit inflow board, tried here before its wet-hall installation',
+    size: { w: 2.8, d: 0.08, h: 1.6, mount: 'wall', y: 1.6 },
+    build: (kit) => createDirtyWaterMimic(kit, true),
+  },
   {
     title: 'Mimic LED chaser',
     reference:

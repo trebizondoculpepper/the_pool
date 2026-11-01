@@ -33,6 +33,10 @@ import {
   mainPoolState,
 } from '../../logic/pool-mimics';
 import { createMimicBoard } from '../../../components/industrial-control/views/mimic-board';
+import {
+  createDirtyWaterMimic,
+  createFreshWaterMimic,
+} from '../../views/wet-hall';
 import { pressPump, pumpsShown } from './pump-panel';
 
 /** What this plant room is for, printed on its title card. */
@@ -170,6 +174,20 @@ export const EXHIBITS: readonly PlantExhibit[] = [
       };
     },
   })),
+  {
+    title: 'Fresh Water Distribution mimic',
+    reference:
+      'Penfold Controls copy of WH-MP1: break tank, booster and the four pool make-up branches',
+    size: { w: 2.8, d: 0.08, h: 1.6, mount: 'wall', y: 1.7 },
+    build: (kit) => createFreshWaterMimic(kit, false, true),
+  },
+  {
+    title: 'Pit Inflow Sources mimic',
+    reference:
+      'Penfold Controls copy of WH-MP2: four pool waste branches and the backwash pit',
+    size: { w: 2.8, d: 0.08, h: 1.6, mount: 'wall', y: 1.7 },
+    build: createDirtyWaterMimic,
+  },
   {
     title: 'Alarm annunciator',
     reference:

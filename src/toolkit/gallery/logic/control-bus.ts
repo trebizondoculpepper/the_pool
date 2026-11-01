@@ -164,6 +164,11 @@ export function controlBus(room: string): ControlBus | null {
     Math.abs(p.z - p.item.d / 2 - partition.z) < 0.01 &&
     p.x > partition.minX &&
     p.x < partition.maxX;
+  const onBayWest = (p: Placed) =>
+    room === 'wet_hall' &&
+    p.side === 'island' &&
+    Math.abs(p.yaw - Math.PI / 2) < 1e-9 &&
+    Math.abs(p.x - p.item.d / 2 - WET_HALL_LAYOUT.bay.minX) < 0.01;
   const branchY = partition ? partition.top - BUS.width / 2 - 0.05 : 0;
   if (partition) {
     const west = Math.min(
@@ -193,6 +198,29 @@ export function controlBus(room: string): ControlBus | null {
       );
     }
   }
+  const westBayDevices = devices.filter(onBayWest);
+  if (westBayDevices.length) {
+    const x = WET_HALL_LAYOUT.bay.minX + OFF;
+    const z = Math.max(...westBayDevices.map((p) => p.z));
+    trunking.push(
+      {
+        name: 'Control bus, down to make-up bay west partition',
+        kind: 'trunking',
+        width: BUS.width,
+        depth: BUS.depth,
+        from: [x, y, -hd + OFF],
+        to: [x, branchY, -hd + OFF],
+      },
+      {
+        name: 'Control bus, along make-up bay west partition',
+        kind: 'trunking',
+        width: BUS.width,
+        depth: BUS.depth,
+        from: [x, branchY, -hd + OFF],
+        to: [x, branchY, z],
+      },
+    );
+  }
 
   // Each device to the nearest point of the bus.
   const stubs: ServiceRoute[] = [];
@@ -205,6 +233,21 @@ export function controlBus(room: string): ControlBus | null {
     // the owner, 2026-10-26) is wired there, straight up from it.
     const own = machinePorts(p.item).find((q) => q.service === 'control');
     const port = own ? placedPort(p, own.name).at : null;
+    if (!port && onBayWest(p)) {
+      const x = WET_HALL_LAYOUT.bay.minX + OFF;
+      stubs.push({
+        name,
+        utility: 'power',
+        kind: 'steel-screwed',
+        od: STUB_OD,
+        points: [
+          [x, top, p.z],
+          [x, branchY - BUS.width / 2, p.z],
+        ],
+        to: p.item.key,
+      });
+      continue;
+    }
     if (!port && partition && onPartition(p)) {
       // Straight up the partition's face into its branch.
       const z = partition.z + OFF;

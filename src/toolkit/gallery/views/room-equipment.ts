@@ -138,6 +138,7 @@ import { switchRoomContainment } from '../logic/cable-containment';
 import { createContainment } from './cable-containment';
 import type { MainsFeed } from '../../components/plant/views/main-switch';
 import {
+  createDirtyWaterMimic,
   createWetHallMimic,
   createWorldBoosterSet,
   createWorldWaterMeter,
@@ -475,6 +476,7 @@ function modelFor(
   if (kind === 'booster-set') return createWorldBoosterSet(kit);
   if (kind === 'water-meter') return createWorldWaterMeter(kit);
   if (kind === 'mimic-wet') return createWetHallMimic(kit);
+  if (kind === 'mimic-wet-dirty') return createDirtyWaterMimic(kit);
   // Our own make-up flowmeter, its converter reading the world's flow.
   if (kind === 'make-up-flowmeter') {
     const meter = createMakeUpFlowmeter(kit);

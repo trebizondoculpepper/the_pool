@@ -55,6 +55,11 @@ export const JACUZZI_NODES: readonly SchematicNode[] = [
   { id: 'heating', kind: 'heating-main', name: 'Heating main' },
   { id: 'water', kind: 'water-service', name: 'Water service' },
   { id: 'gully', kind: 'gully', name: 'Floor gully' },
+  {
+    id: 'pit-waste',
+    kind: 'backwash-main',
+    name: 'Waste branch to wet hall pit',
+  },
   { id: 'busbar', kind: 'busbar', name: 'Busbar' },
   { id: 'switch-fuse', kind: 'switch-fuse', name: 'Room supply switch-fuse' },
   { id: 'valve-panel', kind: 'valve-panel', name: 'Valve panel' },
@@ -133,9 +138,9 @@ export const JACUZZI_LINKS: readonly PlumbEdge[] = [
     ['heating', 'return'],
     'water',
   ),
-  link('Drain to waste', ['cabinet', 'drain'], ['gully', 'in'], 'water'),
+  link('Drain to waste', ['cabinet', 'drain'], ['pit-waste', 'in'], 'water'),
   // Its filter: the pump's water out to it and back for the UV; its wash
-  // to the gully.
+  // to the wet-hall pit branch.
   link(
     'Cabinet to the filter',
     ['cabinet', 'to-filter'],
@@ -148,7 +153,12 @@ export const JACUZZI_LINKS: readonly PlumbEdge[] = [
     ['cabinet', 'from-filter'],
     'water',
   ),
-  link('Filter wash to waste', ['filter', 'waste'], ['gully', 'in'], 'water'),
+  link(
+    'Filter wash to waste',
+    ['filter', 'waste'],
+    ['pit-waste', 'in'],
+    'water',
+  ),
   link(
     'Suction from the balance tank',
     ['tank', 'suction'],
@@ -176,7 +186,7 @@ export const JACUZZI_LINKS: readonly PlumbEdge[] = [
   link(
     'Balance tank drain to waste',
     ['tank', 'drain'],
-    ['gully', 'in'],
+    ['pit-waste', 'in'],
     'water',
   ),
   link(

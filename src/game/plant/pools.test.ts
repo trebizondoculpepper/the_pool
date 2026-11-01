@@ -74,4 +74,58 @@ describe('the pools as the world runs them', () => {
     };
     expect(run(off, 0.1).pool_03.flow).toBeLessThan(2);
   });
+
+  it('routes the small tank drain to the pit and the Olympic tank drain to sewer', () => {
+    const water = stepPoolsWater(
+      newPools(),
+      newPlantServices(),
+      10,
+      0,
+      undefined,
+      1,
+      undefined,
+      0,
+      undefined,
+      () => ({ toPool: 620, toWaste: 0, makeUpCalling: false, tankDrain: 20 }),
+      undefined,
+      undefined,
+      undefined,
+      { flowing: true, heat: true, tankDrain: true },
+      { pool_03: 0, pool_04: 0 },
+    );
+    expect(water.flows.pool_03.pitDrain).toBeGreaterThan(0);
+    expect(water.flows.pool_03.sewer).toBe(0);
+    expect(water.flows.pool_02.sewer).toBeGreaterThan(0);
+    expect(water.flows.pool_02.pitDrain).toBe(0);
+    expect(water.backwashed).toBeCloseTo(
+      Object.values(water.flows).reduce((sum, flow) => sum + flow.pit, 0),
+      8,
+    );
+    expect(water.drained).toBeCloseTo(
+      Object.values(water.flows).reduce((sum, flow) => sum + flow.sewer, 0),
+      8,
+    );
+  });
+
+  it('does not create a daily lumped wash when spa cabinets report zero wash', () => {
+    const water = stepPoolsWater(
+      newPools(),
+      newPlantServices(),
+      1,
+      24 * 3600 - 0.5,
+      undefined,
+      1,
+      undefined,
+      0,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { pool_03: 0, pool_04: 0 },
+    );
+    expect(water.flows.pool_03.pitWaste).toBe(0);
+    expect(water.flows.pool_04.pitWaste).toBe(0);
+  });
 });

@@ -43,7 +43,12 @@ const flowmeter = machine(
   'Make-up flowmeter',
 );
 const holding = machine('holding', 'backwash-tank', 'Backwash holding tank');
-const mimic = machine('mimic', 'mimic-wet', 'Mimic: wet hall');
+const mimic = machine('mimic', 'mimic-wet', 'Fresh Water Distribution mimic');
+const dirtyMimic = machine(
+  'dirty-mimic',
+  'mimic-wet-dirty',
+  'Pit Inflow Sources mimic',
+);
 // Its annunciator (mission 099), beside the mimic, on the control bus.
 const annunciator = machine(
   'annunciator',
@@ -71,6 +76,7 @@ const electrics = roomElectrics(room, [
   booster,
   flowmeter,
   mimic,
+  dirtyMimic,
   annunciator,
   outfall,
   makeUpRecorder,
@@ -104,6 +110,7 @@ export const WET_HALL_SCHEMATIC: RoomSchematic = {
     flowmeter,
     holding,
     mimic,
+    dirtyMimic,
     annunciator,
     outfall,
     makeUpRecorder,
@@ -190,6 +197,12 @@ export const WET_HALL_SCHEMATIC: RoomSchematic = {
       'Wet hall signals to the mimic',
       ['booster', 'status'],
       ['mimic', 'control'],
+      'control',
+    ),
+    link(
+      'Pit signals to the dirty-water mimic',
+      ['holding', 'status'],
+      ['dirty-mimic', 'control'],
       'control',
     ),
     ...electrics.links,

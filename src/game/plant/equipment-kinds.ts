@@ -231,7 +231,21 @@ export const PLACED_KINDS = {
     status: 'none',
     code: 'MP',
     class: 'plant',
-    purpose: 'Shows wet hall equipment and water levels.',
+    purpose: 'Shows boosted fresh-water distribution to each pool.',
+  },
+  'mimic-wet-fresh': {
+    type: 'Mimic panel',
+    status: 'none',
+    code: 'MP',
+    class: 'plant',
+    purpose: 'Shows boosted fresh-water distribution to each pool.',
+  },
+  'mimic-wet-dirty': {
+    type: 'Mimic panel',
+    status: 'none',
+    code: 'MP',
+    class: 'plant',
+    purpose: 'Shows each pool branch entering the wet-hall pit.',
   },
   boiler: {
     type: 'Boiler',

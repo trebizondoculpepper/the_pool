@@ -976,7 +976,22 @@ export function roomEquipment(
             1.8,
             { back: 0, pit: true },
           ),
-          wall('mimic-wet', 'Mimic: wet hall', 2.2, 0.08, 1.2, 1.6),
+          wall(
+            'mimic-wet',
+            'Fresh Water Distribution mimic',
+            2.8,
+            0.08,
+            1.6,
+            1.6,
+          ),
+          wall(
+            'mimic-wet-dirty',
+            'Pit Inflow Sources mimic',
+            2.8,
+            0.08,
+            1.6,
+            1.6,
+          ),
           // Its annunciator (mission 099), the twin of the control room's.
           wall(
             'annunciator:wet_hall',
@@ -1289,6 +1304,28 @@ export function roomEquipment(
           wall('mimic-air', 'Mimic: air handling', 2.4, 0.08, 1.3, 1.7, {
             walls: ['north', 'west', 'east'],
           }),
+          wall(
+            'mimic-wet-fresh',
+            'Fresh Water Distribution mimic',
+            2.8,
+            0.08,
+            1.6,
+            1.7,
+            {
+              walls: ['north', 'west', 'east'],
+            },
+          ),
+          wall(
+            'mimic-wet-dirty',
+            'Pit Inflow Sources mimic',
+            2.8,
+            0.08,
+            1.6,
+            1.7,
+            {
+              walls: ['north', 'west', 'east'],
+            },
+          ),
           // On the west wall toward the operator's desk, in view of it,
           // over the water-test kit, across which its ACCEPT and RESET are
           // in reach (not over the desk, 1.9 m deep, out of reach).
@@ -1462,10 +1499,42 @@ export function layoutRoomLive(room: string) {
   const fixed = FIXED[room]?.(r.box, r.items).concat(
     chemPlaced(room, r.box, r.items),
   );
-  return {
-    ...r,
-    ...(fixed ? { placed: fixed, failed: [] } : packRoom(r.box, r.items)),
-  };
+  const controlBoard =
+    room === 'control_room'
+      ? r.items.find((item) => item.key === 'mimic-wet-dirty')
+      : undefined;
+  const layout = fixed
+    ? { placed: fixed, failed: [] }
+    : packRoom(
+        r.box,
+        controlBoard
+          ? r.items.filter((item) => item !== controlBoard)
+          : r.items,
+      );
+  if (controlBoard) {
+    // The owner chose the view from (-1.30, -3.28), looking north.
+    // This read-only board sits above the operator desk and is read from
+    // the aisle behind it; it consumes no lower wall space.
+    const north = put(r.box, controlBoard, { wall: 'north', along: -1.3 });
+    layout.placed.push({
+      ...north,
+      y: 2.4,
+      access: { minX: -2.7, maxX: 0.1, minZ: -3.7, maxZ: -2.8 },
+    });
+    // The extra water boards take the last full-width wall spans. Two
+    // smaller passive displays share the south wall vertically with its
+    // BMS cabinet and chart recorders.
+    for (const [key, along, y] of [
+      ['readout-board', -2.04, 2.0],
+      ['sign:staff-noticeboard', 2.0, 2.2],
+    ] as const) {
+      const item = layout.failed.find((candidate) => candidate.key === key);
+      if (!item) continue;
+      layout.failed = layout.failed.filter((candidate) => candidate !== item);
+      layout.placed.push({ ...put(r.box, item, { wall: 'south', along }), y });
+    }
+  }
+  return { ...r, ...layout };
 }
 
 /**
@@ -1717,9 +1786,26 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
         z: breakTankOutlet(box, at('break-tank'), L).z - BOOSTER.suctionZ,
         face: 'south',
       }),
-      // The clean side's mimic on the bay's north wall, the make-up
-      // recorder beside it, over the booster set.
-      put(box, at('mimic-wet'), { wall: 'north', along: 6.9 }),
+      // The fresh-water board faces east from the clean bay's west
+      // partition, at the view the owner picked on 2026-11-01.
+      {
+        ...put(box, at('mimic-wet'), {
+          x: L.bay.minX + at('mimic-wet').d / 2,
+          z: -5.7,
+          face: 'east',
+        }),
+        y: at('mimic-wet').y ?? 1.6,
+      },
+      // On the aisle face of the make-up bay's partition, centred in the
+      // owner's view from (-0.28, -0.42) looking north (2026-11-01).
+      {
+        ...put(box, at('mimic-wet-dirty'), {
+          x: -0.28,
+          z: L.bay.maxZ + L.partition.thickness + at('mimic-wet-dirty').d / 2,
+          face: 'south',
+        }),
+        y: at('mimic-wet-dirty').y ?? 1.6,
+      },
       put(box, at('make-up-recorder'), { wall: 'north', along: 4.2 }),
       // Its annunciator (mission 099) on the aisle side of the bay's
       // partition, facing south into the hall, east of the bay's doors

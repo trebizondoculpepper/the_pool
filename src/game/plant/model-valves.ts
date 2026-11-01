@@ -73,7 +73,8 @@ const letters = (
     ? 'IS'
     : kind === 'non-return-valve'
       ? 'NRV'
-      : kindOf(link.targetId) === 'gully'
+      : kindOf(link.targetId) === 'gully' ||
+          kindOf(link.targetId) === 'backwash-main'
         ? 'DV'
         : 'IV';
 

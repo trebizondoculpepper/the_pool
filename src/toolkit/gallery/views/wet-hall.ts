@@ -9,8 +9,13 @@ import { serviceAvailable } from '../../../game/plant/services';
 import { WET_HALL_PLANT, newWetHall } from '../../../game/plant/wet-hall';
 import { newPlantServices } from '../../../game/plant/services';
 import { roomWorld } from '../../save/world-store';
-import { wetHallMimicSpec, wetHallMimicState } from '../logic/wet-hall-mimic';
-import type { WetHallReading } from '../logic/wet-hall-mimic';
+import {
+  dirtyWaterMimicSpec,
+  dirtyWaterMimicState,
+  freshWaterMimicSpec,
+  freshWaterMimicState,
+} from '../logic/wet-hall-water-mimics';
+import type { WetHallWaterReading } from '../logic/wet-hall-water-mimics';
 
 /**
  * The wet hall's working machines, bound to the world's wet hall
@@ -23,7 +28,7 @@ function wetHallWorld(standalone = false) {
     standalone || typeof window === 'undefined' ? null : roomWorld();
   const world = () => store?.world.value;
   return {
-    reading(): WetHallReading {
+    reading(): WetHallWaterReading {
       const w = world();
       const open = (tag: string) => {
         const v = installedValveByCommandId(tag);
@@ -97,15 +102,24 @@ export function createWorldWaterMeter(kit: PanelKit) {
   };
 }
 
-/**
- * The wet hall's mimic, by Penfold Controls; `standalone` (a development
- * room), showing a wet hall at rest rather than the world's.
- */
-export function createWetHallMimic(kit: PanelKit, standalone = false) {
+/** WH-MP1 locally, with copies in the old control room and bridge. */
+export function createFreshWaterMimic(
+  kit: PanelKit,
+  standalone = false,
+  remote = false,
+) {
   const w = wetHallWorld(standalone);
-  const board = createMimicBoard(kit, wetHallMimicSpec, {
+  const spec = remote
+    ? {
+        ...freshWaterMimicSpec,
+        buttons: freshWaterMimicSpec.buttons?.filter(
+          (button) => button.id !== 'booster-reset',
+        ),
+      }
+    : freshWaterMimicSpec;
+  const board = createMimicBoard(kit, spec, {
     press: (id) => {
-      if (id === 'booster-reset') w.reset();
+      if (id === 'booster-reset' && !remote) w.reset();
       const [which, act] = id.split('-');
       if (
         (which === 'suction' || which === 'discharge') &&
@@ -121,7 +135,23 @@ export function createWetHallMimic(kit: PanelKit, standalone = false) {
     object: board.group,
     parts: board.parts,
     update() {
-      board.show(wetHallMimicState(w.reading()));
+      board.show(freshWaterMimicState(w.reading()));
     },
   };
 }
+
+/** WH-MP2: four pool waste branches converge on the pit. */
+export function createDirtyWaterMimic(kit: PanelKit, standalone = false) {
+  const w = wetHallWorld(standalone);
+  const board = createMimicBoard(kit, dirtyWaterMimicSpec);
+  return {
+    object: board.group,
+    parts: board.parts,
+    update() {
+      board.show(dirtyWaterMimicState(w.reading()));
+    },
+  };
+}
+
+/** Kept for the existing development-room exhibit until its pair is placed. */
+export const createWetHallMimic = createFreshWaterMimic;

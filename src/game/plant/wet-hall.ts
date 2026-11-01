@@ -23,6 +23,8 @@ import type { BoosterChangeover } from '../../toolkit/components/plant/logic/boo
  */
 import { serviceAvailable } from './services';
 import type { PlantServices } from './services';
+import { newWetHallBranchMeters } from './wet-hall-branch-meters';
+import type { WetHallBranchMeters } from './wet-hall-branch-meters';
 
 export const WET_HALL_PLANT = {
   /** The break tank, m³ (the sizing's 13.2 m³). */
@@ -206,6 +208,8 @@ export interface WetHallState {
   backwashTank: number;
   /** The backwash coming into it in the last step, m³/h (for its pouring). */
   pitInflow: number;
+  /** Eight modeled branch transmitters, four make-up and four pit-bound waste. */
+  branches: WetHallBranchMeters;
   /**
    * Whether its floats call its pumps (`pitFloats`): started by START
    * tilting up, run on until STOP drops; and whether any pump runs.
@@ -234,6 +238,7 @@ export function newWetHall(): WetHallState {
     meter: 0,
     backwashTank: 0,
     pitInflow: 0,
+    branches: newWetHallBranchMeters(),
     discharging: false,
     pitPumps: {
       modes: ['auto', 'auto'],
@@ -360,6 +365,7 @@ export function stepWetHall(
     meter: s.meter + mainsIn,
     backwashTank: Math.min(P.backwashTank, backwashTank),
     pitInflow: hours > 0 ? flows.backwashed / hours : 0,
+    branches: s.branches,
     discharging,
     pitPumps,
     spilt: s.spilt + spilt,

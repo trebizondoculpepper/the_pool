@@ -454,6 +454,8 @@ export const KIND_HEALTH_COVERAGE = {
   'water-meter': 'not health: a meter, it only counts',
   'backwash-tank': 'wet hall: no overflow',
   'mimic-wet': 'not health: a display of the wet hall',
+  'mimic-wet-fresh': 'not health: a display of fresh water distribution',
+  'mimic-wet-dirty': 'not health: a display of pit inflow sources',
   'sewer-monitor': 'not health: a record of what went to sewer',
   'make-up-recorder': 'not health: a record of the water used',
   'make-up-flowmeter':

@@ -310,6 +310,12 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   // 65 → 66: low-pressure CO₂ supply and dosing in Plants 1 and 2;
   // `fillDefaults` installs the normal, full system in existing saves.
   65: (world) => world,
+  // 66 → 67 is reserved for mission 118's two-rack CO₂ state. Preserve
+  // this placeholder until that migration is merged into this checkout.
+  66: (world) => world,
+  // 67 → 68: the wet hall's eight damped branch-meter indications.
+  // `fillDefaults` starts old saves' new instruments at zero.
+  67: (world) => world,
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

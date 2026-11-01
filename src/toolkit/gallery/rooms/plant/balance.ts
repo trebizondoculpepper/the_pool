@@ -63,10 +63,10 @@ export const EXHIBITS: readonly PlantExhibit[] = [
     build: (kit) => createBoosterSet(kit),
   },
   {
-    title: 'Wet hall mimic',
+    title: 'Fresh Water Distribution mimic',
     reference:
-      'Penfold Controls mimic of the make-up and backwash, with the booster set’s RESET',
-    size: { w: 2.2, d: 0.08, h: 1.2, mount: 'wall', y: 1.6 },
+      'Penfold Controls four-pool fresh-water distribution mimic, with the booster set’s RESET',
+    size: { w: 2.9, d: 0.08, h: 1.7, mount: 'wall', y: 1.6 },
     build: (kit) => createWetHallMimic(kit, true),
   },
   {

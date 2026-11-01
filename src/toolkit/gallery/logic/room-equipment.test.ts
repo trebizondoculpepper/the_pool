@@ -202,7 +202,11 @@ describe.each(EQUIPPED_ROOMS)('%s', (room) => {
       const y = p.y;
       const floorY = 0;
       expect(y - floorY, p.item.label).toBeGreaterThanOrEqual(0.5);
-      expect(y - floorY, p.item.label).toBeLessThanOrEqual(2.0);
+      // The read-only pit board is above the operator's desk in the
+      // owner's chosen sightline; it has no local controls to reach.
+      expect(y - floorY, p.item.label).toBeLessThanOrEqual(
+        room === 'control_room' && p.item.key === 'mimic-wet-dirty' ? 2.4 : 2.0,
+      );
     }
   });
 });

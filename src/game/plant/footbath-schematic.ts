@@ -35,6 +35,11 @@ const nodes: SchematicNode[] = [
   { id: 'heating', kind: 'heating-main', name: 'Heating main' },
   { id: 'water', kind: 'water-service', name: 'Water service' },
   { id: 'gully', kind: 'gully', name: 'Floor gully' },
+  {
+    id: 'pit-waste',
+    kind: 'backwash-main',
+    name: 'Waste branch to wet hall pit',
+  },
   // Its sand filter, outside the cabinet beside it (the owner, 2026-10-25).
   {
     id: 'filter',
@@ -83,7 +88,7 @@ const links: PlumbEdge[] = [
     ['heating', 'return'],
     'water',
   ),
-  link('Drain to waste', ['cabinet', 'drain'], ['gully', 'in'], 'water'),
+  link('Drain to waste', ['cabinet', 'drain'], ['pit-waste', 'in'], 'water'),
   link(
     'Cabinet to the filter',
     ['cabinet', 'to-filter'],
@@ -96,7 +101,12 @@ const links: PlumbEdge[] = [
     ['cabinet', 'from-filter'],
     'water',
   ),
-  link('Filter wash to waste', ['filter', 'waste'], ['gully', 'in'], 'water'),
+  link(
+    'Filter wash to waste',
+    ['filter', 'waste'],
+    ['pit-waste', 'in'],
+    'water',
+  ),
   link(
     'Footbath make-up main',
     ['water', 'out'],

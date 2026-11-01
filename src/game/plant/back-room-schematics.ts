@@ -353,6 +353,12 @@ const instruments = [
   machine('mimic-pool', 'mimic-pool', 'Mimic: main pool circuit'),
   machine('mimic-heating', 'mimic-heating', 'Mimic: heating'),
   machine('mimic-air', 'mimic-air', 'Mimic: air handling'),
+  machine(
+    'mimic-wet-fresh',
+    'mimic-wet-fresh',
+    'Fresh Water Distribution mimic',
+  ),
+  machine('mimic-wet-dirty', 'mimic-wet-dirty', 'Pit Inflow Sources mimic'),
   machine('annunciator', 'annunciator', 'Alarm annunciator'),
   machine('annunciator-pl1', 'annunciator', 'Lounge pool annunciator'),
   // The Olympic's and the wet hall's (mission 099).

@@ -77,8 +77,10 @@ export interface WaterState {
   drainRate: number;
   /** Pumped to the sewer by draining down so far, m³. */
   drained: number;
-  /** Water lost to waste so far, by overflow (and the tank's drain), backwash; and evaporated, m³. */
+  /** Water lost to an uncontrolled overflow, m³. */
   spilt: number;
+  /** Water deliberately let out of the balance tank's drain, m³. */
+  tankDrained: number;
   backwashed: number;
   evaporated: number;
   /** Fresh water taken in, m³. */
@@ -136,6 +138,7 @@ export function startingWater(p: PoolWater): WaterState {
     drainRate: 0,
     drained: 0,
     spilt: 0,
+    tankDrained: 0,
     backwashed: 0,
     evaporated: 0,
     madeUp: 0,
@@ -224,7 +227,7 @@ export function stepWater(
     // Its drain to waste: no more than there is.
     const drainedOut = Math.min(f.tankDrain * dt, Math.max(0, tank));
     tank -= drainedOut;
-    spilt += drainedOut;
+    const tankDrained = s.tankDrained + drainedOut;
     let backwashed = s.backwashed;
     const day = Math.floor(s.time / 24);
     const time = s.time + dt;
@@ -250,6 +253,7 @@ export function stepWater(
       pumps: s.pumps && !tripped,
       tripped,
       spilt,
+      tankDrained,
       backwashed,
       evaporated: s.evaporated + f.evaporation * dt,
       madeUp: s.madeUp + f.makeUp * dt,

@@ -1,0 +1,7 @@
+# Wet hall water mimics, 2026-11-01
+
+The owner chose a clean-board view in the make-up bay, a dirty-board view looking north at the partition from the aisle, and a control-room copy above the operator desk. The first dirty-board placement on the east wall was hidden behind the acid selector, so I moved it to the aisle face of the make-up bay partition. I named the boards Fresh Water Distribution and Pit Inflow Sources while retaining the two operator questions as smaller board text.
+
+The water step now reports each pool's make-up, pit inflow and direct sewer output. The Jacuzzi's small tank drain enters the pit and the Olympic balance-tank drain enters the direct foul sewer path. Spa cabinet wash readings suppress the generic one-frame daily wash. Damped branch indications live in the world and use version 68, following mission 118's reserved version 67. The old control room and bridge have copies of the views. Tests cover the new water routing, and the room layout test checks the extra boards.
+
+This commit is an implementation milestone, not the end of mission 119: the eight transmitters still need modeled and visible installation in their individual branch pipes. The spas' low gravity waste branches still need a physical corridor route to the pit; the existing high backwash main would require an uphill connection and is unsuitable. The final mimic benchmark and long-run accounting checks remain in TODO.md.

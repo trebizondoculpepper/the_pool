@@ -72,7 +72,8 @@ const nodeKind = new Map(JACUZZI_NODES.map((n) => [n.id, n.kind]));
 /** The pipe a link is laid in, by what it carries and where it goes. */
 function kindOf(link: PlumbEdge): Kind {
   const ends = [link.sourceId, link.targetId].map((id) => nodeKind.get(id));
-  if (ends.includes('gully')) return 'pvc-drain';
+  if (ends.includes('gully') || ends.includes('backwash-main'))
+    return 'pvc-drain';
   if (ends.includes('heating-main')) return 'lagged-heating';
   return 'pvc-pressure';
 }
@@ -84,7 +85,8 @@ function kindOf(link: PlumbEdge): Kind {
 const gravity = (link: PlumbEdge) =>
   /overflow/.test(link.sourcePort) ||
   /overflow/.test(link.targetPort) ||
-  nodeKind.get(link.targetId) === 'gully';
+  nodeKind.get(link.targetId) === 'gully' ||
+  nodeKind.get(link.targetId) === 'backwash-main';
 
 /** The water and air links the router lays (the rest are signals and power). */
 export const ROUTED_LINKS: readonly PlumbEdge[] = JACUZZI_LINKS.filter(
@@ -149,7 +151,7 @@ export function jacuzziLines(room = JACUZZI_ROOM): JacuzziLine[] {
     // The end at a boundary: the gully's tundish, or a wall.
     const boundary = (node: string): PortEnd => {
       const kind = nodeKind.get(node);
-      if (kind === 'gully') {
+      if (kind === 'gully' || kind === 'backwash-main') {
         // The filter's wash, down beside it (`cabinetPipes`).
         if (link.sourceId === 'filter' && filter) {
           const w = placedPort(filter, 'waste');

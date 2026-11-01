@@ -103,9 +103,13 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0033',
     tag: 'WH-T2',
   },
-  'wet_hall|mimic-wet|Mimic: wet hall': {
+  'wet_hall|mimic-wet|Fresh Water Distribution mimic': {
     assetId: 'asset-0034',
     tag: 'WH-MP1',
+  },
+  'wet_hall|mimic-wet-dirty|Pit Inflow Sources mimic': {
+    assetId: 'asset-1191',
+    tag: 'WH-MP2',
   },
   // Our own make-up flowmeter, after the utility's meter (the owner, 2026-10-26).
   'wet_hall|make-up-flowmeter|Make-up flowmeter': {
@@ -297,6 +301,14 @@ export const INSTALLED_ASSET_IDS: Readonly<
   'control_room|mimic-air|Mimic: air handling': {
     assetId: 'asset-0084',
     tag: 'CR-MP3',
+  },
+  'control_room|mimic-wet-fresh|Fresh Water Distribution mimic': {
+    assetId: 'asset-1192',
+    tag: 'CR-MP4',
+  },
+  'control_room|mimic-wet-dirty|Pit Inflow Sources mimic': {
+    assetId: 'asset-1193',
+    tag: 'CR-MP5',
   },
   'control_room|annunciator|Alarm annunciator': {
     assetId: 'asset-0085',

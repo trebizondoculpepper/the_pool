@@ -155,6 +155,7 @@ import {
   pitDischargeRate,
 } from './plant/wet-hall';
 import type { WetHallState } from './plant/wet-hall';
+import { stepWetHallBranchMeters } from './plant/wet-hall-branch-meters';
 import { newBathers, poolAppeal, stepBathers } from './bathers';
 import {
   LIGHTING_ZONE_IDS,
@@ -347,7 +348,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 66;
+export const WORLD_VERSION = 68;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -1748,15 +1749,22 @@ function stepPlant(world: World, delta: number): World {
     pools,
     { pool_03: jacuzziAeration(jacuzziRuns(world)) },
   );
-  const wetHall = stepWetHall(
-    world.wetHall,
-    world.plant,
-    { ...water, demand: demand > 0 },
-    delta,
-    {
-      discharge: installedValveOpen(world.installedValves, 'WH-DR1-DV1'),
-    },
-  );
+  const wetHall = {
+    ...stepWetHall(
+      world.wetHall,
+      world.plant,
+      { ...water, demand: demand > 0 },
+      delta,
+      {
+        discharge: installedValveOpen(world.installedValves, 'WH-DR1-DV1'),
+      },
+    ),
+    branches: stepWetHallBranchMeters(
+      world.wetHall.branches,
+      water.flows,
+      delta,
+    ),
+  };
   return {
     ...world,
     time: world.time + delta,

@@ -24,6 +24,7 @@ import {
   transferRunning,
 } from '../../../game/plant/chemical-distribution';
 import { WET_HALL_PLANT } from '../../../game/plant/wet-hall';
+import { branchTotal } from '../../../game/plant/wet-hall-branch-meters';
 import { AIR_UNITS, HALL_POOL } from '../../../game/plant/air-handling';
 import { FILTER_CHANGE } from '../../components/plant/logic/pool-ahu';
 import { CALL_POINTS } from '../../../game/plant/fire-alarm';
@@ -1028,6 +1029,67 @@ const washSequence: Design = {
   ],
 };
 
+/** The bridge's two views of the Penfold wet-hall branch mimics. */
+const freshWaterBranches: Design = {
+  kind: 'grid',
+  title: 'FRESH WATER DISTRIBUTION',
+  rows: [...POOL_IDS.map((id) => POOL_NAME[id]), 'TOTAL'],
+  columns: ['FROM BREAK TANK', 'FLOW'],
+  read: ({ world: w }) => [
+    ...POOL_IDS.map((id): Cell[] => [
+      { words: 'BOOSTED MAKE-UP', colour: 'anakiwa' },
+      {
+        words: `${fixed(w.wetHall.branches[id].fresh.indicated, 1)} M³/H`,
+        colour: 'secondary',
+      },
+    ]),
+    [
+      { words: 'FOUR POOLS', colour: 'anakiwa' },
+      {
+        words: `${fixed(branchTotal(w.wetHall.branches, 'fresh', 'indicated'), 1)} M³/H`,
+        colour: 'secondary',
+      },
+    ],
+  ],
+};
+
+const dirtyWaterBranches: Design = {
+  kind: 'grid',
+  title: 'PIT INFLOW SOURCES',
+  rows: [...POOL_IDS.map((id) => POOL_NAME[id]), 'TOTAL'],
+  columns: ['TO BACKWASH PIT', 'FLOW'],
+  read: ({ world: w }) => [
+    ...POOL_IDS.map((id): Cell[] => {
+      const branch = w.wetHall.branches[id];
+      const source =
+        branch.waste > 0.1 && branch.drain > 0.1
+          ? 'WASTE + DRAIN'
+          : branch.drain > 0.1
+            ? 'DRAIN TO PIT'
+            : branch.waste > 0.1
+              ? 'FILTER/TANK WASTE'
+              : 'NO INFLOW';
+      return [
+        {
+          words: source,
+          colour: branch.dirty.indicated > 0.1 ? 'sandy-brown' : 'dim',
+        },
+        {
+          words: `${fixed(branch.dirty.indicated, 1)} M³/H`,
+          colour: 'secondary',
+        },
+      ];
+    }),
+    [
+      { words: 'PIT INLET', colour: 'sandy-brown' },
+      {
+        words: `${fixed(branchTotal(w.wetHall.branches, 'dirty', 'indicated'), 1)} M³/H`,
+        colour: 'secondary',
+      },
+    ],
+  ],
+};
+
 const bulkStores: Design = {
   kind: 'vessels',
   title: 'BULK STORES · CHEMICAL RESERVES',
@@ -1303,7 +1365,14 @@ export const STATION_DESIGNS: Record<StationName, readonly Design[]> = {
   'LIFE SUPPORT OFFICER': [ov('air'), ahuMatrix, atmosphere, filterScan],
   'SECURITY CHIEF': [fireAndGas, gasSweep, compartments, alarmSweep],
   'WATER SCIENCE OFFICER': [trendWall, qualityMatrix, chemistryRings, spectro],
-  'DRAINAGE OFFICER': [ov('backwash'), reservoirs, ov('make-up'), washSequence],
+  'DRAINAGE OFFICER': [
+    ov('backwash'),
+    reservoirs,
+    ov('make-up'),
+    washSequence,
+    freshWaterBranches,
+    dirtyWaterBranches,
+  ],
   'LOADING BAY CHIEF': [bulkStores, dockStatus, stockProjection],
   'OPERATIONS OFFICER': [
     ov('hypochlorite-distribution'),
