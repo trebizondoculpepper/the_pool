@@ -174,9 +174,13 @@ function xb4Bezel(kit: PanelKit, group: Group) {
 }
 
 /** The ring nut every 30 mm device is held by. */
-function ringNut(kit: PanelKit, group: Group) {
-  disc(group, 0.021, 0.004, kitPaint(kit, '#141415'), 0, 24);
-  disc(group, 0.0165, 0.002, kitPaint(kit, '#26272a', 0.3), 0.004, 24);
+function ringNut(
+  kit: PanelKit,
+  group: Group,
+  [outer, inner]: readonly [string, string] = ['#141415', '#26272a'],
+) {
+  disc(group, 0.021, 0.004, kitPaint(kit, outer), 0, 24);
+  disc(group, 0.0165, 0.002, kitPaint(kit, inner, 0.3), 0.004, 24);
 }
 
 /**
@@ -413,10 +417,12 @@ export function createLeverSelector(
     key = false,
     /** The key's bow (its head), where it has one. */
     bow = '#202022',
+    /** Its ring nut's two mouldings, outer and inner. */
+    ring = ['#141415', '#26272a'] as readonly [string, string],
   } = {},
 ): LeverSelectorView {
   const group = new Group();
-  ringNut(kit, group);
+  ringNut(kit, group, ring);
   const knob = new Group();
   group.add(knob);
   if (key) {

@@ -480,7 +480,7 @@ export function createMassFlowController(
     c.fillStyle = '#1f5fa8';
     c.fillRect(px(-0.036), py(0.0345), 72 * mm, 0.6 * mm);
     // The membrane keypad's panel: dark, its keys' legends.
-    c.fillStyle = '#5f666c';
+    c.fillStyle = '#7b8288';
     c.beginPath();
     c.roundRect(px(-0.039), py(-0.0015), 48 * mm, 16 * mm, 1.5 * mm);
     c.fill();
@@ -756,7 +756,11 @@ export function createMassFlowController(
   // upright, OPEN 45° clockwise, its key's bow the pointer. The operator's
   // key stays in its barrel (the game has no keys to carry yet).
   {
-    const lever = createLeverSelector(kit, 3, { key: true, bow: '#a9aeb2' });
+    const lever = createLeverSelector(kit, 3, {
+      key: true,
+      bow: '#a9aeb2',
+      ring: ['#8a8f93', '#a9aeb2'],
+    });
     lever.group.scale.setScalar(0.3);
     lever.knob.userData.live = true;
     const object = new Group();

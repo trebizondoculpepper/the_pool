@@ -9,8 +9,15 @@ import { FIRST_AID_IDS } from '../../../game/plant/aqualis-first-aid';
 import { DEFAULT_TARGETS } from '../../../game/plant/aqualis-types';
 import { ALARM_LIMITS } from '../../../game/plant/aqualis-advisor';
 
+/**
+ * What the rig doses, its pumps' and its CO₂ panels' together: the CO₂
+ * goes through the plant rooms' panels (`aqualis-co2-rig.ts`), not a rig
+ * device, and since the Lounge's panel is a 500 g/h mass flow controller
+ * (2026-11-01) it takes a high pH's whole demand, the acid pump none.
+ */
 const delivering = (host: ReturnType<typeof createAqualisRoomHost>) =>
-  Object.values(host.rig.devices).reduce((a, d) => a + d.delivering, 0);
+  Object.values(host.rig.devices).reduce((a, d) => a + d.delivering, 0) +
+  Object.values(host.co2().plant.dosers).reduce((a, d) => a + d.delivering, 0);
 
 /** Step `seconds` of real time in frames of a tenth. */
 const run = (
