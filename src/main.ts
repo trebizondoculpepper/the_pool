@@ -4,7 +4,10 @@ import {
   reportError,
   startErrorReporting,
 } from './toolkit/errors/error-reporting';
-import { bindTitleShortcuts } from './toolkit/controls/input/title-shortcuts';
+import {
+  bindScreenshotShortcut,
+  bindTitleShortcuts,
+} from './toolkit/controls/input/title-shortcuts';
 import { createJacuzziAmbience } from './toolkit/gallery/views/jacuzzi-ambience';
 import { jacuzziApproachGain } from './toolkit/gallery/logic/jacuzzi-acoustics';
 import './styles/main.css';
@@ -543,8 +546,18 @@ const copyCameraLocation = async (): Promise<string> => {
  * title shot. Only canvases a room renderer draws: nothing of the page's
  * interface, which is never on them.
  */
-const worldLayers = () =>
-  [...(canvas.parentElement?.children ?? [])]
+let recordingShot: {
+  room: RoomId;
+  surface: HTMLCanvasElement;
+  stop(): void;
+} | null = null;
+const worldLayers = () => {
+  if (recordingShot) {
+    const { surface } = recordingShot;
+    const draw = rendererOn(surface);
+    return draw ? [{ surface, draw }] : [];
+  }
+  return [...(canvas.parentElement?.children ?? [])]
     .filter(
       (root): root is HTMLElement =>
         root instanceof HTMLElement && root.localName === 'section',
@@ -565,6 +578,7 @@ const worldLayers = () =>
       const draw = rendererOn(surface);
       return draw ? [{ surface, draw }] : [];
     });
+};
 /**
  * A best-quality frame of the view now (prompt 084): every room canvas
  * seen drawn again at full resolution (render scale 1, whatever the
@@ -667,6 +681,7 @@ const downloadShot = (blob: Blob, name: string) => {
 };
 /** The room a screenshot is of, or why there is none to take now. */
 const shotTarget = (): { room: string } | { unavailable: string } => {
+  if (recordingShot) return { room: recordingShot.room };
   if (titleBackdrop) {
     const room = titleBackdrop.shown();
     return room
@@ -1397,6 +1412,7 @@ const startTitleBackdrop = async () => {
  * recorder steps the page's clock and takes each frame from `canvas`.
  */
 const startAttractRecording = async (id: string) => {
+  const ownRevision = revision;
   const shot = ATTRACT_SHOTS.find((s) => s.id === id);
   const room = shot && resolveRoomId(shot.room);
   if (!shot || !room) throw new Error(`No attract shot ${id}`);
@@ -1405,6 +1421,7 @@ const startAttractRecording = async (id: string) => {
   titleScreen.hide();
   directory.hidden = true;
   const start = await starter(room);
+  if (ownRevision !== revision) return;
   const store = createScenarioStore(attractScenario(shot.scenario));
   setRoomWorld(store);
   const surface = canvas.cloneNode() as HTMLCanvasElement;
@@ -1413,7 +1430,7 @@ const startAttractRecording = async (id: string) => {
   surface.style.display = 'block';
   Object.assign(surface.style, { position: 'fixed', inset: '0' });
   document.body.append(surface);
-  start(surface);
+  const handle = start(surface);
   const walk = firstPersonOn(surface);
   const draw = rendererOn(surface);
   if (!walk || !draw) throw new Error(`Shot ${id} has no view`);
@@ -1421,6 +1438,20 @@ const startAttractRecording = async (id: string) => {
   torch.on = !!shot.torch;
   store.run(true);
   placeShot(walk, shot, 0);
+  const unbindScreenshot = bindScreenshotShortcut(copyScreenshot);
+  recordingShot = {
+    room,
+    surface,
+    stop() {
+      unbindScreenshot();
+      store.stop();
+      handle();
+      surface.remove();
+      setRoomWorld(null);
+      partAudio.setGameMuted(false);
+      paused.value = false;
+    },
+  };
   const seconds = shot.path?.period ?? shot.seconds;
   (window as unknown as { attractRecording: unknown }).attractRecording = {
     seconds,
@@ -1437,6 +1468,8 @@ const stopTitleBackdrop = () => {
 
 const openRoom = async () => {
   const ownRevision = ++revision;
+  recordingShot?.stop();
+  recordingShot = null;
   // A room that does not exist (a broken or old link) goes to the title
   // screen, the default page, its address tidied to the front page's.
   if (

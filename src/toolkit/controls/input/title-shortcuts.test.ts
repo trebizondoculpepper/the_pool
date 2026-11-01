@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
-import { bindTitleShortcuts } from './title-shortcuts';
+import { bindScreenshotShortcut, bindTitleShortcuts } from './title-shortcuts';
 afterEach(() => vi.unstubAllGlobals());
 it('ignores editing and consumed events, and removes its listener when the title ends', () => {
   const target = new EventTarget();
@@ -63,4 +63,32 @@ it('takes the screenshot chord on the title, once per press', () => {
   expect(screenshot).toHaveBeenCalledTimes(2);
   expect(action).not.toHaveBeenCalled();
   dispose();
+});
+
+it('takes the screenshot chord in a recording view without title navigation', () => {
+  const target = new EventTarget();
+  vi.stubGlobal('document', target);
+  const screenshot = vi.fn();
+  const dispose = bindScreenshotShortcut(screenshot);
+  const press = (keys: Record<string, unknown>) => {
+    const event = new Event('keydown', { cancelable: true });
+    Object.assign(event, {
+      code: 'KeyK',
+      ctrlKey: false,
+      metaKey: true,
+      altKey: false,
+      shiftKey: true,
+      repeat: false,
+      ...keys,
+    });
+    target.dispatchEvent(event);
+    return event;
+  };
+  expect(press({}).defaultPrevented).toBe(true);
+  expect(press({ repeat: true }).defaultPrevented).toBe(true);
+  press({ code: 'BracketRight' });
+  expect(screenshot).toHaveBeenCalledTimes(1);
+  dispose();
+  expect(press({}).defaultPrevented).toBe(false);
+  expect(screenshot).toHaveBeenCalledTimes(1);
 });
