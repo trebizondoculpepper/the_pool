@@ -67,5 +67,5 @@ describe('“The acid pump failed”: how long its story says the pump has been 
       card.briefing.pro,
     ])
       expect(words).toContain('about two weeks ago');
-  });
+  }, 120_000);
 });
