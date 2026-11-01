@@ -1,6 +1,8 @@
 import { createBackwashPitWater } from '../../components/plant/views/backwash-pit-water';
 import { createCo2DosingPanel } from './co2-dosing-panel';
 import { portPressure } from '../../../game/plant/co2-distribution';
+import { CO2_DOSERS } from '../../../game/plant/co2-dosing';
+import type { Co2PanelAction } from '../../../game/plant/co2-dosing';
 import type { PitPumpAction } from '../../../game/plant/wet-hall';
 import { decorativeKind } from '../logic/world-in-model';
 import { createSpaSandFilter } from '../../components/plant/views/spa-pack-parts';
@@ -324,19 +326,32 @@ function modelFor(
   // world (`live-plant.ts`).
   const pool = /^plant_(pool_0[1-4])$/.exec(room)?.[1] as PoolId | undefined;
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-panel') {
-    const panel = createCo2DosingPanel(kit);
     const port = `plant_${pool}` as const;
+    const store = roomWorld();
+    const act = (action: Co2PanelAction) =>
+      store.dispatch({ type: 'co2/panel', room: port, action });
+    const panel = createCo2DosingPanel(
+      kit,
+      CO2_DOSERS[port].kind,
+      () => {
+        const co2 = store.world.value.co2;
+        return {
+          doser: co2.dosers[port],
+          inletBar: portPressure(co2.distribution, port),
+        };
+      },
+      {
+        setMode: (mode) => act({ kind: 'mode', mode }),
+        setManualRate: (gh) => act({ kind: 'rate', gh }),
+        reset: () => act({ kind: 'reset' }),
+      },
+      item.label,
+    );
     return {
-      object: panel.group,
-      update: (delta: number) => {
-        const co2 = roomWorld().world.value.co2;
-        panel.show(co2.dosers[port], portPressure(co2.distribution, port));
-        panel.update(delta);
-      },
-      status: () => {
-        const d = roomWorld().world.value.co2.dosers[port];
-        return `${d.mode.toUpperCase()} · ${Math.round(d.delivering)} g/h${d.fault ? ` · ${d.fault}` : ''}`;
-      },
+      object: panel.object,
+      parts: panel.parts,
+      update: (delta: number) => panel.update(delta),
+      status: () => panel.status(),
     };
   }
   if (pool && kind === 'pump-pair') return pumpPairExhibit(pool).build(kit);

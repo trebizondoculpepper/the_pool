@@ -5,6 +5,7 @@ import type { World, WorldAction } from '../world';
 import type { GameEvent } from './game-event';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
 import { MODEL_VALVES } from '../plant/model-valves';
+import { INSTALLED_ASSET_IDS } from '../plant/installed-asset-ids';
 import { identifiedPart } from '../plant/identification';
 import { MOTORS } from '../plant/motor-starters';
 import { amountText, handChemical, rateText } from '../plant/hand-dose';
@@ -41,6 +42,11 @@ export function partLabel(world: World, id: string) {
 
 const onOff = (on: boolean) => (on ? 'on' : 'off');
 const openShut = (open: boolean) => (open ? 'opened' : 'shut');
+/** A plant room's CO₂ dosing panel's tag, from its register (PL1-CP4). */
+const co2PanelTag = (room: string) =>
+  Object.entries(INSTALLED_ASSET_IDS).find(([key]) =>
+    key.startsWith(`${room}|co2-panel|`),
+  )?.[1].tag ?? 'CO₂ PANEL';
 const modelTag = (id: string) =>
   MODEL_VALVES.find((valve) => valve.id === id)?.tag ?? 'CO₂';
 
@@ -371,6 +377,19 @@ function said(
         subject: 'CO₂ SUPPLY',
         text: `CO₂ changeover lever turned to ${after.co2.distribution.supply.service}`,
       };
+    case 'co2/panel': {
+      const a = action.action;
+      const d = after.co2.dosers[action.room];
+      return {
+        subject: co2PanelTag(action.room),
+        text:
+          a.kind === 'mode'
+            ? `CO₂ dosing panel turned to ${a.mode.toUpperCase()}`
+            : a.kind === 'rate'
+              ? `CO₂ dosing panel’s manual rate set to ${Math.round(d.manualRate)} g/h`
+              : 'CO₂ dosing panel RESET',
+      };
+    }
     case 'co2/port':
       return {
         subject: modelTag(

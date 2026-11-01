@@ -37,9 +37,19 @@ import { driveCabinet } from '../../components/plant/views/aqualis-painter';
 import { CABINET, PORTS } from '../../components/plant/logic/aqualis-cabinet';
 import { createPeristalticPump } from '../../components/plant/views/peristaltic-pump';
 import { createGasCylinder } from '../../components/plant/views/gas-cylinder';
-import { createSolenoidValve } from '../../components/plant/views/solenoid-valve';
-import { CHANNELS, CHANNEL_IDS } from '../../../game/plant/aqualis-types';
-import type { ChannelId } from '../../../game/plant/aqualis-types';
+import { CHANNELS } from '../../../game/plant/aqualis-types';
+import {
+  CO2_PORT_IDS,
+  linePressure,
+} from '../../../game/plant/co2-distribution';
+import type { Co2PortId } from '../../../game/plant/co2-distribution';
+import { CO2_DOSERS } from '../../../game/plant/co2-dosing';
+import { createDialGauge } from '../../components/industrial-control/views/dial-gauge';
+import { createGasBallValve } from '../../components/plant/views/gas-fittings';
+import {
+  CO2_PANEL_PORTS,
+  createCo2DosingPanel,
+} from '../views/co2-dosing-panel';
 import {
   DEVICE_LEGEND,
   DEVICE_MODES,
@@ -55,11 +65,37 @@ import type { AqualisRoomHost } from './aqualis-room';
 const ROOM = { w: 9, d: 7, h: 3.4, wall: 0.2 };
 /** Where the cabinet's back stands against the back wall. */
 const CAB = { x: 0, z: -ROOM.d / 2 } as const;
-/** The dosing units along the back wall, right of the cabinet. */
-const UNIT_X: Record<ChannelId, number> = {
+/** The dosing pumps along the back wall, right of the cabinet. */
+const UNIT_X: Record<'hypochlorite' | 'acid', number> = {
   hypochlorite: 1.15,
   acid: 2.05,
-  co2: 3.1,
+};
+/** The ideal pumps: CO₂ is the plant rooms' real panels, on the front wall. */
+const PUMP_IDS = ['hypochlorite', 'acid'] as const;
+/**
+ * The CO₂ bay on the front (south) wall, facing into the room (the owner,
+ * 2026-11-01: "move the CO₂ dosing controller into the Aqualis Trio dev
+ * room, and plumb it in there. I want to update its design."): each panel's
+ * centre, x, at eye height, and the plane its pipes run in.
+ */
+const CO2_BAY = {
+  panels: { plant_pool_01: 1.0, plant_pool_02: -1.0 } as Record<
+    Co2PortId,
+    number
+  >,
+  y: 1.5,
+  pipeZ: ROOM.d / 2 - 0.06,
+  header: 2.3,
+  valve: 2.15,
+  /** Each panel's gas line over the ceiling to its nozzle on the return. */
+  over: { plant_pool_01: 3.0, plant_pool_02: 3.08 } as Record<
+    Co2PortId,
+    number
+  >,
+  nozzle: { plant_pool_01: -0.95, plant_pool_02: -1.45 } as Record<
+    Co2PortId,
+    number
+  >,
 };
 /** The loop's line along the back wall, its height, m. */
 const LINE_Y = 0.35;
@@ -73,11 +109,14 @@ const BAR_SEGMENTS = 10;
  * Dev58, the Aqualis controller (mission 114, `doc/plans/114/`): the
  * Aqualis cabinet against the back wall on an ideal rig, a very simple loop
  * (a small pool, its pump and filter, one injection point, the cabinet's
- * sample tapping and return), and the three dosing units it drives (a
- * hypochlorite pump, an acid pump and a CO₂ valve on its cylinder), each
- * with its own REMOTE · MANUAL · OFF selector; the scenario board and the
- * time-speed knob on the right wall. Everything it runs is behind one host
- * (`aqualis-room.ts`); `?view=room|cabinet|screen|units|board|boots`
+ * sample tapping and return), and the dosing it drives: an ideal
+ * hypochlorite pump and acid pump on the back wall, each with its own
+ * REMOTE · MANUAL · OFF selector, and on the front wall the plant rooms'
+ * own CO₂ dosing panels (mission 118), the Lounge's and the Olympic's, the
+ * world's model and drawing, plumbed to their own nozzles on the return
+ * (`aqualis-co2-rig.ts`); the scenario board and the time-speed knob on
+ * the right wall. Everything it runs is behind one host (`aqualis-room.ts`);
+ * `?view=room|cabinet|screen|units|board|boots|co2|co2-lounge|co2-olympic`
  * frames it. The cabinet's computer is on and running as the room loads
  * (`&boot=on` boots it instead, `&boot=20` 20 s into its boot); it boots
  * when its supply (the switch beside the time-speed knob, or its own
@@ -388,7 +427,7 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
 
   // ---- The dosing units -----------------------------------------------------------
   const board = t.paint('#f1f2ee', 0.6);
-  const units = CHANNEL_IDS.map((id) => {
+  const units = PUMP_IDS.map((id) => {
     const x = UNIT_X[id];
     const unit = new Group();
     unit.position.set(x, 0, -d / 2);
@@ -404,15 +443,7 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
       0.032,
       '#1b1b1b',
     );
-    t.label(
-      unit,
-      id === 'co2' ? 'CO₂ VALVE CONTROLLER' : 'DOSING PUMP',
-      0,
-      1.56,
-      0.025,
-      0.025,
-      '#4a5258',
-    );
+    t.label(unit, 'DOSING PUMP', 0, 1.56, 0.025, 0.025, '#4a5258');
     const sel = parts.add(
       selector(kit, {
         positions: 3,
@@ -448,25 +479,16 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     t.label(unit, 'OUTPUT  0 — 100 %', 0, 1.19, 0.025, 0.016, '#30383e');
     t.label(
       unit,
-      `PORT: AQUALIS ${id === 'co2' ? 'CO₂' : id === 'acid' ? 'HCl' : 'NaOCl'}`,
+      `PORT: AQUALIS ${id === 'acid' ? 'HCl' : 'NaOCl'}`,
       0,
       0.84,
       0.025,
       0.02,
       '#4a5258',
     );
-    // The source under it: a drum that never runs dry, or the CO₂ cylinder.
-    let pump: ReturnType<typeof createPeristalticPump> | null = null;
-    let valve: ReturnType<typeof createSolenoidValve> | null = null;
-    if (id === 'co2') {
-      const cyl = createGasCylinder(kit, { gas: 'co2', contents: 'in-use' });
-      cyl.group.position.set(0.3, 0, 0.3);
-      unit.add(cyl.group);
-      valve = createSolenoidValve(kit, 0.03);
-      valve.group.position.set(0, 1.08, 0.08);
-      unit.add(valve.group);
-      t.box(unit, t.paint('#3a4148', 0.6), 0.2, 0.025, 0.12, 0, 1.0, 0.07);
-    } else {
+    // The source under it: a drum that never runs dry.
+    const pump = createPeristalticPump(kit, id === 'acid' ? 'HCl' : 'NaOCl');
+    {
       const drum = t.paint(id === 'acid' ? '#2f6db5' : '#e6d94a', 0.5);
       t.cyl(unit, drum, 0.2, 0.6, 0, 0.3, 0.35, 'y', 20);
       t.cyl(unit, t.paint('#2a2f33', 0.5), 0.04, 0.04, 0.08, 0.62, 0.35);
@@ -482,7 +504,6 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
       );
       // The pump on its bracket.
       t.box(unit, t.paint('#3a4148', 0.6), 0.28, 0.02, 0.2, 0, 0.94, 0.11);
-      pump = createPeristalticPump(kit, id === 'acid' ? 'HCl' : 'NaOCl');
       pump.object.position.set(0, 0.95, 0.12);
       unit.add(pump.object);
       pipe(
@@ -497,17 +518,245 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
       );
     }
     // Its dosing line up the wall, along to the injection point.
-    const lineY = 2.35 + CHANNEL_IDS.indexOf(id) * 0.06;
-    const lineZ = -d / 2 + 0.06 + CHANNEL_IDS.indexOf(id) * 0.03;
-    const tube = t.paint(
-      id === 'acid' ? '#2f6db5' : id === 'co2' ? '#9aa1a5' : '#e6d94a',
-      0.5,
-    );
+    const lineY = 2.35 + PUMP_IDS.indexOf(id) * 0.06;
+    const lineZ = -d / 2 + 0.06 + PUMP_IDS.indexOf(id) * 0.03;
+    const tube = t.paint(id === 'acid' ? '#2f6db5' : '#e6d94a', 0.5);
     pipe(x, 1.7, lineZ, x, lineY, lineZ, 0.008, tube);
     pipe(x, lineY, lineZ, INJECT_X, lineY, lineZ, 0.008, tube);
     pipe(INJECT_X, lineY, lineZ, INJECT_X, LINE_Y + 0.14, lineZ, 0.008, tube);
-    return { id, pump, valve, run, fault, bar };
+    return { id, pump, run, fault, bar };
   });
+
+  // ---- CO₂: the plant rooms' own panels, plumbed into the rig --------------------------
+  // The panel model the world runs (`aqualis-co2-rig.ts`), drawn by the
+  // plant rooms' own drawing (`co2-dosing-panel.ts`): the Lounge's solenoid
+  // and rotameter on the left, the Olympic's mass flow controller on the
+  // right, each on its wall port off a stand-in for the building line, the
+  // Trio's CO₂ cable on whichever its changeover selector chooses, and each
+  // panel's line over the ceiling to its own nozzle on the rig's return.
+  const copper = t.paint('#b8734a', 0.35, 0.8);
+  const band = t.paint('#b9bcbc', 0.6);
+  const co2Pipe = (pts: readonly (readonly [number, number, number])[]) => {
+    for (let i = 1; i < pts.length; i++)
+      pipe(...pts[i - 1], ...pts[i], 0.0075, copper);
+  };
+  const bay = new Group();
+  bay.position.set(0, 0, d / 2);
+  bay.rotation.y = Math.PI;
+  room.add(bay);
+  const baySign = createSectionBoard(
+    kit,
+    'CO₂ DOSING · THE PLANT ROOMS’ PANELS',
+    4,
+  );
+  baySign.position.set(0, 2.85, 0.03);
+  bay.add(baySign);
+  const co2Lamp = new PointLight('#fff6e8', 6, 6 * m, 2);
+  co2Lamp.position.set(0, 2.7 * m, (d / 2 - 1.3) * m);
+  scene.add(co2Lamp);
+  const { pipeZ } = CO2_BAY;
+  // The stand-in supply: one cylinder, its regulator and the line's gauge.
+  const cylinder = createGasCylinder(kit, { gas: 'co2', contents: 'in-use' });
+  cylinder.group.position.set(0, 0, d / 2 - 0.3);
+  room.add(cylinder.group);
+  t.box(room, t.paint('#b08d45', 0.35, 0.8), 0.07, 0.09, 0.06, 0, 1.3, pipeZ);
+  const lineGauge = createDialGauge(kit, {
+    dia: 0.1,
+    max: 6,
+    unit: 'bar',
+    legend: 'LINE',
+    entry: 'back',
+  });
+  lineGauge.group.position.set(0, 1.45, pipeZ - 0.03);
+  lineGauge.group.rotation.y = Math.PI;
+  room.add(lineGauge.group);
+  t.label(
+    bay,
+    'LP CO₂ SUPPLY · 4 bar',
+    0,
+    1.62,
+    0.07,
+    0.025,
+    '#1b1b1b',
+    '#ffffff',
+  );
+  t.label(
+    bay,
+    'STAND-IN FOR THE BUILDING LINE',
+    0,
+    1.58,
+    0.07,
+    0.016,
+    '#30383e',
+    '#ffffff',
+  );
+  co2Pipe([
+    [0, 1.35, pipeZ],
+    [0, CO2_BAY.header, pipeZ],
+  ]);
+  /** A panel's inlet, x: its panel turned to face the room. */
+  const inX = (id: Co2PortId) => CO2_BAY.panels[id] - CO2_PANEL_PORTS.inlet[0];
+  co2Pipe([
+    [inX('plant_pool_02'), CO2_BAY.header, pipeZ],
+    [inX('plant_pool_01'), CO2_BAY.header, pipeZ],
+  ]);
+  t.cyl(room, band, 0.009, 0.06, 0.3, CO2_BAY.header, pipeZ, 'x', 12);
+  t.label(
+    bay,
+    'CO₂',
+    -0.3,
+    CO2_BAY.header + 0.03,
+    0.07,
+    0.018,
+    '#1b1b1b',
+    '#e9e9e4',
+  );
+  const panels = CO2_PORT_IDS.map((id) => {
+    const px = CO2_BAY.panels[id];
+    const x = inX(id);
+    const pool = id === 'plant_pool_01' ? 'Lounge' : 'Olympic';
+    const panel = createCo2DosingPanel(
+      kit,
+      CO2_DOSERS[id].kind,
+      () => host.co2Panel(id),
+      {
+        setMode: (mode) => host.setCo2Mode(id, mode),
+        setManualRate: (gh) => host.setCo2Rate(id, gh),
+        reset: () => host.resetCo2(id),
+      },
+      `${pool} pool CO₂ dosing valve controller`,
+    );
+    panel.object.position.set(px, CO2_BAY.y, d / 2 - 0.14);
+    panel.object.rotation.y = Math.PI;
+    room.add(panel.object);
+    t.label(
+      bay,
+      id === 'plant_pool_01'
+        ? 'LOUNGE · PL1-CP4 · SOLENOID AND ROTAMETER'
+        : 'OLYMPIC · PL2-CP4 · MASS FLOW CONTROLLER',
+      -px,
+      CO2_BAY.y + 0.5,
+      0.03,
+      0.026,
+      '#1b1b1b',
+      '#ffffff',
+    );
+    // Its wall port: the lever ball valve on its drop, and its gauge.
+    const top = CO2_BAY.y + CO2_PANEL_PORTS.inlet[1];
+    co2Pipe([
+      [x, CO2_BAY.header, pipeZ],
+      [x, top, pipeZ],
+    ]);
+    const valve = parts.add(
+      createGasBallValve(kit, {
+        pipeRadius: 0.0075,
+        name: `${pool} CO₂ wall port isolating valve`,
+        binding: {
+          open: () => host.co2().plant.distribution.ports[id].open,
+          set: (open) => host.setCo2Port(id, open),
+        },
+      }),
+    );
+    const holder = new Group();
+    holder.position.set(x, CO2_BAY.valve, pipeZ);
+    holder.rotation.y = Math.PI / 2;
+    valve.object.rotation.z = Math.PI / 2;
+    holder.add(valve.object);
+    room.add(holder);
+    const gauge = createDialGauge(kit, {
+      dia: 0.07,
+      max: 6,
+      unit: 'bar',
+      legend: 'PORT',
+      entry: 'back',
+    });
+    gauge.group.position.set(
+      x + (id === 'plant_pool_01' ? 0.12 : -0.12),
+      CO2_BAY.valve,
+      pipeZ - 0.02,
+    );
+    gauge.group.rotation.y = Math.PI;
+    room.add(gauge.group);
+    // Its gas line: down from its outlet, out past its side, up and over
+    // the ceiling to its nozzle on the return, through its non-return valve.
+    const out = CO2_BAY.y + CO2_PANEL_PORTS.outlet[1];
+    const side = px + (id === 'plant_pool_01' ? 0.42 : -0.42);
+    const over = CO2_BAY.over[id];
+    const nx = CO2_BAY.nozzle[id];
+    const nz = LINE_Z + 0.07;
+    co2Pipe([
+      [x, out, pipeZ],
+      [x, out - 0.1, pipeZ],
+      [side, out - 0.1, pipeZ],
+      [side, over, pipeZ],
+      [side, over, nz],
+      [nx, over, nz],
+      [nx, LINE_Y + 0.2, nz],
+      [nx, LINE_Y + 0.2, LINE_Z],
+      [nx, LINE_Y + 0.06, LINE_Z],
+    ]);
+    // The nozzle's non-return valve and its injection cone in the return.
+    t.cyl(
+      room,
+      t.paint('#b08d45', 0.35, 0.8),
+      0.014,
+      0.05,
+      nx,
+      LINE_Y + 0.13,
+      LINE_Z,
+      'y',
+      6,
+    );
+    t.cyl(
+      room,
+      t.paint('#d8d8d0', 0.4),
+      0.03,
+      0.06,
+      nx,
+      LINE_Y + 0.06,
+      LINE_Z,
+      'y',
+    );
+    t.label(
+      room,
+      id === 'plant_pool_01' ? 'CO₂ NOZZLE · PL1' : 'CO₂ NOZZLE · PL2',
+      nx,
+      LINE_Y + 0.26,
+      LINE_Z + 0.05,
+      0.022,
+      '#1b1b1b',
+      '#ffffff',
+    );
+    return { id, panel, gauge };
+  });
+  // The Trio's CO₂ control cable: on one panel or the other.
+  t.box(
+    room,
+    t.paint('#c8ccc9', 0.5),
+    0.22,
+    0.2,
+    0.08,
+    -0.35,
+    1.75,
+    d / 2 - 0.04,
+  );
+  const cable = parts.add(
+    selector(kit, {
+      positions: 2,
+      initial: CO2_PORT_IDS.indexOf(host.co2().plugged),
+      bound: {
+        get value() {
+          return CO2_PORT_IDS.indexOf(host.co2().plugged);
+        },
+        set: (k: number) => host.plugCo2(CO2_PORT_IDS[k]),
+      },
+      legend: 'TRIO CO₂ CABLE: LOUNGE · OLYMPIC',
+      name: 'Trio CO₂ cable selector',
+    }),
+  );
+  cable.object.position.set(-0.35, 1.73, d / 2 - 0.081);
+  cable.object.rotation.y = Math.PI;
+  room.add(cable.object);
   // The control cables: a tray from the cabinet's glands across to the units.
   t.box(
     room,
@@ -844,7 +1093,9 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
   const pointer = new Vector2();
   const extraUses = new Map<Object3D, (direction?: number) => void>();
   for (const u of units)
-    if (u.pump) for (const [o, use] of u.pump.parts.uses) extraUses.set(o, use);
+    for (const [o, use] of u.pump.parts.uses) extraUses.set(o, use);
+  for (const p of panels)
+    for (const [o, use] of p.panel.parts.uses) extraUses.set(o, use);
   const usable = (hit: Intersection) => {
     if (cabinet.aimed(hit.object, hit.uv))
       return () =>
@@ -879,6 +1130,20 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     board: { x: 3.0 * m, z: -0.6 * m, yaw: Math.PI / 2, pitch: -0.15 },
     boots: { x: 2.7 * m, z: 1.4 * m, yaw: Math.PI / 2, pitch: -0.15 },
     crash: { x: 3.2 * m, z: -2.05 * m, yaw: Math.PI / 2, pitch: -0.3 },
+    // The CO₂ bay on the front wall, and each panel close to.
+    co2: { x: 0, z: (d / 2 - 2.9) * m, yaw: Math.PI, pitch: -0.04 },
+    'co2-lounge': {
+      x: 1.0 * m,
+      z: (d / 2 - 1.05) * m,
+      yaw: Math.PI,
+      pitch: -0.1,
+    },
+    'co2-olympic': {
+      x: -1.0 * m,
+      z: (d / 2 - 1.05) * m,
+      yaw: Math.PI,
+      pitch: -0.1,
+    },
   };
   const half = (s: number) => (s / 2) * m;
   const walk = createFirstPerson({
@@ -906,6 +1171,13 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
         maxX: half(w),
         minZ: -half(d),
         maxZ: (-d / 2 + CABINET.d + 0.25) * m,
+      },
+      // The CO₂ bay along the front wall: its panels and the cylinder.
+      {
+        minX: -1.5 * m,
+        maxX: 1.5 * m,
+        minZ: (d / 2 - 0.5) * m,
+        maxZ: half(d),
       },
     ],
     use: (x, y) => usableAt(x, y)?.(),
@@ -950,8 +1222,15 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
       u.fault.set(Boolean(fb?.fault));
       const level = fb && fb.most > 0 ? fb.delivering / fb.most : 0;
       u.bar.forEach((seg, i) => seg.set(level > (i + 0.5) / BAR_SEGMENTS));
-      u.pump?.update(delta, Boolean(fb?.running));
-      u.valve?.setOpen(Boolean(fb?.running));
+      u.pump.update(delta, Boolean(fb?.running));
+    }
+    lineGauge.set(linePressure(host.co2().plant.distribution));
+    lineGauge.update(delta);
+    for (const p of panels) {
+      p.gauge.set(host.co2Panel(p.id).inletBar);
+      p.gauge.update(delta);
+      p.panel.update(delta);
+      p.panel.parts.update(delta);
     }
     pumpLamp.set(host.pumpRunning());
     const left = host.crashIn();
@@ -970,6 +1249,7 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     observer.disconnect();
     walk.dispose();
     parts.dispose();
+    for (const p of panels) p.panel.dispose();
     cabinet.dispose();
     for (const b of bootScreens) b.dispose();
     disposeKit(kit, scene as unknown as Group);

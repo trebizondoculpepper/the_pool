@@ -4,11 +4,10 @@ import {
   newRig,
   resetWater,
   rigFlow,
-  rigPorts,
   rigSample,
+  setDeviceConnected,
   setDeviceMode,
   setSampleFlow,
-  stepRig,
   RIG_POOL,
 } from '../../../game/plant/aqualis-rig';
 import type {
@@ -17,6 +16,21 @@ import type {
   RigScenarioId,
 } from '../../../game/plant/aqualis-rig';
 import { DEFAULT_TARGETS } from '../../../game/plant/aqualis-types';
+import {
+  newRigCo2,
+  plugRigCo2,
+  resetRigCo2,
+  rigCo2Ports,
+  setRigCo2Mode,
+  setRigCo2Port,
+  setRigCo2Rate,
+  stepRigCo2,
+} from '../../../game/plant/aqualis-co2-rig';
+import type { RigCo2 } from '../../../game/plant/aqualis-co2-rig';
+import { portPressure } from '../../../game/plant/co2-distribution';
+import type { Co2PortId } from '../../../game/plant/co2-distribution';
+import type { Co2DoserMode } from '../../../game/plant/co2-dosing';
+import type { Co2PanelReading } from '../views/co2-dosing-panel';
 import type {
   Advice,
   Alarm,
@@ -184,8 +198,21 @@ export interface AqualisRoomHost {
   setSelector(s: Selector): void;
   deviceMode(id: ChannelId): DeviceMode;
   setDeviceMode(id: ChannelId, mode: DeviceMode): void;
-  /** What each device reports through its control port (null unconnected). */
+  /** What each device reports through its control port (null unconnected): CO₂'s, the panel plugged in. */
   feedback(id: ChannelId): ChannelFeedback | null;
+  /**
+   * The CO₂ system on the rig (`aqualis-co2-rig.ts`): the plant rooms' two
+   * panels, the Lounge's (`plant_pool_01`) and the Olympic's
+   * (`plant_pool_02`), each on its wall port, one plugged into the Trio.
+   */
+  co2(): RigCo2;
+  co2Panel(id: Co2PortId): Co2PanelReading;
+  setCo2Mode(id: Co2PortId, mode: Co2DoserMode): void;
+  setCo2Rate(id: Co2PortId, gh: number): void;
+  resetCo2(id: Co2PortId): void;
+  setCo2Port(id: Co2PortId, open: boolean): void;
+  /** Move the Trio's CO₂ control cable to this panel. */
+  plugCo2(id: Co2PortId): void;
   sampleValve(open: boolean): void;
   /** The sample's flow through the cabinet, l/h. */
   sampleLh(): number;
@@ -273,7 +300,9 @@ export function createAqualisRoomHost(
   scenario: RigScenarioId = 'good',
   options: AqualisHostOptions = {},
 ): AqualisRoomHost {
-  let rig = newRig(scenario);
+  // Its ideal CO₂ valve unplugged: the plant rooms' panels take its place.
+  let rig = setDeviceConnected(newRig(scenario), 'co2', false);
+  let co2: RigCo2 = newRigCo2();
   let speed = 1;
   let sel: Selector = 'auto';
   let valveOpen = true;
@@ -346,7 +375,7 @@ export function createAqualisRoomHost(
         readings,
         sample,
         selector: sel,
-        ports: rigPorts(rig),
+        ports: rigCo2Ports(rig, co2),
         settings: working(),
         hand,
         pause: firstAidHolds(firstAid),
@@ -384,6 +413,12 @@ export function createAqualisRoomHost(
     adviseNow();
   };
 
+  /** The rig and its CO₂ panels one tick on. */
+  const stepLoop = (demands: Outputs) => {
+    const r = stepRigCo2(rig, co2, demands, TICK);
+    rig = r.rig;
+    co2 = r.co2;
+  };
   /** One chemistry tick of the cabinet: sample, control, advise. */
   const tick = () => {
     const s = stepSampler(sampler, rigSample(rig), TICK);
@@ -393,7 +428,7 @@ export function createAqualisRoomHost(
     if (!running()) {
       // Its software is not running: off or booting, nothing is asked of
       // the dosing units; crashed, they get whatever its crash sends.
-      rig = stepRig(rig, osOutputs(os, NO_DEMAND), TICK);
+      stepLoop(osOutputs(os, NO_DEMAND));
       return;
     }
     if (firstAid) {
@@ -413,7 +448,7 @@ export function createAqualisRoomHost(
     control = c.state;
     out = c.out;
     adviseNow();
-    rig = stepRig(rig, out.demands, TICK);
+    stepLoop(out.demands);
   };
   tick();
 
@@ -520,7 +555,28 @@ export function createAqualisRoomHost(
     setDeviceMode(id, mode) {
       rig = setDeviceMode(rig, id, mode);
     },
-    feedback: (id) => rigPorts(rig)[id],
+    feedback: (id) => rigCo2Ports(rig, co2)[id],
+    co2: () => co2,
+    co2Panel: (id) => ({
+      doser: co2.plant.dosers[id],
+      inletBar: portPressure(co2.plant.distribution, id),
+    }),
+    setCo2Mode(id, mode) {
+      co2 = setRigCo2Mode(co2, id, mode);
+    },
+    setCo2Rate(id, gh) {
+      co2 = setRigCo2Rate(co2, id, gh);
+    },
+    resetCo2(id) {
+      co2 = resetRigCo2(co2, id);
+    },
+    setCo2Port(id, open) {
+      co2 = setRigCo2Port(co2, id, open);
+    },
+    plugCo2(id) {
+      co2 = plugRigCo2(co2, id);
+      if (running() && out) lookNow();
+    },
     sampleValve(open) {
       valveOpen = open;
       rig = setSampleFlow(rig, open ? RIG_POOL.sampleFlowLh : 0);
@@ -531,7 +587,9 @@ export function createAqualisRoomHost(
     leds: () => ({
       power: os.powered,
       dosing:
-        os.powered && Object.values(rig.devices).some((d) => d.delivering > 0),
+        os.powered &&
+        (Object.values(rig.devices).some((d) => d.delivering > 0) ||
+          co2.plant.dosers[co2.plugged].delivering > 0),
       // Its alarms died with it, unless the watchdog raised CONTROLLER FAULT.
       alarm:
         (running() && (alarmsOn.length > 0 || !valveOpen)) ||

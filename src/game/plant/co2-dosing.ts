@@ -390,3 +390,21 @@ export const resetCo2Doser = (d: Co2Doser): Co2Doser =>
   d.latched
     ? { ...d, latched: null, fault: null, unproved: 0, unwanted: 0 }
     : d;
+
+/** What can be done at a panel itself (its local controls), as one world action. */
+export type Co2PanelAction =
+  | { kind: 'mode'; mode: Co2DoserMode }
+  | { kind: 'rate'; gh: number }
+  | { kind: 'reset' };
+
+/** A panel's local control worked. */
+export function actOnCo2Doser(d: Co2Doser, a: Co2PanelAction): Co2Doser {
+  switch (a.kind) {
+    case 'mode':
+      return setCo2Mode(d, a.mode);
+    case 'rate':
+      return setCo2ManualRate(d, a.gh);
+    case 'reset':
+      return resetCo2Doser(d);
+  }
+}

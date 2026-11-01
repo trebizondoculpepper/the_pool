@@ -436,6 +436,21 @@ export function stepRig(
   return next;
 }
 
+/**
+ * A dose from a real device outside the rig (dev58's CO₂ panels,
+ * `aqualis-co2-rig.ts`) put into the rig's dosing line at its injection
+ * point, in its channel's unit·h (grams for CO₂): it reaches the water on
+ * the next chemistry tick, or waits in the line while the water is still.
+ */
+export const withLineDose = (rig: Rig, id: ChannelId, amount: number): Rig =>
+  amount > 0
+    ? {
+        ...rig,
+        pending: { ...rig.pending, [id]: rig.pending[id] + amount },
+        sources: { ...rig.sources, [id]: rig.sources[id] + amount },
+      }
+    : rig;
+
 // ---- The setters ------------------------------------------------------------------
 
 const withDevice = (

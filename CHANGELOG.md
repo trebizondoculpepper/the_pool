@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Dev58 has the plant rooms' CO₂ dosing panels, plumbed into its Aqualis rig (the owner, 2026-11-01: "move the CO₂ dosing controller into the Aqualis Trio dev room"): the Lounge's solenoid-and-rotameter panel and the Olympic's mass-flow panel stand side by side on the front wall, at eye height under their own light (`?room=dev58&view=co2`, or `co2-lounge` and `co2-olympic` close to), each on its wall port's lever ball valve off a stand-in supply, its gas line over the ceiling to its own nozzle on the rig's return. The rig's ideal CO₂ valve is gone: the Trio's CO₂ port drives the same panel model the world runs, on whichever panel its cable selector chooses, and shows the channel online. One drawing serves both places, so a change to the panel's design shows in the plant rooms too. Each panel now works: its REMOTE · MANUAL · OFF selector, its manual rate (a potentiometer on the Lounge's, ▲ ▼ on the Olympic's) and RESET, with POWER, DOSING and REMOTE lamps and a lamp for each fault; in the plant rooms they are world actions (`co2/panel`), local to the panel.
+
 ### Fixed
 
 - The macOS desktop build reaches the release again: the Release workflow's upload step used `mapfile`, which the macOS runners' bash 3.2 lacks, so v0.11.0's job failed after packaging; it now reads the file list with a loop, and `gh workflow run release.yml -f tag=vX.Y.Z -f desktop_only=true` rebuilds and attaches only a release's desktop files and checksums, leaving the GitHub release and itch.io alone.
