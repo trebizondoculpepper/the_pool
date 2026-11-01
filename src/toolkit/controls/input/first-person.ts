@@ -824,9 +824,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
   container?.append(crouchButton);
   const inspectButton = document.createElement('button');
   inspectButton.type = 'button';
-  inspectButton.className = 'touch-crouch';
+  // Beside CROUCH, not over it (`.touch-inspect`).
+  inspectButton.className = 'touch-crouch touch-inspect';
   inspectButton.textContent = 'INSPECT';
-  inspectButton.style.left = '80px';
   let touchInspect = false;
   inspectButton.addEventListener('pointerdown', (event) => {
     event.stopPropagation();
@@ -1798,6 +1798,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
       crosshair.hidden = !(
         locked() ||
         input === 'gamepad' ||
+        // On a touch screen too: what is at the centre is what the USE
+        // button works (the owner, 2026-11-01, on an iPad).
+        input === 'touch' ||
         handling?.holding()
       );
       if (!crosshair.hidden) {

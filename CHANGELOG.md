@@ -16,6 +16,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Touch screens (the owner, 2026-11-01, on an iPad): INSPECT sits beside CROUCH instead of over it, and the crosshair is shown, since what is at the centre is what USE works.
 - The plant rooms' and the loading bay's CO₂ fittings stand out from their walls: the dosing panels, wall ports, detectors, wall inlet and master valve were built about their middles but hung by their backs, so half of each, the Lounge's panel and wall port wholly, stood inside the wall. Their connections move with them; the Olympic's line to its nozzle steps off the wall, clear of the hypochlorite supply, and the loading bay's detector moves east of the inlet, out of the dock's doorway.
 
 - Nothing stands in front of the CO₂ fittings: the Lounge's dosing panel, wall port and detector move to the clear stretch of the plant room's east wall between the east door and the local control panel (the Trio's sample tubes and their brackets, and its supply's feed with its "230 V" sign, ran across the panel and the port on the dosing wall, and the heating flow ran through the detector); the Olympic's CO₂ control cable drops onto the panel's control box behind its face, not across the wall port; the loading bay's master valve, inlet and detector move east of the east shutter's hand chain, and the dock's safety signs on that end of the wall are hung above them. `co2-fittings-clear.test.ts` checks that no run, tube, cable or machine passes in front of or through a CO₂ fitting.
