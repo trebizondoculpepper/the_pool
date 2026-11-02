@@ -323,6 +323,7 @@ export const MODELS: Record<string, PlantExhibit> = {
   'readout-board': byTitle(CONTROL, 'Readout board'),
   'bms-outstation': byTitle(CONTROL, 'BMS outstation'),
   'fire-repeater': byTitle(CONTROL, 'Fire alarm repeater'),
+  'weather-station': byTitle(CONTROL, 'Weather station console'),
   cctv: byTitle(CONTROL, 'CCTV monitor'),
 };
 

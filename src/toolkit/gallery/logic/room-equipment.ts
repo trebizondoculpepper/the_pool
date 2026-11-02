@@ -1446,6 +1446,15 @@ export function roomEquipment(
             walls: ['east'],
           }),
           wall('cctv', 'CCTV monitor', 0.4, 0.42, 0.45, 1.8),
+          // The weather station console (mission 123).
+          wall(
+            'weather-station',
+            'Weather station console',
+            0.28,
+            0.05,
+            0.17,
+            1.5,
+          ),
         ],
       };
     case 'engineers_office':

@@ -551,6 +551,7 @@ export const KIND_HEALTH_COVERAGE = {
   'bms-outstation': 'not in the world: no state (prompt 050)',
   'fire-repeater': 'not in the world: no fire alarm yet (prompt 053)',
   cctv: 'not health: a camera monitor',
+  'weather-station': 'not health: a display of the weather outside',
   desk: 'not health: furniture',
   filing: 'not health: furniture',
   'storage-cupboard': 'not health: furniture',

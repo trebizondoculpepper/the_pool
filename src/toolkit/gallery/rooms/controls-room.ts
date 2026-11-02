@@ -7,6 +7,7 @@ import { createDistributionBoard } from '../../components/plant/views/electrical
 import { createPartSet } from '../../components/core/parts/parts';
 import { createRearFittingsBoard } from './rear-fittings-board';
 import { createJogDialBoard } from './jog-dial-board';
+import { createWeatherStationBoard } from './weather-station-board';
 import { createBusbarLineDemo } from './busbar-line-demo';
 import {
   createRenderer,
@@ -291,6 +292,14 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
   place(createJogDialBoard(kit), 0.3, 1.5, half.z - 0.15, Math.PI, {
     minX: -0.05 * m,
     maxX: 0.65 * m,
+    minZ: (half.z - 0.3) * m,
+    maxZ: half.z * m,
+  });
+  // The Calloway WeatherWatch Pro weather station console (mission 123),
+  // on the south wall, tried here before the old control room has one.
+  place(createWeatherStationBoard(kit), -0.38, 1.5, half.z - 0.15, Math.PI, {
+    minX: -0.65 * m,
+    maxX: -0.1 * m,
     minZ: (half.z - 0.3) * m,
     maxZ: half.z * m,
   });

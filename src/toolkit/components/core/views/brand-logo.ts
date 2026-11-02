@@ -616,6 +616,33 @@ export function drawBrandMark(
       ctx.fill();
       break;
     }
+    case 'anemometer': {
+      // Three cups on arms round a spindle, in the second colour, on a
+      // disc of the main.
+      ctx.fillStyle = main;
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.95, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = second;
+      ctx.fillStyle = second;
+      ctx.lineWidth = r * 0.1;
+      for (let i = 0; i < 3; i++) {
+        const a = (i * Math.PI * 2) / 3 - Math.PI / 2;
+        const x = Math.cos(a) * r * 0.55;
+        const y = Math.sin(a) * r * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, r * 0.2, a, a + Math.PI);
+        ctx.fill();
+      }
+      ctx.beginPath();
+      ctx.arc(0, 0, r * 0.12, 0, Math.PI * 2);
+      ctx.fill();
+      break;
+    }
     case 'flowsquare': {
       // A flow arrow passing straight through a square, as the gas through
       // a flow body: the square in its main colour, the arrow in its second.

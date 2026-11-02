@@ -1,5 +1,7 @@
 import { currentPlant } from './live-plant';
 import { roomWorld } from '../../../save/world-store';
+import { createWeatherStation } from '../../../components/plant/views/weather-station';
+import { newWeather, pressureTrend } from '../../../../game/weather';
 import { createLocationAnnunciator } from '../../views/location-annunciator';
 import { worldAnnunciator } from '../../logic/world-annunciator';
 import { installedTagOf } from '../../../../game/plant/installed-asset-ids';
@@ -298,6 +300,31 @@ export const EXHIBITS: readonly PlantExhibit[] = [
     reference: 'After Kentec Syncro View, 330 × 255 × 90 mm',
     size: { w: 0.34, d: 0.1, h: 0.26, mount: 'wall', y: 1.5 },
     build: createFireRepeater,
+  },
+  {
+    title: 'Weather station console',
+    reference:
+      'Mission 123: the Calloway WeatherWatch Pro, after the Davis Vantage Pro2 console, 270 × 160 × 40 mm; its sensors on the roof (the world’s Manchester reading)',
+    maker: 'calloway',
+    size: { w: 0.28, d: 0.05, h: 0.17, mount: 'wall', y: 1.5 },
+    build(kit): LiveExhibit {
+      // Outside a browser (a test's build), no world: no reading.
+      const weather = () =>
+        typeof window === 'undefined'
+          ? newWeather()
+          : roomWorld().world.value.weather;
+      const station = createWeatherStation(kit, {
+        reading: () => weather().reading,
+        trend: () => pressureTrend(weather()),
+      });
+      return {
+        object: station.group,
+        parts: station.parts,
+        update: station.update,
+        status: station.status,
+        dispose: station.dispose,
+      };
+    },
   },
   {
     title: 'CCTV monitor',

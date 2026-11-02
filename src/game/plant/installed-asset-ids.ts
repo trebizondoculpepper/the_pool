@@ -383,6 +383,11 @@ export const INSTALLED_ASSET_IDS: Readonly<
     tag: 'CR-CP6',
   },
   'control_room|cctv|CCTV monitor': { assetId: 'asset-0090', tag: 'CR-FX3' },
+  // The weather station console (mission 123), after CR-MP10's asset-1306.
+  'control_room|weather-station|Weather station console': {
+    assetId: 'asset-1307',
+    tag: 'CR-CP10',
+  },
   'engineers_office|scenario-simulator|Hyperplasc Scenario Simulator': {
     assetId: 'asset-0091',
     tag: 'EO-CP1',

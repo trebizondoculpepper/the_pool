@@ -665,6 +665,13 @@ export const PLACED_KINDS = {
     class: 'plant',
     purpose: 'Collects plant signals for building controls.',
   },
+  'weather-station': {
+    type: 'Weather station console',
+    status: 'none',
+    code: 'CP',
+    class: 'plant',
+    purpose: 'Shows the weather outside, from the roof sensors.',
+  },
   'fire-repeater': {
     type: 'Fire alarm repeater',
     status: 'none',

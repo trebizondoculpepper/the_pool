@@ -393,6 +393,8 @@ const instruments = [
   machine('annunciator-wh', 'annunciator', 'Wet hall annunciator'),
   machine('readout-board', 'readout-board', 'Readout board'),
   machine('fire-repeater', 'fire-repeater', 'Fire alarm repeater'),
+  // The outside's weather (mission 123).
+  machine('weather-station', 'weather-station', 'Weather station console'),
   machine('cctv', 'cctv', 'CCTV monitor'),
 ];
 export const CONTROL_ROOM_SCHEMATIC = backRoom(

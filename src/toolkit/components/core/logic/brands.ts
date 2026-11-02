@@ -85,7 +85,9 @@ export type BrandMark =
   /** A glossy water orb, a leaf curled round its foot. */
   | 'orb'
   /** A flow arrow passing straight through a square. */
-  | 'flowsquare';
+  | 'flowsquare'
+  /** A cup anemometer's three cups on their spindle. */
+  | 'anemometer';
 
 /** Every brand's id: a part names its maker by one of these. */
 export type BrandId =
@@ -122,7 +124,8 @@ export type BrandId =
   | 'stannard'
   | 'arncliffe'
   | 'aqualis'
-  | 'veldkamp';
+  | 'veldkamp'
+  | 'calloway';
 
 export interface Brand {
   id: BrandId;
@@ -617,6 +620,20 @@ export const BRANDS: readonly Brand[] = [
       'The instruments the world’s laboratories calibrate against, since 1969',
     mark: 'flowsquare',
     colours: ['#8a9096', '#1f5fa8', '#111315'],
+    type: 'sans',
+  },
+  {
+    id: 'calloway',
+    name: 'Calloway Meteorological',
+    wordmark: 'CALLOWAY',
+    tagline: 'Know before you go out',
+    founded: 1978,
+    country: 'United States',
+    makes:
+      'Weather stations, anemometers, rain gauges and their consoles, for farms, schools and buildings',
+    promise: 'The weather on your wall, from your own roof',
+    mark: 'anemometer',
+    colours: ['#1d5c9e', '#f2b51f', '#101418'],
     type: 'sans',
   },
 ];

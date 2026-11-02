@@ -160,6 +160,7 @@ export const WORLD_BINDINGS: Readonly<Record<string, WorldBinding>> = {
     'a fire alarm system, which the world does not yet have',
   ),
   cctv: world('its cameras: what they see'),
+  'weather-station': world('the weather outside: Manchester’s reading'),
   'water-test-kit': passive('a photometer and reagents, used by hand'),
   // The engineers’ office.
   'scenario-simulator': world('the whole world: it sets its scenarios'),
