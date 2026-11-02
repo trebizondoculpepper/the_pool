@@ -42,7 +42,8 @@ export interface PendantPlace {
 
 export function createPendantLamps(
   places: readonly PendantPlace[],
-  bulbGlow: MeshBasicMaterial,
+  bulbGlow: MeshBasicMaterial | MeshStandardMaterial,
+  liningGlow?: MeshStandardMaterial,
 ) {
   const group = new Group();
   group.name = 'Pendant lamps';
@@ -70,11 +71,13 @@ export function createPendantLamps(
     metalness: 0.8,
   });
   // The dome's copper lining, lit by the bulb: brightened with the lamps.
-  const lining = new MeshBasicMaterial({
-    color: new Color(1.2, 0.62, 0.3),
-    side: BackSide,
-  });
-  lining.toneMapped = false;
+  const lining =
+    liningGlow ??
+    new MeshBasicMaterial({
+      color: new Color(1.2, 0.62, 0.3),
+      side: BackSide,
+    });
+  if (!liningGlow) lining.toneMapped = false;
   materials.push(iron, castIron, wire, chain, lining);
 
   /** Instances of one part, by a transform for each lamp. */

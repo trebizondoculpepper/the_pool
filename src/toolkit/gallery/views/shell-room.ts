@@ -124,6 +124,8 @@ export interface ShellView {
   doors: readonly ShellDoor[];
   /** Its wall battens' height over its floor, if not the usual 3.1 m. */
   battenHeight?: number;
+  /** Use the shell's central point lights; a room with its own pendants supplies these itself. */
+  ceilingLights?: boolean;
   /** Openings with no door in them (the loading dock's, prompt 073). */
   apertures?: readonly ShellAperture[];
   /** Its floor's level, and its roof's, over the doors' level (0). */
@@ -422,17 +424,18 @@ export function createShellRoom(metre: number, kit: PanelKit, v: ShellView) {
   }
   const long = Math.max(v.w, v.d);
   const lights = Math.min(3, Math.max(1, Math.round(long / 10)));
-  for (let i = 0; i < lights; i++) {
-    const s = -long / 2 + ((i + 0.5) * long) / lights;
-    const light = new PointLight(
-      '#f2f4ee',
-      (long > 12 ? 6 : 3) * metre * metre,
-      (Math.min(v.w, v.d) + 10) * metre,
-      2,
-    );
-    light.position.set(v.w >= v.d ? s : 0, y - 0.3, v.w >= v.d ? 0 : s);
-    group.add(light);
-  }
+  if (v.ceilingLights !== false)
+    for (let i = 0; i < lights; i++) {
+      const s = -long / 2 + ((i + 0.5) * long) / lights;
+      const light = new PointLight(
+        '#f2f4ee',
+        (long > 12 ? 6 : 3) * metre * metre,
+        (Math.min(v.w, v.d) + 10) * metre,
+        2,
+      );
+      light.position.set(v.w >= v.d ? s : 0, y - 0.3, v.w >= v.d ? 0 : s);
+      group.add(light);
+    }
   // Overhead, under the roof, a generated services ceiling.
   if (v.services !== false)
     group.add(

@@ -24,7 +24,10 @@ import { createBbcWorkstation } from '../../industrial-control/views/bbc-worksta
 import { createAnnunciator } from '../../industrial-control/logic/annunciator';
 import type { Annunciator } from '../../industrial-control/logic/annunciator';
 import type { ScreenLine } from '../../industrial-control/logic/bbc-micro';
-import { createPartSet, pushButton } from '../../core/parts/parts';
+import { signal } from '@preact/signals-core';
+import { beginPart, createPartSet, pushButton } from '../../core/parts/parts';
+import { alarmBuzzer } from '../../core/audio/part-loops';
+import { annunciatorBleeper } from '../../industrial-control/logic/annunciator-bleeper';
 import {
   ALARM_TEXT,
   ANNUNCIATOR_ALARMS,
@@ -163,6 +166,14 @@ export function createAnnunciatorAssembly(
   const horn = t.paint('#c8261c', 0.45);
   t.cyl(group, horn, 0.05, 0.06, 0, 0.47, 0.06, 'z', 20);
   t.cyl(group, t.paint('#2a2b2c', 0.5), 0.03, 0.02, 0, 0.47, 0.1, 'z', 20);
+  const hornOn = signal(false);
+  const hornPart = beginPart(kit, 'Control room annunciator horn');
+  hornPart.holdWhile(
+    hornOn,
+    alarmBuzzer(annunciatorBleeper('control_room:central')),
+    group,
+  );
+  parts.add(hornPart.part());
   const badge = createBrandBadge(kit, 'warden', { height: 0.02 });
   badge.position.set(-0.3, -0.395, 0.1205);
   group.add(badge);
@@ -184,6 +195,7 @@ export function createAnnunciatorAssembly(
     logic.test = seconds < testUntil;
     const lit = logic.lit(seconds);
     panel.set(lit);
+    hornOn.value = logic.states.some((state) => state === 'flashing');
   };
   return view;
 }

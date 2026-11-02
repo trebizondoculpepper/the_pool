@@ -22,6 +22,7 @@ import {
 import { SHELL_WALL } from '../logic/shell-rooms';
 import { createDockOutside } from '../views/dock-outside';
 import { createInspector } from '../views/inspect-pick';
+import { addControlRoomPendants } from '../views/control-room-pendants';
 import { useOnHit } from '../../controls/input/touch-point';
 import { computed, signal } from '@preact/signals-core';
 import {
@@ -228,10 +229,14 @@ export function startShellRoom(canvas: HTMLCanvasElement, id: ShellRoomId) {
         // The control room's over its upper row of mimics, whose tallest
         // top is 4.7 m, and the control bus over them at 4.85 m (the
         // owner, 2026-11-01: move the trunking and the lights higher).
-        ...(id === 'control_room' ? { battenHeight: 5.0 } : {}),
+        ...(id === 'control_room'
+          ? { battenHeight: 5.0, ceilingLights: false }
+          : {}),
         note: spec.note,
         seed: SEEDS[id],
       });
+      if (id === 'control_room')
+        addControlRoomPendants(kit, built.group, metre, spec.height);
       // The loading dock's openings look out on the yard; its fittings
       // and pallets (prompt 073).
       if (id === 'loading_bay') {

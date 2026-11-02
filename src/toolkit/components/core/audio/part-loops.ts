@@ -156,28 +156,43 @@ export const OZONE_SOUNDER = gasSounder('ozone');
 /** The boiler house's gas alarm: two falling sweeps and a rising chirp. */
 export const METHANE_SOUNDER = gasSounder('methane');
 
-export const ALARM_BUZZER: LoopRecipe = (context, out) => {
-  const osc = context.createOscillator();
-  osc.type = 'square';
-  osc.frequency.value = 2400;
-  const gate = context.createGain();
-  gate.gain.value = 0;
-  // Pulse it on and off about twice a second.
-  const lfo = context.createOscillator();
-  lfo.type = 'square';
-  lfo.frequency.value = 2;
-  const depth = context.createGain();
-  depth.gain.value = 0.02;
-  lfo.connect(depth).connect(gate.gain);
-  const bias = context.createConstantSource();
-  bias.offset.value = 0.02;
-  bias.connect(gate.gain);
-  osc.connect(gate).connect(out);
-  osc.start();
-  lfo.start();
-  bias.start();
-  return [osc, lfo, bias];
-};
+/** The original square-wave alarm, with one physical sounder's fixed tolerances. */
+export const alarmBuzzer =
+  ({
+    hz = 2400,
+    pulseHz = 2,
+    startDelay = 0,
+  }: {
+    hz?: number;
+    pulseHz?: number;
+    startDelay?: number;
+  } = {}): LoopRecipe =>
+  (context, out) => {
+    const osc = context.createOscillator();
+    osc.type = 'square';
+    osc.frequency.value = hz;
+    const gate = context.createGain();
+    gate.gain.value = 0;
+    // Pulse it on and off about twice a second.
+    const lfo = context.createOscillator();
+    lfo.type = 'square';
+    lfo.frequency.value = pulseHz;
+    const depth = context.createGain();
+    depth.gain.value = 0.02;
+    lfo.connect(depth).connect(gate.gain);
+    const bias = context.createConstantSource();
+    bias.offset.value = 0.02;
+    bias.connect(gate.gain);
+    osc.connect(gate).connect(out);
+    const start = context.currentTime + startDelay;
+    osc.start(start);
+    lfo.start(start);
+    bias.start(start);
+    return [osc, lfo, bias];
+  };
+
+/** Untuned default retained for other alarm fittings. */
+export const ALARM_BUZZER: LoopRecipe = alarmBuzzer();
 
 export const EXTRACT_FAN: LoopRecipe = (context, out) => {
   const hum = tones(0.02, [

@@ -13,7 +13,8 @@ import {
 import { createBrandBadge } from '../../components/core/views/brand-badge';
 import { panelMakerMark } from '../../components/core/views/panel-maker-mark';
 import { plantTools } from '../../components/plant/views/plant-tools';
-import { ALARM_BUZZER } from '../../components/core/audio/part-loops';
+import { alarmBuzzer } from '../../components/core/audio/part-loops';
+import { annunciatorBleeper } from '../../components/industrial-control/logic/annunciator-bleeper';
 import { markComponent } from '../../components/core/views/component-identity';
 import type { World, WorldAction } from '../../../game/world';
 import { LOCATION_ANNUNCIATORS } from '../../../game/plant/location-annunciators';
@@ -56,6 +57,7 @@ export function createLocationAnnunciator(
     dispatch(action: WorldAction): void;
   },
   controls: AnnunciatorControls = 'bottom',
+  soundKey: string = location,
 ): LiveExhibit {
   const spec = LOCATION_ANNUNCIATORS[location];
   return createAnnunciatorBoard(
@@ -70,6 +72,7 @@ export function createLocationAnnunciator(
       reset: () => store?.dispatch({ type: 'location-alarms/reset', location }),
     },
     controls,
+    soundKey,
   );
 }
 
@@ -93,6 +96,7 @@ export function createAnnunciatorBoard(
   >,
   source: AnnunciatorSource,
   controls: AnnunciatorControls = 'bottom',
+  soundKey = spec.name,
 ): LiveExhibit {
   const ALARMS = spec.alarms;
   const text = (id: string) => spec.text[id] || 'SPARE';
@@ -170,7 +174,7 @@ export function createAnnunciatorBoard(
   // The horn, a part, so it hushes with its room and stops when let go.
   const hornOn = signal(false);
   const hornPart = beginPart(kit, 'Annunciator horn');
-  hornPart.holdWhile(hornOn, ALARM_BUZZER, group);
+  hornPart.holdWhile(hornOn, alarmBuzzer(annunciatorBleeper(soundKey)), group);
   parts.add(hornPart.part());
   return {
     object: markComponent(group, {
