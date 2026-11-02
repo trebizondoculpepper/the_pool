@@ -1,7 +1,13 @@
 import { afterEach, expect, it, vi } from 'vite-plus/test';
 import { newWorld, applyAction } from '../../game/world';
 import { deserialiseWorld, serialiseWorld } from '../../game/save';
-import { exportSlot, importSlot, listSlots, worldStore } from './world-store';
+import {
+  exportSlot,
+  exportSlotEvents,
+  importSlot,
+  listSlots,
+  worldStore,
+} from './world-store';
 import { createGameSession } from './game-session';
 import { healthFaults } from '../../game/health';
 
@@ -124,4 +130,64 @@ it('downloads a slot and uploads one: validated, the last kept, the open world r
   expect(importSlot('transfer-b', '{"not":"a save"}').ok).toBe(false);
   expect(importSlot('transfer-b', 'garbage').ok).toBe(false);
   expect(storage.getItem('pool-plant:transfer-b')).toBe(now);
+});
+
+it('keeps the event log beside the save: restored, written, reset and uploaded', () => {
+  vi.useFakeTimers();
+  const data = new Map<string, string>();
+  const storage = {
+    getItem: (key: string) => data.get(key) ?? null,
+    setItem: (key: string, value: string) => void data.set(key, value),
+    removeItem: (key: string) => void data.delete(key),
+    get length() {
+      return data.size;
+    },
+    key: (i: number) => [...data.keys()][i] ?? null,
+  };
+  const listeners = new Map<string, () => void>();
+  vi.stubGlobal('window', { localStorage: storage, addEventListener: vi.fn() });
+  vi.stubGlobal('document', {
+    addEventListener: (type: string, f: () => void) => listeners.set(type, f),
+    visibilityState: 'hidden',
+  });
+  vi.stubGlobal('navigator', {});
+  const world = newWorld();
+  world.time = 1000;
+  storage.setItem('pool-plant:log-test', serialiseWorld(world, Date.now()));
+  const line = (time: number, text: string) => ({
+    time,
+    kind: 'plant' as const,
+    severity: 'info' as const,
+    subject: '',
+    text,
+  });
+  storage.setItem(
+    'pool-plant:log-test:events',
+    JSON.stringify([
+      line(500, 'before'),
+      { time: 'bad' },
+      line(5000, 'from a later world'),
+    ]),
+  );
+  const store = worldStore('log-test');
+  // Restored: the well-formed lines, none after the world's time.
+  expect(store.events.value.map((e) => e.text)).toEqual(['before']);
+  store.dispatch({ type: 'plant/full-off' }, 'console');
+  // Written when the tab is hidden (and every few seconds).
+  listeners.get('visibilitychange')!();
+  const kept = JSON.parse(storage.getItem('pool-plant:log-test:events')!);
+  expect(kept.length).toBe(store.events.value.length);
+  expect(kept.length).toBeGreaterThan(1);
+  expect(exportSlotEvents('log-test')[0].text).toBe('before');
+  // A reset lets it all go.
+  store.reset();
+  expect(store.events.value).toEqual([]);
+  expect(storage.getItem('pool-plant:log-test:events')).toBeNull();
+  // An upload brings its own log, or none.
+  const uploaded = serialiseWorld(world, Date.now());
+  importSlot('log-test', uploaded, [line(900, 'uploaded')]);
+  expect(store.events.value[0].text).toBe('uploaded');
+  importSlot('log-test', uploaded);
+  expect(storage.getItem('pool-plant:log-test:events')).toBeNull();
+  expect(store.events.value.map((e) => e.subject)).toEqual(['SAVE']);
 });

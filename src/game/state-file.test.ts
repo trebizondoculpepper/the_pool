@@ -28,11 +28,32 @@ it('records a save with its metadata, and restores only the save', () => {
   expect(back.location).toBe('?room=plant_pool_01&x=1&z=2');
   const loaded = deserialiseWorld(back.save);
   expect(loaded.ok).toBe(true);
+  // An older file, with no log: none restored.
+  expect(back.events).toBeNull();
+});
+
+it('keeps the recent log and commands, and restores the well-formed log', () => {
+  const save = serialiseWorld(newWorld(), 1);
+  const event = {
+    time: 12,
+    kind: 'action' as const,
+    severity: 'info' as const,
+    subject: 'PL1-V1',
+    text: 'opened',
+    by: 'you',
+  };
+  const commands = Array.from({ length: 150 }, (_, i) => `cmd ${i}`);
+  const file = stateFile(save, meta, { events: [event], commands });
+  const parsed = JSON.parse(file);
+  expect(parsed.commands).toHaveLength(100);
+  expect(parsed.commands[99]).toBe('cmd 149');
+  parsed.events.push({ time: 'later', text: 'broken' });
+  expect(saveFromFile(JSON.stringify(parsed)).events).toEqual([event]);
 });
 
 it('takes a bare save as it is, and leaves nonsense to the save reader', () => {
   const save = serialiseWorld(newWorld(), 1);
-  expect(saveFromFile(save)).toEqual({ save, location: null });
+  expect(saveFromFile(save)).toEqual({ save, location: null, events: null });
   expect(deserialiseWorld(saveFromFile('nonsense').save).ok).toBe(false);
 });
 
@@ -48,4 +69,5 @@ it('prefills a GitHub issue with the record, asking for the file', () => {
   expect(body).toContain('1 h 0 min');
   expect(body).toContain('?room=plant_pool_01');
   expect(body).toContain('iPad Safari');
+  expect(body).toContain('recent console commands');
 });

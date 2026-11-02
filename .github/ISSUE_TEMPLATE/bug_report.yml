@@ -6,7 +6,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        Thank you for reporting a bug. The most useful thing you can send is your **game's state file**: it holds the whole plant as it was, so the bug can be reproduced exactly.
+        Thank you for reporting a bug. The most useful thing you can send is your **game's state file**: it holds the whole plant as it was, with the last game-day of its activity and your recent console commands, so the bug can be reproduced exactly.
 
         **How to download your game's state**
 

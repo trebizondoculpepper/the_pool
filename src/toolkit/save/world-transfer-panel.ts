@@ -1,4 +1,9 @@
-import { exportSlot, importSlot, listSlots } from './world-store';
+import {
+  exportSlot,
+  exportSlotEvents,
+  importSlot,
+  listSlots,
+} from './world-store';
 import { bugReportUrl, saveFromFile, stateFile } from '../../game/state-file';
 import type { StateFileMeta } from '../../game/state-file';
 import { REPOSITORY, VERSION } from '../../game/version';
@@ -7,7 +12,8 @@ import { REPOSITORY, VERSION } from '../../game/version';
  * The dev panel's World state box (the owner, 2026-11-01): download a save
  * slot as a JSON state file, with what is needed to debug it later
  * (`game/state-file.ts`: the version and build, the world's time, where
- * the player stood, the browser and settings), or upload one into a slot, for inspection and
+ * the player stood, the browser and settings, the slot's last game-day of
+ * events and the console's recent commands), or upload one into a slot, for inspection and
  * debugging, on every build (a player can send a save with a bug report).
  * Uploading takes a state file's save (or a bare save), reads and migrates it as loading does, keeps the slot's last
  * save as its `:previous`, and every tab with the slot open takes it up.
@@ -84,7 +90,15 @@ export function createWorldTransferPanel(): HTMLElement {
     };
     const link = document.createElement('a');
     link.href = URL.createObjectURL(
-      new Blob([stateFile(save, meta)], { type: 'application/json' }),
+      new Blob(
+        [
+          stateFile(save, meta, {
+            events: exportSlotEvents(slot.value),
+            commands: consoleCommands(),
+          }),
+        ],
+        { type: 'application/json' },
+      ),
     );
     link.download = `the-pool-${slot.value}-${stamp}.json`;
     document.body.append(link);
@@ -118,8 +132,8 @@ export function createWorldTransferPanel(): HTMLElement {
     file.value = '';
     if (!chosen) return;
     void chosen.text().then((text) => {
-      const { save, location } = saveFromFile(text);
-      const done = importSlot(slot.value, save);
+      const { save, location, events } = saveFromFile(text);
+      const done = importSlot(slot.value, save, events);
       say(
         done.ok
           ? `Uploaded ${chosen.name} into the “${slot.value}” slot; its last save is kept as its previous.`
@@ -149,6 +163,14 @@ function stored(key: string): string | null {
   } catch {
     return null;
   }
+}
+
+/** The console's typed commands, as it keeps them (`console-view.ts`'s history), oldest first. */
+function consoleCommands(): string[] {
+  const list = jsonOf(stored('pool-plant:console-history'));
+  return Array.isArray(list)
+    ? list.filter((l): l is string => typeof l === 'string')
+    : [];
 }
 
 /** Parsed JSON, or the text itself if it is not JSON, or null. */

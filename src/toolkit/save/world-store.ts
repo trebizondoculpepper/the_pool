@@ -9,7 +9,11 @@ import {
   serialiseWorld,
 } from '../../game/save';
 import { clockStopped, paused } from '../controls/logic/paused';
-import { appendEvents } from '../../game/events/game-event';
+import {
+  appendEvents,
+  eventsFrom,
+  recentEvents,
+} from '../../game/events/game-event';
 import type { GameEvent } from '../../game/events/game-event';
 import { actionEvents } from '../../game/events/describe-action';
 import { collectEvents } from '../../game/events/event-sources';
@@ -33,6 +37,14 @@ import { collectEvents } from '../../game/events/event-sources';
  *   undone by its next save; and when the holder goes, a follower takes
  *   the slot up.
  *
+ * - **The event log** (the owner, 2026-11-02) is kept beside the save, under
+ *   `…:events`, not in it: its last game-day, at most 2000 lines
+ *   (`recentEvents`), written by the tab holding the slot at most every
+ *   five seconds and when the tab is hidden or the page goes, so the
+ *   console shows what went on before a reload. Lines from after the
+ *   loaded world's time (a save reset or uploaded) are let go; a reset
+ *   clears it, and an upload replaces it with the file's.
+ *
  * localStorage, not IndexedDB, because a save is small and its write is
  * synchronous: one made as the page goes is not cut off.
  */
@@ -43,8 +55,8 @@ export interface WorldStore {
   dispatch(action: WorldAction, by?: 'you' | 'console'): void;
   /**
    * The event log (`doc/prompts/done/058-developer-console.md`): a line for each
-   * action and for each thing the plant did by itself, the newest last,
-   * for this page only, never saved.
+   * action and for each thing the plant did by itself, the newest last;
+   * its last game-day kept beside the slot's save (`…:events`).
    */
   readonly events: ReadonlySignal<readonly GameEvent[]>;
   /** Add lines of one's own to the log (the console's commands). */
@@ -72,7 +84,44 @@ interface RelayedAction {
 }
 
 const SAVE_EVERY = 10_000;
+/** The event log is written at most this often, ms (and when the page goes). */
+const EVENTS_EVERY = 5_000;
 const key = (slot: string) => `pool-plant:${slot}`;
+const eventsKey = (slot: string) => `${key(slot)}:events`;
+
+/** A slot's stored event log, its well-formed lines; [] if none or unreadable. */
+function storedEvents(s: Storage | null, slot: string): GameEvent[] {
+  try {
+    const text = s?.getItem(eventsKey(slot));
+    return text ? eventsFrom(JSON.parse(text)) : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Keep a slot's event log: if storage is full, the older half let go and
+ * tried once more; if that fails too, not kept (the game goes on).
+ */
+function writeEvents(
+  s: Storage | null,
+  slot: string,
+  events: readonly GameEvent[],
+) {
+  if (!s) return;
+  try {
+    s.setItem(eventsKey(slot), JSON.stringify(events));
+  } catch {
+    try {
+      s.setItem(
+        eventsKey(slot),
+        JSON.stringify(events.slice(Math.floor(events.length / 2))),
+      );
+    } catch {
+      // No room: the log is not kept this time.
+    }
+  }
+}
 
 /** localStorage, or nothing if it is blocked. */
 function storage(): Storage | null {
@@ -120,6 +169,16 @@ export function exportSlot(slot: string): string | null {
 }
 
 /**
+ * A slot's recent event log, for a state file: this tab's if it has the
+ * slot open, else what is stored; its last game-day.
+ */
+export function exportSlotEvents(slot: string): GameEvent[] {
+  const open = stores.get(slot);
+  if (open) return recentEvents(open.events.value, open.world.value.time);
+  return recentEvents(storedEvents(storage(), slot), Infinity);
+}
+
+/**
  * Put an uploaded save into a slot: read and migrated as on loading, and
  * refused with the reason if it cannot be; the slot's last save kept as
  * its `:previous`; dated now, so it is not caught up for the time since it
@@ -128,6 +187,7 @@ export function exportSlot(slot: string): string | null {
 export function importSlot(
   slot: string,
   text: string,
+  events: readonly GameEvent[] | null = null,
 ): { ok: true } | { ok: false; reason: string } {
   const loaded = deserialiseWorld(text);
   if (!loaded.ok) return loaded;
@@ -138,6 +198,9 @@ export function importSlot(
     const last = s.getItem(key(slot));
     if (last) s.setItem(`${key(slot)}:previous`, last);
     s.setItem(key(slot), fresh);
+    // Its log: the file's, or none (the old one is another world's).
+    if (events) writeEvents(s, slot, recentEvents(events, loaded.world.time));
+    else s.removeItem(eventsKey(slot));
     // Other tabs hear this; one whose value is unchanged would not, so
     // it is removed again once heard.
     s.setItem(`${key(slot)}:import`, fresh);
@@ -271,7 +334,21 @@ function openWorldStore(slot: string): WorldStore {
     return advance(loaded.world, catchUpSeconds(loaded.savedAt, Date.now()));
   };
   const world = signal(load());
-  const events = signal<readonly GameEvent[]>([]);
+  // The log kept from before (a reload): none from after the world's time.
+  const events = signal<readonly GameEvent[]>(
+    recentEvents(storedEvents(s, slot), world.value.time),
+  );
+  let eventsSaved = events.value;
+  let lastEventsSave = 0;
+  /** Keep the log, if this tab holds the slot and it has changed: at most every few seconds unless `now`. */
+  const saveEvents = (now = false) => {
+    if (!s || !holding.value || events.value === eventsSaved) return;
+    const t = Date.now();
+    if (!now && t - lastEventsSave < EVENTS_EVERY) return;
+    lastEventsSave = t;
+    eventsSaved = events.value;
+    writeEvents(s, slot, recentEvents(events.value, world.value.time));
+  };
   // Whether this tab holds the slot. Without Web Locks, assume so.
   const holding = signal(!('locks' in navigator));
   let release: () => void = () => {};
@@ -300,7 +377,8 @@ function openWorldStore(slot: string): WorldStore {
     const loaded = deserialiseWorld(text);
     if (!loaded.ok) return;
     world.value = loaded.world;
-    events.value = appendEvents(events.value, [
+    // The uploaded file's log, put beside its save by `importSlot`.
+    events.value = appendEvents(storedEvents(s, slot), [
       {
         time: loaded.world.time,
         kind: 'system',
@@ -345,14 +423,18 @@ function openWorldStore(slot: string): WorldStore {
       lastSave = now;
       save();
     }
+    saveEvents();
   };
   setInterval(tick, STEP * 1000);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') save();
-    else tick();
+    if (document.visibilityState === 'hidden') {
+      save();
+      saveEvents(true);
+    } else tick();
   });
   window.addEventListener('pagehide', () => {
     save();
+    saveEvents(true);
     release();
   });
   // A save uploaded on the dev panel (`importSlot`), in this tab or
@@ -409,6 +491,12 @@ function openWorldStore(slot: string): WorldStore {
     holding,
     reset() {
       world.value = newWorld();
+      events.value = eventsSaved = [];
+      try {
+        s?.removeItem(eventsKey(slot));
+      } catch {
+        // Blocked: nothing was kept.
+      }
       last = Date.now();
       lastSave = last;
       save();
