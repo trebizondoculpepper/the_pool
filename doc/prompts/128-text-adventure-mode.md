@@ -1,6 +1,6 @@
 # 128: Text adventure mode
 
-**Status: research done, not started until the owner says.** Research: [doc/research/text-adventure-mode.md](../research/text-adventure-mode.md).
+**Status: parked (the owner, 2026-11-02); research done; not started until the owner says.** Research: [doc/research/text-adventure-mode.md](../research/text-adventure-mode.md).
 
 The owner, 2026-11-02: an entirely alternative way to play. Snap the game into text adventure mode and all the graphics go away; it becomes an early-1980s Infocom-style text adventure. In each place it first says what you sense (hear, smell, feel), then what you see, without every detail; LOOK AT / EXAMINE gives the detail. If everything in the game is addressable, the game can be run as a text adventure, and everything should be interactable that way. Read `CLAUDE.md` and the research first.
 
@@ -32,9 +32,17 @@ A second front-end on the same world and save slot: `?mode=text` (and a pause-me
 
 This mission's control registry is the same data 129 needs for "controlled by" and 130 needs for its magic-room presets. One shared kind/part/control/view-state descriptor (control ids, the world action each drives, visible readings, state presets) should serve all three, and 127's named parts. Its shape and ownership are to be settled with the owner, not invented separately here.
 
+## Hand-written state lines (the owner, 2026-11-02)
+
+The point of the text is to give what the audio-visual game cannot: what the air feels like, what it smells like, what it does to you. So beside the prose derived from the model, some descriptions are hand-written, each for a room state rather than for a room: chosen when the world's state crosses its threshold, and written for adults with some relish. The owner's examples:
+
+- **Hot and humid:** "The room is stultifyingly humid. Your shirt and dungarees seem to cling to the hairs on your body."
+- **High chlorine** (in the air, from the chloramines and chlorine the model already holds): "Your nose is immediately assaulted by a toxic greenish fug. Every follicle in your nose tingles in shock and pain at the noxious gases."
+- **An algal bloom:** its foul smell. Research what one actually smells like before writing it: a fresh bloom is earthy and musty (geosmin and 2-MIB, the smell of a damp cellar or pond), green and fishy where it is thick, and rotten-egg (hydrogen sulphide) where it is dying and decaying in still water.
+
+Each line is keyed to model state (humidity and air temperature, combined chlorine and trichloramine in air, algae), so it appears only when the state is true; the model, not the writer, decides when. Several may combine, the worst first. The derivation rule still holds for names, tags and descriptions of things; these lines describe conditions, not components.
+
 ## Open questions for the owner (one at a time)
 
-1. Should each location have one short authored flavour line, outside the derivation rule, or only model-derived prose?
-2. Should text mode advance time by turns, in real time, or offer both?
-3. Should development rooms appear on the ordinary text map, or be reachable only by a developer command such as `goto`?
-4. The shape of the shared kind/part/control/view-state descriptor (see Shared foundation), and which mission builds it first.
+1. Should text mode advance time by turns, in real time, or offer both?
+2. Should development rooms appear on the ordinary text map, or be reachable only by a developer command such as `goto`?
