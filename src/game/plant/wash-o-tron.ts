@@ -563,7 +563,9 @@ export function stepWashOTron(
       f.phase === 'steady' &&
       due(i),
   );
-  if (candidate < 0) return { ...next, waiting: null };
+  // Keep the last refused CYCLE NOW reason visible while idle. Otherwise
+  // AUTO's next tick erases it before the operator can read the LCD.
+  if (candidate < 0) return next;
   const refusal = cycleRefusal(next, candidate, sense);
   if (refusal)
     return {

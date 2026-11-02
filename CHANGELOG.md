@@ -24,6 +24,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The Wash-O-Tron keeps a CYCLE NOW refusal visible on its PROGRAMME display while AUTO is idle, so low flow, pit capacity and other interlocks no longer look like a dead button. CYCLE NOW now heads each filter's button bank.
 - Dr Aqualis now says when the Trio is handling hypochlorite, acid or CO₂ dosing, reports offline and saturated channels as equipment problems, and sends combined chlorine to First Aid’s Breakpoint procedure. During First Aid, its Water page shows treatment targets and the closed-pool status, while his advice focuses on the programme and equipment faults.
 - WASH-O-TRON NOT IN AUTO lights only while the Wash-O-Tron's programme is off (the owner, 2026-11-01): it lit for any one filter taken out of the programme, so it stayed on after RESET while the controller showed AUTO.
 - The old control room's Fresh Water Distribution mimic (CR-MP4) is drawn, a remote copy without the booster's RESET: it had been a placeholder (the owner, 2026-11-01).

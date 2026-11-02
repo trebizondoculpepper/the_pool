@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import { installedValveByCommandId } from './installed-valves';
+import { washDisplay } from '../../toolkit/components/plant/logic/wash-o-tron-display';
 import { filterValves } from './wash-o-tron-world';
 import { act, allDue } from './wash-o-tron.test-support';
 
@@ -168,5 +169,22 @@ describe('the Lidoluxe Wash-O-Tron', () => {
     w = { ...w, wetHall: { ...w.wetHall, backwashTank: 0 } };
     w = advance(w, 5, 1);
     expect(w.washOTron.washing).toBe(null);
+  });
+
+  it('keeps an AUTO IDLE button refusal readable after the next world step', () => {
+    let w = newWorld();
+    w = applyAction(w, {
+      type: 'plant/feeder',
+      room: 'plant_pool_02',
+      on: false,
+    });
+    w = act(w, { act: 'cycle-now', filter: 2 });
+    expect(w.washOTron.washing).toBe(null);
+    expect(w.washOTron.waiting).toBe('LOW FLOW');
+    w = advance(w, 2, 1);
+    expect(washDisplay(w.washOTron, { time: w.time, pitShare: 0 })).toEqual([
+      'AUTO IDLE           ',
+      'WAIT LOW FLOW       ',
+    ]);
   });
 });

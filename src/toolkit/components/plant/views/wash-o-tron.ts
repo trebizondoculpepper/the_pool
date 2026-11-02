@@ -279,6 +279,20 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
   const top = mimicY - mimicH / 2 - 0.05;
   for (let n = 0; n < 5; n++) {
     const x = colX(n);
+    const cycle = signal(false);
+    cycleLit.push(cycle);
+    mount(
+      pushButton(kit, {
+        colour: 'blue',
+        head: 'illuminated',
+        legend: 'CYCLE NOW',
+        lamp: cycle,
+        name: `Filter ${n + 1} CYCLE NOW`,
+        action: () => c?.act({ act: 'cycle-now', filter: n }),
+      }),
+      x,
+      top,
+    );
     const row: Signal<'off' | 'on' | 'flash'>[] = [];
     STATES.forEach((st, k) => {
       const want = signal<'off' | 'on' | 'flash'>('off');
@@ -294,7 +308,7 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
           action: () => c?.act({ act: 'mode', filter: n, mode: st.mode }),
         }),
         x - 0.045 + (k % 2) * 0.09,
-        top - Math.floor(k / 2) * 0.075,
+        top - (Math.floor(k / 2) + 1) * 0.075,
       );
       // Drive the lamp from its wanted state and the flasher.
       const update = () =>
@@ -316,7 +330,7 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         action: () => c?.act({ act: 'auto', filter: n }),
       }),
       x + 0.045,
-      top - 2 * 0.075,
+      top - 3 * 0.075,
     );
     const lock = signal(false);
     lockLit.push(lock);
@@ -330,7 +344,7 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         action: () => c?.act({ act: 'lockout', filter: n }),
       }),
       x - 0.045,
-      top - 3 * 0.075,
+      top - 4 * 0.075,
     );
     // AIR SCOUR: its place, blanked with a plug, NOT FITTED.
     {
@@ -338,13 +352,13 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         new CircleGeometry(0.009, 20),
         kitPaint(kit, '#2a2a2a'),
       );
-      plug.position.set(x + 0.045, top - 3 * 0.075, 0.002);
+      plug.position.set(x + 0.045, top - 4 * 0.075, 0.002);
       face.add(plug);
       const l = createMicroLabel(kit, 'AIR SCOUR\nNOT FITTED', {
         height: 0.0042,
         ink: '#2a2a2a',
       });
-      l.position.set(x + 0.045, top - 3 * 0.075 + 0.02, 0.001);
+      l.position.set(x + 0.045, top - 4 * 0.075 + 0.02, 0.001);
       face.add(l);
     }
     const fault = signal(false);
@@ -357,22 +371,8 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         name: `Filter ${n + 1} fault lamp`,
       }),
       x - 0.045,
-      top - 4 * 0.075 + 0.005,
+      top - 5 * 0.075 + 0.005,
       0.55,
-    );
-    const cycle = signal(false);
-    cycleLit.push(cycle);
-    mount(
-      pushButton(kit, {
-        colour: 'blue',
-        head: 'illuminated',
-        legend: 'CYCLE NOW',
-        lamp: cycle,
-        name: `Filter ${n + 1} CYCLE NOW`,
-        action: () => c?.act({ act: 'cycle-now', filter: n }),
-      }),
-      x + 0.045,
-      top - 4 * 0.075,
     );
     const tag = createMicroLabel(kit, `FILTER ${n + 1}`, {
       height: 0.008,
