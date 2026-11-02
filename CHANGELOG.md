@@ -44,6 +44,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- Every bridge screen shows exactly one LCARS page at a time, chosen by its state: black when unpowered or off, the boot page while booting, its selected page when running; the viewscreen's draw-over BLANK page is gone (mission 124).
 - The CAD views (mission 133) show every screen and sign in full at any angle, as diagrams of what it shows: no reach, angle fade, flattening or LCD wash in their renderer (`showInFull`), the game unchanged; their cache's drawing version is bumped so older views are redrawn.
 - The magic room (mission 130) is drawn as a CAD sheet (the owner, 2026-11-02): floor, walls and ceiling ruled in 1 m squares with 10 cm subdivisions on whole world metres, a wall item's stub as centimetre graph paper, flat shadowless lighting, an origin marker on the floor and an X/Y/Z axis triad in the corner that turns with the camera.
 - Signs, fire points and the fire alarm's repeaters are architectural components (the owner, 2026-11-02): one shared classification (`object-class.ts`) for the scene's marks, the binding checks and the catalogue makes them named and lookable, never decoration and never unbound; the plant-room door is marked as one too.
@@ -60,6 +61,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The bridge's main viewscreen no longer risks showing black for a page chosen for it (OUTSIDE CONDITIONS, OLYMPIC FILTER WASHING): its own surface is taken away while another page is shown, rather than kept behind it showing a black page (mission 124).
 - The dev panel's World state box now starts on the `dev` slot, labelled "dev (your game)", which is where the game is saved; it offered an unused `game` slot first, so a download or bug report could export no save. The bug report template says the same.
 - The console's `dose` no longer reads a bare number after the amount as part of it: `dose pool_02 bicarb 5 1` put in 51 kg at once; now it asks whether 1 is a rate and how to say one. A feed rate may now be given per hour as well as per minute (`1kg/h`). Or give the amount over a time, fed evenly through it: `dose pool_02 bicarb 17kg / 3h` (also `17kg/3h`, `17 kg over 180min`).
 - The Wash-O-Tron now shows an interlock reason on its two-line LCD regardless of which information page is selected. A busy sequencer, locked-out filter and STEP pressed before valve proof explain their refusals; MODE dismisses a button refusal and returns to the chosen page.

@@ -30,8 +30,8 @@ export function createViewscreen(
   context: () => BridgeContext | null,
   annunciator: Annunciator,
   options: {
-    /** Whether another page is chosen for it (from Central Control), drawn in front: its own browser then blank behind it. */
-    blank?: () => boolean;
+    /** Whether another page is chosen for it (from Central Control), shown in its place: its browser then rests (mission 124). */
+    elsewhere?: () => boolean;
   } = {},
 ): LiveExhibit & { alarms(): boolean; hold(held: boolean): void } {
   // The plant's schematics, the main viewscreen's own designs turning,
@@ -51,7 +51,6 @@ export function createViewscreen(
   const pages = new PageStack({
     SCHEMATIC: browser.tree,
     ALARMS: frame,
-    BLANK: new Stack('column', []),
   });
   const surface = createTouchSurface(kit, {
     kind: 'lcars',
@@ -94,7 +93,7 @@ export function createViewscreen(
     const unaccepted =
       flashing.length + locations.filter((w) => w.flashing).length;
     const mode = viewscreenShows(unaccepted);
-    pages.show(mode === 'SCHEMATIC' && options.blank?.() ? 'BLANK' : mode);
+    pages.show(mode);
     if (mode === 'ALARMS') {
       banner.set(
         `${unaccepted} ALARM${unaccepted > 1 ? 'S' : ''} · ACCEPT AT CENTRAL CONTROL`,
@@ -118,7 +117,8 @@ export function createViewscreen(
       ]);
       return;
     }
-    browser.update(c, seconds);
+    // Not shown while another page is chosen for the screen: not drawn.
+    if (!options.elsewhere?.()) browser.update(c, seconds);
   };
   return {
     object,

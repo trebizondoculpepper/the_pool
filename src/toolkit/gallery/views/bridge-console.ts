@@ -28,6 +28,7 @@ import { roomWorld } from '../../save/world-store';
 import { bridgeAnnunciator } from '../logic/world-annunciator';
 import { plantReadingOf } from '../logic/world-reading';
 import { createViewscreen } from './bridge-viewscreen';
+import { mountedPage } from '../logic/bridge-screen-page';
 import {
   BRIDGE_PAGES,
   backConsoleId,
@@ -275,20 +276,43 @@ export function createBridgeConsole(
   holder.position.set(spec.place.x, spec.place.y, spec.place.z);
   holder.rotation.order = 'YXZ';
   holder.rotation.set(-spec.place.tilt, spec.place.yaw, 0);
-  if (spec.base) holder.add(spec.base.exhibit.object);
   const choices = () => store?.world.value.bridgeConsoles ?? NO_CHOICES;
   const choice = (id: string) => choices()[id];
 
-  // The page shown: built, and its exhibit in the holder unless covered.
+  // The page shown: built, and its exhibit the one in the holder unless
+  // the viewscreen's alarms are up (mission 124: one page on a screen at a
+  // time, never one layered over another; `mountedPage`).
   let shownId = '';
   let page: (BuiltPage & { free(o: Object3D): void }) | null = null;
   let covered = false;
+  let mounted: Object3D | null = null;
+  function mount() {
+    const which = mountedPage({
+      chosen: !!page,
+      builtIn: !!spec.base,
+      alarms: !!spec.base?.covered(),
+    });
+    covered = which === 'builtIn' && !!page;
+    const next =
+      which === 'chosen'
+        ? page!.exhibit.object
+        : which === 'builtIn'
+          ? spec.base!.exhibit.object
+          : null;
+    if (next === mounted) return;
+    if (mounted) holder.remove(mounted);
+    if (next) holder.add(next);
+    mounted = next;
+  }
   let glass = spec.glass;
   // The LOCK as last put to the page's rotation (null: not yet).
   let heldShown: boolean | null = null;
   const build = (p: BridgePage) => {
     if (page) {
-      holder.remove(page.exhibit.object);
+      if (mounted === page.exhibit.object) {
+        holder.remove(mounted);
+        mounted = null;
+      }
       page.exhibit.parts?.dispose();
       page.exhibit.dispose?.();
       page.free(page.exhibit.object);
@@ -304,9 +328,8 @@ export function createBridgeConsole(
       );
       page = { ...t.built, free: t.free };
       glass = page.glass;
-      covered = false;
-      holder.add(page.exhibit.object);
     }
+    mount();
     markComponent(holder, {
       name: holder.name,
       model: { node: p.model.node },
@@ -452,13 +475,8 @@ export function createBridgeConsole(
         next = seconds + 0.5;
         refresh();
       }
-      // The viewscreen's alarms over whatever is chosen for it.
-      const cover = !!page && !!spec.base?.covered();
-      if (page && cover !== covered) {
-        covered = cover;
-        if (cover) holder.remove(page.exhibit.object);
-        else holder.add(page.exhibit.object);
-      }
+      // The viewscreen's alarms instead of whatever is chosen for it.
+      mount();
       spec.base?.exhibit.update?.(delta);
       if (page && !covered) page.exhibit.update?.(delta);
       for (const s of strips) s.surface.part.update(delta);
@@ -579,15 +597,15 @@ export function installBridgeConsoles(kit: PanelKit): Part[] {
     );
   });
   // The main viewscreen, live, on the big wall (`viewscreenPlace`): its
-  // own browser by default, another page chosen from Central Control
-  // drawn in front of it, its alarms over either while any is unaccepted.
+  // own browser by default, or another page chosen from Central Control in
+  // its place, its alarms instead of either while any is unaccepted.
   const vp = viewscreenPlace();
   const chosen = () => {
     const page = store?.world.value.bridgeConsoles.viewscreen?.page;
     return !!page && page !== VIEWSCREEN_DEFAULT;
   };
   const screen = createViewscreen(kit, vp.size, context, shared, {
-    blank: chosen,
+    elsewhere: chosen,
   });
   out.push(
     createBridgeConsole(
