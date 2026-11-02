@@ -471,6 +471,8 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ## Housekeeping
 
+- [ ] **The bench index** ([137](doc/prompts/137-bench-index.md); the owner, 2026-11-02; brief only): `bench.html` with no `bench=` opens on a navigable, expandable, searchable tree of Rooms, Things and Brands, every leaf a link (enter, audits, look links, item audit, CAD views, magic room, brand audit), one component shared with `?dev`'s catalogue and fed by one page registry.
+
 - [ ] Keep `doc/agent-tooling.md` current as 127, 129, 130 and 133 land: fill its placeholder audit sections and add each new tool (the owner, 2026-11-02).
 - [ ] **A Report a bug button on the Esc panel** (the owner, 2026-11-02; for later): it only opens a new GitHub bug report page (the template `.github/ISSUE_TEMPLATE/bug_report.yml`); it sits in the same panel module as, and right beside, the Copy plant-state report button (mission 134), as the `?dev` panel pairs them too.
 - [ ] **Shortcut to the dev page** (the owner, 2026-11-02; for later): Ctrl+Option+D on the Mac, Ctrl+Alt+D elsewhere (chosen by the owner: no browser binds it, and it matches the Ctrl+Alt+S screenshot chord), opens the dev page for the selected item (the one under the crosshair, or held, or being inspected): its catalogue entry (126) now, its item audit (130) once built; with nothing selected, the room's catalogue entry, or its room audit (129) once built. Bound through the one control scheme (`src/toolkit/controls/logic/controls.ts`, beside `copyShortcut`), with a pad and touch equivalent there.
