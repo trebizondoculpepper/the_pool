@@ -114,7 +114,7 @@ function summary(world: World): string {
     `${running.length} known starter pumps running: ${running.join(', ') || 'none'}.`,
     `${tripped.length} known starter pumps tripped: ${tripped.join(', ') || 'none'}.`,
     `${abnormalValves.length} installed valves away from normal position.`,
-    `${alarms.length} active location annunciator windows: ${alarms.map((alarm) => `${alarm.ref} ${alarm.label}`).join('; ') || 'none'}.`,
+    `${alarms.length} active alarm conditions: ${alarms.map((alarm) => `${alarm.ref} ${alarm.label}`).join('; ') || 'none'}.`,
     'Read-only live queries are available at window.__poolDiagnostics: listSystems, listEquipment, getEquipment, getConnections, listAlarms, getAlarm, getRecentEvents, getCoverage, getWashState, getViewContext. Missing readings are marked unavailable.',
   ].join(' ');
 }
@@ -152,10 +152,16 @@ function reportText(store: WorldStore, search: string, limit = 100): string {
         `Filter ${filter.number}: ${filter.mode}/${filter.phase}; AUTO ${filter.auto ? 'on' : 'off'}; lockout ${filter.lockout ? 'on' : 'off'}; bed flow ${filter.bedFlowM3h?.toFixed(1) ?? 'unavailable'} m³/h.`,
     ),
     `Equipment: ${equipment.length} catalogued; ${equipment.filter((fact) => fact.stateAvailable).length} with readable state.`,
-    `Active or latched annunciator windows: ${alarms.length}.`,
+    `Active or latched alarm indications: ${alarms.length}.`,
     ...alarms.map(
       (alarm) =>
-        `${alarm.ref} · ${alarm.label} · ${alarm.present ? 'active' : 'cleared'} · window ${alarm.window}${alarm.firstOut ? ' · first out' : ''}`,
+        `${alarm.ref} · ${alarm.label} · ${alarm.present ? 'active' : 'cleared'} · window ${alarm.window}${alarm.firstOut ? ' · first out' : ''}${
+          alarm.details
+            ? ` · ${Object.entries(alarm.details)
+                .map(([key, value]) => `${key}=${value ?? 'none'}`)
+                .join(', ')}`
+            : ''
+        }`,
     ),
     'Recent events (newest first, up to 10):',
     ...listPlantEvents(world, store.events.value, { limit: 10 }).items.map(

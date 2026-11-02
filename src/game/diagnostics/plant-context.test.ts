@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { newWorld } from '../world';
 import {
+  getPlantAlarm,
   getPlantConnections,
   getPlantEquipment,
   listPlantAlarms,
@@ -99,7 +100,9 @@ describe('browser plant context', () => {
 
   it('shows actual annunciator state separately from its lamp', () => {
     const world = newWorld();
-    const id = listPlantAlarms(world).items[0]?.ref;
+    const id = listPlantAlarms(world).items.find((alarm) =>
+      alarm.ref.startsWith('pool_'),
+    )?.ref;
     if (!id) throw new Error('Expected an annunciator window');
     const [location, alarm] = id.split('/');
     if (
@@ -134,6 +137,56 @@ describe('browser plant context', () => {
         firstOut: true,
       }),
     );
+  });
+
+  it('reads central, cascade and fire alarms from their own world states', () => {
+    const world = newWorld();
+    const changed = {
+      ...world,
+      annunciator: {
+        ...world.annunciator,
+        present: { ...world.annunciator.present, 'fire-alarm': false },
+        windows: {
+          ...world.annunciator.windows,
+          'fire-alarm': 'steady' as const,
+        },
+      },
+      boilerHouse: {
+        ...world.boilerHouse,
+        sequencer: {
+          ...world.boilerHouse.sequencer,
+          alarms: {
+            ...world.boilerHouse.sequencer.alarms,
+            'header-low': 'flashing' as const,
+          },
+        },
+      },
+      fireAlarm: {
+        ...world.fireAlarm,
+        latched: { ...world.fireAlarm.latched, 'wh-mcp-1': true },
+      },
+    };
+    expect(getPlantAlarm(changed, 'central/fire-alarm')).toMatchObject({
+      present: false,
+      window: 'steady',
+    });
+    expect(getPlantAlarm(changed, 'boiler-sequencer/header-low')).toMatchObject(
+      {
+        present: true,
+        window: 'flashing',
+        details: { headerTemperatureC: changed.lthw.flow },
+      },
+    );
+    expect(getPlantAlarm(changed, 'fire/wh-mcp-1')).toMatchObject({
+      room: 'wet_hall',
+      present: true,
+      details: { latched: true },
+    });
+    expect(getPlantAlarm(world, 'fire/wh-mcp-1')?.present).toBe(false);
+    const coverage = plantContextCoverage(changed);
+    expect(coverage.centralAnnunciatorWindows).toBeGreaterThan(0);
+    expect(coverage.boilerSequencerWindows).toBe(3);
+    expect(coverage.fireCallPoints).toBe(5);
   });
 
   it('reports measured tank contents and wash controller alarms', () => {

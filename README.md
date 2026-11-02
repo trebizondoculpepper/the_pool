@@ -29,7 +29,7 @@ You need Node.js (a current release) and npm.
 
 ```sh
 npm ci
-npx vp dev --host 0.0.0.0 --port 5175 --strictPort   # http://127.0.0.1:5175/ here, http://<this Mac's LAN address>:5175/ from an iPad or phone
+./dev-server.sh   # http://127.0.0.1:5175/ here, http://<this Mac's LAN address>:5175/ from an iPad or phone
 ```
 
 The front page is the title screen. New Game resets the simulation to nominal operation: all pools full, temperatures at their design settings, normal water chemistry and working plant, starting in the footbath. Continue preserves the saved simulation and restores your last room and view. The playable rooms and development demonstrations currently share the `dev` save slot, so New Game resets that shared simulation. The title loops Treblo's Suspended Circulation after your first click or key press, using the master volume setting, and stops it when you enter a room. `?dev` is the developers' panel, a list of every room by its URL; it is a tool, not part of the game. Use `?room=PR_A&x=2.5&z=7.75&yaw=0` to launch at a specific position and heading. Coordinates are metres; `y` sets camera height, while `yaw` and `pitch` are degrees. The Copy location button in each room copies the current coordinates and a shareable URL.

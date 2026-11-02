@@ -1,8 +1,14 @@
 import type { GameEvent } from '../events/game-event';
+import {
+  ALARM_TEXT as CENTRAL_ALARM_TEXT,
+  ANNUNCIATOR_ALARMS,
+} from '../../toolkit/gallery/logic/control-room-demo';
 import { boilerStatus } from '../../toolkit/components/plant/logic/boiler-house';
 import { BOILER_TAGS } from '../plant/boiler-plant';
+import { SEQUENCER_ALARMS } from '../plant/boiler-sequencer';
 import { boilerGasOn } from '../plant/boiler-gas';
 import { DAY_TANKS } from '../plant/chemical-distribution';
+import { CALL_POINTS } from '../plant/fire-alarm';
 import { CHEMICALS, STORE_CAPACITY } from '../plant/chemicals';
 import { inspectionStatus, inventoryForWorld } from '../plant/component-status';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
@@ -74,6 +80,9 @@ export interface PlantContextCoverage {
   starterPumps: number;
   annunciatorWindows: number;
   washControllerWindows: number;
+  centralAnnunciatorWindows: number;
+  boilerSequencerWindows: number;
+  fireCallPoints: number;
   unreadableByKind: { kind: string; count: number }[];
   note: string;
 }
@@ -587,6 +596,16 @@ export function getPlantConnections(world: World, ref: string) {
 }
 
 export function plantAlarmFacts(world: World): PlantAlarmFact[] {
+  const centralAlarms: PlantAlarmFact[] = ANNUNCIATOR_ALARMS.map((id) => ({
+    ref: `central/${id}`,
+    room: 'control_room',
+    board: 'Central annunciator',
+    label: CENTRAL_ALARM_TEXT[id].window.replace(/\n/g, ' '),
+    present: world.annunciator.present[id],
+    window: world.annunciator.windows[id],
+    firstOut: false,
+    details: { indicatedRoom: CENTRAL_ALARM_TEXT[id].room },
+  }));
   const locationAlarms = LOCATIONS.flatMap((location) => {
     const spec = LOCATION_ANNUNCIATORS[location];
     const state = world.locationAnnunciators[location];
@@ -621,7 +640,46 @@ export function plantAlarmFacts(world: World): PlantAlarmFact[] {
       },
     };
   });
-  return [...locationAlarms, ...washAlarms];
+  const sequencerAlarms: PlantAlarmFact[] = SEQUENCER_ALARMS.map((id) => {
+    const window = world.boilerHouse.sequencer.alarms[id];
+    return {
+      ref: `boiler-sequencer/${id}`,
+      room: 'boiler_house',
+      board: 'Boiler cascade manager',
+      label: id.replace(/-/g, ' ').toUpperCase(),
+      present: window !== 'off',
+      window,
+      firstOut: false,
+      details: {
+        headerTemperatureC: world.lthw.flow,
+        setpointC: world.boilerHouse.sequencer.setpoint,
+        calledBoilers: world.boilerHouse.sequencer.called.length,
+      },
+    };
+  });
+  const fireAlarms: PlantAlarmFact[] = Object.entries(CALL_POINTS).map(
+    ([point, room]) => {
+      const latched =
+        world.fireAlarm.latched[point as keyof typeof CALL_POINTS];
+      return {
+        ref: `fire/${point}`,
+        room,
+        board: 'Fire alarm call points',
+        label: `MANUAL CALL POINT ${point.toUpperCase()}`,
+        present: latched,
+        window: latched ? 'steady' : 'off',
+        firstOut: false,
+        details: { latched },
+      };
+    },
+  );
+  return [
+    ...centralAlarms,
+    ...locationAlarms,
+    ...washAlarms,
+    ...sequencerAlarms,
+    ...fireAlarms,
+  ];
 }
 
 export function listPlantAlarms(
@@ -683,6 +741,9 @@ export function plantContextCoverage(world: World): PlantContextCoverage {
       0,
     ),
     washControllerWindows: WASH_ALARMS.length,
+    centralAnnunciatorWindows: ANNUNCIATOR_ALARMS.length,
+    boilerSequencerWindows: SEQUENCER_ALARMS.length,
+    fireCallPoints: Object.keys(CALL_POINTS).length,
     unreadableByKind: [...unreadable]
       .map(([kind, count]) => ({ kind, count }))
       .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind)),
