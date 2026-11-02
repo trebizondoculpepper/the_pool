@@ -17,7 +17,7 @@ The object alone: no room, no furnishings, no pipes or neighbours, on a plain, e
 
 - **The same builder the game uses:** each image is the kind's real view builder (130's factory adapter), so what it shows is what the game shows, at a representative state (130's default preset, from 131's descriptors).
 - **Rendered off-screen:** one small renderer, an orthographic camera fitted to the object's bounds for the three flat views and a perspective one for the fourth, then disposed. Nothing runs per frame and nothing is bound to the world or the save.
-- **Pre-rendered:** the images are made once and kept, not drawn every time the page opens. Settle in the plan where they are made and kept (see the open question), and how they are refreshed when a component's builder changes, so they never go stale.
+- **Rendered in the browser, then cached** (the owner, 2026-11-02): the first time an item's audit page opens, its four views are rendered there and kept in the browser's cache (IndexedDB, wrapped against blocked or full storage), so later visits show them at once; nothing is built or committed. Each cached image is keyed by the kind and a fingerprint of what drew it (the game's version and build, and the builder's identity), so a changed builder or a new build renders afresh and a stale image is never shown. While rendering, the page shows the views' frames with a short note.
 - **Kinds without a 3D representation** have no CAD views; their audit page shows their magic page (130) instead.
 
 ## Acceptance
@@ -29,7 +29,7 @@ The object alone: no room, no furnishings, no pipes or neighbours, on a plain, e
 
 ## Open questions for the owner
 
-1. Where are the images made and kept: rendered by a script and committed (fast pages, but hundreds of image files in the repository), rendered by a script at build time into the built site (fast pages, nothing committed), or rendered in the browser the first time a page opens and cached there (nothing to build, slower the first time)?
+None at present.
 
 ## Records
 
