@@ -1,11 +1,13 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { newWorld } from '../world';
 import {
+  getPlantConnections,
   getPlantEquipment,
   listPlantAlarms,
   listPlantEquipment,
   listPlantEvents,
   plantContextCoverage,
+  plantWashFacts,
 } from './plant-context';
 
 describe('browser plant context', () => {
@@ -132,6 +134,134 @@ describe('browser plant context', () => {
         firstOut: true,
       }),
     );
+  });
+
+  it('reports measured tank contents and wash controller alarms', () => {
+    const world = newWorld();
+    const backwash = listPlantEquipment(world, {
+      room: 'wet_hall',
+      kind: 'backwash-tank',
+    }).items[0];
+    if (!backwash) throw new Error('Expected the backwash tank');
+    expect(backwash?.details?.volumeM3).toBe(world.wetHall.backwashTank);
+    const day = listPlantEquipment(world, {
+      room: 'plant_pool_02',
+      kind: 'chem-day',
+    }).items;
+    expect(day.some((item) => typeof item.details?.litres === 'number')).toBe(
+      true,
+    );
+    expect(
+      getPlantEquipment(world, 'world:chemicals.hypochlorite')?.details
+        ?.storeLitres,
+    ).toBe(world.chemicals.hypochlorite);
+    expect(
+      listPlantEquipment(world, {
+        room: 'hypo_store',
+        kind: 'chem-bulk',
+      }).items.every((item) => item.details?.storeLitres === undefined),
+    ).toBe(true);
+
+    const changed = {
+      ...world,
+      wetHall: { ...world.wetHall, backwashTank: 80, inhibit: true },
+      washOTron: {
+        ...world.washOTron,
+        alarms: {
+          ...world.washOTron.alarms,
+          pitInhibit: { on: true, accepted: false },
+        },
+      },
+    };
+    expect(getPlantEquipment(changed, backwash.ref)?.details?.volumeM3).toBe(
+      80,
+    );
+    expect(listPlantAlarms(changed, { activeOnly: true }).items).toContainEqual(
+      expect.objectContaining({
+        ref: 'wash-o-tron/pitInhibit',
+        present: true,
+        window: 'flashing',
+        details: expect.objectContaining({ pitM3: 80, pitInhibited: true }),
+      }),
+    );
+  });
+
+  it('reads each boiler controller without guessing at an unmodelled state', () => {
+    const world = newWorld();
+    const boilers = listPlantEquipment(world, {
+      room: 'boiler_house',
+      kind: 'boiler',
+    }).items;
+    expect(boilers).toHaveLength(6);
+    expect(boilers.some((item) => item.status === 'firing')).toBe(true);
+    expect(boilers.every((item) => item.details?.powerAvailable === true)).toBe(
+      true,
+    );
+  });
+
+  it('reads Olympic riser and discharge meters from the battery flows', () => {
+    const world = newWorld();
+    expect(getPlantEquipment(world, 'PL2-F1-FT1')?.details?.flowM3h).toBeTypeOf(
+      'number',
+    );
+    expect(getPlantEquipment(world, 'PL2-P1-FT1')?.details?.flowM3h).toBeTypeOf(
+      'number',
+    );
+    expect(
+      listPlantEquipment(world, { room: 'wet_hall', kind: 'make-up-flowmeter' })
+        .items[0]?.details?.flowM3h,
+    ).toBe(world.wetHall.flow);
+  });
+
+  it('exposes wash inputs and lockout as raw controller facts', () => {
+    const world = newWorld();
+    const changed = {
+      ...world,
+      wetHall: { ...world.wetHall, backwashTank: 80, inhibit: true },
+      washOTron: {
+        ...world.washOTron,
+        hold: true,
+        waiting: 'PIT INHIBIT' as const,
+        filters: world.washOTron.filters.map((filter, index) =>
+          index === 0 ? { ...filter, lockout: true } : filter,
+        ),
+      },
+    };
+    const facts = plantWashFacts(changed);
+    expect(facts.pit.volumeM3).toBe(80);
+    expect(facts.pit.inletInhibited).toBe(true);
+    expect(facts.waiting).toBe('PIT INHIBIT');
+    expect(facts.hold).toBe(true);
+    expect(facts.filters[0].lockout).toBe(true);
+  });
+
+  it('follows schematic links from a pump and names valves on them', () => {
+    const world = newWorld();
+    const connections = getPlantConnections(world, 'P-101A');
+    expect(connections?.available).toBe(true);
+    expect(
+      connections?.links.some((link) => link.link === 'tank.suctionA'),
+    ).toBe(true);
+    expect(
+      connections?.links.some(
+        (link) =>
+          link.from.refs.includes('P-101A') || link.to.refs.includes('P-101A'),
+      ),
+    ).toBe(true);
+    expect(
+      connections?.links
+        .find((link) => link.link === 'tank.suctionA')
+        ?.valves.some(
+          (valve) => valve.ref === 'PL2-P1-IV1' && valve.status === 'open',
+        ),
+    ).toBe(true);
+    const valve = getPlantConnections(world, 'PL1-P1-IV1');
+    expect(valve?.links.length).toBeGreaterThan(0);
+    expect(
+      valve?.links.some((link) =>
+        link.valves.some((item) => item.ref === 'PL1-P1-IV1'),
+      ),
+    ).toBe(true);
   });
 
   it('bounds and filters events', () => {

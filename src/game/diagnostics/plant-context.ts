@@ -1,4 +1,9 @@
 import type { GameEvent } from '../events/game-event';
+import { boilerStatus } from '../../toolkit/components/plant/logic/boiler-house';
+import { BOILER_TAGS } from '../plant/boiler-plant';
+import { boilerGasOn } from '../plant/boiler-gas';
+import { DAY_TANKS } from '../plant/chemical-distribution';
+import { CHEMICALS, STORE_CAPACITY } from '../plant/chemicals';
 import { inspectionStatus, inventoryForWorld } from '../plant/component-status';
 import { INSTALLED_VALVES } from '../plant/installed-valves';
 import {
@@ -7,10 +12,17 @@ import {
 } from '../plant/location-annunciators';
 import { MODEL_VALVES } from '../plant/model-valves';
 import { MOTORS, MOTOR_TAGS } from '../plant/motor-starters';
+import { olympicFlowsOf } from '../plant/olympic-battery';
+import { POOL_IDS } from '../plant/pools';
+import { serviceAvailable } from '../plant/services';
+import { WET_HALL_PLANT } from '../plant/wet-hall';
+import { ALARMS as WASH_ALARMS } from '../plant/wash-o-tron';
+import { washSensingOfWorld } from '../plant/wash-o-tron-world';
 import { describedComponents, roomOfTag } from '../plant/equipment-catalogue';
 import { identifiedPart } from '../plant/identification';
 import { transferRunsIn } from '../world';
 import type { World } from '../world';
+import { plantConnectionsFor } from './plant-connections';
 
 /** Facts that may be given to a browser assistant. No World or action object escapes. */
 export interface PlantEquipmentFact {
@@ -41,6 +53,7 @@ export interface PlantAlarmFact {
   present: boolean;
   window: 'off' | 'flashing' | 'steady';
   firstOut: boolean;
+  details?: Record<string, string | number | boolean | null>;
 }
 
 export interface PlantContextPage<T> {
@@ -60,6 +73,8 @@ export interface PlantContextCoverage {
   installedValves: number;
   starterPumps: number;
   annunciatorWindows: number;
+  washControllerWindows: number;
+  unreadableByKind: { kind: string; count: number }[];
   note: string;
 }
 
@@ -68,6 +83,39 @@ export interface PlantSystemFact {
   equipment: number;
   readableStates: number;
   activeAlarms: number;
+}
+
+/** The controller's observed state and inputs, without a separate cause narrative. */
+export function plantWashFacts(world: World) {
+  const controller = world.washOTron;
+  const sensing = washSensingOfWorld(world);
+  return {
+    schema: 1 as const,
+    worldTime: world.time,
+    room: 'plant_pool_02',
+    schedulerEnabled: controller.running,
+    hold: controller.hold,
+    activeFilter: controller.washing === null ? null : controller.washing + 1,
+    step: controller.step,
+    stepTimeSeconds: controller.stepTime,
+    waiting: controller.waiting,
+    circulationPumping: sensing.pumping,
+    pit: {
+      volumeM3: sensing.pit,
+      highM3: sensing.pitHigh,
+      inletInhibited: sensing.pitInhibit,
+    },
+    loungeFilterWashing: sensing.loungeWashing,
+    filters: controller.filters.map((filter, index) => ({
+      number: index + 1,
+      mode: filter.mode,
+      phase: filter.phase,
+      auto: filter.auto,
+      lockout: filter.lockout,
+      bedFlowM3h: sensing.bedFlow[index] ?? null,
+      lastWashAtSeconds: filter.lastWash,
+    })),
+  };
 }
 
 const MAX_PAGE = 50;
@@ -173,9 +221,137 @@ function otherPumpState(
   return null;
 }
 
+function tankState(
+  world: World,
+  kind: string,
+  room: string | null,
+  name: string,
+): {
+  status: string;
+  details: NonNullable<PlantEquipmentFact['details']>;
+} | null {
+  if (kind === 'balance-tank' && room?.startsWith('plant_')) {
+    const pool = room.slice(6);
+    if (POOL_IDS.some((id) => id === pool)) {
+      const fill = world.pools[pool as (typeof POOL_IDS)[number]].balance;
+      return {
+        status: `${Math.round(fill * 100)}% full`,
+        details: { fillFraction: fill },
+      };
+    }
+  }
+  if (
+    room === 'wet_hall' &&
+    (kind === 'break-tank' || kind === 'backwash-tank')
+  ) {
+    const volumeM3 =
+      kind === 'break-tank'
+        ? world.wetHall.breakTank
+        : world.wetHall.backwashTank;
+    const capacityM3 =
+      kind === 'break-tank'
+        ? WET_HALL_PLANT.breakTank
+        : WET_HALL_PLANT.backwashTank;
+    return {
+      status: `${Math.round((volumeM3 / capacityM3) * 100)}% full`,
+      details: {
+        volumeM3,
+        capacityM3,
+        fillFraction: volumeM3 / capacityM3,
+        ...(kind === 'backwash-tank'
+          ? { inletInhibited: world.wetHall.inhibit }
+          : {}),
+      },
+    };
+  }
+  if (kind === 'chem-day' && room?.startsWith('plant_pool_')) {
+    const pool = room.slice(6);
+    const chemical = /hypochlorite|hypo/i.test(name)
+      ? 'hypochlorite'
+      : /acid/i.test(name)
+        ? 'acid'
+        : null;
+    if (!chemical) return null;
+    const index = DAY_TANKS[chemical].findIndex((tank) => tank.site === pool);
+    if (index < 0) return null;
+    const tank = world.distribution[chemical].tanks[index];
+    const capacityL = DAY_TANKS[chemical][index].litres;
+    return {
+      status: `${Math.round((tank.litres / capacityL) * 100)}% full`,
+      details: {
+        litres: tank.litres,
+        capacityL,
+        lowL: tank.lowL,
+        highL: tank.highL,
+        calling: tank.calling,
+        fillInhibited: tank.inhibited,
+      },
+    };
+  }
+  return null;
+}
+
+function boilerState(world: World, kind: string, name: string) {
+  if (kind !== 'boiler') return null;
+  const index = BOILER_TAGS.findIndex((tag) => name.includes(tag));
+  if (index < 0) return null;
+  const boiler = world.boilerHouse.boilers[index];
+  const powerAvailable = serviceAvailable(world.plant, 'boiler_house', 'power');
+  const gasAvailable = boilerGasOn(world.boilerGas) && world.plant.sources.heat;
+  return {
+    status: boilerStatus(boiler, {
+      powered: powerAvailable,
+      gas: gasAvailable,
+    }),
+    details: {
+      on: boiler.on,
+      controllerCode: boiler.code,
+      firingRate: boiler.rate,
+      flowTemperatureC: boiler.flow,
+      returnTemperatureC: boiler.return,
+      pressureBar: boiler.pressure,
+      setpointC: boiler.setpoint,
+      lockout: boiler.lockout,
+      powerAvailable,
+      gasAvailable,
+    },
+  };
+}
+
+function meterState(
+  world: World,
+  kind: string,
+  ref: string,
+  room: string | null,
+  flows: ReturnType<typeof olympicFlowsOf>,
+): {
+  status: string;
+  details: NonNullable<PlantEquipmentFact['details']>;
+} | null {
+  let flowM3h: number | null = null;
+  if (kind === 'flowmeter' && room === 'plant_pool_02') {
+    const filter = /^PL2-F([1-5])-FT\d+$/.exec(ref);
+    if (filter) flowM3h = flows.filters[Number(filter[1]) - 1].riser;
+    else if (/^PL2-P1-FT\d+$/.test(ref)) flowM3h = flows.discharge;
+  } else if (kind === 'make-up-flowmeter' && room === 'wet_hall')
+    flowM3h = world.wetHall.flow;
+  if (flowM3h !== null)
+    return {
+      status: `${flowM3h.toFixed(1)} m³/h`,
+      details: { flowM3h },
+    };
+  if (kind === 'water-meter' && room === 'wet_hall')
+    return {
+      status: `${world.wetHall.meter.toFixed(1)} m³ total`,
+      details: { totalM3: world.wetHall.meter },
+    };
+  return null;
+}
+
 /** One live, scene-free inventory. Unknown readings remain explicitly unavailable. */
 export function plantEquipmentFacts(world: World): PlantEquipmentFact[] {
   const subjects = describedComponents().subjects;
+  const olympicFlows = olympicFlowsOf(world);
   const facts = inventoryForWorld(world).map((entry) => {
     const modelValve =
       modelValves.get(entry.assetId ?? '') ?? modelValves.get(entry.id);
@@ -225,6 +401,9 @@ export function plantEquipmentFacts(world: World): PlantEquipmentFact[] {
               : 'shut'
             : null;
     const otherPump = otherPumpState(world, entry.id, entry.kind, room);
+    const tank = tankState(world, entry.kind, room, entry.name);
+    const boiler = boilerState(world, entry.kind, entry.name);
+    const meter = meterState(world, entry.kind, entry.id, room, olympicFlows);
     const status = starter
       ? starter.tripped
         ? 'tripped'
@@ -233,6 +412,9 @@ export function plantEquipmentFacts(world: World): PlantEquipmentFact[] {
           : 'stopped'
       : (valvePosition ??
         otherPump?.status ??
+        tank?.status ??
+        boiler?.status ??
+        meter?.status ??
         inspectionStatus(world, entry.id) ??
         null);
     const details: PlantEquipmentFact['details'] = starter
@@ -248,7 +430,10 @@ export function plantEquipmentFacts(world: World): PlantEquipmentFact[] {
         }
       : valvePosition
         ? { actualPosition: valvePosition }
-        : otherPump?.details;
+        : (otherPump?.details ??
+          tank?.details ??
+          boiler?.details ??
+          meter?.details);
     return {
       ref: entry.id,
       ...(entry.assetId ? { assetId: entry.assetId } : {}),
@@ -293,6 +478,25 @@ export function plantEquipmentFacts(world: World): PlantEquipmentFact[] {
       lookUrl: null,
     });
   }
+  // Only the combined stock is modelled; individual bulk vessels have no reader.
+  for (const chemical of CHEMICALS) {
+    const litres = world.chemicals[chemical];
+    facts.push({
+      ref: `world:chemicals.${chemical}`,
+      room: chemical === 'acid' ? 'acid_store' : 'hypo_store',
+      name: `${chemical === 'acid' ? 'Acid' : 'Hypochlorite'} store total`,
+      kind: 'chemical-store-total',
+      brand: 'unbranded',
+      status: `${Math.round((litres / STORE_CAPACITY[chemical]) * 100)}% in store`,
+      stateAvailable: true,
+      normal: null,
+      details: {
+        storeLitres: litres,
+        storeCapacityL: STORE_CAPACITY[chemical],
+      },
+      lookUrl: null,
+    });
+  }
   return facts.sort((a, b) =>
     `${a.room ?? ''}/${a.ref}`.localeCompare(`${b.room ?? ''}/${b.ref}`),
   );
@@ -301,12 +505,19 @@ export function plantEquipmentFacts(world: World): PlantEquipmentFact[] {
 /** Paging keeps the main page and chatbot responses bounded. */
 export function listPlantEquipment(
   world: World,
-  query: { room?: string; kind?: string; offset?: number; limit?: number } = {},
+  query: {
+    room?: string;
+    kind?: string;
+    state?: 'known' | 'unavailable';
+    offset?: number;
+    limit?: number;
+  } = {},
 ): PlantContextPage<PlantEquipmentFact> {
   const matches = plantEquipmentFacts(world).filter(
     (fact) =>
       (!query.room || fact.room === query.room) &&
-      (!query.kind || fact.kind === query.kind),
+      (!query.kind || fact.kind === query.kind) &&
+      (!query.state || fact.stateAvailable === (query.state === 'known')),
   );
   return page(world, matches, query.offset, query.limit);
 }
@@ -355,20 +566,28 @@ export function listPlantSystems(world: World): PlantSystemFact[] {
 }
 
 export function getPlantConnections(world: World, ref: string) {
-  const fact = getPlantEquipment(world, ref);
+  const facts = plantEquipmentFacts(world);
+  const needle = ref.toLowerCase();
+  const fact = facts.find(
+    (item) =>
+      item.ref.toLowerCase() === needle ||
+      item.assetId?.toLowerCase() === needle,
+  );
+  const links = fact ? plantConnectionsFor(fact, facts) : [];
   return fact
     ? {
         schema: 1 as const,
         worldTime: world.time,
         ref: fact.ref,
         connection: fact.connection ?? null,
-        available: Boolean(fact.connection),
+        links,
+        available: Boolean(fact.connection || links.length),
       }
     : null;
 }
 
 export function plantAlarmFacts(world: World): PlantAlarmFact[] {
-  return LOCATIONS.flatMap((location) => {
+  const locationAlarms = LOCATIONS.flatMap((location) => {
     const spec = LOCATION_ANNUNCIATORS[location];
     const state = world.locationAnnunciators[location];
     return spec.alarms.map((id) => ({
@@ -381,6 +600,28 @@ export function plantAlarmFacts(world: World): PlantAlarmFact[] {
       firstOut: state.firstOut === id,
     }));
   });
+  const washAlarms: PlantAlarmFact[] = WASH_ALARMS.map((id) => {
+    const alarm = world.washOTron.alarms[id];
+    return {
+      ref: `wash-o-tron/${id}`,
+      room: 'plant_pool_02',
+      board: 'Wash-O-Tron',
+      label: id.replace(/([A-Z])/g, ' $1').toUpperCase(),
+      present: alarm.on,
+      window: alarm.on ? (alarm.accepted ? 'steady' : 'flashing') : 'off',
+      firstOut: false,
+      details: {
+        waiting: world.washOTron.waiting,
+        activeFilter:
+          world.washOTron.washing === null ? null : world.washOTron.washing + 1,
+        step: world.washOTron.step,
+        pitM3: world.wetHall.backwashTank,
+        pitInhibited: world.wetHall.inhibit,
+        circulationFlowM3h: world.pools.pool_02.flow,
+      },
+    };
+  });
+  return [...locationAlarms, ...washAlarms];
 }
 
 export function listPlantAlarms(
@@ -423,6 +664,10 @@ export function listPlantEvents(
 
 export function plantContextCoverage(world: World): PlantContextCoverage {
   const equipment = plantEquipmentFacts(world);
+  const unreadable = new Map<string, number>();
+  for (const item of equipment)
+    if (!item.stateAvailable)
+      unreadable.set(item.kind, (unreadable.get(item.kind) ?? 0) + 1);
   return {
     schema: 1,
     worldTime: world.time,
@@ -432,7 +677,15 @@ export function plantContextCoverage(world: World): PlantContextCoverage {
       .length,
     installedValves: installedValves.size,
     starterPumps: MOTOR_TAGS.length,
-    annunciatorWindows: plantAlarmFacts(world).length,
+    annunciatorWindows: LOCATIONS.reduce(
+      (count, location) =>
+        count + LOCATION_ANNUNCIATORS[location].alarms.length,
+      0,
+    ),
+    washControllerWindows: WASH_ALARMS.length,
+    unreadableByKind: [...unreadable]
+      .map(([kind, count]) => ({ kind, count }))
+      .sort((a, b) => b.count - a.count || a.kind.localeCompare(b.kind)),
     note: 'Readable state is reported only where a model reader exists. Other equipment and alarm families still need coverage.',
   };
 }

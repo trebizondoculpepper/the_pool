@@ -52,3 +52,10 @@
   overflow-wrap: anywhere;
   font: inherit;
 }
+
+.plant-context-report nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  margin-bottom: 1rem;
+}
