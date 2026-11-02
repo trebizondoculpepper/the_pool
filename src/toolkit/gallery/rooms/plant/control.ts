@@ -103,7 +103,8 @@ export const EXHIBITS: readonly PlantExhibit[] = [
   {
     title: 'Alarm printer',
     reference:
-      'Teleprinter on endless fanfold paper, logging each alarm with the room to go to',
+      'Gateway 3000 MightyPrint 80, after the Epson FX-80 9-pin dot-matrix printer (1983), 420 × 347 × 100 mm, on its stand: endless fanfold, logging each alarm with the room to go to',
+    maker: 'gateway',
     size: { w: 0.7, d: 1.5, h: 1.3, mount: 'floor' },
     build(kit): LiveExhibit {
       const stand = createPrinterStand(kit);
@@ -111,9 +112,12 @@ export const EXHIBITS: readonly PlantExhibit[] = [
       for (const line of waiting.splice(0)) stand.print(line);
       return {
         object: stand.group,
+        parts: stand.parts,
         update: stand.update,
+        status: stand.status,
         dispose: () => {
           if (printer === stand) printer = null;
+          stand.dispose();
         },
       };
     },

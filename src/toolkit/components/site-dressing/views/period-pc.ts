@@ -21,7 +21,6 @@ import {
   PC_MAKER,
   SCREENSAVER_HZ,
   clockText,
-  cowSpots,
   diskBusy,
   duckPositions,
   newPc,
@@ -38,6 +37,7 @@ import type { WeatherReading } from '../../../../game/weather';
 import { weatherPage } from '../logic/period-pc-weather';
 import type { WeatherPage } from '../logic/period-pc-weather';
 import { drawWeatherWindow } from './period-pc-weather';
+import { drawCowCarton, paintCowSpots } from '../../core/views/cow-carton';
 
 /**
  * The hook for a boot sequence (`core/logic/boot-sequence.ts`, its `'gui'`
@@ -99,52 +99,6 @@ const BEIGE = PC_MAKER.beige;
 const BEIGE_DARK = '#c4baa0';
 const SANS = 'Arial, Helvetica, sans-serif';
 
-/** Black Holstein blotches over `w × h` of a canvas at (x, y). */
-export function paintCowSpots(
-  context: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  w: number,
-  h: number,
-  seed: number,
-  count: number,
-) {
-  const side = Math.min(w, h);
-  context.save();
-  context.beginPath();
-  context.rect(x, y, w, h);
-  context.clip();
-  context.fillStyle = '#141414';
-  for (const spot of cowSpots(seed, count)) {
-    const cx = x + spot.x * w;
-    const cy = y + spot.y * h;
-    // A little larger on a long panel.
-    const r = spot.r * side * (w / side > 1.5 ? 1.2 : 1);
-    const n = spot.lobes.length;
-    // Wider than tall, as a coat's blotches are.
-    const points = spot.lobes.map((k, i) => {
-      const a = (i / n) * Math.PI * 2;
-      return [cx + Math.cos(a) * r * k * 1.15, cy + Math.sin(a) * r * k * 0.85];
-    });
-    // A smooth closed outline through the lobes' midpoints.
-    const mid = (i: number) => {
-      const [ax, ay] = points[i % n];
-      const [bx, by] = points[(i + 1) % n];
-      return [(ax + bx) / 2, (ay + by) / 2];
-    };
-    context.beginPath();
-    const [sx, sy] = mid(n - 1);
-    context.moveTo(sx, sy);
-    for (let i = 0; i < n; i++) {
-      const [px, py] = points[i];
-      const [mx, my] = mid(i);
-      context.quadraticCurveTo(px, py, mx, my);
-    }
-    context.fill();
-  }
-  context.restore();
-}
-
 /**
  * The Gateway 3000's mark, our own drawing (the owner, 2026-10-31): a
  * little cow-spotted carton, drawn in perspective, beside the name in a
@@ -158,66 +112,16 @@ export function drawGatewayLogo(
   ink = '#1d1d1d',
 ) {
   const s = h;
-  // The carton: front, top and side faces, white with black spots.
-  context.save();
-  context.lineWidth = Math.max(1, s * 0.05);
-  context.strokeStyle = ink;
-  const fx = x;
-  const fy = y + s * 0.3;
-  const fw = s * 0.6;
-  const fh = s * 0.66;
-  const dx = s * 0.26;
-  const dy = s * 0.24;
-  const faces: [number, number][][] = [
-    [
-      [fx, fy],
-      [fx + fw, fy],
-      [fx + fw, fy + fh],
-      [fx, fy + fh],
-    ],
-    [
-      [fx, fy],
-      [fx + dx, fy - dy],
-      [fx + fw + dx, fy - dy],
-      [fx + fw, fy],
-    ],
-    [
-      [fx + fw, fy],
-      [fx + fw + dx, fy - dy],
-      [fx + fw + dx, fy + fh - dy],
-      [fx + fw, fy + fh],
-    ],
-  ];
-  for (const [i, face] of faces.entries()) {
-    context.beginPath();
-    for (const [j, [px, py]] of face.entries())
-      if (j === 0) context.moveTo(px, py);
-      else context.lineTo(px, py);
-    context.closePath();
-    context.fillStyle = i === 2 ? '#dedede' : '#ffffff';
-    context.fill();
-    context.save();
-    context.clip();
-    paintCowSpots(context, x, y - dy, fw + dx, fh + dy * 2, 7 + i, 9);
-    context.restore();
-    // The face's outline again, the spots' paths having replaced it.
-    context.beginPath();
-    for (const [j, [px, py]] of face.entries())
-      if (j === 0) context.moveTo(px, py);
-      else context.lineTo(px, py);
-    context.closePath();
-    context.stroke();
-  }
-  context.restore();
+  const carton = drawCowCarton(context, x, y, h, ink);
   // The name, heavy and leaning, after the carton.
   context.fillStyle = ink;
   context.textBaseline = 'alphabetic';
   context.font = `italic 900 ${Math.round(s * 0.62)}px ${SANS}`;
-  context.fillText('GATEWAY', x + fw + dx + s * 0.18, y + s * 0.74);
+  context.fillText('GATEWAY', x + carton + s * 0.18, y + s * 0.74);
   const nameW = context.measureText('GATEWAY').width;
   context.font = `italic 700 ${Math.round(s * 0.36)}px ${SANS}`;
-  context.fillText('3000', x + fw + dx + s * 0.22 + nameW, y + s * 0.74);
-  return fw + dx + s * 0.22 + nameW + context.measureText('3000').width;
+  context.fillText('3000', x + carton + s * 0.22 + nameW, y + s * 0.74);
+  return carton + s * 0.22 + nameW + context.measureText('3000').width;
 }
 
 /** The plain four-pane sash window of the PANES 95 sticker (not anyone's flag). */

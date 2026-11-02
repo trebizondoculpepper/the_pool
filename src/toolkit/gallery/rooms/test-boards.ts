@@ -962,9 +962,14 @@ export function createPeriodBoard(kit: PanelKit): TestFitting {
   const updates: ((delta: number) => void)[] = [];
   const shelf = createPs1Material({ color: '#6c7072' });
   kit.materials.push(shelf);
-  for (const x of [-0.7, 0.72]) {
-    const ledge = new Mesh(new BoxGeometry(0.56, 0.02, 0.46), shelf);
-    ledge.position.set(x, -0.33, 0.23);
+  // The CRT's ledge, and the printer's, deep enough for its box of
+  // fanfold behind it.
+  for (const [x, depth] of [
+    [-0.7, 0.46],
+    [0.72, 0.68],
+  ]) {
+    const ledge = new Mesh(new BoxGeometry(0.56, 0.02, depth), shelf);
+    ledge.position.set(x, -0.33, depth / 2);
     board.parts.add(ledge);
   }
   // The CRT and its page button.
@@ -1032,10 +1037,14 @@ export function createPeriodBoard(kit: PanelKit): TestFitting {
     trend.show(record);
     trend.update(delta);
   });
-  // The alarm printer (the teleprinter, its fanfold paper falling to a
+  // The alarm printer (a Gateway 3000 MightyPrint 80, its box of fanfold
+  // behind it on the ledge, its printed paper over the lid and down to a
   // pile on the floor) and its test button.
-  const printer = teleprinterInMetres('ALARM LOG', 1.55 - 0.32);
-  printer.group.position.set(0.72, -0.32, 0.25);
+  const printer = teleprinterInMetres('ALARM LOG', 1.55 - 0.32, {
+    drape: 'front',
+    stock: 'behind',
+  });
+  printer.group.position.set(0.72, -0.32, 0.49);
   board.parts.add(printer.group);
   updates.push((delta) => printer.update(delta, false));
   let printed = 0;

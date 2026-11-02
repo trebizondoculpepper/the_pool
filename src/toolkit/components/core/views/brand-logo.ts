@@ -2,6 +2,7 @@ import type { CanvasTexture } from 'three';
 import type { Brand } from '../logic/brands';
 import { brandPalette, contrast } from '../logic/brand-palette';
 import { createCanvasTexture } from './screens';
+import { drawCowCarton } from './cow-carton';
 
 type Ctx = CanvasRenderingContext2D;
 
@@ -670,6 +671,13 @@ export function drawBrandMark(
       ctx.lineTo(0, -r * 0.8);
       ctx.lineTo(r * 0.92, -r * 0.08);
       ctx.stroke();
+      break;
+    }
+    case 'carton': {
+      // The Gateway 3000's cow-spotted carton in perspective, the same
+      // drawing as on the PC's case (`cow-carton.ts`), outlined in its ink.
+      const h = r * 1.9;
+      drawCowCarton(ctx, -h * 0.43, -h * 0.51, h, ink);
       break;
     }
     case 'flowsquare': {

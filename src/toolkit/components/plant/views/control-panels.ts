@@ -26,6 +26,8 @@ import type { Annunciator } from '../../industrial-control/logic/annunciator';
 import type { ScreenLine } from '../../industrial-control/logic/bbc-micro';
 import { signal } from '@preact/signals-core';
 import { beginPart, createPartSet, pushButton } from '../../core/parts/parts';
+import type { PartSet } from '../../core/parts/parts';
+import { mightyPrintParts } from '../../industrial-control/parts/mightyprint';
 import { alarmBuzzer } from '../../core/audio/part-loops';
 import { annunciatorBleeper } from '../../industrial-control/logic/annunciator-bleeper';
 import {
@@ -320,36 +322,42 @@ export function createReadoutBoard(kit: PanelKit): ReadoutBoardView {
 
 export interface PrinterStandView {
   group: Group;
+  /** Its buttons and power switch, worked by the room. */
+  parts: PartSet;
   print(line: string): void;
   update(delta: number): void;
+  /** What it shows, in words. */
+  status(): string;
+  dispose(): void;
 }
 
 /**
- * The alarm printer: the teleprinter on its steel stand, its endless
- * fanfold paper falling to a pile on the floor, logging every alarm with
- * the time and the room to go to.
+ * The alarm printer: a Gateway 3000 MightyPrint 80 (after the Epson FX-80)
+ * on its steel printer stand, a box of fanfold stock on the shelf below,
+ * its printed paper going over the separator and down behind to a pile on
+ * the floor, logging every alarm with the time and the room to go to. Its
+ * ON LINE, FORM FEED and LINE FEED buttons and its power switch work.
  */
 export function createPrinterStand(kit: PanelKit): PrinterStandView {
-  const t = plantTools(kit);
   const group = new Group();
-  const height = 0.95;
-  t.box(
-    group,
-    t.paint('#3d4a45', 0.55),
-    0.62,
-    height - 0.25,
-    0.5,
-    0,
-    (height - 0.25) / 2,
-    0,
-  );
-  const printer = teleprinterInMetres('POOL PLANT ALARM LOG', height);
-  printer.group.traverse((o) => (o.userData.live = true));
+  const printer = teleprinterInMetres('POOL PLANT ALARM LOG', 0.68, {
+    stand: true,
+  });
+  // Forward in its footprint, so the paper falls behind it within it.
+  printer.group.position.z = 0.15;
   group.add(printer.group);
+  const parts = createPartSet();
+  parts.add(mightyPrintParts(kit, printer));
   return {
     group,
+    parts,
     print: (line) => printer.record(line),
     update: (delta) => printer.update(delta, false),
+    status: printer.status,
+    dispose: () => {
+      parts.dispose();
+      printer.dispose();
+    },
   };
 }
 

@@ -89,7 +89,9 @@ export type BrandMark =
   /** A cup anemometer's three cups on their spindle. */
   | 'anemometer'
   /** A deck oven's mouth, its fire glowing in it, under a roof's chevron. */
-  | 'hearth';
+  | 'hearth'
+  /** A little cow-spotted carton, in perspective. */
+  | 'carton';
 
 /** Every brand's id: a part names its maker by one of these. */
 export type BrandId =
@@ -128,7 +130,8 @@ export type BrandId =
   | 'aqualis'
   | 'veldkamp'
   | 'calloway'
-  | 'mozzetti';
+  | 'mozzetti'
+  | 'gateway';
 
 export interface Brand {
   id: BrandId;
@@ -656,6 +659,27 @@ export const BRANDS: readonly Brand[] = [
     promise: 'The stone-baked pizza of Naples, in any kitchen in the world',
     mark: 'hearth',
     colours: ['#c8102e', '#f29a1f', '#141414'],
+    type: 'sans',
+  },
+  {
+    // The period PC's maker (the owner, 2026-10-31): "Gateway 3000", an
+    // homage to the Gateway 2000 of the 1990s, its Holstein cow-spot
+    // cartons and badges on period beige, shipped from the farm country of
+    // the Midwest. It makes the engineer's P5-166 Family PC and the alarm
+    // printer, the MightyPrint 80 (the owner, 2026-11-02; after the Epson
+    // FX-80). Its mark is our own drawing of the carton
+    // (`core/views/cow-carton.ts`), not Gateway's artwork.
+    id: 'gateway',
+    name: 'Gateway 3000',
+    wordmark: 'GATEWAY',
+    tagline: 'Straight from the farm to your desk',
+    founded: 1985,
+    country: 'United States',
+    makes:
+      'Personal computers built to order, and their monitors, keyboards and printers, shipped in cow-spotted cartons',
+    promise: 'A computer built for you, at a price that makes sense',
+    mark: 'carton',
+    colours: ['#1d1d1d', '#d9d0b8', '#1d1d1d'],
     type: 'sans',
   },
 ];

@@ -1383,22 +1383,17 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
   // face the operator. RECORD types the settings onto its paper and saves
   // the same recording as a JSON file (to the browser's downloads folder),
   // which `readEffectRecording` loads back exactly, here or in the game.
-  const PRINTER_SCALE = 2.5;
-  const printerY = 0.95 * m;
-  const teletype = createTeleprinter('EFFECTS RECORDINGS');
-  teletype.group.scale.setScalar(PRINTER_SCALE);
+  // A Gateway 3000 MightyPrint 80 on its steel stand, at true size.
+  const STAND = 0.68;
+  const teletype = createTeleprinter('EFFECTS RECORDINGS', {
+    stand: true,
+    drop: STAND,
+  });
+  teletype.group.scale.setScalar(m);
   // Beyond the right-hand desk's end.
-  teletype.group.position.set((desksW / 2 + 0.55) * m, printerY, 3.1 * m);
+  teletype.group.position.set((desksW / 2 + 0.55) * m, STAND * m, 3.1 * m);
   teletype.group.rotation.y = -0.7;
-  teletype.outputPile.position.y = -printerY / PRINTER_SCALE + 0.08;
   room.add(teletype.group);
-  add(
-    new BoxGeometry(0.62 * m, printerY - 0.25 * m, 0.5 * m),
-    material({ color: '#3d4a45' }),
-    1.35,
-    (printerY / m - 0.25) / 2,
-    3.1,
-  ).rotation.y = -0.7;
   solid(1.35, 3.1, 0.8, 0.8);
 
   const STORE = 'encabulator.effects.recordings';
