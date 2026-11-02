@@ -59,6 +59,11 @@ describe('a room’s control bus', () => {
     );
   });
 
+  it('wires the boiler house’s CM6 and the control room’s weather station (the owner, 2026-11-02)', () => {
+    expect(isControlDevice('cascade-manager')).toBe(true);
+    expect(isControlDevice('weather-station')).toBe(true);
+  });
+
   describe.each(ROOMS)('%s', (room) => {
     const bus = controlBus(room)!;
     const structure = roomStructure(room)!;

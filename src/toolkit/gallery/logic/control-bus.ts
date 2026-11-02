@@ -23,7 +23,7 @@ import type { Point3, ServiceRoute } from './room-services';
 
 /** The devices on the control bus: panels, mimics, instruments, the desk and its printer. */
 export const isControlDevice = (key: string) =>
-  /^(operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|gas-safety|combustion-panel|level-instruments|booster-set)/.test(
+  /^(operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|gas-safety|combustion-panel|level-instruments|booster-set|cascade-manager|weather-station)/.test(
     key,
   );
 
