@@ -126,7 +126,7 @@ Direct neighbours only: upstream (edges into it), downstream (edges out of it), 
 
 ### 4.6 Where does it appear in the world
 
-Bound objects: 127's scene marks and the room's `world-in-model` binding (`{ node }`, `{ fitting }`, `{ link }`), each with its look link (`lookLink`, 125), its room audit row (`auditLink` with its ref) and its item audit (`itemAuditLink(kind)`); displays, lamps and mimics showing it here and in both control rooms (board copies, readings); whether the player can see it (any bound object or reading) and act on it (any control targeting it). From data only; a binding known only from a scene is fetched by 127's scanner for that one room on demand (a button, not on load).
+Bound objects: 127's scene marks and the room's `world-in-model` binding (`{ node }`, `{ fitting }`, `{ link }`). A node may have many representations in the world (the owner, 2026-11-02): a fault code shown on several annunciators, because codes are shared between them or because an annunciator is duplicated (a plant room's board and its control-room copies, 129's copies). Every one is listed, grouped by room, each saying why it is there (bound directly, a shared code, a copy of another board), and each linking to that object's own audit (its row in its room's audit, 129, from which its look link and its kind's item audit are reached), not to a look link directly; displays, lamps and mimics showing it here and in both control rooms (board copies, readings); whether the player can see it (any bound object or reading) and act on it (any control targeting it). From data only; a binding known only from a scene is fetched by 127's scanner for that one room on demand (a button, not on load).
 
 ### 4.7 Is anything wrong with it
 
