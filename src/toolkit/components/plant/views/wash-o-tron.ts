@@ -4,6 +4,7 @@ import { BoxGeometry, CircleGeometry, Group, Mesh, PlaneGeometry } from 'three';
 import { createPartSet, pilotLight, pushButton } from '../../core/parts/parts';
 import type { Part } from '../../core/parts/parts';
 import { panelMakerMark } from '../../core/views/panel-maker-mark';
+import { markComponent } from '../../core/views/component-identity';
 import { createBrandBadge } from '../../core/views/brand-badge';
 import {
   createMicroLabel,
@@ -11,7 +12,7 @@ import {
   kitPaint,
 } from '../../core/views/eighties-controls';
 import type { PanelKit } from '../../core/views/eighties-controls';
-import { createCharacterLcd } from '../../industrial-control/views/panel-instruments';
+import { createStarburstVfd } from '../../industrial-control/views/starburst-vfd';
 import type { OperatorColour } from '../../industrial-control/views/industrial-controls';
 import { createCanvasTexture } from '../../core/views/screens';
 import { createPs1Material } from '../../core/parts/ps1-material';
@@ -31,7 +32,7 @@ import { stateLamp, washDisplay } from '../logic/wash-o-tron-display';
  * five vessels with a lamp on each valve, lit while it is open; under
  * each vessel its cluster of illuminated state buttons, AUTO, LOCKOUT,
  * a blanked AIR SCOUR (NOT FITTED) and its FAULT lamp; to the right its
- * two-line LCD with MODE, −, +, ENTER and PROGRAMME, the programme's
+ * two-line starburst VFD with MODE, −, +, ENTER and PROGRAMME, the programme's
  * buttons and an annunciator. Every button is an illuminated push button
  * (the owner, 2026-10-26), so a copy elsewhere reads the same. Its
  * origin is the middle of its back, its face toward +z.
@@ -385,15 +386,13 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
 
   // The controller section, on the right.
   const rx = W / 2 - 0.17;
-  const lcd = createCharacterLcd(kit, {
-    columns: 20,
-    rows: 2,
-    cell: 0.0024,
-    backlight: true,
-  });
-  lcd.group.position.set(rx, mimicY + 0.06, 0.001);
-  lcd.group.traverse((o) => (o.userData.live = true));
-  face.add(lcd.group);
+  // Its 2 × 20 starburst VFD (mission 143): the period's look.
+  const vfd = createStarburstVfd(kit, { columns: 20, rows: 2 });
+  vfd.group.position.set(rx, mimicY + 0.06, 0.001);
+  vfd.group.traverse((o) => (o.userData.live = true));
+  // Named, so a look link reaches it: `look=wash-o-tron-display`.
+  markComponent(vfd.group, { name: 'Wash-O-Tron display' });
+  face.add(vfd.group);
   const programmeLit = signal(false);
   const button = (
     legend: string,
@@ -509,7 +508,8 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         time: c.time(),
         pitShare: c.pitShare(),
       });
-      lcd.show([l1, l2]);
+      vfd.show([l1, l2]);
+      vfd.update(delta);
     },
     dispose() {
       parts.dispose?.();

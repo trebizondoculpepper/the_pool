@@ -612,6 +612,8 @@ async function candidates(usage: Map<string, Usage>): Promise<Candidate[]> {
   const { createBusbarLineDemo } = await import('../rooms/busbar-line-demo');
   const { createWeatherStationBoard } =
     await import('../rooms/weather-station-board');
+  const { createStarburstVfdBoard } =
+    await import('../rooms/starburst-vfd-board');
   const { createMachineGallery } = await import('../rooms/machine-gallery');
   const { createPlantPlinths } = await import('../rooms/plant-gallery');
   const single: [string, (kit: PanelKit) => TestFitting][] = [
@@ -632,6 +634,7 @@ async function candidates(usage: Map<string, Usage>): Promise<Candidate[]> {
     ['rear fittings', createRearFittingsBoard],
     ['busbar line', createBusbarLineDemo],
     ['weather station', createWeatherStationBoard],
+    ['14-segment VFD', createStarburstVfdBoard],
   ];
   for (const [name, make] of single)
     list.push({

@@ -49,6 +49,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - A weather station console in the old control room (mission 123, stage 3): the Calloway WeatherWatch Pro, after the Davis Vantage Pro2, its LCD showing the outside temperature, a compass rose with the wind, wind and gusts, humidity, barometer and its trend, rain and the reading's time, with a second page of feels-like, today's high and low, cloud and the sun's times; PAGE, UNITS (metric or imperial) and LAMP keys; NO DATA, ESTIMATED without a live reading. Tried first on dev0. A new maker, Calloway Meteorological.
 - OUTSIDE CONDITIONS on the bridge (mission 123, stage 4): an LCARS page of the outside temperature (the world's and the reading's), the heat load it drives, conditions, pressure and its trend, wind, gusts and humidity, with the reading's source and Open-Meteo's credit, or NO DATA, ESTIMATED; among the Boiler Helmsman's and Central Control's pages.
 - The Hamwarmy CM6 cascade manager installed in the boiler house (mission 122): BH-CP3, on the south wall by the low-loss header, showing and working the world's boiler sequencer: its display and LEDs read the boilers, the header and the sequencer's alarms; its menus set the set point, staging delays, minimum run, rotation and fixed lead; its faults page accepts the alarms and resets locked-out boilers; its key switch is PLANT ENABLE. It is also shown in dev65, the boiler room.
+- A 14-segment (starburst) vacuum fluorescent display (mission 143), after the early-1980s alphanumeric fluorescent indicator panels: phosphor cyan-green with a glow under each stroke, every unlit segment a faint ghost, a fine grid over each character, filaments across the width between the segments and the tinted glass, every segment lit for a moment at power-on; drawn only when its text, power or brightness changes. Tried on dev0's south wall with a test pattern and live text (`look=14-segment-vfd`).
 
 ### Changed
 
@@ -66,6 +67,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - The old control room's mimics hang in one line, all 1.2 m tall and centred 2.0 m up, the highest the reach rule allows, their bottoms level with the operator's desk; its readout board, CR-CP4, is 30 cm higher, over the BMS outstation (the owner, 2026-11-01).
 - The wet hall's Fresh Water Distribution and Pit Inflow Sources mimics are the standard board's size, 2.4 × 1.2 m like the Lounge pool filters mimic, their layouts drawn closer, and their readouts show the digits alone, without the one-line LCD under each (the owner, 2026-11-01: they were huge for very little information); a mimic may now leave out its readouts' legends (`readoutLegends: false`).
 - CR-SF1, the control room's supply switch-fuse, moves to the south wall west of the corridor door, its supply and feed run down to it there; every other room's stays on its west wall.
+- The Wash-O-Tron's two-line display is the new 14-segment VFD in place of its character LCD (mission 143), and it writes times with a dash (`02-30`, and the event log's `07-05`), as the display has no colon.
 
 ### Fixed
 

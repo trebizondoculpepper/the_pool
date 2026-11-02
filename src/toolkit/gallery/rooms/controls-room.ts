@@ -63,6 +63,7 @@ import {
   createLightSwitchBoard,
 } from './test-boards';
 import type { TestFitting } from './test-boards';
+import { createStarburstVfdBoard } from './starburst-vfd-board';
 import type { LiveExhibit, PlantExhibit } from './plant/exhibit';
 import { POOL_SIGN_POST, POOL_SIGN_WALL } from './plant/pool-sign-demo';
 import {
@@ -292,6 +293,14 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
   place(createJogDialBoard(kit), 0.3, 1.5, half.z - 0.15, Math.PI, {
     minX: -0.05 * m,
     maxX: 0.65 * m,
+    minZ: (half.z - 0.3) * m,
+    maxZ: half.z * m,
+  });
+  // The 14-segment VFD (mission 143), on the south wall, tried here
+  // before the Wash-O-Tron's console has it.
+  place(createStarburstVfdBoard(kit), 1.0, 1.5, half.z - 0.15, Math.PI, {
+    minX: 0.72 * m,
+    maxX: 1.28 * m,
     minZ: (half.z - 0.3) * m,
     maxZ: half.z * m,
   });

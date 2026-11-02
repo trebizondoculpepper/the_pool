@@ -1,0 +1,5 @@
+# A 14-segment VFD for the Wash-O-Tron
+
+Mission 143: the owner wanted the Wash-O-Tron's display to look early 1980s, a starburst vacuum fluorescent display, with a dash for the colon. No 2 × 20 starburst glass could be found in the datasheets reachable today (every 2 × 20 VFD module of the period is a dot matrix), so the display is modelled as two rows of the single-line 20-digit starburst glass Itron and Futaba made, at the 5 mm character height of the 2 × 20 modules; the research note says so plainly.
+
+The glyph table is pure and tested, with lower case folded to upper case as the 64-character decoders did, because the Wash-O-Tron's text has `h`, `m3` and `s` in it. The view draws its ghosts and grid once into offscreen layers, so a redraw is six canvas calls, and only when its text, power or brightness changes. The first screenshot showed the ghosts too bright and the characters too close, so B read as 8; darker ghosts and a wider pitch fixed it. The benchmark passed. Look links in `plant_pool_02` aimed at the floor above the Wash-O-Tron, so its pictures were taken by pose link instead, and that is in `TODO.md`.

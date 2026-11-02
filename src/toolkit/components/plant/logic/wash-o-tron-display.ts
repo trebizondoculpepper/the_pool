@@ -10,15 +10,20 @@ import type {
 } from '../../../../game/plant/wash-o-tron';
 
 /**
- * What the Wash-O-Tron's console shows (prompt 072): its two-line LCD in
- * each view, and each state button's lamp. Pure.
+ * What the Wash-O-Tron's console shows (prompt 072): its two-line
+ * 14-segment VFD in each view (mission 143: times `mm-ss`, no colon), and
+ * each state button's lamp. Pure.
  */
 
 const fit = (s: string) => s.padEnd(20).slice(0, 20);
+// Times with a dash, not a colon: its 14-segment VFD has none (mission
+// 143, the owner, 2026-11-02).
 const mmss = (s: number) => {
   const t = Math.max(0, Math.round(s));
-  return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+  return `${String(Math.floor(t / 60)).padStart(2, '0')}-${String(t % 60).padStart(2, '0')}`;
 };
+/** An event's time of day, logged `hh:mm`, shown `hh-mm`. */
+const dashed = (event: string) => event.replace(/^(\d\d):(\d\d)/, '$1-$2');
 
 export interface DisplayInputs {
   time: number;
@@ -26,7 +31,7 @@ export interface DisplayInputs {
   pitShare: number;
 }
 
-/** Its LCD's two lines, 20 characters each. */
+/** Its display's two lines, 20 characters each. */
 export function washDisplay(s: WashOTron, i: DisplayInputs): [string, string] {
   // A refusal belongs to the operator's last button press, not to the
   // selected information page. Show it immediately wherever they are.
@@ -85,7 +90,10 @@ export function washDisplay(s: WashOTron, i: DisplayInputs): [string, string] {
       ),
     ];
   }
-  return [fit(s.events[0] ?? 'NO EVENTS'), fit(s.events[1] ?? '')];
+  return [
+    fit(dashed(s.events[0] ?? 'NO EVENTS')),
+    fit(dashed(s.events[1] ?? '')),
+  ];
 }
 
 /** A state button's lamp: lit in its state, flashing while going there. */
