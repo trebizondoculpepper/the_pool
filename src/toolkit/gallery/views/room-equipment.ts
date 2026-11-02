@@ -1207,6 +1207,7 @@ function engineersDesk(kit: PanelKit): LiveExhibit {
   const desk = createEngineersDesk(kit, {
     clock: () =>
       store ? (clock(store.world.value.time).hour * 60) % 1440 : 9 * 60,
+    weather: () => store?.world.value.weather.reading ?? null,
   });
   const parts = createPartSet();
   for (const [object, use] of desk.uses) parts.uses.set(object, use);

@@ -5,6 +5,7 @@ import {
   parseOpenMeteo,
   readingStale,
 } from '../../game/weather';
+import type { WeatherReading } from '../../game/weather';
 import type { WorldStore } from '../save/world-store';
 
 /**
@@ -19,9 +20,11 @@ import type { WorldStore } from '../save/world-store';
 export function startWeatherFeed(store: () => WorldStore): () => void {
   let lastFetch = 0;
   let inFlight = false;
+  // The last live reading, handed to whichever world is the rooms' now
+  // (the player's, a dev slot's, the attract sequence's) if it lacks it.
+  let latest: WeatherReading | null = null;
   const tick = async () => {
     const now = Date.now();
-    const world = store().world.value;
     if (!inFlight && now - lastFetch >= FETCH_INTERVAL_MS) {
       lastFetch = now;
       inFlight = true;
@@ -30,19 +33,26 @@ export function startWeatherFeed(store: () => WorldStore): () => void {
         const reading = response.ok
           ? parseOpenMeteo(await response.json())
           : null;
-        if (reading) {
-          store().dispatch({ type: 'weather/reading', reading });
-          return;
-        }
+        if (reading) latest = reading;
       } catch {
         // Offline or refused: the estimate below carries on.
       } finally {
         inFlight = false;
       }
     }
+    const held = store().world.value.weather.reading;
+    if (latest && !readingStale(latest, now)) {
+      if (
+        !held ||
+        held.takenAt < latest.takenAt ||
+        held.source !== 'open-meteo'
+      )
+        store().dispatch({ type: 'weather/reading', reading: latest });
+      return;
+    }
     // No live reading worth keeping: the modelled climate, refreshed as
     // the day goes on (each quarter hour at most).
-    const r = world.weather.reading;
+    const r = held;
     if (
       readingStale(r, now) &&
       (!r || r.source === 'open-meteo' || now - r.takenAt >= FETCH_INTERVAL_MS)

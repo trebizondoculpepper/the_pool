@@ -34,6 +34,10 @@ import type { PcState } from '../logic/period-pc';
 import { bootFrame, bootScript } from '../../core/logic/boot-sequence';
 import type { BootFamily, BootFrame } from '../../core/logic/boot-sequence';
 import { drawBootScreen } from '../../core/views/boot-screens';
+import type { WeatherReading } from '../../../../game/weather';
+import { weatherPage } from '../logic/period-pc-weather';
+import type { WeatherPage } from '../logic/period-pc-weather';
+import { drawWeatherWindow } from './period-pc-weather';
 
 /**
  * The hook for a boot sequence (`core/logic/boot-sequence.ts`, its `'gui'`
@@ -58,6 +62,8 @@ export interface PeriodPcOptions {
   clock?: () => number;
   /** A boot sequence to show instead of the PC's own (see `PcBootScreen`). */
   boot?: PcBootScreen;
+  /** The world's weather reading, for the desktop's Open-Meteo page (mission 123). */
+  weather?: () => WeatherReading | null;
 }
 
 /**
@@ -513,6 +519,7 @@ function screenPainter(boot: PcBootScreen | undefined) {
     W: number,
     H: number,
     minutes: number,
+    weather: WeatherPage | null,
   ) => {
     c.fillStyle = '#008080';
     c.fillRect(0, 0, W, H);
@@ -522,6 +529,12 @@ function screenPainter(boot: PcBootScreen | undefined) {
     icon(c, s * 0.2, s * 2.2, s, 'BookIt! Pro', '#d9a33a');
     icon(c, s * 0.2, s * 3.2, s, 'COSHH 95', '#d86a28');
     icon(c, s * 0.2, s * 4.2, s, 'Pool Sim 97', '#3a8fd9');
+    icon(c, s * 0.2, s * 5.2, s, 'Open-Meteo', '#5ab0e8');
+    if (weather) {
+      drawWeatherWindow(c, W, H, weather);
+      taskbar(c, W, H, minutes, 'Open-Meteo');
+      return;
+    }
     // A window: today's bookings, half filled in.
     const wx = W * 0.24;
     const wy = H * 0.1;
@@ -593,7 +606,16 @@ function screenPainter(boot: PcBootScreen | undefined) {
         );
       }
     }
-    // The taskbar, its Go button and its clock.
+    taskbar(c, W, H, minutes, 'BookIt! Pro');
+  };
+  /** The taskbar, its Go button, the open window's button and the clock. */
+  const taskbar = (
+    c: CanvasRenderingContext2D,
+    W: number,
+    H: number,
+    minutes: number,
+    open: string,
+  ) => {
     const tb = H * 0.07;
     c.fillStyle = '#c0c0c0';
     c.fillRect(0, H - tb, W, tb);
@@ -607,7 +629,7 @@ function screenPainter(boot: PcBootScreen | undefined) {
     c.fillText('Go', 4 + W * 0.035, H - tb * 0.32);
     c.strokeRect(W * 0.14, H - tb + 5, W * 0.3, tb - 10);
     c.font = `${Math.round(tb * 0.4)}px ${SANS}`;
-    c.fillText('BookIt! Pro', W * 0.15, H - tb * 0.32);
+    c.fillText(open, W * 0.15, H - tb * 0.32);
     c.strokeRect(W - W * 0.13, H - tb + 5, W * 0.12, tb - 10);
     c.textAlign = 'center';
     c.fillText(clockText(minutes), W - W * 0.07, H - tb * 0.32);
@@ -651,6 +673,7 @@ function screenPainter(boot: PcBootScreen | undefined) {
     pc: PcState,
     minutes: number,
     step: number,
+    weather: WeatherPage | null = null,
   ) => {
     if (pc.screen === 'off') {
       c.fillStyle = '#050605';
@@ -658,7 +681,7 @@ function screenPainter(boot: PcBootScreen | undefined) {
     } else if (pc.screen === 'booting') {
       if (boot) boot.draw(c, W, H, pc.since);
       else bios(c, W, H, pc.since);
-    } else if (pc.screen === 'desktop') desktop(c, W, H, minutes);
+    } else if (pc.screen === 'desktop') desktop(c, W, H, minutes, weather);
     else saver(c, W, H, step);
     // A faint sheen across the glass.
     const sheen = c.createLinearGradient(0, 0, W * 0.6, H * 0.6);
@@ -1025,13 +1048,28 @@ export function createPeriodPc(kit: PanelKit, options: PeriodPcOptions = {}) {
     });
   let pc = newPc();
   let drawn = '';
+  // The Open-Meteo window, opened and closed with the mouse (mission 123).
+  let weatherOpen = false;
+  let pageOf: { reading: WeatherReading | null; page: WeatherPage | null } = {
+    reading: null,
+    page: null,
+  };
   const show = () => {
     const minutes = clock();
     const frame = pcFrame(pc, minutes, options.boot?.key);
-    if (frame.key === drawn) return;
-    drawn = frame.key;
+    let page: WeatherPage | null = null;
+    if (weatherOpen && options.weather) {
+      const reading = options.weather();
+      if (reading !== pageOf.reading || !pageOf.page)
+        pageOf = { reading, page: weatherPage(reading) };
+      page = pageOf.page;
+    }
+    const key =
+      page && pc.screen === 'desktop' ? `${frame.key}:${page.key}` : frame.key;
+    if (key === drawn) return;
+    drawn = key;
     const { context, canvas, texture } = screen.shown;
-    paint(context, canvas.width, canvas.height, pc, minutes, frame.step);
+    paint(context, canvas.width, canvas.height, pc, minutes, frame.step, page);
     texture.needsUpdate = true;
   };
   const lamps = () => {
@@ -1056,7 +1094,12 @@ export function createPeriodPc(kit: PanelKit, options: PeriodPcOptions = {}) {
   });
   markUsable(box.power, () => ({ gesture: 'push', possible: true }));
   uses.set(keyboard, wake);
-  uses.set(mouse, wake);
+  // The mouse double-clicks the Open-Meteo icon, or closes its window.
+  uses.set(mouse, () => {
+    if (options.weather && pc.power && pc.screen === 'desktop')
+      weatherOpen = !weatherOpen;
+    wake();
+  });
   uses.set(screen.face, wake);
   show();
   lamps();

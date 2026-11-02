@@ -56,6 +56,7 @@ import {
 } from './toolkit/components/core/parts/render-style';
 import {
   createScenarioStore,
+  roomWorld,
   setRoomWorld,
   worldStore,
 } from './toolkit/save/world-store';
@@ -199,7 +200,7 @@ const saveGame = () => {
 };
 const positionSaveTimer = window.setInterval(rememberPlayer, 10_000);
 // Manchester's weather, live from Open-Meteo or estimated (mission 123).
-startWeatherFeed(() => worldStore('dev'));
+startWeatherFeed(roomWorld);
 window.addEventListener('pagehide', rememberPlayer);
 const saveHiddenPosition = () => {
   if (document.visibilityState === 'hidden') rememberPlayer();
