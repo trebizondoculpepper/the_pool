@@ -1,6 +1,13 @@
 import { ROOMS, DEV_ROOM_NAMES } from '../logic/dev-room-links';
 import { kindControls } from '../../../game/descriptors/registry';
 import { deprecationOf, itemAuditLink } from '../logic/item-audit';
+import { BRANDS } from '../../components/core/logic/brands';
+import {
+  UNBRANDED_LINK,
+  brandAuditLink,
+  brandCounts,
+  unbranded,
+} from '../logic/brand-audit';
 import {
   FINDING_WORDS,
   isBadlyNamed,
@@ -34,12 +41,13 @@ import type { CostSort, KeyValueStore } from '../logic/visual-cost';
 
 /**
  * The dev panel's universal catalogue (mission 126): Rooms, each opening
- * into its named things, and Game objects, every kind with its copies,
- * usage and naming findings. Drawn from data only; a row's contents are
+ * into its named things, Game objects, every kind with its copies,
+ * usage and naming findings, and Brands (mission 136), each brand's audit
+ * page and the unbranded goods. Drawn from data only; a row's contents are
  * drawn when it is opened.
  */
 
-type Category = 'rooms' | 'kinds';
+type Category = 'rooms' | 'kinds' | 'brands';
 interface Saved {
   category: Category;
   query: string;
@@ -181,6 +189,7 @@ export function createCataloguePanel(): HTMLElement {
   };
   const roomsTab = tab('rooms', 'Rooms');
   const kindsTab = tab('kinds', 'Game objects');
+  const brandsTab = tab('brands', 'Brands');
   const check = (
     key: 'used' | 'outside' | 'bad' | 'deprecated' | 'measured',
     label: string,
@@ -224,7 +233,7 @@ export function createCataloguePanel(): HTMLElement {
     el(
       'div',
       { className: 'cat-bar' },
-      el('div', { className: 'cat-tabs' }, roomsTab, kindsTab),
+      el('div', { className: 'cat-tabs' }, roomsTab, kindsTab, brandsTab),
       search,
     ),
     filters,
@@ -526,21 +535,79 @@ export function createCataloguePanel(): HTMLElement {
     return shown;
   };
 
+  /** Mission 136: each brand's audit page, and the unbranded goods. */
+  const renderBrands = (words: readonly string[]) => {
+    let shown = 0;
+    const u = unbranded(kinds);
+    const n = (gs: typeof u.gaps) =>
+      gs.reduce((sum, g) => sum + g.items.length, 0);
+    if (matchesSearch(words, ['unbranded', 'generic', 'no maker'])) {
+      shown += 1;
+      list.append(
+        el(
+          'div',
+          { className: 'cat-row' },
+          el(
+            'a',
+            { href: UNBRANDED_LINK, className: 'cat-ref' },
+            'Unbranded goods',
+          ),
+          el(
+            'span',
+            { className: 'cat-meta' },
+            `${n(u.gaps)} gaps · ${n(u.generic)} confirmed generic`,
+          ),
+        ),
+      );
+    }
+    for (const { brand, kinds: k, copies } of brandCounts(BRANDS, kinds)) {
+      if (!matchesSearch(words, [brand.id, brand.name, brand.makes])) continue;
+      shown += 1;
+      list.append(
+        el(
+          'div',
+          { className: 'cat-row' },
+          el(
+            'a',
+            { href: brandAuditLink(brand.id), className: 'cat-ref' },
+            brand.name,
+          ),
+          el('span', { className: 'cat-name' }, brand.makes),
+          el(
+            'span',
+            { className: 'cat-meta' },
+            copies
+              ? `${k} kind${k === 1 ? '' : 's'} · ${copies} in all`
+              : 'nothing placed yet',
+          ),
+        ),
+      );
+    }
+    return shown;
+  };
+
   function render() {
     roomsTab.classList.toggle('is-on', state.category === 'rooms');
     kindsTab.classList.toggle('is-on', state.category === 'kinds');
+    brandsTab.classList.toggle('is-on', state.category === 'brands');
     filters.hidden = state.category !== 'kinds';
     list.replaceChildren();
     if (!kinds.length) return;
     const words = searchWords(state.query);
     const shown =
-      state.category === 'rooms' ? renderRooms(words) : renderKinds(words);
+      state.category === 'rooms'
+        ? renderRooms(words)
+        : state.category === 'kinds'
+          ? renderKinds(words)
+          : renderBrands(words);
     const bad = kinds.filter((k) => isBadlyNamed(k.worst)).length;
     const counted = new Set(entries.map((e) => e.room)).size;
     status.textContent =
       state.category === 'rooms'
         ? `${shown} of ${ROOMS.length} rooms · ${counted} counted from data, the rest not counted until mission 127${exhibitsLoaded ? '' : ' · loading dev rooms’ exhibits…'}`
-        : `${shown} of ${kinds.length} kinds · ${bad} badly named · counts cover the plant rooms${exhibitsLoaded ? ' and the exhibit dev rooms' : ' (dev rooms loading…)'}; museum halls, pool halls and corridors not counted (127)`;
+        : state.category === 'brands'
+          ? `${BRANDS.length} brands, each with its audit page (mission 136), and the unbranded goods`
+          : `${shown} of ${kinds.length} kinds · ${bad} badly named · counts cover the plant rooms${exhibitsLoaded ? ' and the exhibit dev rooms' : ' (dev rooms loading…)'}; museum halls, pool halls and corridors not counted (127)`;
   }
 
   const build = (input: Parameters<typeof kindCatalogue>[0] = {}) => {
