@@ -12,7 +12,7 @@ body:
 
         1. Open the game with `?dev` added to its address, in the same browser you play in: https://trebizondoculpepper.github.io/the_pool/?dev (your save lives in that browser, so use the same one).
         2. Find the **World state** box in the dev panel.
-        3. Choose the **game** slot and press **Download**. A file named like `the-pool-game-2026-11-02-1430.json` is saved to your downloads.
+        3. Choose the **dev (your game)** slot (the one already chosen) and press **Download**. A file named like `the-pool-dev-2026-11-02-1430.json` is saved to your downloads.
 
         Or press **Report a bug…** in the same box: it downloads the file and opens this page with your version, browser and location already filled in.
 

@@ -112,9 +112,7 @@ it('downloads a slot and uploads one: validated, the last kept, the open world r
     storage.getItem('pool-plant:transfer-a'),
   );
   expect(exportSlot('nothing-here')).toBeNull();
-  expect(listSlots()).toEqual(
-    expect.arrayContaining(['game', 'dev', 'transfer-a']),
-  );
+  expect(listSlots()).toEqual(expect.arrayContaining(['dev', 'transfer-a']));
   // Uploaded into an open slot: the world there replaced, the last kept.
   const store = worldStore('transfer-b');
   const before = storage.getItem('pool-plant:transfer-b');

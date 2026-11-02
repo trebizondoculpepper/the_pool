@@ -29,10 +29,12 @@ export function createWorldTransferPanel(): HTMLElement {
   slot.setAttribute('aria-label', 'Save slot');
   for (const name of listSlots()) {
     const option = document.createElement('option');
-    option.value = option.textContent = name;
+    option.value = name;
+    // The player's own world is the `dev` slot (main.ts), so say so.
+    option.textContent = name === 'dev' ? 'dev (your game)' : name;
     slot.append(option);
   }
-  slot.value = 'game';
+  slot.value = 'dev';
   const download = document.createElement('button');
   download.type = 'button';
   download.textContent = 'Download';

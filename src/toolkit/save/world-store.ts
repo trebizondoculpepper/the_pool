@@ -142,12 +142,12 @@ const imported = new Map<string, (text: string) => void>();
 
 /**
  * The save slots kept in this browser (the dev panel's download and
- * upload, the owner, 2026-11-01): `game` and `dev` always, and any other
+ * upload, the owner, 2026-11-01): `dev`, the player's own, always, and any other
  * slot with a save, but not their backups.
  */
 export function listSlots(): string[] {
   const s = storage();
-  const found = new Set(['game', 'dev']);
+  const found = new Set(['dev']);
   if (s)
     for (let i = 0; i < s.length; i++) {
       const k = s.key(i) ?? '';
