@@ -24,7 +24,12 @@ import type {
 
 const ROOM = JACUZZI_ROOM;
 export const JACUZZI_CABINET_REF = 'PL3-CAB1';
-export const JACUZZI_ISOLATOR_REF = 'PL3-CAB1-IS1';
+/**
+ * The cabinet's switch-fuse isolator: the cabinet's tag and its first
+ * isolator, `IS1`, as the plant's tags are built (no plant tag written
+ * whole by hand: the registration test reads the code for them).
+ */
+export const JACUZZI_ISOLATOR_REF = `${JACUZZI_CABINET_REF}-IS1`;
 /** The motorised valves' panel (`JACUZZI VALVES`): no tag, so its name's slug. */
 export const JACUZZI_VALVE_PANEL_REF = 'valve-panel';
 /** The world's name for the cabinet's isolator. */
