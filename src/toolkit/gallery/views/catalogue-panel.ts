@@ -1,4 +1,5 @@
 import { ROOMS, DEV_ROOM_NAMES } from '../logic/dev-room-links';
+import { kindControls } from '../../../game/descriptors/registry';
 import {
   FINDING_WORDS,
   isBadlyNamed,
@@ -356,6 +357,18 @@ export function createCataloguePanel(): HTMLElement {
   const kindBody = (k: KindEntry, words: readonly string[]) => {
     const box = el('div', { className: 'cat-body' });
     box.append(el('p', { className: 'cat-note' }, k.purpose));
+    // Its controls, from its descriptor (mission 131), where it has one.
+    const controls = kindControls(k.key);
+    if (controls.length)
+      box.append(
+        el(
+          'p',
+          { className: 'cat-note' },
+          `Controls: ${controls
+            .map((c) => `${c.label} (${c.key}: ${c.inputs.join('/')})`)
+            .join(', ')}`,
+        ),
+      );
     // The item audit page (mission 130): its parts and states, every
     // placement and a room of its own; not built yet.
     const itemAudit = el(

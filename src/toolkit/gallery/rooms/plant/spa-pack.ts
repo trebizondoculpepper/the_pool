@@ -3,6 +3,13 @@ import {
   doseRates,
   feedMessages,
 } from '../../../../game/plant/pool-dosing';
+import { controlFor } from '../../../../game/descriptors/registry';
+import { workControl } from '../../../../game/descriptors/binding';
+import {
+  JACUZZI_CABINET_REF,
+  SETPOINT_STEP,
+} from '../../../../game/descriptors/jacuzzi-room';
+import { JACUZZI_ROOM } from '../../../../game/plant/jacuzzi-schematic';
 import { DOSING_PUMPS } from '../../../../game/plant/water-treatment';
 import { computed, signal } from '@preact/signals-core';
 import { createLouvres } from '../../../components/industrial-control/views/cabinet-fittings';
@@ -416,44 +423,55 @@ export function spaFilterWorldBinding(
   pool: SpaPool,
 ): SpaFilterBinding {
   const f = () => store.world.value.spaFilters[pool];
+  // The jacuzzi's from its cabinet's descriptor (mission 131).
+  const described = (key: string) =>
+    pool === 'pool_03'
+      ? controlFor(`${JACUZZI_CABINET_REF}/${key}`, JACUZZI_ROOM)
+      : undefined;
+  const send = (key: string, act: 'mode' | 'wash-now') => {
+    const control = described(key);
+    if (control) workControl(store, control, 'press');
+    else store.dispatch({ type: 'spa-filter', pool, action: { act } });
+  };
   return {
     line: () => spaFilterLine(f()),
-    mode: () =>
-      store.dispatch({ type: 'spa-filter', pool, action: { act: 'mode' } }),
-    washNow: () =>
-      store.dispatch({
-        type: 'spa-filter',
-        pool,
-        action: { act: 'wash-now' },
-      }),
+    mode: () => send('wash-mode', 'mode'),
+    washNow: () => send('wash-now', 'wash-now'),
     washing: () => !filtering(f()),
     signals: () => washSignals(f()),
     glass: (pumping) => spaFilterGlass(f(), pumping),
   };
 }
 
-/** The jacuzzi's cabinet as the world has it. */
+/**
+ * The jacuzzi's cabinet as the world has it: its controls' actions its
+ * descriptor's (`game/descriptors/jacuzzi-room.ts`, mission 131).
+ */
 export function jacuzziWorldBinding(
   store: ReturnType<typeof worldStore>,
 ): JacuzziCabinetBinding {
   const w = () => store.world.value;
+  const work = (key: string, input = 'press') => {
+    const control = controlFor(`${JACUZZI_CABINET_REF}/${key}`, JACUZZI_ROOM);
+    if (control) workControl(store, control, input);
+  };
   return {
     panel: (doorOpen) => jacuzziCabinetPanel(w(), doorOpen),
     power: () => w().jacuzziCabinet.power,
-    setPower: (on) =>
-      store.dispatch({
-        type: 'jacuzzi/cabinet',
-        action: { act: 'power', on },
-      }),
-    reset: () =>
-      store.dispatch({ type: 'jacuzzi/cabinet', action: { act: 'reset' } }),
+    setPower: (on) => work('power', on ? 'on' : 'off'),
+    reset: () => work('reset'),
     runs: () => jacuzziRuns(w()),
-    toggle: (what) =>
-      store.dispatch({ type: 'jacuzzi', action: { act: 'toggle', what } }),
+    toggle: (what) => work(what),
     waterC: () => w().pools.pool_03.temperature,
     setpoint: () => w().pools.pool_03.setpoint,
-    setSetpoint: (celsius) =>
-      store.dispatch({ type: 'pool/setpoint', pool: 'pool_03', celsius }),
+    // A + or − press steps the setting as the descriptor does; another
+    // setting (a trial's) is sent as it is.
+    setSetpoint: (celsius) => {
+      const step = celsius - w().pools.pool_03.setpoint;
+      if (step === SETPOINT_STEP) work('set-up');
+      else if (step === -SETPOINT_STEP) work('set-down');
+      else store.dispatch({ type: 'pool/setpoint', pool: 'pool_03', celsius });
+    },
     heating: () => w().pools.pool_03.heating > 0.05,
   };
 }

@@ -39,7 +39,15 @@ import {
   createDirtyWaterMimic,
   createFreshWaterMimic,
 } from '../../views/wet-hall';
-import { pressPump, pumpsShown } from './pump-panel';
+import { pumpsShown } from './pump-panel';
+import { controlFor } from '../../../../game/descriptors/registry';
+import { workControl } from '../../../../game/descriptors/binding';
+import { CONTROL_ROOM_MIMICS } from '../../../../game/descriptors/mimics';
+import type { MimicSpec } from '../../../components/industrial-control/logic/mimic';
+
+/** A board's tag in the control room, by its spec (`CONTROL_ROOM_MIMICS`). */
+const refOf = (spec: MimicSpec) =>
+  CONTROL_ROOM_MIMICS.find((m) => m.spec === spec)?.ref ?? spec.title;
 
 /** What this plant room is for, printed on its title card. */
 /**
@@ -151,8 +159,17 @@ export const EXHIBITS: readonly PlantExhibit[] = [
     build(kit): LiveExhibit {
       // The main pool's board works the filter pumps' starters, as their
       // local panel does (`pump-panel.ts`): the one world's.
+      // Its presses its descriptor's (CR-MP1's, mission 131).
       const board = createMimicBoard(kit, spec, {
-        press: (id) => pressPump(id),
+        press: (id) => {
+          const control = controlFor(`${refOf(spec)}/${id}`, 'control_room');
+          if (control)
+            workControl(
+              typeof window === 'undefined' ? null : roomWorld(),
+              control,
+              'press',
+            );
+        },
       });
       // Its state worked out once per world step: the reading is the same
       // object until the world steps (`plantReadingOf`), and the board sets

@@ -11,11 +11,12 @@ import { JACUZZI_MIMIC, jacuzziMimicState } from '../logic/jacuzzi-mimic';
 import { GAS_MIMIC, gasState } from '../logic/pool-mimics';
 import {
   BOILER_HEAT_COPY,
-  boilerHeatPress,
   boilerHeatState,
   cascadeOf,
 } from '../logic/boiler-heat-mimic';
 import { createLoungeFilterMimic } from './lounge-filter-mimic';
+import { controlFor } from '../../../game/descriptors/registry';
+import { workControl } from '../../../game/descriptors/binding';
 import { createEnergyMimic } from './energy-mimic';
 
 /** Whether two lists hold the same things: the boiler house sets a boiler in its list in place. */
@@ -105,10 +106,10 @@ export function createUpperMimic(
   if (kind === 'mimic-boiler-heat') {
     // START and STOP of the plant in AUTO, nothing more (mission 121).
     const board = createMimicBoard(kit, BOILER_HEAT_COPY, {
+      // Its descriptor's (CR-MP7's, mission 131).
       press: (id) => {
-        const action = boilerHeatPress(id);
-        if (action?.act === 'run')
-          store?.dispatch({ type: 'boiler-house', action });
+        const control = controlFor(`CR-MP7/${id}`, 'control_room');
+        if (control) workControl(store, control, 'press');
       },
     });
     let shown: readonly unknown[] = [];

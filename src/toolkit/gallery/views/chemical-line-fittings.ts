@@ -9,6 +9,8 @@ import {
 } from '../../components/plant/views/dosing-valves';
 import { installedValveFor } from '../../../game/plant/installed-valves';
 import type { WorldStore } from '../../save/world-store';
+import { descriptorFor } from '../../../game/descriptors/registry';
+import { twoWayBinding } from '../../../game/descriptors/binding';
 import type { CheckFitting, PipeRun, Valve } from '../logic/room-pipes';
 
 type Vec3 = readonly [number, number, number];
@@ -45,6 +47,9 @@ export function createChemicalLineFittings(
         store?.world.value.installedValves[installed.assetId] ??
         installed.normal === 'open';
       const name = `${installed.tag} · ${v.name}`;
+      const handle = descriptorFor(installed.tag, room)?.controls.find(
+        (c) => c.key === 'handle',
+      );
       let object: Group;
       if (v.operator === 'motor') {
         const motor = addPart(
@@ -57,15 +62,19 @@ export function createChemicalLineFittings(
           createChemicalBallValve(kit, {
             dn: dn(v.od),
             name,
-            binding: {
-              open,
-              set: (on: boolean) =>
-                store?.dispatch({
-                  type: 'plant/valve',
-                  id: installed.assetId,
-                  open: on,
-                }),
-            },
+            // Its handle its descriptor's where the room is described (mission 131).
+            binding:
+              store && handle
+                ? twoWayBinding(store, handle)
+                : {
+                    open,
+                    set: (on: boolean) =>
+                      store?.dispatch({
+                        type: 'plant/valve',
+                        id: installed.assetId,
+                        open: on,
+                      }),
+                  },
           }),
         );
         object = ball.object as Group;

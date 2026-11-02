@@ -24,12 +24,18 @@ import { createMimicBoard } from '../../../components/industrial-control/views/m
 import { currentPlant } from './live-plant';
 import type { PoolId } from '../../../../game/plant/pools';
 import type { PlantReading } from '../../logic/control-room-demo';
-import { MAIN_POOL_MIMIC, mainPoolState } from '../../logic/pool-mimics';
+import {
+  MAIN_POOL_MIMIC,
+  mainPoolMimicCommand,
+  mainPoolState,
+  poolPumpTags,
+  poolPumpsShown,
+} from '../../logic/pool-mimics';
 import { createLoungeFilterMimic } from '../../views/lounge-filter-mimic';
 import { roomWorld } from '../../../save/world-store';
 import type { PumpsShown } from '../../logic/pool-mimics';
 import type { MimicState } from '../../../components/industrial-control/logic/mimic';
-import { MOTORS, POOL_MOTORS } from '../../../../game/plant/motor-starters';
+import { MOTORS } from '../../../../game/plant/motor-starters';
 import type {
   MotorTag,
   StarterMode,
@@ -47,17 +53,13 @@ import { markComponent } from '../../../components/core/views/component-identity
  */
 
 const PUMP_IDS = ['p1', 'p2'] as const;
-type PumpId = (typeof PUMP_IDS)[number];
 const MODES: readonly StarterMode[] = ['hand', 'off', 'auto'];
 
 /** The world, where there is a page to keep it (not in tests). */
 const store = () => (typeof window === 'undefined' ? null : roomWorld());
 
 /** A pool's pumps' starters, duty (p1) then standby (p2); none for a pool without them. */
-const tagsOf = (pool: PoolId): Partial<Record<PumpId, MotorTag>> => {
-  const [p1, p2] = POOL_MOTORS(pool);
-  return p1 && p2 ? { p1, p2 } : {};
-};
+const tagsOf = poolPumpTags;
 
 /** What a pump's starter shows: 0 running, 1 stopped, 2 tripped. */
 const shownOf = (w: World, tag: MotorTag): 0 | 1 | 2 => {
@@ -70,30 +72,13 @@ export function pumpsShown(
   reading: PlantReading,
   pool: PoolId = 'pool_02',
 ): PumpsShown {
-  const w = store()?.world.value;
-  const tags = tagsOf(pool);
-  const at = (id: PumpId): 0 | 1 | 2 => {
-    const tag = tags[id];
-    if (w && tag) return shownOf(w, tag);
-    return reading.alarms.includes(`${id}-trip` as never)
-      ? 2
-      : reading.pumps[id]
-        ? 0
-        : 1;
-  };
-  return { p1: at('p1'), p2: at('p2') };
+  return poolPumpsShown(store()?.world.value, reading, pool);
 }
 
-/** A mimic button's id, "p1-start", as its command to the pump's starter. */
+/** A mimic button's id, "p1-start", as its command to the pump's starter (`mainPoolMimicCommand`). */
 export function pressPump(id: string, pool: PoolId = 'pool_02') {
-  const [pump, verb] = id.split('-') as [PumpId, string];
-  const tag = tagsOf(pool)[pump];
-  if (!tag || (verb !== 'start' && verb !== 'stop')) return;
-  store()?.dispatch({
-    type: 'motor/starter',
-    tag,
-    action: { act: verb },
-  });
+  const action = mainPoolMimicCommand(id, pool);
+  if (action) store()?.dispatch(action);
 }
 
 /** A seven-segment ammeter in its bezel, reading a motor's current. */

@@ -5,6 +5,12 @@ import {
   Mesh,
   MeshStandardMaterial,
 } from 'three';
+import { controlFor, descriptorFor } from '../../../game/descriptors/registry';
+import { twoWayBinding, workControl } from '../../../game/descriptors/binding';
+import {
+  JACUZZI_ISOLATOR_REF,
+  JACUZZI_VALVE_PANEL_REF,
+} from '../../../game/descriptors/jacuzzi-room';
 import type { Object3D } from 'three';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createMicroLabel } from '../../components/core/views/eighties-controls';
@@ -205,34 +211,59 @@ export function cabinetServices(
       // world: open, its pump sends the tub's water to waste.
       const jacuzziDrain =
         room === 'plant_pool_03' && run.name === 'Drain to waste';
-      const binding = jacuzziDrain
-        ? {
-            open: () => store?.world.value.pools.pool_03.drainDown ?? false,
-            set: (open: boolean) =>
-              store?.dispatch({
-                type: 'pool/drain-down',
-                pool: 'pool_03',
-                open,
-              }),
-          }
-        : installed
+      // Its controls its descriptor's where the room is described
+      // (mission 131): a lever's handle, or a motorised valve's panel
+      // buttons and its actuator's override.
+      const described = store ? descriptorFor(id, room) : undefined;
+      const panelControl = (verb: 'open' | 'shut') =>
+        controlFor(`${JACUZZI_VALVE_PANEL_REF}/${id}-${verb}`, room);
+      const override = described?.controls.find((c) => c.key === 'override');
+      const handle = described?.controls.find((c) => c.key === 'handle');
+      const describedBinding =
+        store && described
+          ? handle
+            ? twoWayBinding(store, handle)
+            : {
+                open: () =>
+                  described.readings[0]?.read(store.world.value) === 'open',
+                set: (open: boolean) => {
+                  const control = panelControl(open ? 'open' : 'shut');
+                  if (control) workControl(store, control, 'press');
+                },
+              }
+          : null;
+      const binding = describedBinding
+        ? describedBinding
+        : jacuzziDrain
           ? {
-              open: () =>
-                store?.world.value.installedValves[installed.assetId] ??
-                installed.normal === 'open',
+              open: () => store?.world.value.pools.pool_03.drainDown ?? false,
               set: (open: boolean) =>
                 store?.dispatch({
-                  type: 'plant/valve',
-                  id: installed.assetId,
+                  type: 'pool/drain-down',
+                  pool: 'pool_03',
                   open,
                 }),
             }
-          : {
-              open: () =>
-                store ? partOpen(store.world.value.identifiedPlant, id) : true,
-              set: (open: boolean) =>
-                store?.dispatch({ type: 'plant/valve', id, open }),
-            };
+          : installed
+            ? {
+                open: () =>
+                  store?.world.value.installedValves[installed.assetId] ??
+                  installed.normal === 'open',
+                set: (open: boolean) =>
+                  store?.dispatch({
+                    type: 'plant/valve',
+                    id: installed.assetId,
+                    open,
+                  }),
+              }
+            : {
+                open: () =>
+                  store
+                    ? partOpen(store.world.value.identifiedPlant, id)
+                    : true,
+                set: (open: boolean) =>
+                  store?.dispatch({ type: 'plant/valve', id, open }),
+              };
       if (run.valve.operator === 'motor') {
         // A motorised ball valve, its actuator up (out of a riser, turned
         // aside), its lamp as its limit switches find it; worked from the
@@ -258,7 +289,11 @@ export function cabinetServices(
         group.add(mount);
         // Its red override, pressed, works it by hand, as the panel would.
         if (motor.overrideButton)
-          uses.set(motor.overrideButton, () => binding.set(!binding.open()));
+          uses.set(motor.overrideButton, () =>
+            override
+              ? workControl(store, override, 'press')
+              : binding.set(!binding.open()),
+          );
         // It travels to where the world commands over its stroke, its gear
         // motor heard running up as it sets off, steady as it moves, and
         // running down as it arrives (`gear-motor`).
@@ -556,9 +591,16 @@ export function cabinetServices(
       ),
     );
     // Switched here, it is switched in the world: the cabinet's pool stops.
+    // Its handle's action its descriptor's where the room is described.
+    const isolatorControl = descriptorFor(
+      JACUZZI_ISOLATOR_REF,
+      room,
+    )?.controls.find((c) => c.key === 'handle');
     const toggle = () => {
       isolator.toggle();
-      store?.dispatch({ type: 'plant/isolator', name, on: isolator.on });
+      if (isolatorControl)
+        workControl(store, isolatorControl, isolator.on ? 'on' : 'off');
+      else store?.dispatch({ type: 'plant/isolator', name, on: isolator.on });
     };
     isolator.handle.traverse((o) => uses.set(o, toggle));
   }

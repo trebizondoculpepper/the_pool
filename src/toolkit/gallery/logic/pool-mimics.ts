@@ -5,6 +5,10 @@ import type {
   Reading,
 } from '../../components/industrial-control/logic/mimic';
 import type { PlantReading } from './control-room-demo';
+import type { World, WorldAction } from '../../../game/world';
+import type { PoolId } from '../../../game/plant/pools';
+import { POOL_MOTORS } from '../../../game/plant/motor-starters';
+import type { MotorTag } from '../../../game/plant/motor-starters';
 
 /**
  * The pool plant's mimic boards, as the control room has them: the main
@@ -160,6 +164,54 @@ export const MAIN_POOL_MIMIC: MimicSpec = {
     { id: 'water', legend: 'WATER' },
   ],
 };
+
+/** A pool's filter pumps' starters, duty (p1) then standby (p2); none for a pool without them. */
+export function poolPumpTags(
+  pool: PoolId,
+): Partial<Record<'p1' | 'p2', MotorTag>> {
+  const [p1, p2] = POOL_MOTORS(pool);
+  return p1 && p2 ? { p1, p2 } : {};
+}
+
+/**
+ * What a press of a pool mimic's button asks of the world: "p1-start" is
+ * START to the duty pump's starter (`MAIN_POOL_MIMIC`'s buttons). Null for
+ * anything else, or a pool without starters.
+ */
+export function mainPoolMimicCommand(
+  id: string,
+  pool: PoolId = 'pool_02',
+): WorldAction | null {
+  const [pump, verb] = id.split('-');
+  const tag = poolPumpTags(pool)[pump as 'p1' | 'p2'];
+  if (!tag || (verb !== 'start' && verb !== 'stop')) return null;
+  return { type: 'motor/starter', tag, action: { act: verb } };
+}
+
+/**
+ * What the pumps do now, for the mimics: their starters' where there is a
+ * world, else as the reading has them. 0 running, 1 stopped, 2 tripped.
+ */
+export function poolPumpsShown(
+  world: World | undefined,
+  reading: PlantReading,
+  pool: PoolId = 'pool_02',
+): PumpsShown {
+  const tags = poolPumpTags(pool);
+  const at = (id: 'p1' | 'p2'): 0 | 1 | 2 => {
+    const tag = tags[id];
+    if (world && tag) {
+      const s = world.motors.starters[tag];
+      return s.tripped ? 2 : s.running ? 0 : 1;
+    }
+    return reading.alarms.includes(`${id}-trip` as never)
+      ? 2
+      : reading.pumps[id]
+        ? 0
+        : 1;
+  };
+  return { p1: at('p1'), p2: at('p2') };
+}
 
 /** What the filter pumps are doing, when their controls decide it. */
 export interface PumpsShown {
