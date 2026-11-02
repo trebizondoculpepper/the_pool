@@ -4,7 +4,10 @@
  * `toolkit/gallery/views/component-bench.ts`); `?bench=lookables` the look
  * audit (mission 127, `toolkit/gallery/views/look-audit-page.ts`), one room
  * with `&room=<id>`, else every room's summary; `?bench=room-audit&room=<id>`
- * the room audit (mission 129, `toolkit/gallery/views/room-audit-page.ts`).
+ * the room audit (mission 129, `toolkit/gallery/views/room-audit-page.ts`);
+ * `?bench=item-audit&kind=<kind>` the item audit, `?bench=magic-room&kind=…`
+ * its magic room and `?bench=magic-page&kind=…` its magic page (mission 130,
+ * `toolkit/gallery/views/item-audit-page.ts`, `magic-room.ts`).
  */
 const root = document.querySelector<HTMLElement>('#bench');
 const which = new URLSearchParams(location.search).get('bench');
@@ -23,9 +26,20 @@ if (!import.meta.env.DEV) {
   const { runRoomAuditPage } =
     await import('./toolkit/gallery/views/room-audit-page');
   await runRoomAuditPage(root);
+} else if (root && which === 'item-audit') {
+  const { runItemAuditPage } =
+    await import('./toolkit/gallery/views/item-audit-page');
+  await runItemAuditPage(root);
+} else if (root && which === 'magic-page') {
+  const { runMagicPage } =
+    await import('./toolkit/gallery/views/item-audit-page');
+  await runMagicPage(root);
+} else if (root && which === 'magic-room') {
+  const { runMagicRoom } = await import('./toolkit/gallery/views/magic-room');
+  runMagicRoom(root);
 } else if (root) {
   const p = document.createElement('p');
   p.innerHTML =
-    '<a href="?bench=components&slot=bench094">Run the component benchmark</a> · <a href="?bench=lookables">The look audit</a> · <a href="?bench=room-audit&room=plant_pool_03">A room audit</a>';
+    '<a href="?bench=components&slot=bench094">Run the component benchmark</a> · <a href="?bench=lookables">The look audit</a> · <a href="?bench=room-audit&room=plant_pool_03">A room audit</a> · <a href="?bench=item-audit&kind=weather-station">An item audit</a>';
   root.append(p);
 }

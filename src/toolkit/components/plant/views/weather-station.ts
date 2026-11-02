@@ -15,7 +15,11 @@ import {
   stationPress,
   stationScreen,
 } from '../logic/weather-station';
-import type { StationKey, StationScreen } from '../logic/weather-station';
+import type {
+  StationKey,
+  StationScreen,
+  StationUi,
+} from '../logic/weather-station';
 
 /**
  * The Calloway WeatherWatch Pro console (mission 123): a 2000s weather
@@ -269,6 +273,13 @@ export function createWeatherStation(
     parts,
     update,
     status,
+    /**
+     * Set what its own keys would (page, units, backlight), as the magic
+     * room's panel does (mission 130): a look, not a press.
+     */
+    show(next: Partial<StationUi>) {
+      ui = { ...ui, ...next };
+    },
     dispose() {
       parts.dispose();
     },

@@ -1,5 +1,6 @@
 import { ROOMS, DEV_ROOM_NAMES } from '../logic/dev-room-links';
 import { kindControls } from '../../../game/descriptors/registry';
+import { deprecationOf, itemAuditLink } from '../logic/item-audit';
 import {
   FINDING_WORDS,
   isBadlyNamed,
@@ -37,6 +38,8 @@ interface Saved {
   used: boolean;
   outside: boolean;
   bad: boolean;
+  /** Deprecated kinds still placed outside dev rooms: the things to replace (mission 130). */
+  deprecated: boolean;
 }
 const STORE = 'pool.catalogue';
 const load = (): Saved => {
@@ -46,6 +49,7 @@ const load = (): Saved => {
     used: false,
     outside: false,
     bad: false,
+    deprecated: false,
   };
   try {
     return { ...fallback, ...JSON.parse(localStorage.getItem(STORE) ?? '{}') };
@@ -90,8 +94,8 @@ const flags = (findings: readonly Finding[]) =>
 const roomName = (room: string) =>
   (DEV_ROOM_NAMES as Record<string, string | undefined>)[room] ?? room;
 
-/** The dev rooms' exhibits and the placed kinds' models: module imports, no scene. */
-async function loadExhibits(): Promise<{
+/** The dev rooms' exhibits and the placed kinds' models: module imports, no scene (the item audit's too). */
+export async function loadExhibits(): Promise<{
   exhibits: DevExhibit[];
   models: Record<string, KindModel>;
 }> {
@@ -153,7 +157,10 @@ export function createCataloguePanel(): HTMLElement {
   };
   const roomsTab = tab('rooms', 'Rooms');
   const kindsTab = tab('kinds', 'Game objects');
-  const check = (key: 'used' | 'outside' | 'bad', label: string) => {
+  const check = (
+    key: 'used' | 'outside' | 'bad' | 'deprecated',
+    label: string,
+  ) => {
     const box = el('input', { type: 'checkbox', checked: state[key] });
     box.addEventListener('change', () => {
       state[key] = box.checked;
@@ -168,6 +175,7 @@ export function createCataloguePanel(): HTMLElement {
     check('used', 'used anywhere'),
     check('outside', 'used outside dev rooms'),
     check('bad', 'badly named'),
+    check('deprecated', 'deprecated, still outside dev rooms'),
   );
   const list = el('div', { className: 'cat-list' });
   root.append(
@@ -367,17 +375,25 @@ export function createCataloguePanel(): HTMLElement {
             .join(', ')}`,
         ),
       );
-    // The item audit page (mission 130): its parts and states, every
-    // placement and a room of its own; not built yet.
+    // The item audit page (mission 130): what it is, its parts and states,
+    // every placement, and its magic room or magic page.
     const itemAudit = el(
       'a',
       {
-        className: 'cat-coming',
-        title: 'The item audit page, coming in mission 130',
+        href: itemAuditLink(k.key),
+        title: 'The item audit page (mission 130)',
       },
-      'Item audit (coming in 130)',
+      'Item audit',
     );
-    itemAudit.setAttribute('aria-disabled', 'true');
+    const deprecated = deprecationOf(k.key);
+    if (deprecated)
+      box.append(
+        el(
+          'p',
+          { className: 'cat-note' },
+          `Deprecated: ${deprecated.reason}; replace with ${deprecated.replacement}.`,
+        ),
+      );
     box.append(el('p', { className: 'cat-rooms' }, itemAudit));
     if (k.usage.rooms.length) {
       const rooms = el('p', { className: 'cat-rooms' }, 'In: ');
@@ -421,6 +437,8 @@ export function createCataloguePanel(): HTMLElement {
       if (state.used && !k.usage.count) continue;
       if (state.outside && !k.usage.outsideDev) continue;
       if (state.bad && !isBadlyNamed(k.worst)) continue;
+      if (state.deprecated && !(deprecationOf(k.key) && k.usage.outsideDev))
+        continue;
       const kindHit = matchesSearch(words, [
         k.key,
         k.word,

@@ -1,0 +1,419 @@
+import {
+  AmbientLight,
+  DirectionalLight,
+  Group,
+  HemisphereLight,
+  PerspectiveCamera,
+  Raycaster,
+  Scene,
+  Vector2,
+} from 'three';
+import type { Object3D } from 'three';
+import { METRE } from '../../components/core/logic/units';
+import {
+  createPanelKit,
+  disposeKit,
+} from '../../components/core/views/eighties-controls';
+import { SANS, tools } from '../../components/core/views/fitting-tools';
+import { panelMakerMark } from '../../components/core/views/panel-maker-mark';
+import { markComponent } from '../../components/core/views/component-identity';
+import { createPartSet, selector } from '../../components/core/parts/parts';
+import { partAudio } from '../../components/core/audio/part-audio';
+import {
+  createPs1Material,
+  ps1Uniforms,
+} from '../../components/core/parts/ps1-material';
+import {
+  createRenderer,
+  layoutSize,
+  useEnvironment,
+} from '../../components/core/parts/render-style';
+import { createFirstPerson } from '../../controls/input/first-person';
+import { useOnHit } from '../../controls/input/touch-point';
+import type { Footprint } from '../../controls/logic/walk-collision';
+import { devWalls } from '../logic/dev-room-links';
+import { choiceAt, itemAuditLink, panelChoices } from '../logic/item-audit';
+import { magicRoomLayout } from '../logic/magic-room-layout';
+import { adapterFor } from './magic-adapters';
+import type { MagicChoice } from './magic-adapters';
+
+/**
+ * The magic room (mission 130, `bench.html?bench=magic-room&kind=<kind>`):
+ * a plain grey room generated round one item (`logic/magic-room-layout.ts`),
+ * built by the game's own view builder through its adapter, with a
+ * signpost carrying a small Penfold panel whose LOOK and PAGE selectors
+ * step it through its curated looks and display pages. Not a room of the
+ * building: `main.ts` never opens it, so it is never in the saved
+ * position, and nothing here opens a world store, so it never touches the
+ * save. All input goes through the one control scheme (`createFirstPerson`).
+ */
+
+const GREY = { wall: '#9a9d9f', floor: '#7d8082', ceiling: '#b4b6b7' };
+
+export function runMagicRoom(root: HTMLElement) {
+  const kind = new URLSearchParams(location.search).get('kind') ?? '';
+  const adapter = adapterFor(kind);
+  document.title = `Magic room · ${kind}`;
+  document.body.style.margin = '0';
+  root.replaceChildren();
+  Object.assign(root.style, {
+    position: 'fixed',
+    inset: '0',
+    overflow: 'hidden',
+  });
+  const bar = document.createElement('div');
+  Object.assign(bar.style, {
+    position: 'absolute',
+    top: '0',
+    left: '0',
+    right: '0',
+    zIndex: '5',
+    padding: '6px 12px',
+    background: 'rgba(20,22,25,0.8)',
+    font: '13px sans-serif',
+    color: '#e9e1c8',
+  });
+  const link = (href: string, text: string) => {
+    const a = document.createElement('a');
+    a.href = href;
+    a.textContent = text;
+    a.style.color = '#9fc6ff';
+    return a;
+  };
+  const shown = document.createElement('span');
+  bar.append(
+    link(itemAuditLink(kind).replace(/^bench\.html/, ''), 'Item audit'),
+    ' · ',
+    link('./?dev', 'Catalogue'),
+    ' · ',
+    shown,
+  );
+  root.append(bar);
+  if (!adapter) {
+    shown.textContent = `No magic room for '${kind}': it has no 3D form the magic room can build. See its item audit.`;
+    return;
+  }
+
+  const m = METRE;
+  const looks = panelChoices(adapter.looks);
+  const pages = panelChoices(adapter.pages);
+  const panel = looks.length > 0 || pages.length > 0;
+  const layout = magicRoomLayout(adapter.size, { panel });
+  const { halfX, halfZ, height } = layout;
+
+  const canvas = document.createElement('canvas');
+  Object.assign(canvas.style, {
+    display: 'block',
+    width: '100%',
+    height: '100%',
+  });
+  root.append(canvas);
+  const scene = new Scene();
+  const renderer = createRenderer(canvas);
+  const freeEnvironment = useEnvironment(renderer, scene, 0.4);
+  renderer.setClearColor('#2a2c2e');
+  const camera = new PerspectiveCamera(60, 1, 0.05, 80 * m);
+  // Even light, no fittings.
+  scene.add(
+    new AmbientLight('#f4f4f2', 0.9),
+    new HemisphereLight('#f6f6f2', '#6d6f70', 0.7),
+  );
+  const key = new DirectionalLight('#ffffff', 0.8);
+  key.position.set(-3 * m, 8 * m, 6 * m);
+  scene.add(key);
+
+  const kit = createPanelKit();
+  const t = tools(kit);
+  const room = new Group();
+  room.scale.setScalar(m);
+  scene.add(room);
+  const paint = (c: string) => {
+    const p = createPs1Material({ color: c, roughness: 0.9 });
+    kit.materials.push(p);
+    return p;
+  };
+  const wall = paint(GREY.wall);
+  t.box(room, paint(GREY.floor), 2 * halfX, 0.1, 2 * halfZ, 0, -0.05, 0);
+  t.box(
+    room,
+    paint(GREY.ceiling),
+    2 * halfX,
+    0.1,
+    2 * halfZ,
+    0,
+    height + 0.05,
+    0,
+  );
+  const bounds: Footprint = {
+    minX: -halfX * m,
+    maxX: halfX * m,
+    minZ: -halfZ * m,
+    maxZ: halfZ * m,
+  };
+  const walls = devWalls(bounds, m, height * m);
+  for (const w of walls)
+    t.box(
+      room,
+      wall,
+      (w.maxX - w.minX) / m,
+      (w.top - w.bottom) / m,
+      (w.maxZ - w.minZ) / m,
+      (w.minX + w.maxX) / 2 / m,
+      (w.bottom + w.top) / 2 / m,
+      (w.minZ + w.maxZ) / 2 / m,
+    );
+
+  // Its title card on the north wall, behind the item.
+  const card = t.printed(
+    3.6,
+    1.2,
+    (c, w, h) => {
+      c.fillStyle = '#3a3d40';
+      c.fillRect(0, 0, w, h);
+      c.strokeStyle = '#e8e8e2';
+      c.lineWidth = h * 0.02;
+      c.strokeRect(h * 0.05, h * 0.05, w - h * 0.1, h - h * 0.1);
+      c.fillStyle = '#f4f4ef';
+      c.textAlign = 'center';
+      c.textBaseline = 'middle';
+      c.font = `bold ${h * 0.17}px ${SANS}`;
+      c.fillText(adapter.title.toUpperCase(), w / 2, h * 0.4, w * 0.9);
+      c.font = `${h * 0.075}px ${SANS}`;
+      c.fillStyle = '#d6d8da';
+      c.fillText(
+        `Magic room: ${kind}, a development room for this item alone (mission 130)`,
+        w / 2,
+        h * 0.68,
+        w * 0.9,
+      );
+    },
+    1024,
+  );
+  const cardScale = Math.min(1, (2 * halfX - 0.6) / 3.6);
+  card.mesh.scale.setScalar(cardScale);
+  card.mesh.position.set(
+    0,
+    Math.min(
+      height - 0.4 - 0.6 * cardScale,
+      Math.max(2.4, adapter.size.h + 0.9),
+    ),
+    -halfZ + 0.17,
+  );
+  room.add(card.mesh);
+
+  // The item, by its own builder, free in the middle, facing the way in.
+  const item = adapter.build(kit);
+  const holder = new Group();
+  holder.name = `Magic room item: ${adapter.title}`;
+  holder.position.set(layout.item.x, layout.item.y, layout.item.z);
+  holder.add(item.object);
+  markComponent(holder, { name: adapter.title });
+  room.add(holder);
+  if (layout.stub) {
+    const s = layout.stub;
+    t.box(
+      room,
+      wall,
+      s.maxX - s.minX,
+      s.height,
+      s.maxZ - s.minZ,
+      (s.minX + s.maxX) / 2,
+      s.height / 2,
+      (s.minZ + s.maxZ) / 2,
+    );
+  }
+
+  // The signpost and its Penfold panel: LOOK and PAGE selectors.
+  const controls = createPartSet();
+  let look = 0;
+  let page = 0;
+  const say = () => {
+    const l = choiceAt(looks, look);
+    const p = choiceAt(pages, page);
+    shown.textContent = `${adapter.title} · ${[l?.words, p?.words].filter(Boolean).join(' · ') || 'no looks curated yet: the panel is left off'}`;
+  };
+  const apply = () => {
+    const l = choiceAt(looks, look);
+    const p = choiceAt(pages, page);
+    if (l) item.setLook?.(l.id);
+    if (p) item.setPage?.(p.id);
+    say();
+  };
+  let panelGroup: Group | null = null;
+  if (layout.signpost) {
+    const post = new Group();
+    post.position.set(layout.signpost.x, 0, layout.signpost.z);
+    t.box(post, paint('#4b4f53'), 0.06, 1.25, 0.06, 0, 0.625, 0);
+    t.box(post, paint('#3b3e41'), 0.3, 0.03, 0.2, 0, 0.015, 0);
+    const W = 0.36;
+    const H = 0.28;
+    const face = new Group();
+    face.position.set(0, 1.4, 0.04);
+    // Tipped back a little, to read from standing.
+    face.rotation.x = -0.25;
+    t.box(face, paint('#c9c4b5'), W, H, 0.03, 0, 0, -0.015);
+    panelMakerMark(kit, face, { width: W, height: H, z: 0.001 });
+    t.label(face, 'MAGIC PANEL', -0.06, H / 2 - 0.03, 0.002, 0.016, '#1b1b1b');
+    const knob = (
+      list: readonly MagicChoice[],
+      legend: string,
+      x: number,
+      get: () => number,
+      set: (k: number) => void,
+    ) => {
+      if (!list.length) return;
+      const part = controls.add(
+        selector(kit, {
+          positions: list.length as 2 | 3 | 4,
+          legend,
+          name: `Magic panel ${legend} selector`,
+          bound: {
+            get value() {
+              return get();
+            },
+            set: (k: number) => {
+              set(k);
+              apply();
+            },
+          },
+        }),
+      );
+      part.object.position.set(x, 0.0, 0.004);
+      face.add(part.object);
+      list.forEach((c, i) =>
+        t.label(
+          face,
+          `${i + 1} ${c.label}`,
+          x,
+          -0.06 - i * 0.022,
+          0.002,
+          0.012,
+          '#1b1b1b',
+        ),
+      );
+    };
+    knob(
+      looks,
+      'LOOK',
+      -0.09,
+      () => look,
+      (k) => (look = k),
+    );
+    knob(
+      pages,
+      'PAGE',
+      0.09,
+      () => page,
+      (k) => (page = k),
+    );
+    post.add(face);
+    room.add(post);
+    panelGroup = post;
+  }
+  apply();
+
+  const raycaster = new Raycaster();
+  const pointer = new Vector2();
+  const useAt = (x: number, y: number) => {
+    raycaster.setFromCamera(pointer.set(x, y), camera);
+    const targets: Object3D[] = [
+      item.object,
+      ...(panelGroup ? [panelGroup] : []),
+    ];
+    const hit = raycaster.intersectObjects(targets, true)[0];
+    if (!hit || hit.distance > 4 * m) return null;
+    for (let o: Object3D | null = hit.object; o; o = o.parent)
+      for (const set of [controls, item.parts]) {
+        const work = set?.uses.get(o);
+        if (work) return useOnHit(hit, o, work, camera);
+      }
+    return null;
+  };
+  const solids: Footprint[] = [
+    ...walls,
+    ...layout.solids.map((s) => ({
+      minX: s.minX * m,
+      maxX: s.maxX * m,
+      minZ: s.minZ * m,
+      maxZ: s.maxZ * m,
+    })),
+  ];
+  const walk = createFirstPerson({
+    scene,
+    canvas,
+    camera,
+    metre: m,
+    floorY: 0,
+    start: {
+      x: layout.start.x * m,
+      z: layout.start.z * m,
+      yaw: layout.start.yaw,
+    },
+    flightBounds: () => ({
+      minX: (-halfX + 0.05) * m,
+      maxX: (halfX - 0.05) * m,
+      minZ: (-halfZ + 0.05) * m,
+      maxZ: (halfZ - 0.05) * m,
+      minY: 0.05 * m,
+      maxY: (height - 0.05) * m,
+    }),
+    solids: () => solids,
+    use: (x, y) => useAt(x, y)?.(),
+    aimed: () => Boolean(useAt(0, 0)),
+  });
+  walk.place(layout.start.x * m, layout.start.z * m, layout.start.yaw, 0);
+
+  // For pictures and tests: stand anywhere (metres, degrees), set a look or page.
+  (window as unknown as { magicRoom: unknown }).magicRoom = {
+    kind,
+    layout,
+    looks: looks.map((l) => l.id),
+    pages: pages.map((p) => p.id),
+    place(x: number, z: number, yaw = 0, pitch = 0) {
+      walk.place(x * m, z * m, (yaw * Math.PI) / 180, (pitch * Math.PI) / 180);
+    },
+    look(i: number) {
+      look = i;
+      apply();
+    },
+    page(i: number) {
+      page = i;
+      apply();
+    },
+    use: (x = 0, y = 0) => useAt(x, y)?.(),
+  };
+
+  const resize = () => {
+    const { width, height: h } = layoutSize(canvas);
+    if (!width || !h) return;
+    renderer.setSize(Math.round(width), Math.round(h), false);
+    ps1Uniforms.resolution.value.set(width, h);
+    camera.aspect = width / h;
+    camera.updateProjectionMatrix();
+  };
+  const observer = new ResizeObserver(resize);
+  observer.observe(canvas);
+  resize();
+  let last = 0;
+  renderer.setAnimationLoop((time) => {
+    const delta = last ? Math.min(0.1, (time - last) / 1000) : 0;
+    last = time;
+    ps1Uniforms.time.value = time / 1000;
+    walk.update(delta);
+    partAudio.listen(camera, m, scene);
+    controls.update(delta);
+    item.update?.(delta);
+    renderer.render(scene, camera);
+  });
+  addEventListener('pagehide', () => {
+    renderer.setAnimationLoop(null);
+    observer.disconnect();
+    walk.dispose();
+    controls.dispose();
+    item.parts?.dispose();
+    item.dispose?.();
+    disposeKit(kit, scene as unknown as Group);
+    freeEnvironment();
+    renderer.dispose();
+  });
+}
