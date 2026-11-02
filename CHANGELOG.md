@@ -6,7 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
-- Research and a mission brief for letting browser-side chatbots query the live engineering plant's pumps, valves, connections and alarms across rooms, and explain faults from model evidence, beginning with Olympic backwash interlocks (`doc/research/browser-chatbot-context.md`, mission 134).
+- Research and a mission brief for letting browser-side chatbots query the live engineering plant's pumps, valves, connections and alarms across rooms, explain faults from model evidence, and narrate the player's observable surroundings in an adventure style (`doc/research/browser-chatbot-context.md`, mission 134).
 - A pre-commit hook that formats every staged file before it is committed (`.githooks/pre-commit`; `npm install` enables it): only the staged hunks are committed, formatted.
 - `doc/agent-tooling.md`, the agents' (and developers') tooling guide: how to see a thing (look links), find what a room holds or where a kind is used (the `?dev` catalogue and its pure modules), learn what a control does (control descriptors), drive the world headlessly, reproduce a player's bug from a state file, and the audits to come; AGENTS.md now points agents at it before they place a camera or hunt for scene objects.
 - Control descriptors (mission 131): one scene-free description of each object's controls, the world action each sends, its visible readings, view states and presets, for the Jacuzzi plant room and the control room's mimic boards. The cabinet, its valves, valve panel and isolator, and the control room's working mimics now take their actions from them, and the dev catalogue lists a kind's controls.
