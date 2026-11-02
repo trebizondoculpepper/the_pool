@@ -16,7 +16,7 @@ Reuse 127 entirely for the scene: the page builds the room through the `?audit=l
 
 ## Outcomes
 
-The page opens in about 3–4 s (module load, scene build and scan included). The Jacuzzi room lists its cabinet, filter, tank, day tanks, 18 valves and isolator with their connections and controls; the control room's CR-MP9 shows itself a copy of the Jacuzzi plant room's mimic. The largest flag count is 127's unmarked controls: 131's control parts are not yet marked under their keys in the scene. Doors read unclassified rather than architectural.
+The screen works: viewed for plant_pool_03 and control_room only, to prove it (the owner: no audit runs across rooms yet; no findings recorded).
 
 ## Next Steps
 

@@ -32,16 +32,13 @@ A blank cell is the sign that something is not yet described (the owner): no col
 
 ## Timing
 
-The page states it: the time from asking to drawing, which includes the frame's module load, the scene build and the scan (plant_pool_03: about 3–4 s, of which scene build 0.6–0.8 s and scan 1.6–2.1 s; control_room about 4.3 s). Nothing runs while idle: one build, one scan, the frame removed.
+The page states it: the time from asking to drawing, which includes the frame's module load, the scene build and the scan (a few seconds for a plant room). Nothing runs while idle: one build, one scan, the frame removed.
 
 ## Checked (2026-11-02)
 
-- `plant_pool_03`: 59 rows. PL3-CAB1, the filter PL3-F1, the balance tank PL3-BT1, both day tanks, all 18 valves and the isolator with nodes and connections; the cabinet controlled by its own ten controls and the isolator's handle; each valve by its handle (or override) and the valve panel's OPEN/SHUT. Flags: 2 unnamed (`node:mimic`, the Jacuzzi mimic, and `node:plant-room-lights`, both bound but unnamed), 6 unbound (the two DoseCell heads, Equipment doors, Plant room door, the Synclex amplifier and music source), 1 orphan (plant-room lights), 0 duplicate, 21 no maker, 44 missing controls (127's unmarked controls: the descriptors' parts are not yet marked under their keys in the scene).
-- `control_room`: 50 rows. CR-MP9 shows "copy of plant_pool_03's mimic"; CR-MP3, 4, 5, 7, 8 their air plant, wet hall and boiler house boards; CR-MP1 works the Olympic's pumps, CR-MP7 BH-CP3. Flags: 3 unnamed, 6 unbound, 1 orphan (Control bus), 19 no maker, 53 missing controls.
+Only the screen was exercised (the owner: build the machinery; running the audit across rooms is a later task, once 129, 130, 133, 135 and 136 are in place). The page was opened for `plant_pool_03` (its cabinet, filter, balance tank, day tanks, 18 valves and isolator listed with nodes, connections and controls) and `control_room` (CR-MP9 shown as a copy of the Jacuzzi plant room's mimic). No findings are recorded here.
 
 ## Follow-ups (in `TODO.md`)
 
-- Mark 131's control parts under their keys in the scene so the missing-control flag clears.
-- Doors and the "Equipment doors" read unclassified, not architectural: classify them (127's `object-class.ts`).
-- Control-room copies with no board found (CR-MP1, CR-MP2, CR-MP6, CR-MP10): name their boards in `NAMED_COPIES` or the schematics.
-- Name the Jacuzzi mimic and the plant-room lights in the scene.
+- Name more control-room copies' boards in `NAMED_COPIES` where kinds differ.
+- Run the audit over the rooms when the owner asks, after the rest of the audit machinery lands.
