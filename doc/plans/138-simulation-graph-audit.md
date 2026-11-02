@@ -61,6 +61,17 @@ Ports are the schematic's: each `PlumbEdge` names a `sourcePort` and `targetPort
 
 Rooms with no schematic (the Olympic plant room's chemical side aside, any room `roomNetwork` returns nothing for) are listed as "no model network" in the Simulation catalogue, not invented.
 
+## 2a. What gets a page: tiers and groups (the owner, 2026-11-02)
+
+Not everything in the simulation matters equally. Each kind declares its tier in the shared classification (`object-class.ts`, beside `architectural` and decorative), once per kind, never per object:
+
+- **Active nodes** hold or change state: machines, valves, pools and tanks, sensors, controllers, alarms and annunciators, feeders and isolators. Only they get node pages, and "what connects to what" is asked between them.
+- **Passive connectors** simulate nothing and only carry a signal from one active node to the next: pipes, cables, conduits, plain busbars, and passive fittings (bends, tees, reducers). They are justified by the model (every pipe is one of a schematic's connections) but not simulated. A run of them collapses into one edge between two active nodes, carrying its medium and the list of pieces it passes through (links to them); a "show connectors" switch expands an edge back into its pieces. They get no page and none of the active-node flags; their one check is the one that justifies them: every connector run joins at least two active nodes, or an active node and a room boundary, and a run that connects nothing is flagged as unjustified dressing.
+- **Architectural objects** (doors, signs, electrical and fire fittings) are outside the graph: they get an architectural object page, linked from the catalogue, saying they are not simulated (the owner chose this for doors, 2026-11-02). The control room doors are the exception, as leaves of the CONTROL ROOM MODE knob's world state.
+- **Groups**, of two kinds, declared by the kind, not guessed:
+  - **Simulated as one, drawn as many** (a ganged CO₂ cylinder bank): one node; its page says "simulated as one, drawn as N objects" and lists them with look links; each member object's audit row says it is part of the group and not simulated individually, and is never flagged unbound. Where the model knows the member count, a drawn count that differs is flagged.
+  - **A group of individually simulated members** (the boiler cascade: six boilers, each with its own state and controller, under a sequencer): blocks within blocks. The group has a page of its own (the cascade and its sequencer, its members listed), each member has its own page linking up to the group, and edges can be followed at either level.
+
 ## 3. How the domains join (found, not invented)
 
 Only joins the code already states are edges. Each is a pure function returning `GraphEdge`s with `via` naming its evidence (a file and symbol), so the page can show why the edge exists.
@@ -181,5 +192,5 @@ Tests: `graph.test.ts` (ids round-trip; Jacuzzi neighbours equal 129's), `joins.
 
 A second opinion (Codex, 2026-11-02) checked this plan against the code; its factual corrections are folded in above. These are the owner's to decide:
 
-1. **Should architectural doors have simulation-node pages?** The brief calls a door a world-state leaf, while a plant door holds no world state at all (it is scene-held; 127 classifies doors as architectural). Options: (A) show an architectural object page outside the simulation graph, linked from the catalogue, saying it is not simulated; (B) include every door as a graph leaf, marked scene-held or unmodelled. Recommendation (Codex): A. Doors whose behaviour the world does hold (the control room doors, through `controlRoomMode`) would be leaves either way.
+1. ~~Should architectural doors have simulation-node pages?~~ Decided (the owner, 2026-11-02): no; an architectural object page outside the graph (see 2a).
 2. **Simulation as its own `?dev` tab or only through 137's registry?** The owner asked for a Simulation category; 137 asks for one page registry feeding both the bench index and `?dev`, and a separate tab risks a parallel navigation. Options: (A) a fourth tab now, moved into 137's tree when 137 lands; (B) wait for 137's registry and add Simulation there only. Recommendation: A, registering through 137's registry as soon as it exists.
