@@ -18,7 +18,7 @@ Every object in the room: the named ones first, by name or tag, then the unnamed
 
 - **Name or tag**, as the player and the inspection overlay see it, with its look link (125) and, if registered, its asset id.
 - **Type:** its component kind (valve, pump, mimic board, switch-fuse…), and its maker's brand where it has one.
-- **Model node:** where it is attached in the world simulation (its node, fitting or link path in the room's enhanced network, or other world binding), or *unbound*.
+- **Model node:** where it is attached in the world simulation (its node, fitting or link path in the room's enhanced network, or other world binding), or _unbound_.
 - **Connects to:** its neighbours through the model's ports: pipes, cables, conduits and busbars laid by the plumber. Each neighbour links to its own row, or to another room's audit when the connection leaves the room.
 - **Controlled by:** what drives it: the buttons, knobs, switches and mimic copies that act on it, and in which rooms (a local panel and its control-room copy, for example), with links to their rows. Where it drives something itself (a panel's buttons), the reverse: what it controls.
 - **Shows:** what its own displays, lamps and position show now, by the overlay's no-peeking rule.
