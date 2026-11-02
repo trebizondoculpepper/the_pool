@@ -72,6 +72,18 @@ Not everything in the simulation matters equally. Each kind declares its tier in
   - **Simulated as one, drawn as many** (a ganged CO₂ cylinder bank): one node; its page says "simulated as one, drawn as N objects" and lists them with look links; each member object's audit row says it is part of the group and not simulated individually, and is never flagged unbound. Where the model knows the member count, a drawn count that differs is flagged.
   - **A group of individually simulated members** (the boiler cascade: six boilers, each with its own state and controller, under a sequencer): blocks within blocks. The group has a page of its own (the cascade and its sequencer, its members listed), each member has its own page linking up to the group, and edges can be followed at either level.
 
+## 2b. Location (the owner, 2026-11-02)
+
+A node is abstract and has no place of its own, but location is one of the most useful ways to tag and filter the graph ("every node that connects to objects in the boiler house"). So every node carries locations derived from the data, never written by hand, in three kinds:
+
+- **Home room:** the room whose schematic or network defines it (a Jacuzzi valve's is `plant_pool_03`; the switch room's feeders' is the switch room); none for world-wide state (the weather, the LTHW ring as a whole, which spans rooms, lists the rooms it passes through instead).
+- **Shown in:** every room holding an object bound to it or a display, lamp or mimic showing it (a Jacuzzi alarm is shown in `plant_pool_03`, the old control room and the bridge).
+- **Touches:** the rooms of its direct neighbours' bound objects (one step only; the exhaustive version belongs to the later impact search).
+
+For a portable object, its default location (where the game places it at the start) and, where the world holds it, its current one are given separately.
+
+The `?dev` Simulation list and the pages filter by room on any of the three (home, shown in, touches), and by domain, tier and flag, so "every active node that touches the boiler house" is one filter. A room's audit (129) gains a link to that filtered list for its room.
+
 ## 3. How the domains join (found, not invented)
 
 Only joins the code already states are edges. Each is a pure function returning `GraphEdge`s with `via` naming its evidence (a file and symbol), so the page can show why the edge exists.
