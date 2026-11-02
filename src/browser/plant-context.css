@@ -1,0 +1,54 @@
+.plant-context-report {
+  display: none;
+}
+
+.plant-context-report:target {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: auto;
+  padding: 1.5rem;
+  color: #f5e9d1;
+  background: #16130f;
+  font:
+    1rem/1.5 ui-monospace,
+    SFMono-Regular,
+    Consolas,
+    monospace;
+}
+
+.plant-context-report header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.plant-context-report a,
+.plant-context-report button {
+  color: #f5e9d1;
+}
+
+.plant-context-report input {
+  display: block;
+  width: min(100%, 32rem);
+  margin: 1rem 0;
+  padding: 0.5rem;
+  font: inherit;
+}
+
+.plant-context-report button {
+  margin: 0 0.5rem 1rem 0;
+  padding: 0.4rem 0.7rem;
+  border: 1px solid currentColor;
+  background: transparent;
+  font: inherit;
+  cursor: pointer;
+}
+
+.plant-context-report pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: inherit;
+}

@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A first browser-chatbot plant context: read-only equipment, pump, valve, location-annunciator and event queries from the live world, a semantic page summary and a searchable/copyable `#plant-context-report` with an off switch (mission 134). Missing state readers are reported as unavailable; browser-assistant compatibility and broader model coverage remain to test.
 - Research and a mission brief for letting browser-side chatbots query the live engineering plant's pumps, valves, connections and alarms across rooms; curated fault explanations and adventure-style narration are later iterations (`doc/research/browser-chatbot-context.md`, mission 134).
 - A pre-commit hook that formats every staged file before it is committed (`.githooks/pre-commit`; `npm install` enables it): only the staged hunks are committed, formatted.
 - `doc/agent-tooling.md`, the agents' (and developers') tooling guide: how to see a thing (look links), find what a room holds or where a kind is used (the `?dev` catalogue and its pure modules), learn what a control does (control descriptors), drive the world headlessly, reproduce a player's bug from a state file, and the audits to come; AGENTS.md now points agents at it before they place a camera or hunt for scene objects.

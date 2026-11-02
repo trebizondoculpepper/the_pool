@@ -1,5 +1,7 @@
 # 134 — Let browser chatbots understand the running plant
 
+**Implementation begun, 2026-11-02.** The first slice is in `src/game/diagnostics/plant-context.ts` and `src/browser/plant-context.ts`: a read-only equipment/valve/pump and location-annunciator projection, bounded page queries, a semantic DOM summary, and a searchable report at `#plant-context-report` with a local off switch. The report marks equipment without a live reader as unavailable. It has not yet been tested inside the Claude, Gemini or ChatGPT browser assistants, and the remaining model readers, alarm families and connectivity coverage are open.
+
 The owner, 2026-11-02: while playing in Chrome with a browser-side Claude, Gemini or ChatGPT assistant, ask why an alarm is on, why a backwash is inhibited or why a machine is not working, and get an answer grounded in the current state of the **whole engineering plant**. The first mission is to let the assistant read the basic world model: which pumps are running or tripped, which valves are open or closed, how components connect, and what alarms and events say, including equipment outside the room on screen. The diagnostic metadata should not cover the 3D scene or become another in-game control screen. [Research and proposal](../research/browser-chatbot-context.md).
 
 ## First delivery

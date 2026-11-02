@@ -109,6 +109,12 @@ These are being built now; the sections will be filled as each lands on `main`.
 - **130, item audit, magic room and magic page** (`doc/prompts/130-item-audit.md`): placeholder.
 - **133, CAD views on the item audit page** (`doc/prompts/133-item-cad-views.md`): placeholder.
 
+## Read the live plant model in a browser
+
+Mission 134's first slice exposes a read-only browser surface beside the game. `window.__poolDiagnostics` has versioned `listSystems()`, `listEquipment({ room?, kind?, offset?, limit? })`, `getEquipment(ref)`, `getConnections(ref)`, `listAlarms({ activeOnly? })`, `getAlarm(ref)`, `getRecentEvents({ subject?, limit? })` and `getCoverage()` methods. Equipment refs and asset IDs are accepted without case; results are bounded plain data, never the mutable `World` or a dispatch method. `getCoverage()` reports how many catalogued objects have a live state reader. A missing reader is `stateAvailable: false`, never inferred to mean OFF or SHUT. The inventory, valve routes, pump state readers and annunciator windows are pure functions in `src/game/diagnostics/plant-context.ts`.
+
+The page also carries a short semantic summary outside the canvas for browser assistants that read DOM or accessibility text. Open `#plant-context-report` on a game URL for a readable report with a search box, recent events, a copy button and an AI-context off switch. The switch is local to this browser. The report is a fallback for assistants that cannot execute the page's JavaScript; browser-extension interoperability still needs testing with Claude, Gemini and ChatGPT in Chrome. This first slice does not provide a curated fault explanation or adventure narration (both later mission 134 iterations).
+
 ## Benchmarks, dev servers and pictures
 
 - **Component benchmark**: `bench.html?bench=components&only=<name>` (add `&slot=bench094` to keep its world apart; `secs` sets each phase's length). New displays must stay within its budget, or be listed in `KNOWN_OVER_BUDGET` (`src/toolkit/gallery/logic/component-bench.ts`) and flagged in `TODO.md`.
