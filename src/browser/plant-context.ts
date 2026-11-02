@@ -1,5 +1,11 @@
 import type { WorldStore } from '../toolkit/save/world-store';
 import {
+  PlantProcessHistory,
+  plantProcessFacts,
+  plantProcessLines,
+} from '../game/diagnostics/plant-process';
+import type { PoolId } from '../game/plant/pools';
+import {
   getPlantAlarm,
   getPlantConnections,
   getPlantEquipment,
@@ -20,6 +26,18 @@ import './plant-context.css';
 const SETTING_KEY = 'pool-plant:ai-context';
 const REPORT_HASH = '#plant-context-report';
 let enabledOverride: boolean | null = null;
+const processHistories = new WeakMap<WorldStore, PlantProcessHistory>();
+
+function processSnapshot(store: WorldStore) {
+  let history = processHistories.get(store);
+  if (!history) {
+    history = new PlantProcessHistory();
+    processHistories.set(store, history);
+  }
+  const fact = plantProcessFacts(store.world.value);
+  history.observe(fact);
+  return { ...fact, trends: history.trends(fact) };
+}
 
 type PlantContextApi = ReturnType<typeof createPlantContextApi>;
 
@@ -85,6 +103,17 @@ export function createPlantContextApi(store: WorldStore) {
       on((snapshot) => listPlantEvents(snapshot, store.events.value, query)),
     getCoverage: () => on((snapshot) => plantContextCoverage(snapshot)),
     getWashState: () => on((snapshot) => plantWashFacts(snapshot)),
+    getProcessState: (pool?: PoolId) =>
+      on(() => {
+        const state = processSnapshot(store);
+        return pool
+          ? {
+              ...state,
+              pools: state.pools.filter((item) => item.pool === pool),
+              trends: state.trends.filter((item) => item.pool === pool),
+            }
+          : state;
+      }),
     getViewContext: () =>
       on((snapshot) => ({
         schema: 1 as const,
@@ -115,7 +144,7 @@ function summary(world: World): string {
     `${tripped.length} known starter pumps tripped: ${tripped.join(', ') || 'none'}.`,
     `${abnormalValves.length} installed valves away from normal position.`,
     `${alarms.length} active alarm conditions: ${alarms.map((alarm) => `${alarm.ref} ${alarm.label}`).join('; ') || 'none'}.`,
-    'Read-only live queries are available at window.__poolDiagnostics: listSystems, listEquipment, getEquipment, getConnections, listAlarms, getAlarm, getRecentEvents, getCoverage, getWashState, getViewContext. Missing readings are marked unavailable.',
+    'Read-only live queries are available at window.__poolDiagnostics: listSystems, listEquipment, getEquipment, getConnections, listAlarms, getAlarm, getRecentEvents, getCoverage, getWashState, getProcessState, getViewContext. Missing readings are marked unavailable.',
   ].join(' ');
 }
 
@@ -130,6 +159,7 @@ const element = <K extends keyof HTMLElementTagNameMap>(
 
 function reportText(store: WorldStore, search: string, limit = 100): string {
   const world = store.world.value;
+  const process = processSnapshot(store);
   const wash = plantWashFacts(world);
   const equipment = plantEquipmentFacts(world);
   const alarms = plantAlarmFacts(world).filter(
@@ -145,6 +175,7 @@ function reportText(store: WorldStore, search: string, limit = 100): string {
   const lines = [
     `World time: ${Math.floor(world.time)} seconds`,
     `Current room from page URL: ${new URLSearchParams(location.search).get('room') ?? 'unavailable'}; inspection ref: ${new URLSearchParams(location.search).get('look') ?? 'none'}.`,
+    ...plantProcessLines(process, process.trends),
     `Wash-O-Tron: scheduler ${wash.schedulerEnabled ? 'AUTO' : 'MANUAL'}, HOLD ${wash.hold ? 'on' : 'off'}, active filter ${wash.activeFilter ?? 'none'}, step ${wash.step ?? 'idle'}, waiting ${wash.waiting ?? 'none'}.`,
     `Backwash pit ${wash.pit.volumeM3.toFixed(1)} m³; HIGH ${wash.pit.highM3.toFixed(1)} m³; inlet inhibit ${wash.pit.inletInhibited ? 'on' : 'off'}; circulation pumping ${wash.circulationPumping ? 'yes' : 'no'}.`,
     ...wash.filters.map(
@@ -219,9 +250,14 @@ export function installPlantContext(store: WorldStore): () => void {
   const heading = element('h2', 'Live plant model');
   const summaryNode = element('p');
   const systemsNode = element('p');
+  const processNode = element('div');
+  processNode.setAttribute(
+    'aria-label',
+    'Current water, CO₂ and heating measurements',
+  );
   const reportLink = element('a', 'Open readable plant-state report');
   reportLink.href = REPORT_HASH;
-  context.append(heading, summaryNode, systemsNode, reportLink);
+  context.append(heading, summaryNode, systemsNode, processNode, reportLink);
   document.body.append(context);
 
   const report = element('section');
@@ -269,6 +305,12 @@ export function installPlantContext(store: WorldStore): () => void {
       : '';
     if (systemsNode.textContent !== nextSystems)
       systemsNode.textContent = nextSystems;
+    const process = enabled ? processSnapshot(store) : null;
+    const nextProcess = process
+      ? plantProcessLines(process, process.trends).join('\n')
+      : '';
+    if (processNode.textContent !== nextProcess)
+      processNode.textContent = nextProcess;
     if (location.hash !== REPORT_HASH) return;
     const nextReport = enabled
       ? reportText(store, search.value)

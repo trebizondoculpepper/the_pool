@@ -1,0 +1,5 @@
+# Browser-readable process state
+
+The owner tried a ChatGPT side panel against a Pool 02 CO₂ isolation and bicarbonate/soda-ash disturbance. It could read alarms and events but not the underlying main-pool and balance-tank chemistry. We made that a separate mission, 139, building on mission 134's read-only browser diagnostics. The world already had a balance-tank chemistry object, three main-pool cells, CO₂ demand and delivery, wet-hall hydraulics and LTHW readings. The new projection reads these without changing the simulation or save schema and says when a separate measurement is unavailable, such as balance-tank temperature.
+
+The browser now places a process snapshot in semantic page text, along with the detailed report and `getProcessState(pool?)`. A bounded history records projected readings by simulation time for pH and alkalinity slopes. A temporary server on port 5176 and headless Chrome showed the distinct Pool 02 water bodies, CO₂ state, wet-hall hydraulics and LTHW figures in the accessibility tree. The temporary server was stopped. The actual ChatGPT side-panel extraction and the owner's disturbance scenario remain to test with the running game.

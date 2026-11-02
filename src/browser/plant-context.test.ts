@@ -17,6 +17,11 @@ it('reads the current world on each query and exposes no world action', () => {
     api.listEquipment({ room: 'plant_pool_02', kind: 'pump' })?.total,
   ).toBeGreaterThan(0);
   expect(api.getEquipment('P-101A')?.item?.status).toBe('running');
+  const olympic = api.getProcessState('pool_02');
+  expect(olympic?.pools).toHaveLength(1);
+  expect(olympic?.pools[0].mainPool.ph).toBe(
+    state.value.treatment.circuits.pool_02.pool.at(-1)?.ph,
+  );
   expect('dispatch' in api).toBe(false);
   expect('world' in api).toBe(false);
 
@@ -31,4 +36,7 @@ it('reads the current world on each query and exposes no world action', () => {
     },
   };
   expect(api.getEquipment('P-101A')?.item?.status).toBe('stopped');
+  expect(api.getProcessState('pool_02')?.pools[0].circulationFlowM3h).toBe(
+    state.value.pools.pool_02.flow,
+  );
 });
