@@ -98,6 +98,8 @@ For a portable object, its default location (where the game places it at the sta
 
 The `?dev` Simulation list and the pages filter by room on any of the three (home, shown in, touches), and by domain, tier and flag, so "every active node that touches the boiler house" is one filter. A room's audit (129) gains a link to that filtered list for its room.
 
+**Later, not in this mission (the owner, 2026-11-02):** connectors will get pages of their own in a separate edges report (the owner calls it a vertices report), the counterpart of this nodes report: a page per pipe, cable or conduit run, plain as it will be. It is less useful for auditing, so it waits; until then a connector ref resolves to its run's anchored section on the active node's page, as above.
+
 ## 3. How the domains join (found, not invented)
 
 Only joins the code already states are edges. Each is a pure function returning `GraphEdge`s with `via` naming its evidence (a file and symbol), so the page can show why the edge exists.
