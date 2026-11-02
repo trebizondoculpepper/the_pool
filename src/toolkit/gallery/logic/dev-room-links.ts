@@ -79,6 +79,7 @@ export type GalleryRoomId =
   | 'dev56'
   | 'dev57'
   | 'dev58'
+  | 'dev70'
   | 'retired0'
   | 'retired1'
   | 'dev59';
@@ -300,6 +301,9 @@ export const ROOMS: readonly RoomId[] = [
   'dev57',
   // By its URL only: the Aqualis dosing controller (mission 114).
   'dev58',
+  // By its URL only: kitchen things, the pizza oven first (the owner,
+  // 2026-11-02).
+  'dev70',
   // By its URL only: the Olympic plant room, frozen as a reference.
   'retired0',
   'retired1',
@@ -522,6 +526,7 @@ export const DEV_ROOM_NAMES: Record<RoomId, string> = {
   dev67: 'DEV67 · ELECTRICAL',
   dev68: 'DEV68 · CONTROL CENTRE',
   dev69: 'DEV69 · OZONE',
+  dev70: 'DEV70 · KITCHEN',
   museum0: hallName('museum0'),
   museum1: hallName('museum1'),
   museum2: hallName('museum2'),
@@ -659,6 +664,7 @@ export const DEV_ROOM_COLOURS: Record<RoomId, string> = {
   dev67: '#d47f1f',
   dev68: '#5c6f86',
   dev69: '#4b5fc1',
+  dev70: '#c8102e',
   museum0: '#2a9d96',
   museum1: '#2a9d96',
   museum2: '#2a9d96',

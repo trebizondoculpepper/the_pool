@@ -179,6 +179,7 @@ const EXHIBIT_MODULES: Record<
   dev47: () => import('../rooms/plant/touch-panels'),
   dev48: () => import('../rooms/plant/touch-panels-plant'),
   dev49: () => import('../rooms/plant/station-schematics'),
+  dev70: () => import('../rooms/plant/kitchen'),
 };
 
 /** Every room's placed item keys, and the first of each key with its room. */

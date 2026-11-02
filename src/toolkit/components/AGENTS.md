@@ -33,6 +33,7 @@ Model each thing on a real catalogue part at true size (a Schneider datasheet, a
 - **`architectural/`**: what a building is fitted with. Doors and ironmongery (handles, panic bars, access-controlled doors), the electrical installation (distribution boards, sockets, spurs, floor boxes, conduit), switching and lighting, climate (air conditioning, thermostats, radiators, heaters, grilles, extract fans, windows), communications (intercoms), the catalogue of warehouse fittings, and the models of a building's services. Sanitary fittings (toilets, sinks) belong here when they come.
 - **`sound/`**: synthesised sound libraries not tied to one part: machine tones (hums, fans, pumps, room noise), computer cues (beeps and bloops) and the boot beep.
 - **`site-dressing/`**: props that make a place feel lived in: skips and their hire firms, graffiti, chair stacks, warehouse props, and throwing things into bins.
+- **`kitchen/`**: catering equipment, modelled in dev70 before the leisure centre has a kitchen: the pizza oven (the Mozzetti Forni Ravello D on its prover) so far.
 
 When a thing could go in two categories, put it where its owner would buy it from, and let the gallery show it in both rooms (emergency lighting is general safety, and is shown in the fire room and the building fittings room).
 

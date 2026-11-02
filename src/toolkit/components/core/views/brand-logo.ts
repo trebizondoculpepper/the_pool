@@ -643,6 +643,35 @@ export function drawBrandMark(
       ctx.fill();
       break;
     }
+    case 'hearth': {
+      // A deck oven's mouth: a low arch in the ink, its fire glowing in
+      // the second colour, under a roof's chevron in the main.
+      ctx.fillStyle = ink;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.62, r * 0.7);
+      ctx.lineTo(-r * 0.62, r * 0.2);
+      ctx.arc(0, r * 0.2, r * 0.62, Math.PI, 0);
+      ctx.lineTo(r * 0.62, r * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = second;
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.4, r * 0.7);
+      ctx.lineTo(-r * 0.4, r * 0.3);
+      ctx.arc(0, r * 0.3, r * 0.4, Math.PI, 0);
+      ctx.lineTo(r * 0.4, r * 0.7);
+      ctx.closePath();
+      ctx.fill();
+      ctx.strokeStyle = main;
+      ctx.lineWidth = r * 0.22;
+      ctx.lineJoin = 'miter';
+      ctx.beginPath();
+      ctx.moveTo(-r * 0.92, -r * 0.08);
+      ctx.lineTo(0, -r * 0.8);
+      ctx.lineTo(r * 0.92, -r * 0.08);
+      ctx.stroke();
+      break;
+    }
     case 'flowsquare': {
       // A flow arrow passing straight through a square, as the gas through
       // a flow body: the square in its main colour, the arrow in its second.

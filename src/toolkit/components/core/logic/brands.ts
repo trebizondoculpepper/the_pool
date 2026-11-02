@@ -87,7 +87,9 @@ export type BrandMark =
   /** A flow arrow passing straight through a square. */
   | 'flowsquare'
   /** A cup anemometer's three cups on their spindle. */
-  | 'anemometer';
+  | 'anemometer'
+  /** A deck oven's mouth, its fire glowing in it, under a roof's chevron. */
+  | 'hearth';
 
 /** Every brand's id: a part names its maker by one of these. */
 export type BrandId =
@@ -125,7 +127,8 @@ export type BrandId =
   | 'arncliffe'
   | 'aqualis'
   | 'veldkamp'
-  | 'calloway';
+  | 'calloway'
+  | 'mozzetti';
 
 export interface Brand {
   id: BrandId;
@@ -634,6 +637,25 @@ export const BRANDS: readonly Brand[] = [
     promise: 'The weather on your wall, from your own roof',
     mark: 'anemometer',
     colours: ['#1d5c9e', '#f2b51f', '#101418'],
+    type: 'sans',
+  },
+  {
+    // An Italian maker of electric and gas deck ovens for pizzerias and
+    // bakeries, from the Marche coast (the owner, 2026-11-02: a kitchen
+    // dev room's pizza oven), after Moretti Forni of Mondolfo: its mark a
+    // red roof's chevron over the oven's glowing mouth. It makes the
+    // Ravello D twin-deck oven on its prover. Our own invention.
+    id: 'mozzetti',
+    name: 'Mozzetti Forni S.p.A.',
+    wordmark: 'MOZZETTI FORNI',
+    tagline: 'L’arte della cottura',
+    founded: 1946,
+    country: 'Italy',
+    makes:
+      'Electric and gas deck ovens, conveyor ovens and provers for pizzerias, bakeries and pastry kitchens',
+    promise: 'The stone-baked pizza of Naples, in any kitchen in the world',
+    mark: 'hearth',
+    colours: ['#c8102e', '#f29a1f', '#141414'],
     type: 'sans',
   },
 ];
