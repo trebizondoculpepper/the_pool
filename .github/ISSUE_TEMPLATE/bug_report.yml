@@ -1,0 +1,70 @@
+name: Bug report
+description: Something in The Pool went wrong. Please attach your game's state file so it can be looked into.
+title: 'Bug: '
+labels: ['bug']
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug. The most useful thing you can send is your **game's state file**: it holds the whole plant as it was, so the bug can be reproduced exactly.
+
+        **How to download your game's state**
+
+        1. Open the game with `?dev` added to its address, in the same browser you play in: https://trebizondoculpepper.github.io/the_pool/?dev (your save lives in that browser, so use the same one).
+        2. Find the **World state** box in the dev panel.
+        3. Choose the **game** slot and press **Download**. A file named like `the-pool-game-2026-11-02-1430.json` is saved to your downloads.
+
+        Or press **Report a bug…** in the same box: it downloads the file and opens this page with your version, browser and location already filled in.
+
+        Then drag that file into the **State file** box below.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what you saw instead.
+      placeholder: I turned the Olympic's filter 2 to BACKWASH and its pump stopped…
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: How to make it happen again
+      description: The steps, if you know them. Console commands you typed are useful too.
+      placeholder: |
+        1. Go to the Olympic plant room
+        2. …
+  - type: textarea
+    id: state-file
+    attributes:
+      label: State file
+      description: Drag your downloaded `the-pool-….json` file into this box. If GitHub refuses the file type, zip it first.
+      placeholder: Drop the state file here.
+    validations:
+      required: true
+  - type: input
+    id: where
+    attributes:
+      label: Where in the game
+      description: The room or the address bar's link when it happened (the pin icon copies a link to where you stand).
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown on the title screen and in the Esc menu.
+      placeholder: v0.13.0
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Played on
+      options:
+        - Web browser (GitHub Pages)
+        - Web browser (itch.io)
+        - Desktop app (Windows)
+        - Desktop app (macOS)
+        - Desktop app (Linux)
+        - iPad or phone
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and device
+      placeholder: Safari on iPad, Chrome on Windows 11…
