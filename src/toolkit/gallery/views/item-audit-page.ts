@@ -66,8 +66,9 @@ export interface ItemAuditContext {
 
 /**
  * Sections later missions add (133's CAD views, 135's HIGH/LOW poly and
- * visual cost): each drawn after the built-in sections, or left out when
- * it returns null.
+ * visual cost): each drawn after the built-in sections, or near the top
+ * (before the first heading) when its `dataset.auditPlace` is `top`, or
+ * left out when it returns null.
  */
 export const ITEM_AUDIT_SECTIONS: ((
   ctx: ItemAuditContext,
@@ -435,7 +436,10 @@ export async function runItemAuditPage(root: HTMLElement) {
   };
   for (const section of ITEM_AUDIT_SECTIONS) {
     const drawn = section(ctx);
-    if (drawn) page.append(drawn);
+    if (!drawn) continue;
+    const first = page.querySelector('h2');
+    if (drawn.dataset.auditPlace === 'top' && first) first.before(drawn);
+    else page.append(drawn);
   }
   (window as unknown as { __itemAudit: unknown }).__itemAudit = {
     kind: kind.key,

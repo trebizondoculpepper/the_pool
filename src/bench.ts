@@ -27,6 +27,8 @@ if (!import.meta.env.DEV) {
     await import('./toolkit/gallery/views/room-audit-page');
   await runRoomAuditPage(root);
 } else if (root && which === 'item-audit') {
+  // Mission 133's CAD views register their section first.
+  await import('./toolkit/gallery/views/cad-views');
   const { runItemAuditPage } =
     await import('./toolkit/gallery/views/item-audit-page');
   await runItemAuditPage(root);
