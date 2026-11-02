@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vite-plus/test';
 import { newBoiler } from '../../components/plant/logic/boiler-house';
 import { checkMimic } from '../../components/industrial-control/logic/mimic';
 import { layoutRoom } from './room-equipment';
-import { BOILER_HEAT_MIMIC, boilerHeatState } from './boiler-heat-mimic';
+import {
+  BOILER_HEAT_COPY,
+  BOILER_HEAT_MIMIC,
+  BOILER_HEAT_PANEL,
+  boilerHeatPress,
+  boilerHeatState,
+  cascadeOf,
+} from './boiler-heat-mimic';
+import { newWorld } from '../../../game/world';
 
 describe('boiler heat mimic', () => {
   it('shows the live firing output of each boiler and their combined kW', () => {
@@ -49,5 +57,64 @@ describe('boiler heat mimic', () => {
         (p) => p.item.key === 'mimic-boiler-heat',
       ),
     ).toBe(true);
+  });
+
+  it('shows the sequencer: each boiler called, the lead, the header, the demand and its alarms (mission 121)', () => {
+    const w = newWorld();
+    const house = {
+      ...w.boilerHouse,
+      sequencer: {
+        ...w.boilerHouse.sequencer,
+        called: [2, 3],
+        lead: 2,
+        demand: 0.3,
+        alarms: {
+          lockout: 'flashing' as const,
+          'header-low': 'off' as const,
+          'none-available': 'steady' as const,
+        },
+      },
+    };
+    const state = boilerHeatState(
+      house.boilers,
+      cascadeOf(house, { flow: 79.4, return: 71.2 }),
+    );
+    expect(checkMimic(BOILER_HEAT_MIMIC, state)).toEqual([]);
+    expect(state.lamps['b3-called']).toBe(true);
+    expect(state.lamps['b4-called']).toBe(true);
+    expect(state.lamps['b1-called']).toBe(false);
+    expect(state.lamps['b3-lead']).toBe(true);
+    expect(state.lamps['b1-lead']).toBe(false);
+    expect(state.lamps['alarm-lockout']).toBe(true);
+    expect(state.lamps['alarm-header-low']).toBe(false);
+    expect(state.lamps['alarm-none']).toBe(true);
+    expect(state.readouts.flow.temperature?.value).toBe(79.4);
+    expect(state.readouts.return.output?.value).toBe(71.2);
+    expect(state.readouts.setpoint.rate?.value).toBe(80);
+    expect(state.readouts.demand.output?.value).toBeCloseTo(30);
+  });
+
+  it('is the rough sequencer panel in the boiler house, and only START and STOP in the control room (mission 121)', () => {
+    const w = newWorld();
+    const state = boilerHeatState(
+      w.boilerHouse.boilers,
+      cascadeOf(w.boilerHouse, w.lthw),
+    );
+    expect(checkMimic(BOILER_HEAT_PANEL, state)).toEqual([]);
+    expect(checkMimic(BOILER_HEAT_COPY, state)).toEqual([]);
+    expect(state.lamps['enable-auto']).toBe(true);
+    expect(state.lamps['plant-run']).toBe(true);
+    expect(
+      BOILER_HEAT_PANEL.buttons?.map((b) => boilerHeatPress(b.id)),
+    ).toEqual([
+      { act: 'enable', enable: 'off' },
+      { act: 'enable', enable: 'auto' },
+      { act: 'enable', enable: 'hand' },
+      { act: 'accept' },
+      { act: 'reset' },
+    ]);
+    expect(
+      BOILER_HEAT_COPY.buttons?.map((b) => boilerHeatPress(b.id)?.act),
+    ).toEqual(['run', 'run']);
   });
 });

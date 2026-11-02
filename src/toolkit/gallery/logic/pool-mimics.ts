@@ -291,12 +291,14 @@ export const HEATING_MIMIC: MimicSpec = {
 
 export function heatingState(p: PlantReading): MimicState {
   const firing = p.boilersFiring;
+  // B1 and B2 as the world has them (mission 121); the scripted loop's otherwise.
+  const ret = p.lthwReturn ?? p.lthw - 14;
   return {
     lamps: {
-      'b1-fire': firing,
-      'b1-lock': false,
-      'b2-fire': firing && p.lthw > 79,
-      'b2-lock': false,
+      'b1-fire': p.boilers?.firing[0] ?? firing,
+      'b1-lock': p.boilers?.lockout[0] ?? false,
+      'b2-fire': p.boilers?.firing[1] ?? (firing && p.lthw > 79),
+      'b2-lock': p.boilers?.lockout[1] ?? false,
       'esv-open': true,
       'p5-run': true,
     },
@@ -307,7 +309,8 @@ export function heatingState(p: PlantReading): MimicState {
         flow: r(firing ? 6.8 : 5.9, 'l/s', 'PRIMARY', 1),
       },
       'pool-hx': {
-        temperature: r(p.lthw - 11, 'C', 'HX RTN', 1),
+        // The common return: the exchangers' own are not modelled apart.
+        temperature: r(p.lthwReturn ?? p.lthw - 11, 'C', 'HX RTN', 1),
         flow: r(2.1, 'l/s', 'POOL HX', 1),
       },
       calorifier: {
@@ -315,7 +318,7 @@ export function heatingState(p: PlantReading): MimicState {
         flow: r(0.8, 'l/s', 'COIL', 1),
       },
       system: {
-        temperature: r(p.lthw - 14, 'C', 'RETURN', 1),
+        temperature: r(ret, 'C', 'RETURN', 1),
         pressure: r(2.4 + 0.05 * Math.sin(p.t / 9), 'bar', 'COLD FILL', 2),
       },
     },

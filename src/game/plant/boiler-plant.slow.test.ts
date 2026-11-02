@@ -5,6 +5,7 @@ import { RING } from './lthw-ring';
 import { SEQUENCER } from './boiler-sequencer';
 import { boilerHouseOutput } from './boiler-plant';
 import type { BoilerHouseAction } from './boiler-plant';
+import { plantReadingOf } from '../../toolkit/gallery/logic/world-reading';
 
 /**
  * The boiler house in the world (mission 121): the sequencer and the six
@@ -119,5 +120,30 @@ describe('the boiler house in the world', () => {
     expect(hand.boilerHouse.sequencer.run).toBe(false);
     const back = advance(act(stopped, { act: 'run', run: true }), 300, 5);
     expect(back.boilerHouse.sequencer.called.length).toBeGreaterThan(0);
+  }, 30_000);
+
+  it('raises BOILER LOCKOUT and HEADER LOW on the annunciator, and NO BOILER AVAILABLE on its panel', () => {
+    const locked = {
+      ...ready,
+      boilerHouse: {
+        ...ready.boilerHouse,
+        boilers: ready.boilerHouse.boilers.map((b, i) =>
+          i === 3 ? { ...b, lockout: 'ignition-failure' as const } : b,
+        ),
+      },
+    };
+    expect(plantReadingOf(advance(locked, 1, 1)).alarms).toContain(
+      'boiler-lockout',
+    );
+    expect(plantReadingOf(ready).alarms).not.toContain('header-low');
+    // Every boiler switched off on a design day: the header falls away.
+    let off = applyAction(ready, { type: 'weather/ambient', celsius: -3 });
+    for (let i = 0; i < 6; i++)
+      off = act(off, { act: 'press', boiler: i, key: 'power' });
+    off = advance(off, 900, 10);
+    expect(off.lthw.flow).toBeLessThan(RING.setpoint - SEQUENCER.headerLow);
+    expect(plantReadingOf(off).alarms).toContain('header-low');
+    expect(off.boilerHouse.sequencer.alarms['none-available']).toBe('flashing');
+    expect(off.boilerHouse.sequencer.alarms['header-low']).toBe('flashing');
   }, 30_000);
 });

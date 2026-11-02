@@ -26,12 +26,14 @@ import {
   sequencerTargets,
   setPlantEnable,
   setPlantRun,
+  setSequencerSetting,
   stepBoilerSequencer,
 } from './boiler-sequencer';
 import type {
   BoilerSequencerState,
   LeadRotation,
   PlantEnable,
+  SequencerSetting,
 } from './boiler-sequencer';
 import { WATER_HEAT } from './heat-loop';
 import { RING } from './lthw-ring';
@@ -221,6 +223,8 @@ export type BoilerHouseAction =
   /** The panel's ACCEPT and RESET: its alarms accepted; every locked-out boiler reset. */
   | { act: 'accept' }
   | { act: 'reset' }
+  /** One of the operator's settings: the set point, °C, or a delay or the minimum run, s. */
+  | { act: 'setting'; setting: SequencerSetting; value: number }
   | { act: 'lead'; boiler: number }
   | { act: 'rotation'; rotation: LeadRotation }
   /** The combustion panel's fan selector (HAND · OFF · AUTO) and RESET. */
@@ -274,6 +278,14 @@ export function actOnBoilerHouse(
           b.lockout ? pressBoiler(b, 'reset') : b,
         ),
       };
+    case 'setting': {
+      const sequencer = setSequencerSetting(
+        house.sequencer,
+        action.setting,
+        action.value,
+      );
+      return sequencer === house.sequencer ? house : { ...house, sequencer };
+    }
     case 'lead':
       if (!house.boilers[action.boiler]) return house;
       return {

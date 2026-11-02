@@ -8,6 +8,7 @@ import {
   sequencerTargets,
   setPlantEnable,
   setPlantRun,
+  setSequencerSetting,
   stepBoilerSequencer,
 } from './boiler-sequencer';
 import type { BoilerSequencerState } from './boiler-sequencer';
@@ -205,7 +206,9 @@ describe('the boiler sequencer', () => {
   it('releases every boiler when no load calls, and the PI term with them', () => {
     const busy = run(toy(newBoilerSequencer(), 70), 1200, 900);
     expect(busy.s.called.length).toBeGreaterThan(2);
-    const idle = run(busy, 1, 0);
+    // Within the loads' overrun it carries on; past it, all are released.
+    expect(run(busy, 30, 0).s.called.length).toBeGreaterThan(0);
+    const idle = run(busy, SEQUENCER.loadOverrun, 0);
     expect(idle.s.called).toEqual([]);
     expect(idle.s.wanted).toBe(false);
     expect(idle.s.demand).toBe(0);
@@ -257,5 +260,19 @@ describe('the boiler sequencer', () => {
     );
     expect(back.s.alarms.lockout).toBe('off');
     expect(back.s.alarms['header-low']).toBe('steady');
+  });
+
+  it('takes the operator’s settings, within their ranges', () => {
+    const s = newBoilerSequencer();
+    expect(setSequencerSetting(s, 'setpoint', 75).setpoint).toBe(75);
+    expect(setSequencerSetting(s, 'setpoint', 120).setpoint).toBe(85);
+    expect(setSequencerSetting(s, 'stageUp', 100).stageUp).toBe(90);
+    expect(setSequencerSetting(s, 'minRun', 10).minRun).toBe(60);
+    expect(setSequencerSetting(s, 'stageDown', Number.NaN)).toBe(s);
+    // A longer stage-up delay stages more slowly.
+    const slow = setSequencerSetting(s, 'stageUp', 300);
+    const quick = run(toy(s, 70), 600, 1000);
+    const later = run(toy(slow, 70), 600, 1000);
+    expect(later.s.called.length).toBeLessThan(quick.s.called.length);
   });
 });

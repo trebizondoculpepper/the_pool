@@ -50,6 +50,19 @@ describe('the bridge’s panels, wired to the world (mission 095)', () => {
       expect(unwired(bridgeSpec(code), binding), code).toEqual([]);
   });
 
+  it('starts and stops the boiler plant from BH-MP2 in AUTO only (mission 121)', () => {
+    const stopped = press('BH-MP2', 'PLANT STOP', newWorld());
+    expect(stopped.refused).toBe(null);
+    expect(stopped.world.boilerHouse.sequencer.run).toBe(false);
+    const started = press('BH-MP2', 'PLANT START', stopped.world);
+    expect(started.world.boilerHouse.sequencer.run).toBe(true);
+    const hand = applyAction(newWorld(), {
+      type: 'boiler-house',
+      action: { act: 'enable', enable: 'hand' },
+    });
+    expect(press('BH-MP2', 'PLANT STOP', hand).refused).not.toBe(null);
+  });
+
   it('binds each to its original’s node in its room’s model', () => {
     for (const [code, b] of Object.entries(BRIDGE_BINDINGS))
       expect(roomModel(b.model.room)?.nodes.has(b.model.node), code).toBe(true);

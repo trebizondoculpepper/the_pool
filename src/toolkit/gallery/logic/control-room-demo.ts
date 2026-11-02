@@ -45,6 +45,8 @@ export interface PlantReading {
   lthwReturn?: number;
   heatDemand?: number;
   heatSupply?: number;
+  /** Each boiler (B-501 to B-506) firing and locked out, as the world has them (mission 121). */
+  boilers?: { firing: readonly boolean[]; lockout: readonly boolean[] };
   /** Hall relative humidity, %. */
   hallRh: number;
   /** Free chlorine, mg/l, and pH. */
@@ -106,7 +108,8 @@ export const ANNUNCIATOR_ALARMS = [
   'f4-dp',
   'f5-dp',
   'wot-not-auto',
-  'spare',
+  // The boiler sequencer's header low (mission 121), in the spare way.
+  'header-low',
 ] as const;
 export type AlarmId = (typeof ANNUNCIATOR_ALARMS)[number];
 
@@ -150,7 +153,7 @@ export const ALARM_TEXT: Record<AlarmId, { window: string; room: string }> = {
     window: 'WASH-O-TRON\nNOT IN AUTO',
     room: 'OLYMPIC PLANT ROOM',
   },
-  spare: { window: 'SPARE', room: 'NONE (SPARE WAY)' },
+  'header-low': { window: 'LTHW FLOW\nTEMP LOW', room: 'BOILER ROOM' },
 };
 
 /**

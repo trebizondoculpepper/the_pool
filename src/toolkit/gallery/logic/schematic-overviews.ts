@@ -4,11 +4,8 @@ import type { PoolId } from '../../../game/plant/pools';
 import { POOL_TARGET } from '../../../game/plant/pools';
 import type { MotorTag } from '../../../game/plant/motor-starters';
 import { serviceAvailable } from '../../../game/plant/services';
-import {
-  withIntake,
-  siteGasM3h,
-  siteLoadKw,
-} from '../../../game/plant/site-intake';
+import { withIntake, siteLoadKw } from '../../../game/plant/site-intake';
+import { ringGasM3h } from '../../../game/plant/lthw-ring';
 import { boilerGasOn } from '../../../game/plant/boiler-gas';
 import {
   mainsAvailable,
@@ -198,22 +195,22 @@ function spaFilterView(w: World, pool: 'pool_03' | 'pool_04'): MemberView {
   };
 }
 
-/** The heat the boilers give, kW: what the pools' and halls' heaters take. */
-export const heatDemand = (w: World) =>
-  Object.values(w.pools).reduce((t, p) => t + Math.max(0, p.heating), 0);
+/** The heat the LTHW ring's loads ask, kW (mission 120's ring, every consumer). */
+export const heatDemand = (w: World) => w.lthw.demand;
 
-/**
- * Each boiler's output, kW, for staging the cascade on the screens: the
- * world gives the heat the pools take, not which boiler gives it, so the
- * screens stage the six boilers on that demand at this much each.
- */
-export const BOILER_STAGE_KW = 250;
+/** Each boiler's rated output, kW (the HW 300s); six make the plant's 1,800 kW. */
+export const BOILER_STAGE_KW = 300;
 
-/** How many of the six boilers fire, staged on the heat demand, with gas to the boilers. */
+/** How many of the six boilers fire: the world's, as their sequencer has called them (mission 121). */
 export function boilersFiring(w: World): number {
-  if (!boilerGasOn(w.boilerGas) || !w.plant.sources.heat) return 0;
-  return Math.min(6, Math.ceil(heatDemand(w) / BOILER_STAGE_KW));
+  return w.boilerHouse.boilers.filter((b) => b.code === 3).length;
 }
+
+/** Each boiler's state on the screens: firing, locked out, or not. */
+export const boilerStates = (w: World): GlyphState[] =>
+  w.boilerHouse.boilers.map((b) =>
+    b.lockout ? 'fault' : b.code === 3 ? 'on' : 'off',
+  );
 
 /** A day tank's level as its glyph: calling while it calls for a transfer. */
 function dayTankView(w: World, chemical: Chemical, i: number): MemberView {
@@ -624,7 +621,7 @@ export const OVERVIEWS: readonly OverviewSpec[] = [
       const heat = heatDemand(w);
       return {
         members: [
-          BOILERS.map((_, i) => ({ state: on(i < firing) })),
+          boilerStates(w).map((state) => ({ state })),
           [{ state: 'on', level: firing ? 0.85 : 0.55 }],
           [{ state: pumped ? 'on' : 'fault' }],
           [{ state: on(heat > 1) }, { state: on(pumped) }],
@@ -633,7 +630,7 @@ export const OVERVIEWS: readonly OverviewSpec[] = [
         readouts: [
           [fixed(heat, 0)],
           [fixed(reading.lthw, 1), reading.lthw < 60],
-          [fixed(reading.lthw - 11, 1)],
+          [fixed(w.lthw.return, 1)],
           [String(firing), !boilerGasOn(w.boilerGas)],
         ],
       };
@@ -669,7 +666,8 @@ export const OVERVIEWS: readonly OverviewSpec[] = [
       const street = w.intake.open.gas;
       const gasOn = boilerGasOn(g) && street;
       const firing = boilersFiring(w);
-      const m3h = siteGasM3h(w.pools, gasOn);
+      // The boilers' gas, from their supply to the ring (mission 121).
+      const m3h = gasOn ? ringGasM3h(w.lthw.supply) : 0;
       return {
         members: [
           [{ state: on(street) }],
@@ -682,7 +680,7 @@ export const OVERVIEWS: readonly OverviewSpec[] = [
                   : 'off',
             },
           ],
-          BOILERS.map((_, i) => ({ state: on(gasOn && i < firing) })),
+          boilerStates(w).map((state) => ({ state: gasOn ? state : 'off' })),
           [0, 1, 2].map((i) => ({ state: on(gasOn && firing > i * 2) })),
         ],
         rates: [

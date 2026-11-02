@@ -37,6 +37,8 @@ import type { ChannelId } from '../../../game/plant/aqualis-types';
 import type { ParodySpec, ParodyWidget } from './parody-trial';
 import { facilityHeat } from './energy-mimic';
 import { newLthwRing } from '../../../game/plant/lthw-ring';
+import { boilerHouseOutput } from '../../../game/plant/boiler-plant';
+import { plantEnabled } from '../../../game/plant/boiler-sequencer';
 
 /**
  * The bridge's touch panels wired to the world (mission 095; the owner,
@@ -791,8 +793,20 @@ function alarmsIn(c: BridgeContext): { words: string; room: string }[] {
     words: ALARM_TEXT[id].window.replace('\n', ' '),
     room: ALARM_TEXT[id].room,
   }));
+  // The boiler sequencer's (mission 121): no boiler available an alarm,
+  // the plant left off or stopped only for information.
+  const seq = c.world.boilerHouse.sequencer;
+  const boilers = [
+    ...(seq.alarms['none-available'] !== 'off'
+      ? [{ words: 'NO BOILER AVAILABLE', room: 'BOILER ROOM' }]
+      : []),
+    ...(!plantEnabled(seq)
+      ? [{ words: 'BOILER PLANT OFF (INFO)', room: 'BOILER ROOM' }]
+      : []),
+  ];
   return [
     ...plant,
+    ...boilers,
     ...litLocationWindows(c.world).map(({ words, room }) => ({ words, room })),
   ];
 }
@@ -1279,6 +1293,59 @@ function energyMimic(): PanelBinding {
   };
 }
 
+/**
+ * BH-MP2's wiring (mission 121): the world's boilers and their sequencer,
+ * each boiler's CALLED, FIRING, LOCKOUT and LEAD, the ring's header, the
+ * demand and output, the sequencer's alarms; START and STOP of the plant
+ * in AUTO, as the control room may. PLANT ENABLE, the settings and RESET
+ * stay on the boiler house's panel.
+ */
+function boilerCascadeMimic(): PanelBinding {
+  const AT = 'the boiler sequencer panel in the boiler house';
+  const house = (c: BridgeContext) => c.world.boilerHouse;
+  const lamps: Record<string, Read<boolean>> = {
+    'PLANT ENABLED': (c) => plantEnabled(house(c).sequencer),
+    'BOILER LOCKOUT': (c) => house(c).sequencer.alarms.lockout !== 'off',
+    'HEADER LOW': (c) => house(c).sequencer.alarms['header-low'] !== 'off',
+    'NO BOILER AVAILABLE': (c) =>
+      house(c).sequencer.alarms['none-available'] !== 'off',
+  };
+  for (let i = 0; i < 6; i++) {
+    const tag = `B-${501 + i}`;
+    lamps[`${tag} CALLED`] = (c) => house(c).sequencer.called.includes(i);
+    lamps[`${tag} FIRING`] = (c) => house(c).boilers[i].code === 3;
+    lamps[`${tag} LOCKOUT`] = (c) => house(c).boilers[i].lockout !== null;
+    lamps[`${tag} LEAD`] = (c) => house(c).sequencer.lead === i;
+  }
+  const inAuto = (c: BridgeContext) => house(c).sequencer.enable === 'auto';
+  const run = (on: boolean) =>
+    Object.assign(
+      (c: BridgeContext) =>
+        inAuto(c)
+          ? act(() => ({
+              type: 'boiler-house',
+              action: { act: 'run', run: on },
+            }))
+          : local(`PLANT ENABLE on ${AT}, out of AUTO`),
+      {
+        lit: (c: BridgeContext) => inAuto(c) && house(c).sequencer.run === on,
+      },
+    );
+  return {
+    code: 'BH-MP2',
+    model: { room: 'boiler_house', node: 'mimic-heat' },
+    lamps,
+    readouts: {
+      'HEADER FLOW': (c) => Math.round(c.world.lthw.flow * 10) / 10,
+      'HEADER RETURN': (c) => Math.round(c.world.lthw.return * 10) / 10,
+      'SET POINT': (c) => house(c).sequencer.setpoint,
+      DEMAND: (c) => Math.round(house(c).sequencer.demand * 100),
+      OUTPUT: (c) => Math.round(boilerHouseOutput(house(c))),
+    },
+    buttons: { 'PLANT START': run(true), 'PLANT STOP': run(false) },
+  };
+}
+
 /** The bridge's wired panels, by their specs' codes. */
 export const BRIDGE_BINDINGS: Readonly<Record<string, PanelBinding>> =
   Object.fromEntries(
@@ -1299,6 +1366,7 @@ export const BRIDGE_BINDINGS: Readonly<Record<string, PanelBinding>> =
       assistantDutyManager(),
       batherWelfare(),
       energyMimic(),
+      boilerCascadeMimic(),
     ].map((b) => [b.code, b]),
   );
 

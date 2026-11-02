@@ -50,3 +50,31 @@ The alarms (lockout, header low, none available) are its lamps: new ones flash, 
 **From cold**, after eight hours without gas on a design day, the boilers light 0, 45, 90, 135, 180 and 225 s after GAS RESET: one at a time, never two in one step.
 
 **Mission 120's tests** hold. The new-game and design-day flow tolerances widen from 0.05 to 0.5 K, and the readings' and energy mimic's 600 s checks to within 1 K: a PI cascade tracks the loads' drift within about 0.1 K, and while the lead is at full fire the header sits up to its 0.5 K stage-up differential under the set point until the next boiler lights.
+
+## The boiler room reads the world (stage 3)
+
+`rooms/plant/boiler.ts` no longer holds the boilers: their panels, sounds (`sounder.show(BoilerState)` per boiler, every frame), inspection statuses, the gas mimic, the BH-MP2 mimic and the combustion panel all read `world.boilerHouse`, and their keys, set points, fan selector and RESET dispatch `boiler-house` actions. The stand-in sine, `plant.boilersFiring` and the guessed `lthw − 14` return are gone: each boiler fires as the sequencer calls it, and B-506 fires like the rest. `boilerHouseShown()` stays, read only, for the control room's copies, returning the world's boilers and a gas house rebuilt only when the world's gas safety changes (so its copies redraw only on a change, mission 094). Where there is no world (no page), the room steps its own boiler house on the plant's reading, as the world would.
+
+### The operator's settings (for mission 122)
+
+The set point, the stage-up and stage-down delays and each boiler's minimum run are world state (`setpoint`, `stageUp`, `stageDown`, `minRun` in `BoilerSequencerState`), set with one action, `{ type: 'boiler-house', action: { act: 'setting', setting, value } }`, held within the CM6's limits (`SEQUENCER_SETTINGS`: set point 50–85 °C in 1 K steps, stage up and down 30–900 s and minimum run 60–1200 s in 30 s steps). The lead (`act: 'lead'`), rotation (`act: 'rotation'`, hours or fixed), PLANT ENABLE (`act: 'enable'`) and START/STOP (`act: 'run'`, AUTO only) have their own. The staging interval (45 s), minimum off (60 s), differentials, minimum fire and the PI gains stay constants in `SEQUENCER`. A save from between stages 2 and 3, which lacks the new fields, takes their defaults (`fillDefaults`).
+
+## The readings, the screens and the boards (stage 4)
+
+- **The reading** (`world-reading.ts`): `boilersFiring` is any boiler's flame proven, and a new optional `boilers` gives each one firing and locked out. The heating mimic (CR-MP2) lights B1 and B2 from them and reads the ring's return (`lthwReturn`) in place of `lthw − 14` and `lthw − 11`.
+- **The screens** (`schematic-overviews.ts`, `station-schematics.ts`): the staging rule (`ceil(demand / 250 kW)`) is gone. Each boiler shows as the world has it (firing, locked out, or not), the heating ring's HEAT DEMAND is the ring's loads' demand, its RETURN the ring's, and the gas train's m³/h the boilers' supply (`ringGasM3h`). The bridge's BOILER CASCADE grid gives each boiler's place in the rota (LEAD, then 2 to 6) and its state: FIRING, CALLED, LOCKOUT, STANDBY or OFF.
+- **BH-MP2** (`boiler-heat-mimic.ts`), in the boiler house and its control-room copy (CR-MP7): each boiler's CALLED, READY, FIRE, LOCKOUT and LEAD lamps and its output; the header's FLOW and RETURN, the set point, the total and the plant's DEMAND in LED digits; the BOILER LOCKOUT, HEADER LOW and NO BOILER AVAILABLE lamps; PLANT ENABLE's OFF, AUTO and HAND lamps and RUN. Both read the world. The copy redraws only when the world's boiler house or ring changes.
+- **The bridge**: BH-MP2's page (HEAT OUTPUT · WARP FACTOR) is wired: each boiler's four lamps, the header, set point, demand and output, the alarm and PLANT ENABLED lamps, and PLANT START and STOP, which work in AUTO and are refused, as local, otherwise.
+
+## The rough panel and the alarms (stage 5)
+
+The rough panel is BH-MP2 itself in the boiler house (`BOILER_HEAT_PANEL`), so it needs no new installed asset. PLANT ENABLE is three push buttons, OFF, AUTO and HAND, with the lit lamp over them showing its position. ACCEPT accepts the sequencer's alarms, and RESET resets every locked-out boiler. All of these are local only. The control room's copy (`BOILER_HEAT_COPY`, CR-MP7) carries START and STOP, which work in AUTO only, and nothing more. Mission 122's CM6 replaces this panel.
+
+The alarms:
+
+- **BOILER LOCKOUT**, the main annunciator's window, now lights for any boiler locked out as well as for the SSOV shut. It is in the old control room, on the bridge's alarm list and on BH-MP2.
+- **HEADER LOW** takes the main annunciator's spare way ("LTHW FLOW TEMP LOW", to the boiler room). It lights while heat is wanted and the header is 10 K under its set point, and shows on BH-MP2 and the bridge.
+- **NO BOILER AVAILABLE** is on BH-MP2's lamp and the bridge's alarm list.
+- **BOILER PLANT OFF (INFO)** is on the bridge's list, for information only: the plant is left off or stopped, which is routine.
+
+With no load calling, the plant is released after a 60 s overrun (`loadOverrun`), so a new game's first moment, before any load calls, does not stop B-501.

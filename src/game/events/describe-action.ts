@@ -161,13 +161,15 @@ function said(
                     ? 'alarms ACCEPTED'
                     : a.act === 'reset'
                       ? 'lockouts RESET'
-                      : a.act === 'lead'
-                        ? `lead ${tag(a.boiler)}`
-                        : a.act === 'rotation'
-                          ? `lead rotation ${a.rotation.toUpperCase()}`
-                          : a.act === 'fan'
-                            ? `combustion air fan ${['HAND', 'OFF', 'AUTO'][a.hoa] ?? a.hoa}`
-                            : 'combustion panel RESET',
+                      : a.act === 'setting'
+                        ? `${a.setting} set to ${a.value}`
+                        : a.act === 'lead'
+                          ? `lead ${tag(a.boiler)}`
+                          : a.act === 'rotation'
+                            ? `lead rotation ${a.rotation.toUpperCase()}`
+                            : a.act === 'fan'
+                              ? `combustion air fan ${['HAND', 'OFF', 'AUTO'][a.hoa] ?? a.hoa}`
+                              : 'combustion panel RESET',
         severity:
           (a.act === 'run' && !a.run) ||
           (a.act === 'enable' && a.enable === 'off')

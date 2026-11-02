@@ -9,6 +9,7 @@ import { hallHandling } from '../../../game/plant/air-handling';
 import type { PoolId } from '../../../game/plant/pools';
 import { serviceAvailable } from '../../../game/plant/services';
 import { RING } from '../../../game/plant/lthw-ring';
+import { SEQUENCER } from '../../../game/plant/boiler-sequencer';
 import type { IsolatorName, ServiceRoom } from '../../../game/plant/services';
 import { WET_HALL_PLANT } from '../../../game/plant/wet-hall';
 import { olympicFlowsOf } from '../../../game/plant/olympic-battery';
@@ -116,9 +117,13 @@ function readPlant(world: World, pool: PoolId): PlantReading {
   const uvIsolator = UV_ISOLATORS[pool];
   const uvOn = circulating && (uvIsolator ? plant.isolators[uvIsolator] : true);
   const dosing = circulating && serviceAvailable(plant, room, 'chemical');
-  // The LTHW ring (mission 120): the boilers fire as its supply does.
+  // The LTHW ring (mission 120) and the boilers that fire it (mission 121).
   const ring = world.lthw;
-  const boilersFiring = ring.firing;
+  const boilers = {
+    firing: world.boilerHouse.boilers.map((b) => b.code === 3),
+    lockout: world.boilerHouse.boilers.map((b) => b.lockout !== null),
+  };
+  const boilersFiring = boilers.firing.some(Boolean);
   const airflow = hallHandling(world.airHandling)[pool].share;
   const airOn = serviceAvailable(plant, 'air_plant', 'power') && airflow > 0.05;
   const hallRh = water.hallRh;
@@ -158,7 +163,16 @@ function readPlant(world: World, pool: PoolId): PlantReading {
   // The boiler house's gas safety (`boiler-gas.ts`): its methane detector,
   // and its safety shut-off valve tripped shut, the boilers without gas.
   if (world.boilerGas.gasDetected) alarms.push('gas-detected');
-  if (!world.boilerGas.ssovOpen) alarms.push('boiler-lockout');
+  // Any boiler locked out (mission 121), or the SSOV shut: BOILER LOCKOUT;
+  // the sequencer's header low its own window.
+  if (
+    !world.boilerGas.ssovOpen ||
+    world.boilerHouse.boilers.some((b) => b.lockout !== null)
+  )
+    alarms.push('boiler-lockout');
+  const seq = world.boilerHouse.sequencer;
+  if (seq.wanted && world.lthw.flow < seq.setpoint - SEQUENCER.headerLow)
+    alarms.push('header-low');
   const amps = (on: boolean, full: number) => (on ? full * share : 0);
   const reading: PlantReading = {
     t: world.time,
@@ -177,6 +191,7 @@ function readPlant(world: World, pool: PoolId): PlantReading {
     lthwReturn: ring.return,
     heatDemand: ring.demand,
     heatSupply: ring.supply,
+    boilers,
     hallRh,
     chlorine: water.freeChlorine,
     ph: water.ph,

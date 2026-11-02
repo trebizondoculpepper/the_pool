@@ -61,7 +61,7 @@ const BOARDS: readonly Board[] = [
   {
     tag: control?.tag ?? 'annunciator',
     name: shortName(control?.name ?? 'Alarm annunciator'),
-    alarms: ANNUNCIATOR_ALARMS.filter((id) => id !== 'spare'),
+    alarms: ANNUNCIATOR_ALARMS,
     text: (id) => legend(ALARM_TEXT[id as keyof typeof ALARM_TEXT].window),
     pick: (w) => w.annunciator,
   },

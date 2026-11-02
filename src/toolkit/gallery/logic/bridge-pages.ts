@@ -76,6 +76,8 @@ export const PANEL_PAGE_ORDER: readonly { code: string; short: string }[] = [
   { code: 'PL1-CP2', short: 'LOUNGE DOSING' },
   // The heat energy mimic (mission 120).
   { code: 'CR-MP10', short: 'HEAT ENERGY' },
+  // The boiler house's cascade (mission 121).
+  { code: 'BH-MP2', short: 'BOILER CASCADE' },
 ];
 
 const STATION_SHORT: Record<string, string> = {

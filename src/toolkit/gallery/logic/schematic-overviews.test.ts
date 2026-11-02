@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { newWorld } from '../../../game/world';
+import { advance, applyAction, newWorld } from '../../../game/world';
 import { SCHEMATICS } from '../../../game/plant/schematics';
 import type {
   PlumbEdge,
@@ -143,22 +143,24 @@ describe('the hydrodynamic overviews', () => {
     expect(view.rates).toBeGreaterThan(0.5);
   });
 
-  it('stage the boilers on the heat the pools take, none without gas', () => {
+  it('show the boilers the world fires, none without gas (mission 121)', () => {
     const world = newWorld();
-    const warm = {
-      ...world,
-      pools: {
-        ...world.pools,
-        pool_02: { ...world.pools.pool_02, heating: 600 },
-      },
-    };
-    expect(boilersFiring(warm)).toBeGreaterThanOrEqual(3);
-    expect(
-      boilersFiring({
-        ...warm,
-        boilerGas: { ...warm.boilerGas, ssovOpen: false },
+    expect(boilersFiring(world)).toBe(1);
+    const cold = advance(
+      applyAction(world, { type: 'weather/ambient', celsius: -3 }),
+      1800,
+      10,
+    );
+    expect(boilersFiring(cold)).toBeGreaterThanOrEqual(2);
+    const cut = advance(
+      applyAction(cold, {
+        type: 'boiler-gas',
+        action: { act: 'ecv', open: false },
       }),
-    ).toBe(0);
+      10,
+      1,
+    );
+    expect(boilersFiring(cut)).toBe(0);
   });
 
   it('label machines from their node ids', () => {

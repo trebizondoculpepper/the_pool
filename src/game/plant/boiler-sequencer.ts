@@ -68,6 +68,8 @@ export const SEQUENCER = {
   /** Each boiler's minimum run once called, and minimum off once released, s. */
   minRun: 120,
   minOff: 60,
+  /** With no load calling for this long, s, the plant is released (the loads' calling overrun). */
+  loadOverrun: 60,
   /** World hours between lead rotations by hours run. */
   rotationHours: 6,
   /** Frost protection: the pumps run below this outside, °C; the lead fires below the header's first and stops above its second. */
@@ -85,6 +87,10 @@ export interface BoilerSequencerState {
   run: boolean;
   /** The header's set point, °C. */
   setpoint: number;
+  /** The stage-up and stage-down delays and each boiler's minimum run, s: the operator's settings. */
+  stageUp: number;
+  stageDown: number;
+  minRun: number;
   rotation: LeadRotation;
   /** The lead boiler's index (0 is B-501). */
   lead: number;
@@ -106,7 +112,9 @@ export interface BoilerSequencerState {
   starts: number[];
   /** Seconds since the lead last rotated. */
   sinceRotation: number;
-  /** Whether heat is wanted: the plant enabled and (in AUTO) a load calling. */
+  /** Seconds since a load last called for heat. */
+  sinceLoad: number;
+  /** Whether heat is wanted: the plant enabled and (in AUTO) a load calling, or within the overrun since one did. */
   wanted: boolean;
   /** Frost protection: firing the lead, and running the pumps. */
   frost: boolean;
@@ -139,6 +147,9 @@ export function newBoilerSequencer(): BoilerSequencerState {
     enable: 'auto',
     run: true,
     setpoint: SEQUENCER.setpoint,
+    stageUp: SEQUENCER.stageUpDelay,
+    stageDown: SEQUENCER.stageDownDelay,
+    minRun: SEQUENCER.minRun,
     rotation: 'hours',
     lead: 0,
     called: [],
@@ -151,6 +162,7 @@ export function newBoilerSequencer(): BoilerSequencerState {
     hoursRun: each(() => 0),
     starts: each(() => 0),
     sinceRotation: 0,
+    sinceLoad: 0,
     wanted: true,
     frost: false,
     frostPumps: false,
@@ -262,7 +274,9 @@ export function stepBoilerSequencer(
   const hoursRun = s.hoursRun.map((h, i) => h + (firing[i] ? dt / 3600 : 0));
   const starts = [...s.starts];
   const enabled = plantEnabled(s);
-  const wanted = enabled && (s.enable === 'hand' || inputs.loadCalling);
+  // No load calling releases the plant once it has lasted the overrun.
+  const sinceLoad = inputs.loadCalling ? 0 : s.sinceLoad + dt;
+  const wanted = enabled && (s.enable === 'hand' || sinceLoad < C.loadOverrun);
 
   // The lead: rotated by hours run at its interval; promoted past an unavailable one.
   let lead = s.lead;
@@ -350,16 +364,16 @@ export function stepBoilerSequencer(
         call(lead);
         upTimer = 0;
       } else if (
-        upTimer >= C.stageUpDelay &&
+        upTimer >= s.stageUp &&
         stageTimer >= C.stageInterval &&
         next !== undefined
       ) {
         call(next);
         upTimer = 0;
       } else if (
-        downTimer >= C.stageDownDelay &&
+        downTimer >= s.stageDown &&
         stageTimer >= C.stageInterval &&
-        sinceChange[last] >= C.minRun
+        sinceChange[last] >= s.minRun
       ) {
         called = called.slice(0, -1);
         release(last);
@@ -385,6 +399,7 @@ export function stepBoilerSequencer(
     hoursRun,
     starts,
     sinceRotation,
+    sinceLoad,
     wanted,
     frost,
     frostPumps,
@@ -404,3 +419,25 @@ export const setPlantRun = (
   s: BoilerSequencerState,
   run: boolean,
 ): BoilerSequencerState => (s.run === run ? s : { ...s, run });
+
+/** The operator's numeric settings, their ranges and steps (the cascade manager's own limits). */
+export const SEQUENCER_SETTINGS = {
+  setpoint: { min: 50, max: 85, step: 1 },
+  stageUp: { min: 30, max: 900, step: 30 },
+  stageDown: { min: 30, max: 900, step: 30 },
+  minRun: { min: 60, max: 1200, step: 30 },
+} as const;
+export type SequencerSetting = keyof typeof SEQUENCER_SETTINGS;
+
+/** A setting changed, held within its range and rounded to its step from its least. */
+export function setSequencerSetting(
+  s: BoilerSequencerState,
+  setting: SequencerSetting,
+  value: number,
+): BoilerSequencerState {
+  if (!Number.isFinite(value)) return s;
+  const { min, max, step } = SEQUENCER_SETTINGS[setting];
+  const held = Math.max(min, Math.min(max, value));
+  const v = min + Math.round((held - min) / step) * step;
+  return s[setting] === v ? s : { ...s, [setting]: v };
+}

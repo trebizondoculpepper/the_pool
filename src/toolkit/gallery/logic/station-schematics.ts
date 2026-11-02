@@ -464,15 +464,25 @@ const cascade: Design = {
   rows: ['B-501', 'B-502', 'B-503', 'B-504', 'B-505', 'B-506'],
   columns: ['CASCADE', 'GAS', 'STAGE', 'FIRING'],
   read: ({ world: w }) => {
+    // The world's boilers and their sequencer (mission 121): each one's
+    // place in the rota from the lead, and its state.
     const gas = boilerGasOn(w.boilerGas) && w.intake.open.gas;
-    const firing = boilersFiring(w);
-    return [0, 1, 2, 3, 4, 5].map((i): Cell[] => [
+    const seq = w.boilerHouse.sequencer;
+    return w.boilerHouse.boilers.map((b, i): Cell[] => [
       { words: `${Math.floor(i / 2) + 1}`, colour: 'tertiary' },
       ok(gas, gas ? 'ON' : 'OFF'),
-      { words: `${i + 1}`, colour: 'secondary' },
-      i < firing
-        ? { words: 'FIRING', colour: 'orange-peel' }
-        : { words: 'STANDBY', colour: 'dim', dark: true },
+      seq.lead === i
+        ? { words: 'LEAD', colour: 'secondary' }
+        : { words: `${((i - seq.lead + 6) % 6) + 1}`, colour: 'secondary' },
+      b.lockout
+        ? { words: 'LOCKOUT', colour: 'alert' }
+        : b.code === 3
+          ? { words: 'FIRING', colour: 'orange-peel' }
+          : seq.called.includes(i)
+            ? { words: 'CALLED', colour: 'golden-tanoi' }
+            : b.on
+              ? { words: 'STANDBY', colour: 'dim', dark: true }
+              : { words: 'OFF', colour: 'dim', dark: true },
     ]);
   },
 };

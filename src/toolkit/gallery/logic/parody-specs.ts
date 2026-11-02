@@ -803,25 +803,85 @@ export const PARODY_SPECS: readonly ParodySpec[] = [
     shape: 'trapezium',
     pages: [
       {
-        name: 'OUTPUT',
+        name: 'CASCADE',
         columns: [
           [
             {
-              kind: 'gauges',
-              items: ['B-501 kW', 'B-502 kW', 'TOTAL'],
-              vertical: true,
+              kind: 'lamps',
+              labels: [
+                'B-501 CALLED',
+                'B-501 FIRING',
+                'B-501 LOCKOUT',
+                'B-501 LEAD',
+              ],
+            },
+            {
+              kind: 'lamps',
+              labels: [
+                'B-502 CALLED',
+                'B-502 FIRING',
+                'B-502 LOCKOUT',
+                'B-502 LEAD',
+              ],
+            },
+            {
+              kind: 'lamps',
+              labels: [
+                'B-503 CALLED',
+                'B-503 FIRING',
+                'B-503 LOCKOUT',
+                'B-503 LEAD',
+              ],
+            },
+            {
+              kind: 'lamps',
+              labels: [
+                'B-504 CALLED',
+                'B-504 FIRING',
+                'B-504 LOCKOUT',
+                'B-504 LEAD',
+              ],
+            },
+            {
+              kind: 'lamps',
+              labels: [
+                'B-505 CALLED',
+                'B-505 FIRING',
+                'B-505 LOCKOUT',
+                'B-505 LEAD',
+              ],
+            },
+            {
+              kind: 'lamps',
+              labels: [
+                'B-506 CALLED',
+                'B-506 FIRING',
+                'B-506 LOCKOUT',
+                'B-506 LEAD',
+              ],
             },
           ],
           [
             {
-              kind: 'lamps',
-              labels: ['B-501 READY', 'B-501 FIRING', 'B-501 FAULT'],
+              kind: 'readouts',
+              items: [
+                ['HEADER FLOW', '°C', 78, 82],
+                ['HEADER RETURN', '°C', 60, 78],
+                ['SET POINT', '°C', 80, 80],
+                ['DEMAND', '%', 0, 100],
+                ['OUTPUT', 'kW', 0, 1800],
+              ],
             },
             {
               kind: 'lamps',
-              labels: ['B-502 READY', 'B-502 FIRING', 'B-502 FAULT'],
+              labels: [
+                'PLANT ENABLED',
+                'BOILER LOCKOUT',
+                'HEADER LOW',
+                'NO BOILER AVAILABLE',
+              ],
             },
-            { kind: 'readouts', items: [['ESTIMATED OUTPUT', 'kW', 180, 600]] },
+            { kind: 'buttons', labels: ['PLANT START', 'PLANT STOP'] },
           ],
         ],
       },

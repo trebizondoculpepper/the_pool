@@ -17,30 +17,20 @@ import {
   gasPressures,
   gasTo,
   meterFlow,
-  newBoiler,
-  newGasHouse,
-  pressBoiler,
-  setBoilerSetpoint,
-  stepBoiler,
 } from '../../../components/plant/logic/boiler-house';
 import type {
   BoilerState,
   GasHouse,
 } from '../../../components/plant/logic/boiler-house';
-import {
-  boilersPermitted,
-  newCombustion,
-  resetCombustion,
-  setFan,
-  stepCombustion,
-} from '../../../components/plant/logic/combustion';
-import type { CombustionState } from '../../../components/plant/logic/combustion';
 import { createCombustionPanel } from '../../../components/plant/views/combustion-panel';
 import { currentPlant } from './live-plant';
 import { GAS_MIMIC, gasState } from '../../logic/pool-mimics';
 import {
   BOILER_HEAT_MIMIC,
+  BOILER_HEAT_PANEL,
+  boilerHeatPress,
   boilerHeatState,
+  cascadeOf,
 } from '../../logic/boiler-heat-mimic';
 import {
   createBoilerCascade,
@@ -63,90 +53,105 @@ import type {
   BoilerGasAction,
   BoilerGasState,
 } from '../../../../game/plant/boiler-gas';
+import {
+  actOnBoilerHouse,
+  newBoilerHouse,
+  stepBoilerHouse,
+} from '../../../../game/plant/boiler-plant';
+import type {
+  BoilerHouseAction,
+  BoilerHouseState,
+} from '../../../../game/plant/boiler-plant';
 
 /**
- * The boiler house, working: two boilers' controllers and the gas they
- * share, stepped once a frame by the cascade's exhibit; the gas train,
- * the emergency stop, the gas detector and the gas mimic read and change
- * it. The heat demand comes from the plant's reading
- * (`control-room-demo.ts`): boiler 1 leads, boiler 2 follows when the
- * load is high. Closing the emergency control valve or striking the
- * emergency stop takes the boilers' gas away: a boiler loses its flame,
- * retries and locks out until the gas is back and RESET is pressed.
+ * The boiler house, working: its six boilers' controllers, their
+ * combustion air and their sequencer are the world's (mission 121,
+ * `game/plant/boiler-plant.ts`): they run whichever room the player is
+ * in, and here they are shown and worked. Each boiler fires as the
+ * sequencer calls it, on the LTHW ring's header; closing the emergency
+ * control valve or striking the emergency stop takes the boilers' gas
+ * away, the sequencer releases them, and the displays say GAS.
  *
  * The gas safety itself (the ECV, the emergency stop, the detector and
- * the SSOV) is the world's (`game/plant/boiler-gas.ts`): it survives a
- * reload, the control room sees it, and with the SSOV shut the world's
- * pools get no heat. Here it is shown and worked; the boilers'
- * controllers and their isolators stay the room's.
+ * the SSOV) is the world's too (`game/plant/boiler-gas.ts`). Where there
+ * is no world (no page), the room runs its own copies of both.
  */
-const house = {
-  boilers: Array.from({ length: 6 }, () => newBoiler()) as BoilerState[],
-  gas: newGasHouse(6) as GasHouse,
-  isolators: [] as BallValveView[],
+const room = {
   ecv: null as BallValveView | null,
-  /** The boiler house's electrical supply: on, unless bound to the world's. */
+  /** The boiler house's electrical supply where there is no world: on, unless bound. */
   powered: () => true,
   seconds: 0,
-  /** Flue temperatures, the combustion air fan and the room's CO. */
-  combustion: newCombustion(6) as CombustionState,
-  /**
-   * How fouled each boiler's heat exchanger is, 0 to 1: B-502's is due a
-   * clean, so its flue runs hotter than B-501's.
-   */
-  fouling: [0, 0.35, 0.1, 0.25, 0.15, 0.3],
 };
-
-/**
- * The boiler house's boilers and gas as its room last stepped them, read
- * only: for the control room's copies of its mimics (the owner,
- * 2026-11-01), which show what the boiler house's boards show.
- */
-export const boilerHouseShown = (): {
-  readonly boilers: readonly BoilerState[];
-  readonly gas: GasHouse;
-} => house;
-
-// A development handle for the console: the boiler house's state.
-if (typeof window !== 'undefined')
-  (window as unknown as { boilerHouse: unknown }).boilerHouse = house;
 
 /** The world, where there is a page to keep it (not in tests). */
 const store = () => (typeof window === 'undefined' ? null : roomWorld());
 /** The gas safety where there is no world (no page): the room's own. */
 const ownGas = signal<BoilerGasState>(newBoilerGas());
+/** The boiler house where there is no world: the room's own. */
+const ownHouse = signal<BoilerHouseState>(newBoilerHouse());
 /** The boiler house's gas safety, as the world has it. */
 const gasSafety = (): BoilerGasState =>
   store()?.world.value.boilerGas ?? ownGas.value;
+/** The boiler house's boilers, combustion and sequencer, as the world has them. */
+const houseNow = (): BoilerHouseState =>
+  store()?.world.value.boilerHouse ?? ownHouse.value;
 /** Work the gas safety: in the world, else the room's own. */
 const actOnGas = (action: BoilerGasAction) => {
   const world = store();
   if (world) world.dispatch({ type: 'boiler-gas', action });
   else ownGas.value = actOnBoilerGas(ownGas.value, action);
 };
-
-/** Bring the gas house up to date with the world's gas safety and the isolators. */
-const settle = () => {
-  const g = gasSafety();
-  house.gas = {
-    ecvOpen: g.ecvOpen,
-    stopPressed: g.stopPressed,
-    gasDetected: g.gasDetected,
-    ssovOpen: g.ssovOpen,
-    isolators: house.isolators.length
-      ? house.isolators.map((v) => v.open)
-      : house.gas.isolators,
-  };
+/** Work the boiler house: in the world, else the room's own. */
+const actOnHouse = (action: BoilerHouseAction) => {
+  const world = store();
+  if (world) world.dispatch({ type: 'boiler-house', action });
+  else ownHouse.value = actOnBoilerHouse(ownHouse.value, action);
 };
+
+/** Each boiler's manual gas isolating valve: all open (none is drawn to shut). */
+const ISOLATORS: readonly boolean[] = [true, true, true, true, true, true];
+let gasShown: { from: BoilerGasState; house: GasHouse } | null = null;
+/** The gas house as the world's gas safety has it, the same object until that changes. */
+const gasHouse = (): GasHouse => {
+  const g = gasSafety();
+  if (gasShown?.from !== g)
+    gasShown = {
+      from: g,
+      house: {
+        ecvOpen: g.ecvOpen,
+        stopPressed: g.stopPressed,
+        gasDetected: g.gasDetected,
+        ssovOpen: g.ssovOpen,
+        isolators: [...ISOLATORS],
+      },
+    };
+  return gasShown.house;
+};
+
+/**
+ * The boiler house's boilers and gas, read only: for the control room's
+ * copies of its mimics (the owner, 2026-11-01), which show what the
+ * boiler house's boards show. The world's (mission 121).
+ */
+export const boilerHouseShown = (): {
+  readonly boilers: readonly BoilerState[];
+  readonly gas: GasHouse;
+} => ({ boilers: houseNow().boilers, gas: gasHouse() });
+
+// A development handle for the console: the boiler house's state.
+if (typeof window !== 'undefined')
+  Object.defineProperty(window, 'boilerHouse', {
+    get: () => ({ ...houseNow(), gas: gasHouse() }),
+    configurable: true,
+  });
 
 /** What this plant room is for, printed on its title card. */
 export const PURPOSE =
   'Boilers, low-loss header, heating pumps, pressurisation and gas safety';
 
-/** A physical pair of controllers in one of the room's three cascades. */
-/** Bind the boiler house's supply, as the leisure centre's world has it. */
+/** Bind the boiler house's supply where there is no world (the world's own steps its boilers). */
 export function bindBoilerSupply(powered: () => boolean) {
-  house.powered = powered;
+  room.powered = powered;
 }
 
 export function createLiveBoilerCascade(
@@ -158,12 +163,8 @@ export function createLiveBoilerCascade(
     const i = first + offset;
     const panel = createBoilerPanel(
       kit,
-      (key) => {
-        house.boilers[i] = pressBoiler(house.boilers[i], key);
-      },
-      (celsius) => {
-        house.boilers[i] = setBoilerSetpoint(house.boilers[i], celsius);
-      },
+      (key) => actOnHouse({ act: 'press', boiler: i, key }),
+      (celsius) => actOnHouse({ act: 'setpoint', boiler: i, celsius }),
     );
     for (const [o, use] of panel.parts.uses) parts.uses.set(o, use);
     return panel;
@@ -190,9 +191,9 @@ export function createLiveBoilerCascade(
       tag,
       model: { node: tag },
       status: () =>
-        boilerStatus(house.boilers[index], {
-          powered: house.powered(),
-          gas: gasTo(house.gas, index),
+        boilerStatus(houseNow().boilers[index], {
+          powered: store() ? true : room.powered(),
+          gas: gasTo(gasHouse(), index),
         }),
     });
   });
@@ -200,50 +201,45 @@ export function createLiveBoilerCascade(
     object: cascade,
     parts,
     update(delta) {
-      // One cascade advances the shared model once; each physical pair
-      // displays only its own boiler controllers. The model stands still
-      // with the world's clock (the menu, the console's pause), as the
-      // world does: its displays then have nothing new to show (mission 094).
-      if (first === 0 && !paused.value && !clockStopped.value) {
-        house.seconds += delta;
-        settle();
-        const plant = currentPlant();
-        const lag = Math.sin(plant.t / 45) > 0;
-        house.boilers = house.boilers.map((boiler, i) =>
-          stepBoiler(
-            boiler,
+      // The world steps the boilers (mission 121); with no world, one
+      // cascade steps the room's own, as the world would, on the plant's
+      // reading. Either stands still with the world's clock (the menu, the
+      // console's pause): its displays then have nothing new to show
+      // (mission 094).
+      const running = !paused.value && !clockStopped.value;
+      if (first === 0 && running) {
+        room.seconds += delta;
+        if (!store()) {
+          const plant = currentPlant();
+          const gas = gasSafety();
+          ownHouse.value = stepBoilerHouse(
+            ownHouse.value,
             {
-              demand:
-                plant.boilersFiring &&
-                i < 5 &&
-                (i === 0 || lag) &&
-                boilersPermitted(house.combustion),
-              gas: gasTo(house.gas, i),
-              systemReturn: plant.lthw - 14,
-              pressure: 2.4,
-              powered: house.powered(),
+              gas: gas.ecvOpen && gas.ssovOpen,
+              powered: room.powered(),
+              circulating: true,
+              outside: 12,
+              loadCalling: true,
             },
-            delta,
-          ),
-        );
-        house.combustion = stepCombustion(
-          house.combustion,
-          house.boilers,
-          house.fouling,
-          delta,
-        );
+            plant.lthw,
+            plant.lthwReturn ?? plant.lthw - 4,
+            Math.min(delta, 1),
+          );
+        }
       }
+      const { boilers } = houseNow();
+      const gas = gasHouse();
       // What each boiler's sounds follow; the room updates its parts.
       sounders.forEach((sounder, offset) =>
-        sounder.show(house.boilers[first + offset]),
+        sounder.show(boilers[first + offset]),
       );
       // Each display says GAS while no gas reaches its boiler, firing or not.
       panels.forEach((panel, offset) =>
         panel.show(
-          house.boilers[first + offset],
-          house.seconds,
+          boilers[first + offset],
+          room.seconds,
           delta,
-          gasTo(house.gas, first + offset),
+          gasTo(gas, first + offset),
         ),
       );
     },
@@ -300,7 +296,7 @@ export const EXHIBITS: readonly PlantExhibit[] = [
     size: { w: 2.2, d: 0.6, h: 1.7, mount: 'floor' },
     build(kit): LiveExhibit {
       const parts = createPartSet();
-      house.ecv = createGasBallValve(kit, {
+      room.ecv = createGasBallValve(kit, {
         pipeRadius: 0.03,
         name: 'Gas emergency control valve',
         binding: {
@@ -308,15 +304,12 @@ export const EXHIBITS: readonly PlantExhibit[] = [
           set: (open) => actOnGas({ act: 'ecv', open }),
         },
       });
-      parts.add(house.ecv);
-      const train = createGasTrain(kit, { ecv: house.ecv.object });
+      parts.add(room.ecv);
+      const train = createGasTrain(kit, { ecv: room.ecv.object });
       return {
         object: train,
         parts,
-        update: () => {
-          settle();
-          train.setSsov(house.gas.ssovOpen);
-        },
+        update: () => train.setSsov(gasHouse().ssovOpen),
       };
     },
   },
@@ -386,8 +379,7 @@ export const EXHIBITS: readonly PlantExhibit[] = [
           seconds += delta;
           // With no world the room runs its own detector's TEST.
           if (!store()) ownGas.value = stepBoilerGas(ownGas.value, delta);
-          settle();
-          const g = house.gas;
+          const g = gasHouse();
           const flash = Math.floor(seconds * 2) % 2 === 0;
           // Healthy; fault (the SSOV shut), flashing while the stop is
           // in; gas detected.
@@ -408,13 +400,13 @@ export const EXHIBITS: readonly PlantExhibit[] = [
     size: { w: 1.0, d: 0.25, h: 0.75, mount: 'wall', y: 1.5 },
     build(kit): LiveExhibit {
       const panel = createCombustionPanel(kit, {
-        setFan: (hoa) => (house.combustion = setFan(house.combustion, hoa)),
-        reset: () => (house.combustion = resetCombustion(house.combustion)),
+        setFan: (hoa) => actOnHouse({ act: 'fan', hoa }),
+        reset: () => actOnHouse({ act: 'combustion-reset' }),
       });
       return {
         object: panel.group,
         parts: panel.parts,
-        update: () => panel.show(house.combustion),
+        update: () => panel.show(houseNow().combustion),
       };
     },
   },
@@ -436,16 +428,18 @@ export const EXHIBITS: readonly PlantExhibit[] = [
         object: board.group,
         parts: board.parts,
         update() {
-          const flow = meterFlow(house.gas, house.boilers);
-          const { supply, burners } = gasPressures(house.gas, flow);
+          const gas = gasHouse();
+          const { boilers } = houseNow();
+          const flow = meterFlow(gas, boilers);
+          const { supply, burners } = gasPressures(gas, flow);
           board.show(
             gasState({
-              ecvOpen: house.gas.ecvOpen,
-              ssovOpen: house.gas.ssovOpen,
-              stopPressed: house.gas.stopPressed,
-              gasDetected: house.gas.gasDetected,
-              isolators: house.gas.isolators,
-              boilers: house.boilers.map((b) => ({
+              ecvOpen: gas.ecvOpen,
+              ssovOpen: gas.ssovOpen,
+              stopPressed: gas.stopPressed,
+              gasDetected: gas.gasDetected,
+              isolators: gas.isolators,
+              boilers: boilers.map((b) => ({
                 firing: b.code === 3,
                 lockout: b.lockout !== null,
                 rate: b.rate,
@@ -472,11 +466,33 @@ export const EXHIBITS: readonly PlantExhibit[] = [
       y: 1.7,
     },
     build(kit): LiveExhibit {
-      const board = createMimicBoard(kit, BOILER_HEAT_MIMIC);
+      // The sequencer's rough panel too (mission 121): PLANT ENABLE, ACCEPT, RESET.
+      const board = createMimicBoard(kit, BOILER_HEAT_PANEL, {
+        press: (id) => {
+          const action = boilerHeatPress(id);
+          if (action) actOnHouse(action);
+        },
+      });
       return {
         object: board.group,
         parts: board.parts,
-        update: () => board.show(boilerHeatState(house.boilers)),
+        update: () => {
+          const house = houseNow();
+          const ring = store()?.world.value.lthw;
+          const plant = ring ? null : currentPlant();
+          board.show(
+            boilerHeatState(
+              house.boilers,
+              cascadeOf(
+                house,
+                ring ?? {
+                  flow: plant!.lthw,
+                  return: plant!.lthwReturn ?? plant!.lthw,
+                },
+              ),
+            ),
+          );
+        },
       };
     },
   },

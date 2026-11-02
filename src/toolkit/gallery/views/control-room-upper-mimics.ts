@@ -9,7 +9,12 @@ import { boilerHouseShown } from '../rooms/plant/boiler';
 import { roomWorld } from '../../save/world-store';
 import { JACUZZI_MIMIC, jacuzziMimicState } from '../logic/jacuzzi-mimic';
 import { GAS_MIMIC, gasState } from '../logic/pool-mimics';
-import { BOILER_HEAT_MIMIC, boilerHeatState } from '../logic/boiler-heat-mimic';
+import {
+  BOILER_HEAT_COPY,
+  boilerHeatPress,
+  boilerHeatState,
+  cascadeOf,
+} from '../logic/boiler-heat-mimic';
 import { createLoungeFilterMimic } from './lounge-filter-mimic';
 import { createEnergyMimic } from './energy-mimic';
 
@@ -21,8 +26,8 @@ const same = (a: readonly unknown[], b: readonly unknown[]) =>
  * The control room's upper row of mimics (the owner, 2026-11-01): copies
  * of the plant rooms' boards, read only, each showing what its plant
  * room's board shows. The lounge's and the jacuzzi's from the world; the
- * boiler house's from the world's gas safety and the boilers as the
- * boiler house last stepped them (its controllers are its room's).
+ * boiler house's from the world's gas safety, boilers and sequencer
+ * (mission 121).
  * Each works out its state only when what it reads has changed.
  */
 export function createUpperMimic(
@@ -98,16 +103,31 @@ export function createUpperMimic(
     };
   }
   if (kind === 'mimic-boiler-heat') {
-    const board = createMimicBoard(kit, BOILER_HEAT_MIMIC);
+    // START and STOP of the plant in AUTO, nothing more (mission 121).
+    const board = createMimicBoard(kit, BOILER_HEAT_COPY, {
+      press: (id) => {
+        const action = boilerHeatPress(id);
+        if (action?.act === 'run')
+          store?.dispatch({ type: 'boiler-house', action });
+      },
+    });
     let shown: readonly unknown[] = [];
     return {
       object: board.group,
       parts: board.parts,
       update() {
+        // The world's boilers and sequencer, and the ring's header (mission 121).
+        const world = store?.world.value;
         const { boilers } = boilerHouseShown();
-        if (same(boilers, shown)) return;
-        shown = [...boilers];
-        board.show(boilerHeatState([...boilers]));
+        const inputs = world ? [world.boilerHouse, world.lthw] : boilers;
+        if (same(inputs, shown)) return;
+        shown = [...inputs];
+        board.show(
+          boilerHeatState(
+            [...boilers],
+            world ? cascadeOf(world.boilerHouse, world.lthw) : undefined,
+          ),
+        );
       },
     };
   }
