@@ -32,7 +32,19 @@ import {
   viewDimensions,
 } from '../logic/cad-views';
 import type { Bounds, CadViewName, Dimensions } from '../logic/cad-views';
-import { magicPageLink } from '../logic/item-audit';
+import { magicPageLink, magicRoomLink } from '../logic/item-audit';
+import {
+  BUDGET_WORDS,
+  POLY_VARIANTS,
+  VARIANT_LABEL,
+  budgetStatus,
+  costSummary,
+  recordAge,
+  usageOfRooms,
+  weightOf,
+} from '../logic/visual-cost';
+import type { PolyVariant, VisualCost } from '../logic/visual-cost';
+import { lastMeasurement, lowVersionOf } from './visual-cost';
 import { cadLights } from './cad-sheet';
 import { ITEM_AUDIT_SECTIONS } from './item-audit-page';
 import type { MagicAdapter } from './magic-adapters';
@@ -143,7 +155,7 @@ function builtFingerprint(object: Object3D): string {
 }
 
 /** The item as its adapter builds it, at its representative state, in metres. */
-function buildItem(adapter: MagicAdapter) {
+function buildItem(adapter: MagicAdapter, variant: string) {
   const kit = createPanelKit();
   const item = adapter.build(kit);
   if (adapter.looks[0]) item.setLook?.(adapter.looks[0].id);
@@ -151,9 +163,21 @@ function buildItem(adapter: MagicAdapter) {
   item.update?.(0);
   const holder = new Group();
   holder.add(item.object);
+  // 135's LOW: its low-poly version in the item's place.
+  const low = variant === 'low' ? lowVersionOf(adapter, kit, item) : null;
+  if (low) {
+    holder.remove(item.object);
+    holder.add(low.object);
+  }
   return {
     holder,
     dispose() {
+      if (low) {
+        disposeKit(kit, holder);
+        low.dispose();
+        holder.remove(low.object);
+        holder.add(item.object);
+      }
       item.parts?.dispose();
       item.dispose?.();
       disposeKit(kit, holder);
@@ -178,7 +202,7 @@ export async function renderCadViews(
   adapter: MagicAdapter,
   { variant = 'default' }: { variant?: string } = {},
 ): Promise<CadSheet & { fromCache: boolean }> {
-  const { holder, dispose } = buildItem(adapter);
+  const { holder, dispose } = buildItem(adapter, variant);
   try {
     const id = cadEntryId(adapter.kind, variant);
     const key = cadCacheKey({
@@ -267,6 +291,8 @@ const STYLE = `
 .cad .dims { position: absolute; right: 6px; top: 4px; }
 .cad .bar { position: absolute; left: 6px; bottom: 6px; white-space: nowrap; }
 .cad .bar i { display: block; height: 4px; border: 1px solid #23272b; border-top: 0; margin-bottom: 2px; }
+.cad-poly button.is-on { background: #3d5a80; color: #fff; }
+.cad-cost { margin: 4px 0; font-size: 13px; }
 .cad .wait { position: absolute; inset: 0; display: grid; place-items: center; color: #5a6066; }
 `;
 
@@ -299,61 +325,203 @@ function cadSection(adapter: MagicAdapter | undefined, kind: string) {
   }
   const note = document.createElement('p');
   note.className = 'note';
-  note.textContent = 'Drawing its views (first visit since it changed)…';
   const grid = document.createElement('div');
   grid.className = 'cad';
-  const figures = new Map<CadViewName, HTMLElement>();
-  for (const v of CAD_VIEWS) {
-    const f = document.createElement('figure');
-    const label = document.createElement('span');
-    label.className = 'label';
-    label.textContent = v.label;
-    const wait = document.createElement('span');
-    wait.className = 'wait';
-    wait.textContent = 'drawing…';
-    f.append(wait, label);
-    grid.append(f);
-    figures.set(v.name, f);
+  // HIGH · LOW (mission 135): either version's views, each cached apart.
+  const poly = document.createElement('p');
+  poly.className = 'cad-poly';
+  const buttons = new Map<PolyVariant, HTMLButtonElement>();
+  for (const v of POLY_VARIANTS) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = VARIANT_LABEL[v];
+    b.addEventListener('click', () => show(v));
+    buttons.set(v, b);
+    poly.append(b);
   }
-  section.append(note, grid);
-  const state = { kind, done: false, fromCache: false, key: '' };
+  const cost = document.createElement('p');
+  cost.className = 'cad-cost';
+  section.append(poly, cost, note, grid);
+  const state = {
+    kind,
+    variant: 'high' as PolyVariant,
+    done: false,
+    fromCache: false,
+    key: '',
+  };
   (window as unknown as { __cadViews: unknown }).__cadViews = state;
-  // After the page has painted its frames: drawing takes a moment.
-  setTimeout(() => {
-    void renderCadViews(adapter)
-      .then((sheet) => {
-        for (const v of CAD_VIEWS) {
-          const f = figures.get(v.name)!;
-          const img = document.createElement('img');
-          img.src = sheet.images[v.name];
-          img.alt = `${adapter.title}, ${v.label.toLowerCase()} view`;
-          f.querySelector('.wait')?.replaceWith(img);
-          const d = viewDimensions(v.name, sheet.dims);
-          if (!d) continue;
-          const dims = document.createElement('span');
-          dims.className = 'dims';
-          dims.textContent = d.words;
-          const bar = scaleBar(sheet.pixelsPerMetre, PIXELS * 0.3);
-          const b = document.createElement('span');
-          b.className = 'bar';
-          const tick = document.createElement('i');
-          // The bar's length as a share of the frame, which the image fills.
-          b.style.width = `${(bar.pixels / PIXELS) * 100}%`;
-          b.append(tick, bar.label);
-          f.append(dims, b);
-        }
-        note.textContent = `${sheet.dims.w} × ${sheet.dims.d} × ${sheet.dims.h} mm (W × D × H); the flat views share one scale. ${sheet.fromCache ? 'From the browser’s cache: drawn under this build and builder.' : 'Drawn now and cached in this browser.'} Representative state: ${adapter.looks[0]?.words ?? 'as built'}.`;
-        Object.assign(state, {
-          done: true,
-          fromCache: sheet.fromCache,
-          key: sheet.key,
+  const record = lastMeasurement(kind);
+  const costLine = (v: PolyVariant) => {
+    const room = document.createElement('a');
+    room.href = magicRoomLink(kind).replace(/^bench\.html/, '');
+    room.textContent = record
+      ? 'open the magic room to measure afresh'
+      : 'open the magic room to measure it';
+    const c = record?.[v];
+    cost.replaceChildren(
+      c
+        ? `${VARIANT_LABEL[v]}: ${costSummary(c)} · ${BUDGET_WORDS[budgetStatus(c, [kind, `kind:${kind}`]).state]} · measured in its magic room ${recordAge(record.measuredAt, Date.now())}; `
+        : 'Visual cost not measured in this browser yet: ',
+      room,
+    );
+  };
+  let drawing = 0;
+  const show = (variant: PolyVariant) => {
+    const ticket = ++drawing;
+    state.variant = variant;
+    state.done = false;
+    for (const [v, b] of buttons) b.classList.toggle('is-on', v === variant);
+    costLine(variant);
+    note.textContent = 'Drawing its views (first visit since it changed)…';
+    const figures = new Map<CadViewName, HTMLElement>();
+    grid.replaceChildren();
+    for (const v of CAD_VIEWS) {
+      const f = document.createElement('figure');
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = `${v.label} · ${VARIANT_LABEL[variant]}`;
+      const wait = document.createElement('span');
+      wait.className = 'wait';
+      wait.textContent = 'drawing…';
+      f.append(wait, label);
+      grid.append(f);
+      figures.set(v.name, f);
+    }
+    // After the page has painted its frames: drawing takes a moment.
+    setTimeout(() => {
+      void renderCadViews(adapter, { variant })
+        .then((sheet) => {
+          if (ticket !== drawing) return;
+          for (const v of CAD_VIEWS) {
+            const f = figures.get(v.name)!;
+            const img = document.createElement('img');
+            img.src = sheet.images[v.name];
+            img.alt = `${adapter.title}, ${v.label.toLowerCase()} view, ${VARIANT_LABEL[variant]} version`;
+            f.querySelector('.wait')?.replaceWith(img);
+            const d = viewDimensions(v.name, sheet.dims);
+            if (!d) continue;
+            const dims = document.createElement('span');
+            dims.className = 'dims';
+            dims.textContent = d.words;
+            const bar = scaleBar(sheet.pixelsPerMetre, PIXELS * 0.3);
+            const b = document.createElement('span');
+            b.className = 'bar';
+            const tick = document.createElement('i');
+            // The bar's length as a share of the frame, which the image fills.
+            b.style.width = `${(bar.pixels / PIXELS) * 100}%`;
+            b.append(tick, bar.label);
+            f.append(dims, b);
+          }
+          note.textContent = `${sheet.dims.w} × ${sheet.dims.d} × ${sheet.dims.h} mm (W × D × H); the flat views share one scale. ${sheet.fromCache ? 'From the browser’s cache: drawn under this build and builder.' : 'Drawn now and cached in this browser.'} Representative state: ${adapter.looks[0]?.words ?? 'as built'}.`;
+          Object.assign(state, {
+            done: true,
+            fromCache: sheet.fromCache,
+            key: sheet.key,
+          });
+        })
+        .catch((e: unknown) => {
+          note.textContent = `Its views could not be drawn: ${String(e)}`;
         });
-      })
-      .catch((e: unknown) => {
-        note.textContent = `Its views could not be drawn: ${String(e)}`;
-      });
-  }, 0);
+    }, 0);
+  };
+  show('high');
   return section;
 }
 
 ITEM_AUDIT_SECTIONS.push((ctx) => cadSection(ctx.adapter, ctx.kind.key));
+
+/**
+ * Mission 135: both versions' visual cost side by side, near the top, from
+ * the item's last magic-room measurement in this browser, with when it was
+ * taken and a link to measure afresh.
+ */
+function costSection(
+  adapter: MagicAdapter | undefined,
+  kind: string,
+  rooms: readonly string[],
+) {
+  if (!adapter) return null;
+  const section = document.createElement('section');
+  section.dataset.auditPlace = 'top';
+  section.className = 'visual-cost';
+  const h = document.createElement('h2');
+  h.textContent = 'Visual cost: HIGH and LOW';
+  const record = lastMeasurement(kind);
+  const note = document.createElement('p');
+  note.className = 'note';
+  const room = document.createElement('a');
+  room.href = magicRoomLink(kind).replace(/^bench\.html/, '');
+  room.textContent = record
+    ? 'Open its magic room to measure afresh'
+    : 'Open its magic room to measure it';
+  note.append(
+    record
+      ? `Measured live in its magic room ${recordAge(record.measuredAt, Date.now())} (${new Date(record.measuredAt).toLocaleString()}${record.version ? `, build ${record.version}` : ''}), as the component benchmark measures. `
+      : 'Not yet measured in this browser: the figures are taken live when its magic room opens. ',
+    room,
+    '.',
+  );
+  section.append(h, note);
+  (window as unknown as { __visualCost: unknown }).__visualCost = {
+    kind,
+    record,
+  };
+  if (!record) return section;
+  const usage = usageOfRooms(rooms);
+  const rows: [string, (c: VisualCost) => string][] = [
+    ['Draw calls', (c) => String(c.drawCalls)],
+    ['Triangles', (c) => c.triangles.toLocaleString()],
+    ['Materials', (c) => String(c.materials)],
+    [
+      'Textures',
+      (c) => `${c.textures}, ${(c.textureBytes / 1e6).toFixed(2)} MB`,
+    ],
+    [
+      'Updates every frame',
+      (c) => (c.live ? `yes, ${c.updateUs.toFixed(1)} µs a call` : 'no'),
+    ],
+    [
+      'Uploads running',
+      (c) =>
+        `${c.uploadsPerS.toFixed(1)}/s, ${Math.round(c.texelsPerS).toLocaleString()} texels/s`,
+    ],
+    [
+      'Budget',
+      (c) => {
+        const b = budgetStatus(c, [kind, `kind:${kind}`]);
+        return `${BUDGET_WORDS[b.state]}${b.over.length ? `: ${b.over.join('; ')}` : ''}${b.why ? ` (${b.why})` : ''}`;
+      },
+    ],
+    [
+      `Weight (${usage.count} copies, weight ${weightOf(record.high, usage).weight})`,
+      (c) => {
+        const w = weightOf(c, usage);
+        return `${w.drawCalls} draws, ${w.triangles.toLocaleString()} tris`;
+      },
+    ],
+  ];
+  const table = document.createElement('table');
+  const head = table.insertRow();
+  for (const t of ['', 'HIGH', 'LOW']) {
+    const th = document.createElement('th');
+    th.textContent = t;
+    head.append(th);
+  }
+  for (const [label, f] of rows) {
+    const tr = table.insertRow();
+    tr.insertCell().textContent = label;
+    tr.insertCell().textContent = f(record.high);
+    tr.insertCell().textContent = f(record.low);
+  }
+  section.append(table);
+  return section;
+}
+
+// After the CAD views, so it stands above them, both before the first heading.
+ITEM_AUDIT_SECTIONS.push((ctx) =>
+  costSection(
+    ctx.adapter,
+    ctx.kind.key,
+    ctx.kind.copies.map((c) => c.room),
+  ),
+);

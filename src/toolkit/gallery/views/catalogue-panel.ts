@@ -23,6 +23,14 @@ import {
   searchWords,
 } from '../logic/look-catalogue';
 import type { LookEntry } from '../logic/look-catalogue';
+import {
+  costSummary,
+  loadRecord,
+  sortByCost,
+  usageOfRooms,
+  weightOf,
+} from '../logic/visual-cost';
+import type { CostSort, KeyValueStore } from '../logic/visual-cost';
 
 /**
  * The dev panel's universal catalogue (mission 126): Rooms, each opening
@@ -40,6 +48,10 @@ interface Saved {
   bad: boolean;
   /** Deprecated kinds still placed outside dev rooms: the things to replace (mission 130). */
   deprecated: boolean;
+  /** Mission 135: order by visual cost or weight, from measurements already taken. */
+  sort: CostSort;
+  /** Only kinds measured in their magic rooms in this browser. */
+  measured: boolean;
 }
 const STORE = 'pool.catalogue';
 const load = (): Saved => {
@@ -50,6 +62,8 @@ const load = (): Saved => {
     outside: false,
     bad: false,
     deprecated: false,
+    sort: 'name',
+    measured: false,
   };
   try {
     return { ...fallback, ...JSON.parse(localStorage.getItem(STORE) ?? '{}') };
@@ -90,6 +104,16 @@ const flags = (findings: readonly Finding[]) =>
       ),
     ),
   );
+
+/** The viewer's own magic-room measurements (mission 135): never measured here. */
+const viewerStore = (): KeyValueStore | undefined => {
+  try {
+    return localStorage;
+  } catch {
+    return undefined;
+  }
+};
+const measuredCost = (kind: string) => loadRecord(viewerStore(), kind)?.high;
 
 const roomName = (room: string) =>
   (DEV_ROOM_NAMES as Record<string, string | undefined>)[room] ?? room;
@@ -158,7 +182,7 @@ export function createCataloguePanel(): HTMLElement {
   const roomsTab = tab('rooms', 'Rooms');
   const kindsTab = tab('kinds', 'Game objects');
   const check = (
-    key: 'used' | 'outside' | 'bad' | 'deprecated',
+    key: 'used' | 'outside' | 'bad' | 'deprecated' | 'measured',
     label: string,
   ) => {
     const box = el('input', { type: 'checkbox', checked: state[key] });
@@ -176,7 +200,24 @@ export function createCataloguePanel(): HTMLElement {
     check('outside', 'used outside dev rooms'),
     check('bad', 'badly named'),
     check('deprecated', 'deprecated, still outside dev rooms'),
+    check('measured', 'visual cost measured'),
   );
+  // Sort by visual cost or weight (mission 135): only figures already
+  // measured in magic rooms in this browser; nothing is measured here.
+  const sort = el('select', { className: 'cat-sort' });
+  sort.setAttribute('aria-label', 'Sort game objects');
+  for (const [value, label] of [
+    ['name', 'sort: name'],
+    ['cost', 'sort: visual cost (HIGH tris)'],
+    ['weight', 'sort: weight (copies × cost)'],
+  ] as const)
+    sort.append(el('option', { value, selected: state.sort === value }, label));
+  sort.addEventListener('change', () => {
+    state.sort = sort.value as CostSort;
+    save(state);
+    render();
+  });
+  filters.append(sort);
   const list = el('div', { className: 'cat-list' });
   root.append(
     el('h2', { id: 'catalogue-heading' }, 'Catalogue'),
@@ -433,7 +474,16 @@ export function createCataloguePanel(): HTMLElement {
 
   const renderKinds = (words: readonly string[]) => {
     let shown = 0;
-    for (const k of kinds) {
+    const costs = new Map(kinds.map((k) => [k.key, measuredCost(k.key)]));
+    const usageOf = (k: KindEntry) => usageOfRooms(k.copies.map((c) => c.room));
+    for (const k of sortByCost(
+      kinds,
+      state.sort,
+      (x) => costs.get(x.key),
+      usageOf,
+    )) {
+      const cost = costs.get(k.key);
+      if (state.measured && !cost) continue;
       if (state.used && !k.usage.count) continue;
       if (state.outside && !k.usage.outsideDev) continue;
       if (state.bad && !isBadlyNamed(k.worst)) continue;
@@ -460,7 +510,7 @@ export function createCataloguePanel(): HTMLElement {
           el(
             'span',
             { className: 'cat-meta' },
-            `${k.class}${k.maker ? ` · ${k.maker}` : ''} · ${k.usage.count} in all · ${k.usage.outsideDev} outside dev`,
+            `${k.class}${k.maker ? ` · ${k.maker}` : ''} · ${k.usage.count} in all · ${k.usage.outsideDev} outside dev${cost ? ` · ${costSummary(cost)} · weight ${weightOf(cost, usageOf(k)).triangles.toLocaleString()} tris` : ''}`,
           ),
           k.exempt
             ? el('span', { className: 'cat-flag' }, 'decorative, exempt')

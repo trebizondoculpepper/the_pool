@@ -42,6 +42,20 @@ import {
 } from './cad-sheet';
 import { adapterFor } from './magic-adapters';
 import type { MagicChoice } from './magic-adapters';
+import {
+  BUDGET_WORDS,
+  POLY_VARIANTS,
+  VARIANT_LABEL,
+  budgetStatus,
+  costReadout,
+  costSummary,
+} from '../logic/visual-cost';
+import type { CostRecord, PolyVariant, VisualCost } from '../logic/visual-cost';
+import {
+  keepMeasurement,
+  lowVersionOf,
+  measureVisualCost,
+} from './visual-cost';
 
 /**
  * The magic room (mission 130, `bench.html?bench=magic-room&kind=<kind>`):
@@ -106,8 +120,8 @@ export function runMagicRoom(root: HTMLElement) {
   const m = METRE;
   const looks = panelChoices(adapter.looks);
   const pages = panelChoices(adapter.pages);
-  const panel = looks.length > 0 || pages.length > 0;
-  const layout = magicRoomLayout(adapter.size, { panel });
+  // Every magic room has its panel: its HIGH · LOW selector at least (mission 135).
+  const layout = magicRoomLayout(adapter.size, { panel: true });
   const { halfX, halfZ, height } = layout;
 
   const canvas = document.createElement('canvas');
@@ -258,6 +272,10 @@ export function runMagicRoom(root: HTMLElement) {
   holder.name = `Magic room item: ${adapter.title}`;
   holder.position.set(layout.item.x, layout.item.y, layout.item.z);
   holder.add(item.object);
+  // Its LOW version beside it, hidden until chosen (mission 135).
+  const low = lowVersionOf(adapter, kit, item);
+  low.object.visible = false;
+  holder.add(low.object);
   markComponent(holder, { name: adapter.title });
   room.add(holder);
   if (layout.stub) {
@@ -289,16 +307,48 @@ export function runMagicRoom(root: HTMLElement) {
   const controls = createPartSet();
   let look = 0;
   let page = 0;
+  let poly = 0;
+  const costs: Partial<Record<PolyVariant, VisualCost>> = {};
+  let measuring = true;
+  let readout: ReturnType<typeof t.printed> | null = null;
+  let readoutLines = ['', ''];
+  const variant = () => POLY_VARIANTS[poly] ?? 'high';
   const say = () => {
     const l = choiceAt(looks, look);
     const p = choiceAt(pages, page);
-    shown.textContent = `${adapter.title} · ${[l?.words, p?.words].filter(Boolean).join(' · ') || 'no looks curated yet: the panel is left off'}`;
+    const v = variant();
+    const c = costs[v];
+    const cost = c
+      ? `${VARIANT_LABEL[v]}: ${costSummary(c)} · ${BUDGET_WORDS[budgetStatus(c, [adapter.kind, `kind:${adapter.kind}`]).state]}`
+      : `${VARIANT_LABEL[v]}: measuring…`;
+    shown.textContent = `${adapter.title} · ${[l?.words, p?.words].filter(Boolean).join(' · ') || 'no looks curated yet'} · ${cost}`;
+    readoutLines = costReadout(v, c);
+    if (readout) {
+      drawReadout(
+        readout.context,
+        readout.context.canvas.width,
+        readout.context.canvas.height,
+      );
+      readout.texture.needsUpdate = true;
+    }
+  };
+  const drawReadout = (c: CanvasRenderingContext2D, w: number, h: number) => {
+    c.fillStyle = '#10140f';
+    c.fillRect(0, 0, w, h);
+    c.fillStyle = '#9dff8a';
+    c.font = `${h * 0.36}px monospace`;
+    c.textBaseline = 'middle';
+    c.fillText(readoutLines[0], w * 0.03, h * 0.28, w * 0.94);
+    c.fillText(readoutLines[1], w * 0.03, h * 0.74, w * 0.94);
   };
   const apply = () => {
     const l = choiceAt(looks, look);
     const p = choiceAt(pages, page);
     if (l) item.setLook?.(l.id);
     if (p) item.setPage?.(p.id);
+    const high = variant() === 'high';
+    item.object.visible = high;
+    low.object.visible = !high;
     say();
   };
   let panelGroup: Group | null = null;
@@ -307,8 +357,8 @@ export function runMagicRoom(root: HTMLElement) {
     post.position.set(layout.signpost.x, 0, layout.signpost.z);
     t.box(post, paint('#4b4f53'), 0.06, 1.25, 0.06, 0, 0.625, 0);
     t.box(post, paint('#3b3e41'), 0.3, 0.03, 0.2, 0, 0.015, 0);
-    const W = 0.36;
-    const H = 0.28;
+    const W = 0.5;
+    const H = 0.4;
     const face = new Group();
     face.position.set(0, 1.4, 0.04);
     // Tipped back a little, to read from standing.
@@ -340,14 +390,14 @@ export function runMagicRoom(root: HTMLElement) {
           },
         }),
       );
-      part.object.position.set(x, 0.0, 0.004);
+      part.object.position.set(x, 0.03, 0.004);
       face.add(part.object);
       list.forEach((c, i) =>
         t.label(
           face,
           `${i + 1} ${c.label}`,
           x,
-          -0.06 - i * 0.022,
+          -0.03 - i * 0.022,
           0.002,
           0.012,
           '#1b1b1b',
@@ -357,17 +407,33 @@ export function runMagicRoom(root: HTMLElement) {
     knob(
       looks,
       'LOOK',
-      -0.09,
+      -0.16,
       () => look,
       (k) => (look = k),
     );
     knob(
       pages,
       'PAGE',
-      0.09,
+      0,
       () => page,
       (k) => (page = k),
     );
+    // HIGH · LOW: the item's full version or its low-poly one (mission 135).
+    knob(
+      POLY_VARIANTS.map((v) => ({
+        id: v,
+        label: VARIANT_LABEL[v],
+        words: `${VARIANT_LABEL[v]} poly version`,
+      })),
+      'POLY',
+      0.16,
+      () => poly,
+      (k) => (poly = k),
+    );
+    // Beside it, the shown version's visual cost: a small green readout.
+    readout = t.printed(W - 0.04, 0.05, drawReadout, 512, true);
+    readout.mesh.position.set(0, -H / 2 + 0.04, 0.002);
+    face.add(readout.mesh);
     post.add(face);
     room.add(post);
     panelGroup = post;
@@ -442,6 +508,20 @@ export function runMagicRoom(root: HTMLElement) {
       page = i;
       apply();
     },
+    /** 0 HIGH, 1 LOW. */
+    poly(i: number) {
+      poly = i;
+      apply();
+    },
+    get variant() {
+      return variant();
+    },
+    get measuring() {
+      return measuring;
+    },
+    costs,
+    /** The item's two versions, for scripts. */
+    versions: { high: item.object, low: low.object },
     use: (x = 0, y = 0) => useAt(x, y)?.(),
   };
 
@@ -465,10 +545,38 @@ export function runMagicRoom(root: HTMLElement) {
     walk.update(delta);
     partAudio.listen(camera, m, scene);
     controls.update(delta);
+    // While its cost is measured, the room is not drawn: the measurement
+    // has the renderer, and the signs' fades, to itself.
+    if (measuring) return;
     item.update?.(delta);
     renderer.render(scene, camera);
     triad.render(renderer, camera);
   });
+  // Its visual cost, both versions, measured live as the room opens (the
+  // owner, 2026-11-02), kept as its last measurement for the item audit page.
+  void (async () => {
+    try {
+      const high = await measureVisualCost(renderer, item.object, item.update);
+      costs.high = high;
+      say();
+      const lowCost = await measureVisualCost(renderer, low.object, undefined);
+      costs.low = lowCost;
+      const record: CostRecord = {
+        kind,
+        measuredAt: Date.now(),
+        version:
+          `${String(import.meta.env.VITE_VERSION ?? '')} ${String(import.meta.env.VITE_BUILD ?? '')}`.trim(),
+        high,
+        low: lowCost,
+      };
+      keepMeasurement(record);
+    } catch (error) {
+      console.warn('magic room: measuring its visual cost', error);
+    } finally {
+      measuring = false;
+      apply();
+    }
+  })();
   addEventListener('pagehide', () => {
     renderer.setAnimationLoop(null);
     observer.disconnect();
@@ -478,6 +586,7 @@ export function runMagicRoom(root: HTMLElement) {
     controls.dispose();
     item.parts?.dispose();
     item.dispose?.();
+    low.dispose();
     disposeKit(kit, scene as unknown as Group);
     freeEnvironment();
     renderer.dispose();

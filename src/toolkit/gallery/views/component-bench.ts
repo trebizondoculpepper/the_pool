@@ -1,3 +1,4 @@
+import { resources } from './gpu-resources';
 import {
   rescanDisplays,
   signsFading,
@@ -24,10 +25,9 @@ import {
   Mesh,
   PerspectiveCamera,
   Scene,
-  Texture,
   Vector3,
 } from 'three';
-import type { Material, Object3D, WebGLRenderer } from 'three';
+import type { Object3D, WebGLRenderer } from 'three';
 import { createRenderer } from '../../components/core/parts/render-style';
 import { createPanelKit } from '../../components/core/views/eighties-controls';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
@@ -45,7 +45,6 @@ import {
   countUsage,
   rankSamples,
   rankedTable,
-  textureBytes,
   uploadSize,
   uploadTexels,
   uploadsBySize,
@@ -718,33 +717,6 @@ function instrument(renderer: WebGLRenderer) {
     };
   }
   return counts;
-}
-
-/** Its distinct materials and textures, and the textures' bytes. */
-function resources(object: Object3D) {
-  const materials = new Set<Material>();
-  const textures = new Set<Texture>();
-  object.traverse((o) => {
-    const m = (o as Mesh).material as Material | Material[] | undefined;
-    if (!m) return;
-    for (const material of Array.isArray(m) ? m : [m]) {
-      materials.add(material);
-      for (const value of Object.values(material))
-        if (value instanceof Texture) textures.add(value);
-      const uniforms = (
-        material as { uniforms?: Record<string, { value: unknown }> }
-      ).uniforms;
-      for (const u of Object.values(uniforms ?? {}))
-        if (u?.value instanceof Texture) textures.add(u.value);
-    }
-  });
-  let bytes = 0;
-  for (const t of textures) {
-    const image = t.image as { width?: number; height?: number } | undefined;
-    if (image?.width && image.height)
-      bytes += textureBytes(image.width, image.height, t.generateMipmaps);
-  }
-  return { materials, textures, bytes };
 }
 
 function disposeAll(object: Object3D, kit: PanelKit) {

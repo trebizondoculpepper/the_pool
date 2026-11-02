@@ -61,6 +61,11 @@ export interface MagicAdapter {
   /** Where its adapter comes from. */
   source: 'explicit' | 'model';
   build(kit: PanelKit): MagicItem;
+  /**
+   * Its hand-made low-poly version, where it has one (mission 135); without
+   * one, its LOW version is its far version (`createFarVersion`).
+   */
+  buildLow?(kit: PanelKit): { object: Object3D; dispose?(): void };
 }
 
 /** A fixed moment for its stand-in readings, so its pictures repeat: 15 June 2026, noon. */
