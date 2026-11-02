@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# Pre-commit: refuse a commit whose staged files are not formatted (the
+# owner, 2026-11-02), as CI's `npm run format:check` would.
+#
+# It checks the STAGED content of each file (what will be committed), never
+# the working tree, and never changes or stages anything: several agents
+# share this checkout and stage hunks, so a hook that formatted and re-added
+# whole files could commit another agent's unstaged edits. Fix a refusal
+# with `npx vp fmt <files>`, re-stage your own hunks, and commit again.
+# Enabled by `git config core.hooksPath .githooks` (`npm install` does it,
+# through package.json's `prepare`). Skip once with `git commit --no-verify`
+# only when you mean to.
+set -u
+cd "$(git rev-parse --show-toplevel)" || exit 1
+vp="node_modules/.bin/vp"
+[ -x "$vp" ] || { echo "pre-commit: $vp not found; run npm install" >&2; exit 1; }
+bad=()
+while IFS= read -r -d '' f; do
+  # Files the formatter ignores (vite.config.ts's fmt.ignorePatterns) or
+  # cannot parse are skipped: vp names no target for them.
+  if "$vp" fmt --check "$f" 2>&1 | grep -q "Expected at least one target"; then
+    continue
+  fi
+  staged=$(git show ":$f" 2>/dev/null) || continue
+  formatted=$(printf '%s\n' "$staged" | "$vp" fmt --stdin-filepath="$f" 2>/dev/null) || continue
+  [ "$staged" == "$formatted" ] || bad+=("$f")
+done < <(git diff --cached --name-only --diff-filter=ACMR -z)
+if [ ${#bad[@]} -gt 0 ]; then
+  echo "pre-commit: these staged files are not formatted:" >&2
+  printf '  %s\n' "${bad[@]}" >&2
+  echo "Run: npx vp fmt ${bad[*]}   then re-stage your own changes." >&2
+  exit 1
+fi

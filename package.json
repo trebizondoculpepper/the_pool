@@ -15,7 +15,8 @@
     "preview": "vp preview --host 127.0.0.1",
     "check": "vp check",
     "manual": "MANUAL=1 vp test run scripts/build-manual.test.ts && latexmk -lualatex -interaction=nonstopmode -halt-on-error -cd build/manual/manual.tex",
-    "release": "node scripts/release.ts"
+    "release": "node scripts/release.ts",
+    "prepare": "git config core.hooksPath .githooks || true"
   },
   "type": "module",
   "dependencies": {
