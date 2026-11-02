@@ -82,6 +82,10 @@ import {
 } from '../../components/core/parts/render-style';
 import { isLive } from './plant/exhibit';
 import { createInspector } from '../views/inspect-pick';
+import {
+  componentOf,
+  markComponent,
+} from '../../components/core/views/component-identity';
 import type { LiveExhibit, PlantExhibit } from './plant/exhibit';
 
 /** The rooms whose things are marked for the information overlay. */
@@ -480,6 +484,9 @@ export function startEquipmentRoom(
       const model = isLive(built) ? built.object : built;
       if (isLive(built)) live.push(built);
       holder.add(model);
+      // Named by its title, so a look link reaches it (mission 125),
+      // unless the exhibit marks itself.
+      if (!componentOf(model)) markComponent(holder, { name: exhibit.title });
       room.add(holder);
       // Still geometry is merged; what moves, and every piece a click
       // works, is kept as it is.
@@ -737,7 +744,8 @@ export function startEquipmentRoom(
     use: (x = 0, y = 0) => useAt(x, y)?.(),
   };
 
-  void EXHIBITS[id]().then(
+  // A look link (mission 125) waits until the exhibits are in the scene.
+  const settled = EXHIBITS[id]().then(
     ({
       EXHIBITS: exhibits,
       PURPOSE,
@@ -812,6 +820,7 @@ export function startEquipmentRoom(
     delete (window as unknown as { exhibitRoom?: unknown }).exhibitRoom;
   };
   return Object.assign(dispose, {
+    look: { settled },
     enter(previous: string | null) {
       const pose = portals?.arrival(previous);
       if (pose) walk.place(pose.x, pose.z, pose.yaw, pose.pitch);

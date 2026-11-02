@@ -67,6 +67,11 @@ export interface ConsoleHost {
   paused(on?: boolean): boolean;
   /** The current view's camera link, if there is one. */
   cameraLink(): string | null;
+  /**
+   * Put the camera on `ref` in the present room, by a look link (mission
+   * 125); false when there is no room to look in.
+   */
+  look?(ref: string, mode?: string): boolean;
   /** Hand the player a text file. */
   download(name: string, text: string): void;
   /** Clear the console's screen (the log is kept). */
@@ -437,6 +442,22 @@ export const COMMANDS: readonly ConsoleCommand[] = [
     usage: '',
     help: 'the link to this view',
     run: (host) => host.cameraLink() ?? fail('cam: no view to link to'),
+  },
+  {
+    name: 'look',
+    usage: '<ref> [front|left|right|room|detail|above]',
+    help: 'put the camera on a thing in this room: a tag, asset id, name, node:/fitting:/link: or a part (ref/part)',
+    complete: (_host, args) =>
+      args.length === 1
+        ? ['front', 'left', 'right', 'room', 'detail', 'above']
+        : [],
+    run(host, [ref, mode]) {
+      if (!ref) return fail('look: at what? (a tag, asset id or name)');
+      if (!host.look) return fail('look: not here');
+      return host.look(ref, mode)
+        ? `looking at ${ref}${mode ? ` (${mode})` : ''}: see the notice, or window.__poolLook`
+        : fail('look: no room to look in');
+    },
   },
   {
     name: 'valves',

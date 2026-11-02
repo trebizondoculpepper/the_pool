@@ -88,7 +88,11 @@ export function createInspector(options: InspectorOptions) {
     for (const hit of hits) {
       if (!(hit.object instanceof Mesh) || !shown(hit.object)) continue;
       const owner = owningComponent(hit.object);
-      const identity = owner?.identity ?? options.identify?.(hit.object);
+      // A marked part names itself; else the room's own naming (dev0's
+      // controls) wins over a whole board's mark (its look-link name).
+      const identity = owner?.identity.part
+        ? owner.identity
+        : (options.identify?.(hit.object) ?? owner?.identity);
       if (!identity) return null;
       const lines = inspectComponent(identity, options.world?.());
       // A part with nothing more to say: what it is on (prompt 068).

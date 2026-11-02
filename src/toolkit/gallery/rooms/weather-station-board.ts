@@ -2,6 +2,7 @@ import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createWeatherStation } from '../../components/plant/views/weather-station';
 import { pressureTrend } from '../../../game/weather';
 import { roomWorld } from '../../save/world-store';
+import { markComponent } from '../../components/core/views/component-identity';
 import { createBoard } from './test-boards';
 import type { TestFitting } from './test-boards';
 
@@ -31,6 +32,8 @@ export function createWeatherStationBoard(kit: PanelKit): TestFitting {
     -0.1,
     0.0055,
   );
+  // Named, so a look link reaches it (mission 125): `look=weather-station-console`.
+  markComponent(board.group, { name: 'Weather station console' });
   return {
     group: board.group,
     parts: station.parts,

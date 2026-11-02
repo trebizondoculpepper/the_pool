@@ -6,6 +6,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Look links (mission 125): `?room=<room>&look=<ref>&mode=front|left|right|room|detail|above&fit=0.8&shot=1` puts the camera on a named object (tag, asset id, model binding, name or slug, `ref/part`, `#n`), fitted to the frame, standing where a walker could, with the line of sight checked by nine rays; refusals say why; `window.__poolLook` for scripts, a `look` console command, and `node scripts/look.ts` to save PNGs. dev rooms' exhibits and dev0's weather station console are now named for it.
+
 - A GitHub bug report template (`.github/ISSUE_TEMPLATE/bug_report.yml`): it explains how to download the game's state file from the dev panel's World state box (`?dev`) and asks for it to be attached, with what happened, steps, version and platform.
 - Three hanging Lumenhaus industrial pendants light the old control room from above its upper mimic row; their bulbs and light sources follow the room's lighting circuit.
 - The old control room's central annunciator now sounds its alarm horn while an unaccepted fault flashes.

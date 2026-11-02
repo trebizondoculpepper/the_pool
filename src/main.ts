@@ -88,6 +88,11 @@ import { effect } from '@preact/signals-core';
 import { partAudio } from './toolkit/components/core/audio/part-audio';
 import { renderPlantManual } from './toolkit/manual/plant-manual';
 import { startWeatherFeed } from './toolkit/weather/weather-feed';
+import {
+  inferredRoom,
+  isLookMode,
+  LOOK_MODES,
+} from './toolkit/gallery/logic/look-ref';
 
 // Which build this is, until the title screen shows it.
 console.info(`Pool Plant ${versionLabel()}`);
@@ -165,6 +170,12 @@ type RoomHandle = (() => void) & {
   resume?: () => void;
   setDryOnly?: (enabled: boolean) => void;
   setVisual?: (enabled: boolean) => void;
+  /**
+   * What a look link needs of the room (mission 125): `settled` resolves
+   * once everything it builds, exhibits included, is in its scene (the
+   * controller's, `lookSurface`). A room without it has nothing to look at yet.
+   */
+  look?: { settled: Promise<unknown> };
 };
 const rooms = new Map<string, { root: HTMLElement; handle: RoomHandle }>();
 let current: string | undefined;
@@ -847,6 +858,16 @@ createConsole({
       return clockStopped.value;
     },
     cameraLink,
+    look(ref, mode) {
+      const room = resolveRoomId(
+        new URLSearchParams(location.search).get('room'),
+      );
+      if (!current || !room) return false;
+      goTo(
+        `?${new URLSearchParams({ room, look: ref, ...(mode ? { mode } : {}) })}`,
+      );
+      return true;
+    },
     download(name, text) {
       const url = URL.createObjectURL(new Blob([text], { type: 'text/plain' }));
       const a = document.createElement('a');
@@ -1470,6 +1491,171 @@ const stopTitleBackdrop = () => {
   partAudio.setGameMuted(false);
 };
 
+// ---- Look links (mission 125, `doc/plans/125-look-links.md`) -------------
+// `?room=<room>&look=<ref>[&mode=<mode>][&fit=<fraction>][&shot=1]`: the
+// camera put where it sees the named thing, by the pure rules of
+// `look-camera.ts`, tested against the room's walk collision and by nine
+// rays (`views/look-scene.ts`). Its result is `window.__poolLook`, ready
+// once the camera is placed and two frames are drawn from it.
+interface PoolLook {
+  ref: string;
+  room: string;
+  found: boolean;
+  mode: string;
+  pose: {
+    x: number;
+    y: number;
+    z: number;
+    yaw: number;
+    pitch: number;
+    zoom: number;
+    noclip: boolean;
+  } | null;
+  seen: number;
+  /** What it framed, its world box in metres. */
+  box?: unknown;
+  candidates: readonly unknown[];
+  warnings: string[];
+  /** Why it could not, if it could not. */
+  reason?: string;
+  /** The ordinary pose link it came to. */
+  link?: string;
+  ready: boolean;
+  /** It has finished, found or not. */
+  done: boolean;
+}
+const lookNotice = document.createElement('div');
+lookNotice.className = 'screenshot-notice look-notice';
+lookNotice.setAttribute('role', 'status');
+lookNotice.hidden = true;
+document.body.append(lookNotice);
+let lookNoticeTimer = 0;
+const hideLookNotice = () => {
+  window.clearTimeout(lookNoticeTimer);
+  lookNotice.hidden = true;
+};
+const showLookNotice = (text: string, link?: string, failed = false) => {
+  lookNotice.replaceChildren(text);
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link;
+    a.textContent = 'pose link';
+    a.title = 'The same view as an ordinary x/z/yaw/pitch/zoom link';
+    lookNotice.append(' · ', a);
+  }
+  lookNotice.classList.toggle('look-refused', failed);
+  lookNotice.hidden = false;
+  window.clearTimeout(lookNoticeTimer);
+  lookNoticeTimer = window.setTimeout(hideLookNotice, failed ? 20000 : 8000);
+};
+const runLook = async (
+  room: RoomId,
+  key: string,
+  handle: RoomHandle,
+  ref: string,
+  params: URLSearchParams,
+  ownRevision: number,
+) => {
+  const asked = params.get('mode') ?? 'front';
+  const mode = isLookMode(asked) ? asked : 'front';
+  const fitAsked = Number(params.get('fit') ?? '0.8');
+  const fit =
+    Number.isFinite(fitAsked) && fitAsked > 0 ? Math.min(1, fitAsked) : 0.8;
+  const result: PoolLook = {
+    ref,
+    room,
+    found: false,
+    mode,
+    pose: null,
+    seen: 0,
+    candidates: [],
+    warnings: isLookMode(asked)
+      ? []
+      : [`no mode '${asked}' (${LOOK_MODES.join(', ')}): front`],
+    ready: false,
+    done: false,
+  };
+  (window as unknown as { __poolLook: PoolLook }).__poolLook = result;
+  const refuse = (reason: string) => {
+    result.reason = reason;
+    result.done = true;
+    showLookNotice(reason, undefined, true);
+    console.warn(`look: ${reason}`);
+  };
+  if (!handle.look) return refuse(`no lookable objects in ${room} yet`);
+  await handle.look.settled;
+  // Let the room draw once, so everything it placed has its matrices.
+  await nextFrame();
+  if (ownRevision !== revision || current !== key) return;
+  const surface = surfaceOf(key);
+  const control = surface ? firstPersonOn(surface) : null;
+  const walk = control?.lookSurface();
+  if (!control || !walk?.scene)
+    return refuse(`no lookable objects in ${room} yet`);
+  const { lookIn } = await import('./toolkit/gallery/views/look-scene');
+  const outcome = lookIn(
+    {
+      scene: walk.scene,
+      metre: control.metre,
+      floorY: control.floorY,
+      floorAt: walk.floorAt,
+      solids: () => control.lookSurface().solids,
+      bounds: walk.bounds,
+      fov: walk.fov,
+      aspect: walk.aspect,
+    },
+    room,
+    ref,
+    mode,
+    fit,
+  );
+  result.warnings.push(...outcome.warnings);
+  if (!outcome.ok || !outcome.pose)
+    return refuse(outcome.reason ?? 'not found');
+  if (ownRevision !== revision || current !== key) return;
+  const pose = outcome.pose;
+  const m = control.metre;
+  if (pose.noclip) noclip.value = true;
+  control.place(pose.x * m, pose.z * m, pose.yaw, pose.pitch, pose.y * m);
+  control.zoom = pose.zoom;
+  control.roll = 0;
+  const link = new URL(location.href);
+  link.search = new URLSearchParams({
+    room,
+    x: pose.x.toFixed(2),
+    y: pose.y.toFixed(2),
+    z: pose.z.toFixed(2),
+    yaw: (((((pose.yaw * 180) / Math.PI) % 360) + 360) % 360).toFixed(1),
+    pitch: ((pose.pitch * 180) / Math.PI).toFixed(1),
+    zoom: pose.zoom.toFixed(3),
+    ...(pose.noclip ? { noclip: 'true' } : {}),
+  }).toString();
+  Object.assign(result, {
+    ref: outcome.ref ?? ref,
+    found: true,
+    pose: {
+      ...pose,
+      yaw: (pose.yaw * 180) / Math.PI,
+      pitch: (pose.pitch * 180) / Math.PI,
+    },
+    seen: outcome.seen ?? 0,
+    box: outcome.box,
+    candidates: outcome.candidates ?? [],
+    link: link.toString(),
+  });
+  const words = [
+    `${result.ref} · ${mode} · ${result.seen}/9 seen`,
+    ...result.warnings,
+  ].join(' · ');
+  console.info(`look: ${words} · ${link}`);
+  if (params.get('shot') !== '1') showLookNotice(words, link.toString());
+  await nextFrame();
+  await nextFrame();
+  if (ownRevision !== revision) return;
+  result.ready = true;
+  result.done = true;
+};
+
 const openRoom = async () => {
   const ownRevision = ++revision;
   recordingShot?.stop();
@@ -1483,6 +1669,35 @@ const openRoom = async () => {
     const url = new URL(location.href);
     url.search = '';
     history.replaceState(null, '', url);
+  }
+  // A look link without a room (mission 125): the register's room for its
+  // tag or asset id.
+  {
+    const url = new URL(location.href);
+    const look = url.searchParams.get('look');
+    const inferred =
+      look && !url.searchParams.has('room') && inferredRoom(look);
+    if (inferred) {
+      url.searchParams.set('room', inferred);
+      history.replaceState(null, '', url);
+    } else if (look && !url.searchParams.has('room')) {
+      // Nowhere to look: said, and left on the title.
+      const reason = `${look} is not in the register: give its room (room=…)`;
+      (window as unknown as { __poolLook: PoolLook }).__poolLook = {
+        ref: look,
+        room: '',
+        found: false,
+        mode: url.searchParams.get('mode') ?? 'front',
+        pose: null,
+        seen: 0,
+        candidates: [],
+        warnings: [],
+        reason,
+        ready: false,
+        done: true,
+      };
+      showLookNotice(reason, undefined, true);
+    }
   }
   // An old room name (`dev_boiler`, before dev rooms were all numbered)
   // is shown as the numbered room it became, here and in `from`.
@@ -1612,6 +1827,13 @@ const openRoom = async () => {
   }
   loaded.handle.resume?.();
   rememberPlayer();
+  document.body.classList.toggle('look-shot', params.get('shot') === '1');
+  const lookRef = params.get('look');
+  if (lookRef)
+    void runLook(room, key, loaded.handle, lookRef, params, ownRevision).catch(
+      showError,
+    );
+  else hideLookNotice();
   if (peekBack(keyOf(room))) void startDryPeek().catch(showError);
   void preloadCluster().catch(showError);
 };

@@ -458,7 +458,10 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ## Housekeeping
 
-- [ ] **Look links** ([125](doc/prompts/125-look-links.md); the owner, 2026-11-02; brief only, reviewed by Codex): `?room=…&look=<ref>&mode=front|left|right|room|detail|above` puts the camera on a named object, fitted, walkable and with a clear line of sight, using the scene's existing component identities; `window.__poolLook` for scripts; `npm run look` captures PNGs.
+- [x] **Look links** ([125](doc/prompts/125-look-links.md), [plan](doc/plans/125-look-links.md); the owner, 2026-11-02; done 2026-11-02, COMMIT): `?room=…&look=<ref>&mode=front|left|right|room|detail|above` puts the camera on a named object, fitted, walkable and with a clear line of sight, using the scene's existing component identities; `window.__poolLook` for scripts; `node scripts/look.ts` captures PNGs.
+  - [ ] `npm run look` as an alias for `node scripts/look.ts` (needs a `package.json` change, which waits for the owner's word or the next dependency change).
+  - [ ] Rooms without the look hook (the pool halls, corridors, museum halls and the other gallery rooms) answer "no lookable objects yet": add `look: { settled }` to their handles as 127 marks them.
+  - [ ] The CM6 display is not a named part yet, so `detail` reaches its keys but not its screen (127's named parts).
 - [ ] **The object index** ([126](doc/prompts/126-object-index.md); the owner, 2026-11-02; brief only, after 125): a pure `lookCatalogue` shared with 127, and the dev panel's rooms (every room in `ROOMS`) opening into their lookable objects, each a look link, with search.
 - [ ] **Everything lookable** ([127](doc/prompts/127-everything-lookable.md); the owner, 2026-11-02; brief only): Part A an audit (`npm run look:audit`, `doc/look-audit.json`, `KNOWN_UNLOOKABLE`) after 125; Part B marking every room's objects, builder by builder, after 126's catalogue.
 

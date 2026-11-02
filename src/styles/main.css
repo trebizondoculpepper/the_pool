@@ -1196,3 +1196,16 @@ canvas {
   font: 12px monospace;
   opacity: 0.8;
 }
+/* A look link's clean shot (`shot=1`, mission 125): the page's own UI
+   hidden, so a screenshot of the page shows the room alone. */
+.look-shot .hud-movement,
+.look-shot .hud-tools,
+.look-shot .hud-speed,
+.look-shot .location-overlay,
+.look-shot .controls-help,
+.look-shot #app .crosshair {
+  display: none !important;
+}
+.look-notice.look-refused {
+  border-color: #e0a040;
+}

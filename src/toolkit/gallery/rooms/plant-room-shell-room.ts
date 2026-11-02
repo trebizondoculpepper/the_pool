@@ -636,6 +636,8 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       renderer.dispose();
     },
     {
+      /** A look link's hook (mission 125): built at once, so settled now. */
+      look: { settled: Promise.resolve() },
       resume() {
         leaving = false;
         wasOpen = null;

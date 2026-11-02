@@ -1360,6 +1360,25 @@ export function createFirstPerson(options: FirstPersonOptions) {
     get noclip() {
       return flying;
     },
+    /**
+     * What a look link (mission 125) needs of the room, scene units: its
+     * solid footprints now (open doorways cut through), its envelope, its
+     * scene, and the field of view at zoom 1, degrees. Asking changes nothing.
+     */
+    lookSurface() {
+      const cuts = openings();
+      const solids = options.solids?.() ?? [];
+      return {
+        solids: cuts.length ? cutOpenings(solids, cuts) : solids,
+        bounds: flightBounds(walker.x, walker.z),
+        scene: options.scene ?? null,
+        fov: options.fov ?? settings.value.fov,
+        aspect: camera.aspect,
+        /** The floor's height under (x, z), nearest `near`: a room of several levels. */
+        floorAt: (x: number, z: number, near: number) =>
+          options.floorAt?.(x, z, near) ?? floorY,
+      };
+    },
     /** Doorways cut through the walls while their doors are open. */
     set openings(value: () => readonly Footprint[]) {
       openings = value;

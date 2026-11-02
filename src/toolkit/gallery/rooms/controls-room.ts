@@ -750,6 +750,8 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
     renderer.dispose();
   };
   return Object.assign(dispose, {
+    /** A look link's hook (mission 125): built at once, so settled now. */
+    look: { settled: Promise.resolve() },
     suspend() {
       for (const fitting of fittings) fitting.parts.setAudible(false);
     },
