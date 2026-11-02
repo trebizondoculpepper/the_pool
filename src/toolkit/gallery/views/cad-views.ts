@@ -45,6 +45,7 @@ import {
 } from '../logic/visual-cost';
 import type { PolyVariant, VisualCost } from '../logic/visual-cost';
 import { lastMeasurement, lowVersionOf } from './visual-cost';
+import { showInFull } from '../../components/core/views/display-reach';
 import { cadLights } from './cad-sheet';
 import { ITEM_AUDIT_SECTIONS } from './item-audit-page';
 import type { MagicAdapter } from './magic-adapters';
@@ -232,6 +233,8 @@ function draw(holder: Group, id: string, key: string): CadSheet {
   renderer.setSize(PIXELS, PIXELS, false);
   renderer.setClearColor(CAD_GRID.ground);
   const scene = new Scene();
+  // Diagrams of what its screens show: in full at every angle, no reach (the owner, 2026-11-02).
+  showInFull(scene);
   const free = useEnvironment(renderer, scene, 0.4);
   // The scene is in game units; the item and its maths in metres.
   const world = new Group();

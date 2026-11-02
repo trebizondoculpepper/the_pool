@@ -208,7 +208,8 @@ export function perspectivePose(b: Bounds, fovDeg: number) {
 }
 
 /** The drawing code's own version: bump it when the views are drawn differently. */
-export const CAD_RENDER_VERSION = 1;
+// 2: screens and signs shown in full at any angle (the owner, 2026-11-02).
+export const CAD_RENDER_VERSION = 2;
 
 /** A short, stable hash of a list of words and numbers (FNV-1a, 32 bits, hex). */
 export function fingerprint(parts: readonly (string | number)[]): string {

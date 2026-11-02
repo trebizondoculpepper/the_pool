@@ -660,6 +660,50 @@ function sighting(o: Object3D): DisplaySighting {
 }
 
 let installed = false;
+/** Scenes whose displays and signs are always shown in full (`showInFull`). */
+const inFull = new WeakSet<Scene>();
+
+/**
+ * Show every display and sign in `scene` in full, at any angle and
+ * distance: no reach, no angle fade, no flattening, no LCD wash, no
+ * lettering stages (the owner, 2026-11-02: the CAD views are diagrams of
+ * what a screen shows). For off-screen diagram renderers only; the game's
+ * scenes are never exempt.
+ */
+export function showInFull(scene: Scene) {
+  inFull.add(scene);
+  install();
+}
+
+/** Put every display and sign in a full-view scene back to its own picture. */
+function fullView(scene: Scene) {
+  scene.traverse((object) => {
+    const material = (object as Object3D & { material?: Material | Material[] })
+      .material;
+    if (!material) return;
+    for (const m of Array.isArray(material) ? material : [material]) {
+      // No LCD wash: a material is patched only when a watched scene
+      // scans it, and a full-view scene is never scanned.
+      for (const t of texturesOf(m)) {
+        const w = watched.get(t);
+        if (w) {
+          displayFades.delete(w);
+          w.target = w.fadeFrom = 1;
+          setLevel(w, 1);
+        }
+        const sign = signs.get(t);
+        if (sign && (sign.step !== 0 || sign.fade)) {
+          fading.delete(sign);
+          sign.fade = null;
+          sign.step = 0;
+          sign.texture.image = sign.canvas;
+          upload.call(sign.texture, true);
+        }
+      }
+    }
+  });
+}
+
 function install() {
   if (installed) return;
   installed = true;
@@ -667,7 +711,8 @@ function install() {
   // `render` is its own, not its prototype's, so it cannot be wrapped).
   const before = Scene.prototype.onBeforeRender;
   Scene.prototype.onBeforeRender = function (...args) {
-    check(this, args[2], args[0].domElement.height);
+    if (inFull.has(this)) fullView(this);
+    else check(this, args[2], args[0].domElement.height);
     before.apply(this, args);
   };
 }
