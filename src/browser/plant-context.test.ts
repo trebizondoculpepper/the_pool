@@ -22,6 +22,13 @@ it('reads the current world on each query and exposes no world action', () => {
   expect(olympic?.pools[0].mainPool.ph).toBe(
     state.value.treatment.circuits.pool_02.pool.at(-1)?.ph,
   );
+  expect(olympic?.pools[0].temperatureControl).toMatchObject({
+    controllerRef: 'PL2-TC1',
+    probeRef: 'PL2-TE1',
+    setpointC: state.value.poolTemperatureControls.pool_02!.setpoint,
+    actualValvePosition:
+      state.value.poolTemperatureControls.pool_02!.valvePosition,
+  });
   expect('dispatch' in api).toBe(false);
   expect('world' in api).toBe(false);
 

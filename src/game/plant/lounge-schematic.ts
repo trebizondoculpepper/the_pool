@@ -42,7 +42,47 @@ const nodes: SchematicNode[] = [
   ),
   machine('filter-1', 'sand-filter', 'Lounge pool sand filter 1'),
   machine('filter-2', 'sand-filter', 'Lounge pool sand filter 2'),
-  machine('exchanger', 'heat-exchanger', 'Lounge pool plate heat exchanger'),
+  {
+    ...machine(
+      'exchanger',
+      'heat-exchanger',
+      'Lounge pool plate heat exchanger',
+    ),
+    code: 'HX1',
+  },
+  machine(
+    'temperature-control-valve',
+    'regulating-valve',
+    'Lounge pool exchanger LTHW temperature control valve',
+  ),
+  {
+    ...machine(
+      'temperature-controller',
+      'pool-temperature-controller',
+      'Lounge pool temperature controller',
+    ),
+    code: 'TC1',
+  },
+  {
+    ...machine(
+      'temperature-probe',
+      'temperature-sensor',
+      'Lounge pool exchanger outlet Pt100',
+    ),
+    code: 'TE1',
+  },
+  {
+    ...machine(
+      'instrument-rack',
+      'instrument-rack',
+      'Lounge pool controller and music rack',
+    ),
+    code: 'RK1',
+  },
+  {
+    ...machine('music-source', 'music-source', 'Lazy pool music source'),
+    code: 'MP1',
+  },
   machine('contact', 'contact-tank', 'Lounge pool ozone contact tank'),
   machine('generator', 'ozone-generator', 'Lounge pool ozone generator'),
   machine('uv', 'uv-unit', 'Lounge pool UV unit'),
@@ -223,6 +263,36 @@ const links: PlumbEdge[] = [
     'water',
   ),
   link(
+    'Pool-water temperature to Pt100',
+    ['pool', 'temperature'],
+    ['temperature-probe', 'process-value'],
+    'heat',
+  ),
+  link(
+    'Pt100 measurement to temperature controller',
+    ['temperature-probe', 'signal'],
+    ['temperature-controller', 'measurement'],
+    'control',
+  ),
+  link(
+    'Temperature controller output to LTHW control valve',
+    ['temperature-controller', 'output'],
+    ['temperature-control-valve', 'command'],
+    'control',
+  ),
+  link(
+    'Pool rack controller supply',
+    ['panel', 'instrument-supply'],
+    ['instrument-rack', 'supply'],
+    'power',
+  ),
+  link(
+    'Lazy pool player supply',
+    ['instrument-rack', 'player-supply'],
+    ['music-source', 'power'],
+    'power',
+  ),
+  link(
     'Make-up water to the balance tank',
     ['water', 'out'],
     ['tank', 'make-up'],
@@ -382,6 +452,35 @@ export const LOUNGE_SCHEMATIC: RoomSchematic = {
       'closed',
       'tankDrain',
     ),
+    // The exchanger's primary side can be isolated for maintenance; both
+    // hand valves are at its own ports and normally open (mission 144).
+    {
+      id: 'plant_pool_01.exchanger.primary-flow.isolating',
+      kind: 'isolating-valve',
+      edge: 'Heating flow to the heat exchanger',
+      end: 'target',
+      normally: 'open',
+      role: 'HX primary flow isolation',
+      operator: 'lever',
+    },
+    {
+      id: 'plant_pool_01.exchanger.primary-flow.temperature-control',
+      kind: 'regulating-valve',
+      edge: 'Heating flow to the heat exchanger',
+      end: 'target',
+      normally: 'closed',
+      role: 'HX LTHW temperature control valve',
+      operator: 'motor',
+    },
+    {
+      id: 'plant_pool_01.exchanger.primary-return.isolating',
+      kind: 'isolating-valve',
+      edge: 'Heating return from the heat exchanger',
+      end: 'source',
+      normally: 'open',
+      role: 'HX primary return isolation',
+      operator: 'lever',
+    },
     // Each quill's isolating valve and non-return valve, on its dosing
     // line at the quill (prompt 089, item 4).
     ...(['acid', 'hypo'] as const).flatMap((k): SchematicFitting[] => {

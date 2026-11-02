@@ -88,6 +88,7 @@ const SIZE = {
   // Its wall port above it and its detector beside it (mission 118).
   'co2-wall-port': CO2_WALL_PORT_SIZE,
   'co2-detector': CO2_DETECTOR_SIZE,
+  temperatureController: { w: 0.48, d: 0.16, h: 0.5 },
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
   // PL2's annunciator (mission 099), the twin of the control room's.
@@ -102,6 +103,7 @@ const WALL_HEIGHT: Record<string, number> = {
   'co2-panel': 1.4,
   'co2-wall-port': CO2_WALL_PORT_Y,
   'co2-detector': CO2_DETECTOR_Y,
+  temperatureController: 1.45,
 };
 
 /** The gap behind the pump pair, along the west wall, metres. */
@@ -321,6 +323,17 @@ export function olympicPlan(): PlanItem[] {
       against('east', pz + pn.w / 2 + 0.4 + g.w / 2, g),
     ),
   );
+  const tc = SIZE.temperatureController;
+  out.push({
+    ...item(
+      'temperature-controller',
+      'Pool water temperature controller',
+      tc,
+      { x: 7.6, z: 5.92, facing: 'north' },
+      'wall',
+    ),
+    y: WALL_HEIGHT.temperatureController,
+  });
   // The heat exchanger just south of the battery's walkway, between filters 2 and 3, by its side-stream's stubs on the outlet header (the owner, 2026-10-23); its heating comes from the main plant to it.
   const x = SIZE.exchanger;
   const between = -hx + 0.3 + 2 * SIZE.filter.w + 1.5 * FILTER_GAP;

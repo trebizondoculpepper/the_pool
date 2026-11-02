@@ -34,7 +34,11 @@ export interface ModelValve {
   link: string;
   /** What it is for, in the schematic's words. */
   role: string;
-  kind: 'isolating-valve' | 'power-isolator' | 'non-return-valve';
+  kind:
+    | 'isolating-valve'
+    | 'regulating-valve'
+    | 'power-isolator'
+    | 'non-return-valve';
   normal: 'open' | 'closed';
   /** How it is worked, as its schematic says. */
   operator?: 'lever' | 'chain' | 'motor' | 'solenoid';
@@ -69,14 +73,16 @@ const letters = (
   link: PlumbEdge,
   kindOf: (id: string) => string | undefined,
 ) =>
-  kind === 'power-isolator'
-    ? 'IS'
-    : kind === 'non-return-valve'
-      ? 'NRV'
-      : kindOf(link.targetId) === 'gully' ||
-          kindOf(link.targetId) === 'backwash-main'
-        ? 'DV'
-        : 'IV';
+  kind === 'regulating-valve'
+    ? 'CV'
+    : kind === 'power-isolator'
+      ? 'IS'
+      : kind === 'non-return-valve'
+        ? 'NRV'
+        : kindOf(link.targetId) === 'gully' ||
+            kindOf(link.targetId) === 'backwash-main'
+          ? 'DV'
+          : 'IV';
 
 function roomValves(
   room: string,
@@ -96,6 +102,7 @@ function roomValves(
   return fittings.flatMap((f) => {
     if (
       f.kind !== 'isolating-valve' &&
+      f.kind !== 'regulating-valve' &&
       f.kind !== 'power-isolator' &&
       f.kind !== 'non-return-valve'
     )
@@ -113,11 +120,13 @@ function roomValves(
       (id) => kindOf(id) === 'heating-main',
     );
     const word =
-      kind === 'power-isolator'
-        ? 'isolator'
-        : kind === 'non-return-valve'
-          ? 'non-return valve'
-          : 'valve';
+      kind === 'regulating-valve'
+        ? 'control valve'
+        : kind === 'power-isolator'
+          ? 'isolator'
+          : kind === 'non-return-valve'
+            ? 'non-return valve'
+            : 'valve';
     const chemical = /hypochlorite/i.test(link.id)
       ? ('sodium hypochlorite' as const)
       : /acid/i.test(link.id)
@@ -130,9 +139,11 @@ function roomValves(
         tag: f.keptBy === 'identified' ? f.id : numbered ? `${prefix}${n}` : '',
         ...(f.keptBy ? { keptBy: f.keptBy } : {}),
         name:
-          onLink(f) > 1 && f.role
-            ? `${link.id} ${word}, ${f.role}`
-            : `${link.id} ${word}`,
+          kind === 'regulating-valve' && f.role
+            ? f.role
+            : onLink(f) > 1 && f.role
+              ? `${link.id} ${word}, ${f.role}`
+              : `${link.id} ${word}`,
         room,
         link: link.id,
         role: f.role ?? '',
@@ -197,10 +208,16 @@ export const MODEL_ISOLATING_VALVES = MODEL_VALVES.filter(
   (v) => v.kind === 'isolating-valve',
 );
 
-/** Those kept among the installed valves (the rest are the identified model's). */
-export const MODEL_INSTALLED_VALVES = MODEL_ISOLATING_VALVES.filter(
-  (v) => !v.keptBy,
+/** Modulating valves are installed model fittings, with live position owned by their controllers. */
+export const MODEL_REGULATING_VALVES = MODEL_VALVES.filter(
+  (v) => v.kind === 'regulating-valve',
 );
+
+/** Those kept among the installed valves (the rest are the identified model's). */
+export const MODEL_INSTALLED_VALVES = [
+  ...MODEL_ISOLATING_VALVES.filter((v) => !v.keptBy),
+  ...MODEL_REGULATING_VALVES.filter((v) => !v.keptBy),
+];
 
 /** A room's model valve on a link, by the link's name. */
 export const modelValveOn = (room: string, link: string) =>

@@ -56,6 +56,31 @@ describe('the thermal model', () => {
     expect(Math.abs(s.water - AMBIENT)).toBeLessThan(2);
     expect(Math.abs(s.air - AMBIENT)).toBeLessThan(2);
   });
+
+  it('uses the pool controller output directly as the LTHW valve demand', () => {
+    const input = {
+      heatWater: true,
+      heatAir: false,
+      ambient: AMBIENT,
+      ventilated: true,
+      madeUp: 0,
+      ring: 80,
+      waterSet: 30,
+    };
+    const open = stepThermal(
+      { water: 28, air: 29 },
+      olympicLike,
+      { ...input, waterControllerOutput: 1 },
+      60,
+    );
+    const halfOpen = stepThermal(
+      { water: 28, air: 29 },
+      olympicLike,
+      { ...input, waterControllerOutput: 0.5 },
+      60,
+    );
+    expect(halfOpen.waterHeat / open.waterHeat).toBeCloseTo(0.5, 3);
+  });
 });
 
 describe('the pools’ heat in the world', () => {

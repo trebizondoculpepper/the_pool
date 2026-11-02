@@ -156,6 +156,7 @@ export const MAIN_POOL_MIMIC: MimicSpec = {
     { id: 'filters', at: pt(0.16, -0.02) },
     { id: 'return', at: pt(0.62, 0.0) },
     { id: 'pool', at: pt(0.38, 0.32) },
+    { id: 'heat-control', at: pt(1.02, -0.38) },
   ],
   modes: [
     { id: 'flow', legend: 'FLOW' },
@@ -280,6 +281,29 @@ export function mainPoolState(p: PlantReading, pumps?: PumpsShown): MimicState {
         temperature: r(p.mainPool, 'C', 'POOL', 1),
         water: r(p.chlorine, 'mg/l', 'FREE Cl', 2),
       },
+      'heat-control': p.temperatureControl
+        ? {
+            temperature: r(
+              p.temperatureControl.measuredTemperatureC,
+              'C',
+              'HX OUT',
+              1,
+            ),
+            pressure: r(
+              p.temperatureControl.actualValvePosition * 100,
+              '%',
+              'VALVE',
+              0,
+            ),
+            flow: r(
+              p.temperatureControl.demandFraction * 100,
+              '%',
+              'DEMAND',
+              0,
+            ),
+            water: r(p.temperatureControl.setpointC, 'C', 'SET PT', 1),
+          }
+        : {},
     },
   };
 }
@@ -361,9 +385,33 @@ export function heatingState(p: PlantReading): MimicState {
         flow: r(firing ? 6.8 : 5.9, 'l/s', 'PRIMARY', 1),
       },
       'pool-hx': {
-        // The common return: the exchangers' own are not modelled apart.
-        temperature: r(p.lthwReturn ?? p.lthw - 11, 'C', 'HX RTN', 1),
-        flow: r(2.1, 'l/s', 'POOL HX', 1),
+        // The pool loop's remote outlet probe and control valve, where the
+        // pool model has them; otherwise this is the common LTHW return.
+        temperature: r(
+          p.temperatureControl?.measuredTemperatureC ??
+            p.lthwReturn ??
+            p.lthw - 11,
+          'C',
+          p.temperatureControl ? 'HX OUT' : 'HX RTN',
+          1,
+        ),
+        flow: p.temperatureControl
+          ? r(p.temperatureControl.demandFraction * 100, '%', 'HEAT DEM')
+          : r(2.1, 'l/s', 'POOL HX', 1),
+        ...(p.temperatureControl
+          ? {
+              pressure: r(
+                p.temperatureControl.actualValvePosition * 100,
+                '%',
+                'HX VALVE',
+              ),
+              flow: r(
+                p.temperatureControl.demandFraction * 100,
+                '%',
+                'HEAT DEM',
+              ),
+            }
+          : {}),
       },
       calorifier: {
         temperature: r(61 + (p.t % 60) / 30, 'C', 'STORE', 1),

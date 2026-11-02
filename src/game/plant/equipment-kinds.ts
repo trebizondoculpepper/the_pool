@@ -146,6 +146,21 @@ export const PLACED_KINDS = {
     purpose: 'Meters low-pressure CO₂ into the pool return under the Trio.',
     brand: 'chlorella',
   },
+  'pool-temperature-controller': {
+    type: 'Pool temperature controller',
+    status: 'none',
+    code: 'TC',
+    class: 'plant',
+    purpose:
+      'Measures pool-water temperature and modulates heat-exchanger flow to meet the local setpoint.',
+  },
+  'temperature-sensor': {
+    type: 'Temperature sensor',
+    status: 'none',
+    code: 'TE',
+    class: 'plant',
+    purpose: 'Measures pool-water temperature at the heat-exchanger outlet.',
+  },
   'co2-wall-port': {
     type: 'CO₂ wall port',
     status: 'none',

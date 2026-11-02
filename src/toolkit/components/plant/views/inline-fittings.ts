@@ -29,6 +29,7 @@ export type InlineFittingKind =
   | 'non-return-valve'
   | 'power-isolator'
   | 'remote-valve'
+  | 'regulating-valve'
   | 'flowmeter';
 
 export interface InlineFittingSpec {

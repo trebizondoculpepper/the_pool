@@ -15,7 +15,15 @@ import {
   createInjectionSaddle,
 } from '../../components/plant/views/injection-quill';
 import { retiredFrom } from '../logic/retired-rooms';
-import { BoxGeometry, Group, Mesh, MeshStandardMaterial } from 'three';
+import {
+  BoxGeometry,
+  CatmullRomCurve3,
+  Group,
+  Mesh,
+  MeshStandardMaterial,
+  TubeGeometry,
+  Vector3,
+} from 'three';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createMicroLabel } from '../../components/core/views/eighties-controls';
 import { createPartSet } from '../../components/core/parts/parts';
@@ -40,6 +48,7 @@ import { installedValveFor } from '../../../game/plant/installed-valves';
 import { markComponent } from '../../components/core/views/component-identity';
 import { runBinding } from '../logic/world-in-model';
 import { SCHEMATICS } from '../../../game/plant/schematics';
+import { MODEL_VALVES } from '../../../game/plant/model-valves';
 import {
   LOUNGE_TRIO_SITE,
   OLYMPIC_TRIO_SITE,
@@ -81,6 +90,8 @@ import {
 } from '../logic/room-pipes';
 import type { PipeRun, Valve } from '../logic/room-pipes';
 import { olympicRoom } from '../logic/olympic-plumbing';
+import { layoutRoom } from '../logic/room-equipment';
+import { createPoolTemperatureProbe } from '../../components/plant/views/pool-temperature-controller';
 
 /** Each run's service, as its markings name it. */
 /** Each service's bands; a flue carries none, only its own label plate. */
@@ -363,6 +374,78 @@ export function createRoomPipework(kit: PanelKit, room: string, floorY = 0) {
         : tee,
     );
   }
+  // Remote Pt100 probe in the pool-water outlet from the exchanger, with its
+  // screened lead routed high under the services ceiling and down to its rack.
+  const temperaturePool =
+    (retiredFrom(room) ?? room) === 'plant_pool_01'
+      ? 'pool_01'
+      : (retiredFrom(room) ?? room) === 'plant_pool_02'
+        ? 'pool_02'
+        : null;
+  if (temperaturePool) {
+    const outlet = runs.find((r) =>
+      temperaturePool === 'pool_01'
+        ? r.name === 'Heat exchanger to the ozone contact tank'
+        : r.name === 'hx-return',
+    );
+    const controllerItem = layoutRoom(retiredFrom(room) ?? room)?.placed.find(
+      (p) =>
+        p.item.key ===
+        `pool-temperature-controller:${temperaturePool === 'pool_01' ? 'analogue' : 'digital'}`,
+    );
+    if (outlet && controllerItem) {
+      const point = outlet.points[0];
+      const tag = temperaturePool === 'pool_01' ? 'PL1-TE1' : 'PL2-TE1';
+      const probe = createPoolTemperatureProbe(kit, tag, outlet.od);
+      probe.position.set(point[0], floorY + point[1] + outlet.od / 2, point[2]);
+      probe.rotation.x = -Math.PI / 2;
+      group.add(
+        markComponent(probe, {
+          tag,
+          name: 'Pool-water exchanger outlet Pt100 probe',
+          model: { node: 'temperature-probe' },
+        }),
+      );
+      const start = new Vector3(
+        point[0],
+        floorY + point[1] + outlet.od / 2,
+        point[2],
+      );
+      const end = new Vector3(
+        controllerItem.x,
+        floorY + controllerItem.y,
+        controllerItem.z,
+      );
+      const high = Math.max(start.y, end.y) + 1.15;
+      const route = new CatmullRomCurve3([
+        start,
+        new Vector3(start.x, high, start.z),
+        new Vector3(end.x, high, end.z),
+        end,
+      ]);
+      const conduit = new Mesh(
+        new TubeGeometry(route, 48, 0.006, 6, false),
+        new MeshStandardMaterial({
+          color: '#343a3d',
+          metalness: 0.45,
+          roughness: 0.6,
+        }),
+      );
+      conduit.name = `${tag} screened instrument cable in conduit`;
+      conduit.userData.live = false;
+      group.add(
+        markComponent(conduit, {
+          name: `${tag} Pt100 signal cable in conduit`,
+          model: {
+            link:
+              temperaturePool === 'pool_01'
+                ? 'Pt100 measurement to temperature controller'
+                : 'pool-temperature-measurement',
+          },
+        }),
+      );
+    }
+  }
   // What the room's flowmeters read, as the world now stands (the battery's model keeps its own cache).
   function readings(): Record<string, number> {
     const world = store?.world.value;
@@ -379,6 +462,53 @@ export function createRoomPipework(kit: PanelKit, room: string, floorY = 0) {
       run.name,
       v.name,
     );
+    if (v.controllerPool) {
+      const pool = v.controllerPool;
+      const controllerTag =
+        pool === 'pool_01'
+          ? ['PL1', 'HX1', 'CV1'].join('-')
+          : ['PL2', 'HX1', 'CV1'].join('-');
+      const modelTag =
+        installed.tag ??
+        v.tag ??
+        MODEL_VALVES.find((item) => item.id === v.fitting)?.tag ??
+        controllerTag;
+      const binding = {
+        open: () =>
+          (store?.world.value.poolTemperatureControls[pool]?.valvePosition ??
+            0) > 0.01,
+        position: () =>
+          store?.world.value.poolTemperatureControls[pool]?.valvePosition ?? 0,
+        set: (open: boolean) => {
+          store?.dispatch({
+            type: 'pool/temperature-control',
+            pool,
+            act: 'mode',
+            mode: 'hand',
+          });
+          store?.dispatch({
+            type: 'pool/temperature-control',
+            pool,
+            act: 'manual-output',
+            output: open ? 1 : 0,
+          });
+        },
+      };
+      const actuator = parts.add(
+        createActuatedButterflyValve(
+          kit,
+          dnFor(v.od),
+          v.axis,
+          `${modelTag} · ${v.name}`,
+          binding,
+          { plaque: { tag: modelTag, name: v.name } },
+        ),
+      );
+      actuator.object.position.set(...lift(v.at));
+      if (v.axis !== 'x')
+        actuator.object.rotation.y = Math.atan2(v.facing[0], v.facing[2]);
+      return actuator.object;
+    }
     const binding = {
       open: () =>
         store?.world.value.installedValves[installed.assetId] ??

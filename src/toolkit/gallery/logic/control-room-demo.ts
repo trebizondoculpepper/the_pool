@@ -45,6 +45,16 @@ export interface PlantReading {
   lthwReturn?: number;
   heatDemand?: number;
   heatSupply?: number;
+  /** Model-backed local pool heat controller and exchanger valve, when present. */
+  temperatureControl?: {
+    measuredTemperatureC: number;
+    setpointC: number;
+    demandFraction: number;
+    commandedValvePosition: number;
+    actualValvePosition: number;
+    mode: 'auto' | 'hand';
+    interlock: 'none' | 'no-circulation' | 'primary-isolated';
+  };
   /** Each boiler (B-501 to B-506) firing and locked out, as the world has them (mission 121). */
   boilers?: { firing: readonly boolean[]; lockout: readonly boolean[] };
   /** Hall relative humidity, %. */
@@ -226,6 +236,15 @@ export function plantAt(seconds: number): PlantReading {
     boilersFiring,
     balance,
     mainPool: 29.2 + 0.15 * wave(97),
+    temperatureControl: {
+      measuredTemperatureC: 29.2 + 0.15 * wave(97),
+      setpointC: 29.5,
+      demandFraction: 0.15,
+      commandedValvePosition: 0.15,
+      actualValvePosition: 0.15,
+      mode: 'auto',
+      interlock: 'none',
+    },
     learnerPool: 31.0 + 0.1 * wave(83, 20),
     spa: 36.4 + 0.2 * wave(61, 10),
     hallAir: 30.1 + 0.3 * wave(DEMO_LOOP),

@@ -698,6 +698,15 @@ function poolPlant(
       walls: ['south', 'west', 'east'],
     }),
     floor('heat-exchanger', `${name} plate heat exchanger`, 1.5, 0.7, 1.2),
+    wall(
+      'pool-temperature-controller:analogue',
+      `${name} pool temperature controller`,
+      0.42,
+      0.08,
+      0.5,
+      1.45,
+      { walls: ['east'] },
+    ),
     // Its room's ozone detection is on it (`ozone-generator:<room>`).
     floor(`ozone-generator:${room}`, `${name} ozone generator`, 1.6, 0.5, 1.95),
     floor(
@@ -1728,16 +1737,49 @@ export function layoutRoomLive(room: string) {
     room === 'control_room'
       ? r.items.find((item) => item.key === 'readout-board')
       : undefined;
+  const olympicTemperatureController =
+    room === 'plant_pool_02'
+      ? r.items.find(
+          (item) => item.key === 'pool-temperature-controller:digital',
+        )
+      : undefined;
   const layout = fixed
-    ? { placed: fixed, failed: [] }
+    ? {
+        placed: fixed.filter((p) => p.item !== olympicTemperatureController),
+        failed: [],
+      }
     : packRoom(
         r.box,
         controlBoard
           ? r.items.filter(
               (item) => item !== controlBoard && item !== readoutBoard,
             )
-          : r.items,
+          : olympicTemperatureController
+            ? r.items.filter((item) => item !== olympicTemperatureController)
+            : r.items,
       );
+  if (olympicTemperatureController) {
+    // This instrument is fixed to the north face of the stair stringer,
+    // above the plant floor, as the owner requested. Its shallow body sits
+    // wholly north of the stair's floor footprint; the operator stands in
+    // the clear aisle immediately in front of it.
+    const item = olympicTemperatureController;
+    layout.placed.push({
+      item,
+      x: 7.6,
+      z: 6,
+      y: item.y ?? 1.45,
+      yaw: Math.PI,
+      footprint: {
+        minX: 7.6 - item.w / 2,
+        maxX: 7.6 + item.w / 2,
+        minZ: 6 - item.d,
+        maxZ: 6,
+      },
+      access: { minX: 7.2, maxX: 8, minZ: 5.1, maxZ: 6 - item.d },
+      side: 'south',
+    });
+  }
   if (controlBoard) {
     // The owner chose the view from (-1.30, -3.28), looking north.
     // This read-only board sits above the operator desk and is read from
@@ -2143,6 +2185,19 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
     const south = hz - (box.pipes.south ?? 0);
     const s = TANK_SURROUND;
     const out: Placed[] = [];
+    const temperatureController = at('pool temperature controller');
+    // Mounted to the west face of the stair stringer, clear of the treads;
+    // its front and working space face west into the plant room.
+    out.push({
+      item: temperatureController,
+      x: 4.95,
+      z: -3.4,
+      y: 1.45,
+      yaw: -Math.PI / 2,
+      footprint: { minX: 4.91, maxX: 4.99, minZ: -3.61, maxZ: -3.19 },
+      access: { minX: 4.11, maxX: 4.91, minZ: -3.8, maxZ: -3.0 },
+      side: 'island',
+    });
     const tank = at('balance tank');
     const tx0 = -h + s;
     const tz0 = north + s;

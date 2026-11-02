@@ -349,6 +349,16 @@ describe('PL1-CP3, the lounge plant room’s annunciator (the owner, 2026-10-31)
   });
 });
 
+describe('pool exchanger temperature controls (mission 144)', () => {
+  it('places the Olympic local controller; Lounge placement awaits under-stairs layout', () => {
+    expect(
+      layoutRoom('plant_pool_02')!.placed.some(
+        (p) => p.item.key === 'pool-temperature-controller:digital',
+      ),
+    ).toBe(true);
+  });
+});
+
 describe('the balance tanks', () => {
   it('stand below their pools’ decks, so the overflow falls to them', () => {
     for (const room of ['plant_pool_01']) {
@@ -363,9 +373,14 @@ describe('the balance tanks', () => {
 describe('the Olympic plant room, redone (prompt 033)', () => {
   it('stands its machines, including the CO₂ panel, and two day tanks in a room of 22 × 14 m, plumbed', () => {
     const layout = layoutRoom('plant_pool_02')!;
-    expect(layout.placed).toHaveLength(21);
+    expect(layout.placed).toHaveLength(22);
     expect([layout.box.w, layout.box.d]).toEqual([22, 14]);
     expect(roomPipes('plant_pool_02').length).toBeGreaterThan(40);
+    expect(
+      layout.placed.find(
+        (p) => p.item.key === 'pool-temperature-controller:digital',
+      ),
+    ).toBeDefined();
   });
 
   it('keeps the square template rooms without balance tank doors', () => {

@@ -7,6 +7,37 @@ import {
 } from './plant-process';
 
 describe('browser plant process state', () => {
+  it('shows simulation-time pool temperature and heating-valve trends', () => {
+    const first = newWorld();
+    const history = new PlantProcessHistory();
+    history.observe(plantProcessFacts(first));
+    const later = {
+      ...first,
+      time: first.time + 120,
+      pools: {
+        ...first.pools,
+        pool_02: {
+          ...first.pools.pool_02,
+          temperature: first.pools.pool_02.temperature + 0.4,
+        },
+      },
+      poolTemperatureControls: {
+        ...first.poolTemperatureControls,
+        pool_02: {
+          ...first.poolTemperatureControls.pool_02!,
+          valvePosition: 0.6,
+        },
+      },
+    };
+    const fact = plantProcessFacts(later);
+    const trend = history.trends(fact).find((item) => item.pool === 'pool_02')!;
+    expect(trend.mainPoolTemperatureCPerMinute).toBeCloseTo(0.2);
+    expect(trend.temperatureControlValvePositionPerMinute).toBeCloseTo(0.3);
+    expect(plantProcessLines(fact, [trend]).join('\n')).toContain(
+      'actual control valve 0.0% → 60.0%',
+    );
+  });
+
   it('keeps the Olympic main pool and balance tank chemistry separate', () => {
     const world = newWorld();
     const circuit = world.treatment.circuits.pool_02;
@@ -38,8 +69,21 @@ describe('browser plant process state', () => {
       changed.pools.pool_02.temperature,
     );
     expect(olympic.balanceTank.temperatureC).toBeNull();
+    expect(olympic.temperatureControl).toMatchObject({
+      controllerRef: 'PL2-TC1',
+      probeRef: 'PL2-TE1',
+      setpointC: changed.poolTemperatureControls.pool_02!.setpoint,
+      actualValvePosition:
+        changed.poolTemperatureControls.pool_02!.valvePosition,
+    });
+    expect(olympic.temperatureControl?.measuredTemperatureC).toBe(
+      changed.pools.pool_02.temperature,
+    );
     expect(plantProcessLines(process, []).join('\n')).toContain(
       'pool_02 balance tank: pH 8.200; total alkalinity 190.0 mg/L as CaCO₃',
+    );
+    expect(plantProcessLines(process, []).join('\n')).toContain(
+      'pool_02 pool heating PL2-TC1: remote outlet probe PL2-TE1',
     );
   });
 

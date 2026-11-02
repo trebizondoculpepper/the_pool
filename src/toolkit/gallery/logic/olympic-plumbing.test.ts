@@ -60,7 +60,7 @@ describe('the Olympic plant room, plumbed and routed', () => {
     const valves = plumbed.fittings.filter((f) =>
       f.id.startsWith('exchanger.'),
     );
-    expect(valves).toHaveLength(4);
+    expect(valves).toHaveLength(5);
     const distance = (a: readonly number[], b: readonly number[]) =>
       Math.hypot(...a.map((v, k) => v - b[k]));
     for (const valve of valves) {

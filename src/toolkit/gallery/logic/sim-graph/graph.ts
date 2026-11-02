@@ -321,12 +321,12 @@ export function roomNet(room: string): RoomNet | undefined {
     for (const n of built.expansion.nodes) {
       if (fittings.has(n.id)) continue;
       const s = given.get(n.id);
-      const named = n as { name?: string };
+      const named = n as { name?: string; code?: string };
       nodes.set(n.id, {
         id: n.id,
         kind: n.kind,
         name: s?.name ?? named.name ?? labels.get(n.id) ?? n.id,
-        ...(s?.code ? { code: s.code } : {}),
+        ...((s?.code ?? named.code) ? { code: s?.code ?? named.code } : {}),
       });
     }
     net = {

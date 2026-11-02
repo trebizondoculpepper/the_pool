@@ -16,6 +16,11 @@
 export const INSTALLED_ASSET_IDS: Readonly<
   Record<string, { assetId: string; tag: string }>
 > = {
+  'plant_pool_01|pool-temperature-controller:analogue|Lounge pool pool temperature controller':
+    {
+      assetId: 'asset-0166',
+      tag: 'PL1-TC1',
+    },
   'plant_pool_01|balance-tank:3x2x2|Lounge pool balance tank': {
     assetId: 'asset-0001',
     tag: 'PL1-T1',
@@ -453,6 +458,11 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0158',
     tag: 'PL2-CP4',
   },
+  'plant_pool_02|pool-temperature-controller:digital|Olympic pool pool water temperature controller':
+    {
+      assetId: 'asset-0167',
+      tag: 'PL2-TC1',
+    },
   'plant_pool_02|co2-wall-port|Olympic pool CO₂ wall port': {
     assetId: 'asset-0161',
     tag: 'PL2-WP1',

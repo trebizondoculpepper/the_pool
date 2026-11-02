@@ -86,6 +86,7 @@ const ACTIVE_KINDS: ReadonlySet<string> = new Set([
   'music-rack',
   'speaker-pair',
   'water-quality-display',
+  'instrument-rack',
   'fibre-wall',
   'plant-room-lights',
   'hall-lights',
@@ -94,6 +95,10 @@ const ACTIVE_KINDS: ReadonlySet<string> = new Set([
   'footbath',
   'pool',
   'heat-exchanger',
+  'pool-temperature-controller',
+  'regulating-valve',
+  'temperature-sensor',
+  'music-source',
   'contact-tank',
   'ozone-generator',
   'uv-unit',
@@ -190,6 +195,7 @@ const ACTIVE_KINDS: ReadonlySet<string> = new Set([
  */
 const ACTIVE_FITTINGS: ReadonlySet<string> = new Set([
   'isolating-valve',
+  'regulating-valve',
   'non-return-valve',
   'power-isolator',
   'flowmeter',

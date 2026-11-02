@@ -69,6 +69,8 @@ export type Service =
 export interface Valve {
   /** Its fitting in its room's model, where the room's plumbing gives one. */
   fitting?: string;
+  /** Stable plate for a control valve that is not an isolating valve. */
+  tag?: string;
   /** Its middle, on its run, and the run's axis there. */
   at: Vec3;
   axis: 'x' | 'y' | 'z';
@@ -82,6 +84,8 @@ export interface Valve {
    * an electric actuator (`remote-actuators.ts`).
    */
   operator: 'lever' | 'chain' | 'solenoid' | 'motor';
+  /** A continuously positioned, world-stepped pool exchanger control valve. */
+  controllerPool?: 'pool_01' | 'pool_02';
   /**
    * A water butterfly valve (the default), a gas lever ball valve, a
    * dosing quill's DN15 chemical ball valve (drawn with its quill set), or
@@ -363,7 +367,7 @@ export function poolPlantPipework(room: string): {
   const injections: InjectionPoint[] = [];
   const run = (
     r: Omit<PipeRun, 'through' | 'valves'> & {
-      valves?: Omit<Valve, 'operator'>[];
+      valves?: (Omit<Valve, 'operator'> & { operator?: Valve['operator'] })[];
     },
   ) => {
     const points = tidy(r.points);
@@ -400,11 +404,12 @@ export function poolPlantPipework(room: string): {
       valves: (r.valves ?? []).map((v) => ({
         ...v,
         operator:
-          room === 'plant_pool_01'
+          v.operator ??
+          (room === 'plant_pool_01'
             ? 'solenoid'
             : v.at[1] > REACH
               ? 'chain'
-              : 'lever',
+              : 'lever'),
       })),
     };
     runs.push(made);
@@ -1000,6 +1005,48 @@ export function poolPlantPipework(room: string): {
       joins: [phe.item.label],
       service,
       label: service === 'heating flow' ? 'LTHW FLOW' : 'LTHW RETURN',
+      valves: MODEL_VALVES.filter(
+        (v) =>
+          v.room === room &&
+          v.link ===
+            (service === 'heating flow'
+              ? 'Heating flow to the heat exchanger'
+              : 'Heating return from the heat exchanger'),
+      ).map((v, i) => {
+        const outward = p.outward;
+        const at: Vec3 = [
+          p.at[0] + outward[0] * (0.18 + i * 0.36),
+          p.at[1] + outward[1] * (0.18 + i * 0.36),
+          p.at[2] + outward[2] * (0.18 + i * 0.36),
+        ];
+        const axis =
+          Math.abs(outward[0]) > 0.5
+            ? 'x'
+            : Math.abs(outward[1]) > 0.5
+              ? 'y'
+              : 'z';
+        return {
+          fitting: v.id,
+          at,
+          axis,
+          name: v.name,
+          od: 0.114,
+          facing: outward,
+          operator: v.id.endsWith('.temperature-control')
+            ? 'motor'
+            : room === 'plant_pool_01'
+              ? 'solenoid'
+              : 'lever',
+          ...(v.id.endsWith('.temperature-control')
+            ? {
+                controllerPool:
+                  room === 'plant_pool_01'
+                    ? ('pool_01' as const)
+                    : ('pool_02' as const),
+              }
+            : {}),
+        };
+      }),
     });
   }
   const makeUp = port(tank, 'makeUp');

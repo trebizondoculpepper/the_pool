@@ -183,6 +183,7 @@ const ITEM: Record<string, { key: string }> = {
   'co2-panel': { key: 'co2-panel' },
   'co2-wall-port': { key: 'co2-wall-port' },
   'co2-detector': { key: 'co2-detector' },
+  'temperature-controller': { key: 'pool-temperature-controller:digital' },
   tankPanel: { key: 'balance-tank-panel' },
   annunciator: { key: 'annunciator:pool_02' },
 };
@@ -1372,8 +1373,45 @@ export function plumbOlympic(
     // Trio's cabinet, a node of the room's annex with its own lines
     // (`olympic-annex.ts`, `aqualis-schematic.ts`).
     ...items
-      .filter((i) => i.mount === 'floor' && i.key !== 'controller')
-      .map((i) => ({ id: i.key, kind: i.key.replace(/-\d$/, '') })),
+      .filter(
+        (i) =>
+          (i.mount === 'floor' && i.key !== 'controller') ||
+          i.key === 'temperature-controller',
+      )
+      .map((i) => ({
+        id: i.key,
+        kind:
+          i.key === 'temperature-controller'
+            ? 'pool-temperature-controller'
+            : i.key.replace(/-\d$/, ''),
+        name: i.label,
+        ...(i.key === 'exchanger' ? { code: 'HX1' } : {}),
+        ...(i.key === 'temperature-controller' ? { code: 'TC1' } : {}),
+      })),
+    {
+      id: 'temperature-probe',
+      kind: 'temperature-sensor',
+      name: 'Olympic exchanger outlet Pt100',
+      code: 'TE1',
+    },
+    {
+      id: 'temperature-control-valve',
+      kind: 'regulating-valve',
+      name: 'Olympic exchanger LTHW temperature control valve',
+      code: 'CV1',
+    },
+    {
+      id: 'instrument-rack',
+      kind: 'instrument-rack',
+      name: 'Olympic controller and music rack',
+      code: 'RK1',
+    },
+    {
+      id: 'music-source',
+      kind: 'music-source',
+      name: 'Olympic pool music source',
+      code: 'MP1',
+    },
     { id: 'pool', kind: 'pool' },
     { id: 'tank', kind: 'balance-tank' },
     { id: 'main-plant', kind: 'main-plant' },
@@ -1395,6 +1433,46 @@ export function plumbOlympic(
     medium,
   });
   const edges: PlumbEdge[] = [
+    edge(
+      'pool-temperature-sample',
+      'pool',
+      'temperature',
+      'temperature-probe',
+      'process-value',
+      'heat',
+    ),
+    edge(
+      'pool-temperature-measurement',
+      'temperature-probe',
+      'signal',
+      'temperature-controller',
+      'measurement',
+      'control',
+    ),
+    edge(
+      'pool-temperature-valve-command',
+      'temperature-controller',
+      'output',
+      'temperature-control-valve',
+      'command',
+      'control',
+    ),
+    edge(
+      'instrument-rack-power',
+      'bus',
+      'feed',
+      'instrument-rack',
+      'supply',
+      'power',
+    ),
+    edge(
+      'music-source-power',
+      'instrument-rack',
+      'player-supply',
+      'music-source',
+      'power',
+      'power',
+    ),
     edge('tank.suctionA', 'tank', 'suction', 'pumps', 'suctionA', 'water'),
     edge('tank.suctionB', 'tank', 'suction', 'pumps', 'suctionB', 'water'),
     ...filters.map((f) =>
@@ -1469,6 +1547,17 @@ export function plumbOlympic(
     isolateMedia: new Set<Medium>(['water', 'power']),
     powerIsolators: 'supply-feeds',
     flowmeters: options.flowmeters,
+    given: [
+      {
+        id: 'exchanger.primaryFlow.temperature-control',
+        kind: 'regulating-valve',
+        edge: 'heating-flow',
+        end: 'target',
+        normally: 'closed',
+        role: 'HX LTHW temperature control valve',
+        operator: 'solenoid',
+      },
+    ],
   });
   // How each is worked, by the options and whether it can be reached from the floor.
   const workedBy = (
@@ -1665,7 +1754,12 @@ export function plumbOlympic(
     }
     const L = len(run.points);
     list.forEach((f, k) => {
-      const d = Math.min(L - 0.1, 0.35 + k * 0.4);
+      const d =
+        f.id === 'exchanger.primaryFlow.iso'
+          ? // Leave the exchanger's modulating valve and its maintenance
+            // isolator together on the final straight before the HX port.
+            Math.min(L - 0.1, 0.15)
+          : Math.min(L - 0.1, 0.35 + k * 0.4);
       // A filter's branch valves at the branch's header end, by the battery's
       // walkway, where its face is worked from; the rest by their ports.
       const name = run.name.replace(/^Filter \d /, '');
@@ -1962,11 +2056,17 @@ function valveName(
     'exchanger.poolOut.iso': ['HX pool return valve', 'HX1'],
     'exchanger.primaryFlow.iso': ['HX primary flow valve', 'HX1'],
     'exchanger.primaryReturn.iso': ['HX primary return valve', 'HX1'],
+    'exchanger.primaryFlow.temperature-control': [
+      'HX LTHW temperature control valve',
+      'HX1',
+    ],
     'battery.outlet.regulating': ['Side-stream regulating valve', 'F'],
     'pumps.drain.iso': ['Pump drain valve', 'P1'],
     'pool.mainDrain.iso': ['Pool main drain isolating valve', 'T1'],
   };
   const t = table[id];
+  if (id === 'exchanger.primaryFlow.temperature-control' && t)
+    return { name: t[0], code: t[1], tag: `PL2-${t[1]}-CV1` };
   // The pumps' drain keeps its own plate: a drain valve (the owner, 2026-10-25).
   if (id === 'pumps.drain.iso')
     return { name: t[0], code: t[1], tag: 'PL2-P1-DV1' };
@@ -2182,6 +2282,12 @@ export function olympicRoom() {
             axis,
             name: v.name,
             fitting: f.id,
+            ...(f.id === 'exchanger.primaryFlow.temperature-control'
+              ? {
+                  controllerPool: 'pool_02' as const,
+                  tag: ['PL2', 'HX1', 'CV1'].join('-'),
+                }
+              : {}),
             od: r.od,
             // As the plumber's options have it worked.
             operator,

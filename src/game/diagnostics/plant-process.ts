@@ -15,6 +15,7 @@ import type { PoolId } from '../plant/pools';
 import { readings } from '../water/pool-chemistry';
 import type { PoolChemistry } from '../water/pool-chemistry';
 import type { World } from '../world';
+import { stepPoolTemperatureControl } from '../plant/pool-temperature-control';
 
 export interface WaterBodyFact {
   ph: number;
@@ -42,6 +43,21 @@ export interface PoolProcessFact {
   drainDownOpen: boolean;
   waterTemperatureSetpointC: number;
   heatInputKw: number;
+  temperatureControl: {
+    controllerRef: string;
+    probeRef: string;
+    measuredTemperatureC: number;
+    setpointC: number;
+    mode: 'auto' | 'hand';
+    demandFraction: number;
+    commandedValvePosition: number;
+    actualValvePosition: number;
+    valveStuck: boolean;
+    sensorFault: 'none' | 'low' | 'high';
+    interlock: 'none' | 'no-circulation' | 'primary-isolated';
+    flowIsolatorOpen: boolean;
+    returnIsolatorOpen: boolean;
+  } | null;
   pumpTripped: boolean;
   co2: {
     controllerRef: string;
@@ -138,6 +154,16 @@ export function plantProcessFacts(world: World): PlantProcessFact {
     const trio =
       id === 'pool_01' || id === 'pool_02' ? world.aqualis[id] : null;
     const panel = port ? world.co2.dosers[port] : null;
+    const temperatureControl = world.poolTemperatureControls[id];
+    const controlResult = temperatureControl
+      ? stepPoolTemperatureControl(temperatureControl, {
+          poolTemperature: pool.temperature,
+          circulationAvailable: !pool.tripped && pool.flow > 0.5,
+          primaryFlowIsolated: !temperatureControl.flowIsolatorOpen,
+          primaryReturnIsolated: !temperatureControl.returnIsolatorOpen,
+          dt: 0,
+        })
+      : null;
     const channel = trio?.channels.co2;
     const distribution = world.co2.distribution;
     return {
@@ -163,6 +189,24 @@ export function plantProcessFacts(world: World): PlantProcessFact {
       drainDownOpen: pool.drainDown,
       waterTemperatureSetpointC: pool.setpoint,
       heatInputKw: pool.heating,
+      temperatureControl:
+        temperatureControl && controlResult
+          ? {
+              controllerRef: id === 'pool_01' ? 'PL1-TC1' : 'PL2-TC1',
+              probeRef: id === 'pool_01' ? 'PL1-TE1' : 'PL2-TE1',
+              measuredTemperatureC: controlResult.measuredTemperature,
+              setpointC: temperatureControl.setpoint,
+              mode: temperatureControl.mode,
+              demandFraction: controlResult.demand,
+              commandedValvePosition: controlResult.commandedPosition,
+              actualValvePosition: temperatureControl.valvePosition,
+              valveStuck: temperatureControl.valveStuck,
+              sensorFault: temperatureControl.sensorFault,
+              interlock: controlResult.interlock,
+              flowIsolatorOpen: temperatureControl.flowIsolatorOpen,
+              returnIsolatorOpen: temperatureControl.returnIsolatorOpen,
+            }
+          : null,
       pumpTripped: pool.tripped,
       co2:
         trio && panel && channel && port
@@ -239,6 +283,10 @@ export interface PoolTrend {
   balanceTankAlkalinityMgLPerMinute: number | null;
   mainPoolPhStart: number | null;
   balanceTankPhStart: number | null;
+  mainPoolTemperatureCPerMinute: number | null;
+  temperatureControlValvePositionPerMinute: number | null;
+  mainPoolTemperatureStartC: number | null;
+  temperatureControlValvePositionStart: number | null;
 }
 
 /** A bounded observation window of projected facts, never the World. */
@@ -285,6 +333,22 @@ export class PlantProcessHistory {
           : null,
         mainPoolPhStart: previous?.mainPool.ph ?? null,
         balanceTankPhStart: previous?.balanceTank.ph ?? null,
+        mainPoolTemperatureCPerMinute:
+          previous &&
+          previous.mainPool.temperatureC !== null &&
+          pool.mainPool.temperatureC !== null
+            ? (pool.mainPool.temperatureC - previous.mainPool.temperatureC) /
+              minutes
+            : null,
+        temperatureControlValvePositionPerMinute:
+          previous?.temperatureControl && pool.temperatureControl
+            ? (pool.temperatureControl.actualValvePosition -
+                previous.temperatureControl.actualValvePosition) /
+              minutes
+            : null,
+        mainPoolTemperatureStartC: previous?.mainPool.temperatureC ?? null,
+        temperatureControlValvePositionStart:
+          previous?.temperatureControl?.actualValvePosition ?? null,
       };
     });
   }
@@ -310,11 +374,22 @@ export function plantProcessLines(
     lines.push(
       `${pool.pool} circulation: ${number(pool.circulationFlowM3h, 1)} m³/h; make-up valve open ${yesNo(pool.makeUpOpen)}; drain-down open ${yesNo(pool.drainDownOpen)}; pump tripped ${yesNo(pool.pumpTripped)}; water temperature setpoint ${number(pool.waterTemperatureSetpointC, 1)} °C; pool and hall heat input ${number(pool.heatInputKw, 1)} kW.`,
     );
+    const control = pool.temperatureControl;
+    lines.push(
+      control
+        ? `${pool.pool} pool heating ${control.controllerRef}: remote outlet probe ${control.probeRef} measured ${number(control.measuredTemperatureC, 2)} °C; controller setpoint ${number(control.setpointC, 1)} °C; mode ${control.mode.toUpperCase()}; demand ${number(control.demandFraction * 100, 1)}%; commanded valve ${number(control.commandedValvePosition * 100, 1)}%; actual valve ${number(control.actualValvePosition * 100, 1)}%; interlock ${control.interlock}; actuator stuck ${yesNo(control.valveStuck)}; sensor fault ${control.sensorFault}; flow isolator open ${yesNo(control.flowIsolatorOpen)}; return isolator open ${yesNo(control.returnIsolatorOpen)}.`
+        : `${pool.pool} pool heating controller: unavailable (not modelled).`,
+    );
     lines.push(
       trend?.fromSeconds === null || !trend
         ? `${pool.pool} chemistry trend: unavailable until 60 simulated seconds have been observed in this browser session.`
         : `${pool.pool} chemistry trend from ${number(trend.fromSeconds, 1)} s to ${number(trend.toSeconds, 1)} s: main pool pH ${number(trend.mainPoolPhStart!, 3)} → ${number(pool.mainPool.ph, 3)} (${number(trend.mainPoolPhPerMinute!, 4)} pH/min); balance tank pH ${number(trend.balanceTankPhStart!, 3)} → ${number(pool.balanceTank.ph, 3)} (${number(trend.balanceTankPhPerMinute!, 4)} pH/min); main pool alkalinity ${number(trend.mainPoolAlkalinityMgLPerMinute!, 2)} mg/L/min; balance tank alkalinity ${number(trend.balanceTankAlkalinityMgLPerMinute!, 2)} mg/L/min.`,
     );
+    if (trend?.fromSeconds !== null && trend) {
+      lines.push(
+        `${pool.pool} heating trend from ${number(trend.fromSeconds, 1)} s to ${number(trend.toSeconds, 1)} s: main pool temperature ${number(trend.mainPoolTemperatureStartC ?? pool.mainPool.temperatureC ?? 0, 2)} → ${number(pool.mainPool.temperatureC ?? 0, 2)} °C (${trend.mainPoolTemperatureCPerMinute === null ? 'unavailable' : `${number(trend.mainPoolTemperatureCPerMinute, 3)} °C/min`}); actual control valve ${trend.temperatureControlValvePositionStart === null || !pool.temperatureControl ? 'unavailable' : `${number(trend.temperatureControlValvePositionStart * 100, 1)}% → ${number(pool.temperatureControl.actualValvePosition * 100, 1)}% (${trend.temperatureControlValvePositionPerMinute === null ? 'unavailable' : `${number(trend.temperatureControlValvePositionPerMinute * 100, 1)} percentage points/min`})`}.`,
+      );
+    }
     if (pool.co2) {
       const co2 = pool.co2;
       lines.push(

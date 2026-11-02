@@ -234,7 +234,11 @@ describe.each([['plant_pool_01', 'medium']] as const)(
         ).toBeLessThanOrEqual(REACH);
       for (const v of valves.filter((v) => v.at[1] > REACH))
         expect(v.operator, v.name).toBe('chain');
-      expect(valves.every((v) => v.operator === 'solenoid')).toBe(true);
+      expect(
+        valves
+          .filter((v) => /^F\d+ /.test(v.name))
+          .every((v) => v.operator === 'solenoid'),
+      ).toBe(true);
     });
 
     it('takes the filter outlet bend below the front observation area', () => {

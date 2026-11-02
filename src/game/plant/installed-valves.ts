@@ -358,6 +358,17 @@ const HAND_DRAWN_VALVES: Readonly<Record<string, InstalledValve>> = {
     tag: 'PL2-HX1-IV4',
     normal: 'open',
   },
+  'plant_pool_02|heating-flow|HX LTHW temperature control valve': {
+    assetId: 'exchanger.primaryFlow.temperature-control',
+    tag: ['PL2', 'HX1', 'CV1'].join('-'),
+    normal: 'closed',
+  },
+  'plant_pool_01|Heating flow to the heat exchanger|HX LTHW temperature control valve':
+    {
+      assetId: 'plant_pool_01.exchanger.primary-flow.temperature-control',
+      tag: ['PL1', 'HX1', 'CV1'].join('-'),
+      normal: 'closed',
+    },
   // The jacuzzi plant room's valves are its model's (prompt 064):
   // `MODEL_VALVES`, joined below. Its old asset ids, valve-0087 to
   // valve-0102, are retired with the saved worlds that held them.

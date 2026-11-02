@@ -95,7 +95,48 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(75);
+    expect(WORLD_VERSION).toBe(76);
+  });
+
+  it('migrates v75 pool setpoints into AUTO temperature controllers with open isolators', () => {
+    const old = newWorld();
+    const poolSetpoint = 29.5;
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 75,
+        savedAt: 5,
+        world: {
+          ...old,
+          pools: {
+            ...old.pools,
+            pool_01: { ...old.pools.pool_01, setpoint: poolSetpoint },
+          },
+          poolTemperatureControls: undefined,
+        },
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.world.poolTemperatureControls.pool_01).toMatchObject({
+      setpoint: poolSetpoint,
+      mode: 'auto',
+      valvePosition: 0,
+      flowIsolatorOpen: true,
+      returnIsolatorOpen: true,
+    });
+  });
+
+  it('feeds the Lounge exchanger isolators into its controller interlock', () => {
+    const world = applyAction(newWorld(), {
+      type: 'plant/valve',
+      id: 'plant_pool_01.exchanger.primary-flow.isolating',
+      open: false,
+    });
+    expect(world.poolTemperatureControls.pool_01?.flowIsolatorOpen).toBe(false);
+    expect(
+      world.installedValves['plant_pool_01.exchanger.primary-flow.isolating'],
+    ).toBe(false);
   });
 
   it('drops a pending Wash-O-Tron request from a version 73 save but preserves its active cycle', () => {
@@ -318,6 +359,7 @@ describe('a save', () => {
       demo: { on: true, presses: 0 },
       plant: newWorld().plant,
       pools: newWorld().pools,
+      poolTemperatureControls: newWorld().poolTemperatureControls,
       treatment: newWorld().treatment,
       dosingPumps: newWorld().dosingPumps,
       aqualis: newWorld().aqualis,

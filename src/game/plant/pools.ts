@@ -13,6 +13,8 @@ import type { Chemical } from './chemicals';
 import { stepHallRh } from './air-handling';
 import { poolPumping } from './motor-starters';
 import type { MotorsState } from './motor-starters';
+import { stepPoolTemperatureControl } from './pool-temperature-control';
+import type { PoolTemperatureControlState } from './pool-temperature-control';
 
 export type PoolId = 'pool_01' | 'pool_02' | 'pool_03' | 'pool_04';
 export const POOL_IDS: readonly PoolId[] = [
@@ -510,6 +512,7 @@ export function stepPoolsWater(
    * while it stands still. Without it, a bottomless supply, as before.
    */
   ring?: { flow: number; circulating: boolean },
+  temperatureControls?: Partial<Record<PoolId, PoolTemperatureControlState>>,
 ): {
   pools: PoolsState;
   drawn: number;
@@ -523,6 +526,7 @@ export function stepPoolsWater(
   flows: Record<PoolId, PoolStepFlows>;
   /** Each pool's heat this step, kW: what its water's and its hall's heaters asked, and what the ring delivered. */
   heat: Record<PoolId, PoolHeat>;
+  temperatureControls: Partial<Record<PoolId, PoolTemperatureControlState>>;
 } {
   const share =
     makeUp ?? (serviceAvailable(plant, 'wet_hall', 'water') ? 1 : 0);
@@ -549,6 +553,7 @@ export function stepPoolsWater(
   const next = {} as PoolsState;
   const flows = {} as Record<PoolId, PoolStepFlows>;
   const heats = {} as Record<PoolId, PoolHeat>;
+  const nextControls = { ...temperatureControls };
   const ringMoving = ring?.circulating ?? true;
   for (const id of POOL_IDS) {
     const room = `plant_${id}` as ServiceRoom;
@@ -719,6 +724,17 @@ export function stepPoolsWater(
     const hallRh = units
       ? stepHallRh(old.hallRh, handled ? units : { share: 0, drying: 0 }, dt)
       : old.hallRh;
+    const control = temperatureControls?.[id];
+    const controlResult = control
+      ? stepPoolTemperatureControl(control, {
+          poolTemperature: old.temperature,
+          circulationAvailable: heat,
+          primaryFlowIsolated: !control.flowIsolatorOpen,
+          primaryReturnIsolated: !control.returnIsolatorOpen,
+          dt,
+        })
+      : null;
+    if (controlResult) nextControls[id] = controlResult.state;
     const thermal = stepThermal(
       { water: old.temperature, air: old.hallAir },
       HEAT[id],
@@ -734,6 +750,9 @@ export function stepPoolsWater(
         ...(units ? { humidity: hallRh / 100, airShare } : {}),
         madeUp: water.madeUp,
         waterSet: old.setpoint ?? POOL_TARGET[id].temp,
+        ...(controlResult
+          ? { waterControllerOutput: controlResult.state.valvePosition }
+          : {}),
         ...(ring ? { ring: ring.flow } : {}),
       },
       dt,
@@ -767,5 +786,13 @@ export function stepPoolsWater(
       setpoint: old.setpoint ?? POOL_TARGET[id].temp,
     };
   }
-  return { pools: next, drawn, backwashed, drained, flows, heat: heats };
+  return {
+    pools: next,
+    drawn,
+    backwashed,
+    drained,
+    flows,
+    heat: heats,
+    temperatureControls: nextControls,
+  };
 }

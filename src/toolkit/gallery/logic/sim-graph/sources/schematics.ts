@@ -90,7 +90,27 @@ export function schematicSources(
       ? [
           {
             nodes: roomNodes(net),
-            edges: roomEdges(net),
+            edges: [
+              ...roomEdges(net),
+              ...(room === 'plant_pool_01' || room === 'plant_pool_02'
+                ? (['temperature-controller', 'music-source'] as const).map(
+                    (id) => ({
+                      from: nodeId(room, 'node', 'instrument-rack'),
+                      fromPort: null,
+                      to: nodeId(room, 'node', id),
+                      toPort: null,
+                      kind: 'contains' as const,
+                      direction: 'forward' as const,
+                      medium: null,
+                      via: {
+                        file: 'src/game/plant/lounge-schematic.ts',
+                        symbol:
+                          'instrument rack contains its controller and music source',
+                      },
+                    }),
+                  )
+                : []),
+            ],
             runs: runsOf(room),
             rooms: [room],
           },

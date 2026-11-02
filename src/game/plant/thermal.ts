@@ -155,6 +155,8 @@ export interface ThermalInputs {
   madeUp: number;
   /** The water's thermostat's setting, °C, where someone has set it; its design temperature otherwise. */
   waterSet?: number;
+  /** Direct pool controller output to its LTHW valve, 0–1; omitted uses the existing thermostat. */
+  waterControllerOutput?: number;
   /**
    * The LTHW ring's flow temperature, °C (`lthw-ring.ts`): each heater
    * gives what its thermostat asks only as far as the ring is hot enough
@@ -203,7 +205,9 @@ export function stepThermal(
     ring === undefined ? ask : Math.min(ask, k * Math.max(0, ring - now));
   for (let i = 0; i < n; i++) {
     const askWater = inputs.heatWater
-      ? thermostat(p.waterHeater, inputs.waterSet ?? p.water, water)
+      ? inputs.waterControllerOutput === undefined
+        ? thermostat(p.waterHeater, inputs.waterSet ?? p.water, water)
+        : p.waterHeater * Math.min(1, Math.max(0, inputs.waterControllerOutput))
       : 0;
     const askAir = inputs.heatAir
       ? thermostat(p.airHeater * (inputs.airShare ?? 1), p.air, air)

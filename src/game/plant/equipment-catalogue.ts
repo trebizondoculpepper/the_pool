@@ -20,7 +20,7 @@ import type {
   DescriptionContext,
 } from './component-descriptions';
 import { MOTORS } from './motor-starters';
-import { MODEL_ISOLATING_VALVES } from './model-valves';
+import { MODEL_VALVES } from './model-valves';
 import type { MotorTag } from './motor-starters';
 import { olympicValveRoutes } from '../../toolkit/gallery/logic/olympic-plumbing';
 import type { ValveRoute } from './component-descriptions';
@@ -165,7 +165,7 @@ const enhancedRoutes = (): ReadonlyMap<string, ValveRoute> =>
       return valve ? [[valve.assetId, route] as const] : [];
     }),
     // The rooms built from their schematic: each valve's link's ends.
-    ...MODEL_ISOLATING_VALVES.map((v) => [v.id, v.route] as const),
+    ...MODEL_VALVES.map((v) => [v.id, v.route] as const),
   ]);
 /** The pools' names, for their pumps: "Olympic pool", from its plant room's name. */
 const POOL_PUMP_NAME = (tag: MotorTag) => {

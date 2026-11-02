@@ -14,6 +14,7 @@ import type { IsolatorName, ServiceRoom } from '../../../game/plant/services';
 import { WET_HALL_PLANT } from '../../../game/plant/wet-hall';
 import { olympicFlowsOf } from '../../../game/plant/olympic-battery';
 import { POOL_MOTORS } from '../../../game/plant/motor-starters';
+import { stepPoolTemperatureControl } from '../../../game/plant/pool-temperature-control';
 import type { MotorTag } from '../../../game/plant/motor-starters';
 import {
   CHLORINE_LOW,
@@ -191,6 +192,29 @@ function readPlant(world: World, pool: PoolId): PlantReading {
     lthwReturn: ring.return,
     heatDemand: ring.demand,
     heatSupply: ring.supply,
+    ...(world.poolTemperatureControls[pool]
+      ? (() => {
+          const control = world.poolTemperatureControls[pool]!;
+          const result = stepPoolTemperatureControl(control, {
+            poolTemperature: water.temperature,
+            circulationAvailable: circulating,
+            primaryFlowIsolated: !control.flowIsolatorOpen,
+            primaryReturnIsolated: !control.returnIsolatorOpen,
+            dt: 0,
+          });
+          return {
+            temperatureControl: {
+              measuredTemperatureC: result.measuredTemperature,
+              setpointC: control.setpoint,
+              demandFraction: result.demand,
+              commandedValvePosition: result.commandedPosition,
+              actualValvePosition: control.valvePosition,
+              mode: control.mode,
+              interlock: result.interlock,
+            },
+          };
+        })()
+      : {}),
     boilers,
     hallRh,
     chlorine: water.freeChlorine,

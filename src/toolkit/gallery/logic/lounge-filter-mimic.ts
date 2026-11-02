@@ -347,19 +347,21 @@ export function loungeFilterMimicState(
         }),
       ),
     },
-    readouts: Object.fromEntries(
-      ([1, 2] as const).map((n) => [
-        `f${n}-flow`,
-        {
-          flow: {
-            value: flows.filters[n - 1],
-            unit: 'm3/h',
-            name: `F${n} FLOW`,
-            places: 1,
+    readouts: {
+      ...Object.fromEntries(
+        ([1, 2] as const).map((n) => [
+          `f${n}-flow`,
+          {
+            flow: {
+              value: flows.filters[n - 1],
+              unit: 'm3/h',
+              name: `F${n} FLOW`,
+              places: 1,
+            },
           },
-        },
-      ]),
-    ),
+        ]),
+      ),
+    },
     flows: Object.fromEntries(
       Object.entries(numbers).map(([k, v]) => [k, flowState(v)]),
     ),

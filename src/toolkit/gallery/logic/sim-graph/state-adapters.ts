@@ -12,6 +12,25 @@ import type { AlarmId } from '../control-room-demo';
 import { parseNodeId } from './graph';
 import type { GraphNode } from './graph';
 import { SERVICE_ROOMS } from './sources/parts';
+import { stepPoolTemperatureControl } from '../../../../game/plant/pool-temperature-control';
+import { circulating } from '../../../../game/plant/pools';
+import { serviceAvailable } from '../../../../game/plant/services';
+
+const temperatureControlOf = (world: World, pool: 'pool_01' | 'pool_02') => {
+  const control = world.poolTemperatureControls[pool]!;
+  return stepPoolTemperatureControl(control, {
+    poolTemperature: world.pools[pool].temperature,
+    circulationAvailable: circulating(
+      world.pools[pool],
+      world.plant,
+      pool,
+      world.motors,
+    ),
+    primaryFlowIsolated: !control.flowIsolatorOpen,
+    primaryReturnIsolated: !control.returnIsolatorOpen,
+    dt: 0,
+  });
+};
 
 /**
  * Section 4.3, what state a node holds (mission 138): a state adapter per
@@ -89,6 +108,221 @@ export function stateAdapter(
 ): StateAdapter | undefined {
   const p = parseNodeId(n.id);
   if (!p) return undefined;
+  if (
+    p.sort === 'node' &&
+    (p.id === 'temperature-controller' || p.id === 'temperature-control-valve')
+  ) {
+    const pool = p.room === 'plant_pool_01' ? 'pool_01' : 'pool_02';
+    return {
+      name:
+        p.id === 'temperature-controller'
+          ? 'pool-water temperature controller'
+          : 'LTHW temperature control valve',
+      fields: [
+        {
+          name: 'setpoint',
+          path: `poolTemperatureControls.${pool}.setpoint`,
+          type: 'number',
+          unit: '°C',
+          saved: true,
+        },
+        {
+          name: 'measuredTemperature',
+          path: `pools.${pool}.temperature with sensor fault bias`,
+          type: 'number',
+          unit: '°C',
+          saved: false,
+        },
+        {
+          name: 'mode',
+          path: `poolTemperatureControls.${pool}.mode`,
+          type: "'auto' | 'hand'",
+          values: ['auto', 'hand'],
+          saved: true,
+          normal: 'auto',
+        },
+        {
+          name: 'demand',
+          path: 'controller result from measured temperature and setpoint',
+          type: 'number',
+          unit: '0–1',
+          saved: false,
+        },
+        {
+          name: 'commandedPosition',
+          path: 'controller result after circulation and primary-isolation interlocks',
+          type: 'number',
+          unit: '0–1',
+          saved: false,
+        },
+        {
+          name: 'actualValvePosition',
+          path: `poolTemperatureControls.${pool}.valvePosition`,
+          type: 'number',
+          unit: '0–1',
+          saved: true,
+        },
+        {
+          name: 'interlock',
+          path: 'circulation and primary isolators',
+          type: "'none' | 'no-circulation' | 'primary-isolated'",
+          values: ['none', 'no-circulation', 'primary-isolated'],
+          saved: false,
+        },
+        {
+          name: 'valveStuck',
+          path: `poolTemperatureControls.${pool}.valveStuck`,
+          type: 'boolean',
+          values: BOOL,
+          saved: true,
+          normal: 'false',
+        },
+        {
+          name: 'sensorFault',
+          path: `poolTemperatureControls.${pool}.sensorFault`,
+          type: "'none' | 'low' | 'high'",
+          values: ['none', 'low', 'high'],
+          saved: true,
+          normal: 'none',
+        },
+        {
+          name: 'powerAvailable',
+          path: `plant.feeders.plant_${pool}`,
+          type: 'boolean',
+          values: BOOL,
+          saved: true,
+        },
+      ],
+      read: (w) => {
+        const result = temperatureControlOf(w, pool);
+        return {
+          setpoint: w.poolTemperatureControls[pool]!.setpoint,
+          measuredTemperature: result.measuredTemperature,
+          mode: w.poolTemperatureControls[pool]!.mode,
+          demand: result.demand,
+          commandedPosition: result.commandedPosition,
+          actualValvePosition: w.poolTemperatureControls[pool]!.valvePosition,
+          interlock: result.interlock,
+          valveStuck: w.poolTemperatureControls[pool]!.valveStuck,
+          sensorFault: w.poolTemperatureControls[pool]!.sensorFault,
+          powerAvailable: serviceAvailable(w.plant, `plant_${pool}`, 'power'),
+        };
+      },
+    };
+  }
+  if (p.sort === 'node' && p.id === 'temperature-probe') {
+    const pool = p.room === 'plant_pool_01' ? 'pool_01' : 'pool_02';
+    return {
+      name: 'remote Pt100 exchanger outlet probe (reports modelled bulk pool temperature)',
+      fields: [
+        {
+          name: 'measuredTemperature',
+          path: `pools.${pool}.temperature with sensor fault bias`,
+          type: 'number',
+          unit: '°C',
+          saved: false,
+        },
+        {
+          name: 'fault',
+          path: `poolTemperatureControls.${pool}.sensorFault`,
+          type: "'none' | 'low' | 'high'",
+          values: ['none', 'low', 'high'],
+          saved: true,
+          normal: 'none',
+        },
+      ],
+      read: (w) => ({
+        measuredTemperature: temperatureControlOf(w, pool).measuredTemperature,
+        fault: w.poolTemperatureControls[pool]!.sensorFault,
+      }),
+    };
+  }
+  if (p.sort === 'node' && p.id === 'music-source') {
+    const zone = p.room === 'plant_pool_01' ? 'lazy_pool' : 'olympic';
+    const room: ServiceRoom =
+      p.room === 'plant_pool_01' ? 'plant_pool_01' : 'plant_pool_02';
+    return {
+      name: 'pool-zone music player',
+      fields: [
+        {
+          name: 'track',
+          path: `music.zones.${zone}.source.track`,
+          type: 'number',
+          saved: true,
+        },
+        {
+          name: 'positionSeconds',
+          path: `music.zones.${zone}.source.position`,
+          type: 'number',
+          unit: 's',
+          saved: true,
+        },
+        {
+          name: 'amplifierOn',
+          path: `music.zones.${zone}.amplifier.on`,
+          type: 'boolean',
+          values: BOOL,
+          saved: true,
+        },
+        {
+          name: 'powerAvailable',
+          path: `plant.feeders.${room}`,
+          type: 'boolean',
+          values: BOOL,
+          saved: true,
+        },
+        {
+          name: 'programmeAssigned',
+          path: `music.zones.${zone} has no track catalogue yet`,
+          type: 'boolean',
+          values: BOOL,
+          saved: false,
+        },
+      ],
+      read: (w) => ({
+        track: w.music.zones[zone].source.track,
+        positionSeconds: w.music.zones[zone].source.position,
+        amplifierOn: w.music.zones[zone].amplifier.on,
+        powerAvailable: serviceAvailable(w.plant, room, 'power'),
+        programmeAssigned: false,
+      }),
+    };
+  }
+  if (p.sort === 'fitting' && p.id.endsWith('temperature-control')) {
+    const pool = p.room === 'plant_pool_01' ? 'pool_01' : 'pool_02';
+    return {
+      name: 'modulating LTHW control valve',
+      fields: [
+        {
+          name: 'commandedPosition',
+          path: `poolTemperatureControls.${pool} controller result`,
+          type: 'number',
+          unit: '0–1',
+          saved: false,
+        },
+        {
+          name: 'actualPosition',
+          path: `poolTemperatureControls.${pool}.valvePosition`,
+          type: 'number',
+          unit: '0–1',
+          saved: true,
+        },
+        {
+          name: 'stuck',
+          path: `poolTemperatureControls.${pool}.valveStuck`,
+          type: 'boolean',
+          values: BOOL,
+          saved: true,
+          normal: 'false',
+        },
+      ],
+      read: (w) => ({
+        commandedPosition: temperatureControlOf(w, pool).commandedPosition,
+        actualPosition: w.poolTemperatureControls[pool]!.valvePosition,
+        stuck: w.poolTemperatureControls[pool]!.valveStuck,
+      }),
+    };
+  }
   if (p.sort === 'fitting' && ISOLATOR_OF[p.id]) {
     const name = ISOLATOR_OF[p.id];
     return {

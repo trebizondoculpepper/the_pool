@@ -40,6 +40,9 @@ export const WORLD_BINDINGS: Readonly<Record<string, WorldBinding>> = {
   'dosing-controller': world(
     'its Dr Aqualis Trio (world.aqualis): its analyser, knob, power, screen, sample valve, pumps’ channels and alarms',
   ),
+  'pool-temperature-controller': world(
+    'its pool temperature control: outlet Pt100, setpoint, AUTO/HAND, demanded and actual valve position, interlocks and valve/sensor faults',
+  ),
   'co2-panel': world('its pool’s CO₂ valve, line pressure and delivery rate'),
   'co2-wall-port': world(
     'its room’s CO₂ wall port (world.co2): its isolating valve and the line’s pressure',

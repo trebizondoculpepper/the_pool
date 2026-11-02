@@ -1,0 +1,29 @@
+# Pool water temperature control on an LTHW heat exchanger
+
+Research for mission 144, 2026-11-02. The existing pool-water thermostat calculates a heat demand but gives the player no controller, sensor, valve position or isolating valves to inspect. This note chooses a model and component direction for the Lounge and Olympic pool exchangers.
+
+## Arrangement
+
+Use a **two-port modulating control valve on the LTHW flow** to regulate primary flow through each existing exchanger. Put a normally-open manual isolator on each primary connection (flow and return), with drain/vent points only where the installed exchanger arrangement supports them. The control valve is a third, distinct device: it modulates heat, while the two hand isolators shut the branch for maintenance. Keep the Olympic pool-water side-stream and its existing commissioning balance valve unchanged.
+
+A two-port valve gives a direct modelled opening from 0 to 100% and therefore a direct bounded primary heat input; a three-port diverting valve would add an unmodelled bypass path and require additional pipe routing and flow behaviour. The existing LTHW ring is a lumped circuit with fixed circulation, not a differential-pressure-resolved network, so the simulated valve position is a heat-transfer control input, not a claim that it calculates valve flow or pressure drop. The implementation should label pressure, flow and valve authority unavailable unless those quantities become part of the simulation.
+
+Siemens documents 2-port VVG41 valves for modulating HVAC water service and describes actuator combinations including three-position control; its hydronics guide discusses selecting valve characteristic and authority for heat-exchanger control. These support the two-port choice, while final size and authority cannot be calculated from the current ring model. [VVG41 2-port valve datasheet](https://sid.siemens.com/v/u/A6V10416358), [Siemens hydronics guide](https://sid.siemens.com/api/khub/documents/hJNQD12nNmiX1jolyXWstg/content).
+
+The pool-water sensor belongs on the pool-water outlet leaving the exchanger, which measures delivered pool heat rather than the primary LTHW supply. Elecro's pool exchanger instructions use the thermostat pocket to sense pool water at the exchanger inlet and require heating to be interlocked with filtration; the model's existing sample point can instead provide a representative return-to-pool temperature if it is connected downstream of the exchanger. Resolve the final sensor location against each schematic and actual water mixing before binding it. [Elecro G2 installation manual](https://www.allswimltd.com/pdf/Elecro-G2-Multi-Tubular-Heat-Exchanger-Manual.pdf).
+
+## Controller references
+
+The dev65 trial and the plant-room panels use two different real product references as interface models: the West Controls 6000, an obsolete 1/16 DIN analogue time-proportioning controller with dial set point, and the current CAL 3300 digital PID controller. The 6000's own product page does not establish its release date, so the game describes it as an analogue controller with an unverified model date; it does not claim that this exact model launched in the 1970s. West's history paper confirms that 1/16 DIN analogue controllers were established by the 1970s and that digital controllers arrived in the 1980s, which supports an era-style analogue model while keeping the product's date uncertainty explicit. The dev65 exhibit is a working game model inspired by these products, not a factory-exact reproduction. [West 6000 product page](https://www.west-cs.com/products/models/6000-single-loop-controller/), [West temperature-control history](https://www.west-cs.co.uk/assets/Whitepapers/WHITEPAPER-04-The-Changing-Face-of-Temperature-Control.pdf), [CAL 3300 product page](https://www.west-cs.com/products/brands-cal-west-pma-partlow/west-temperature-control/).
+
+## Control behaviour
+
+Use the existing pool set point as the controller's local set point for old saves, but give the controller its own saved local mode and request. In AUTO, a proportional temperature controller calculates demand from measured pool-water temperature and set point using the existing `THERMAL.band`; a configurable output limit represents the pool exchanger's full design kW. The valve actuator follows the requested position over a finite stroke time so a change can be observed. Heating is permitted only when pool circulation is available, both LTHW isolators are open, and the LTHW ring can deliver heat. Actual pool heat is the minimum of controller request, valve-limited exchanger capacity and the ring's available heat at its flow temperature.
+
+The player-facing device should show measured pool temperature, set point, AUTO/HAND, heat demand, commanded valve position and actual feedback/position, plus any inhibit or fault. The mimic should show the same live readings; the local panel retains set-point/mode changes and any reset per the project rule that controls remain local where specified.
+
+## Limits and verification
+
+The current simulation has no LTHW branch pressure, branch flow, valve authority, valve-position feedback faults, or primary temperature sensor fault for these exchangers. Do not synthesize readings or faults for them in the first delivery. The physical simulated controls can still fail through closed isolators, a stuck valve and sensor bias only if those behaviours are added explicitly to the world model; otherwise limit fault claims to the implemented failure modes.
+
+Check energy conservation in the LTHW ring, a steady pool at set point, warming after a lower set point, cooling and recovery after isolation, low ring temperature limiting delivery, filtration interlock, AUTO/HAND semantics, and save migration. Compare the model readings with the new controller, plant-room instrument and central mimic.

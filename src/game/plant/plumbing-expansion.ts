@@ -49,6 +49,7 @@ export interface PlumbEdge {
 
 export type FittingKind =
   | 'isolating-valve'
+  | 'regulating-valve'
   | 'non-return-valve'
   | 'power-isolator'
   | 'flowmeter';
@@ -173,6 +174,7 @@ export interface Expansion {
 
 const FITTING_SUFFIX: Record<FittingKind, string> = {
   'isolating-valve': 'iso',
+  'regulating-valve': 'cv',
   'non-return-valve': 'nrv',
   'power-isolator': 'isolator',
   flowmeter: 'meter',

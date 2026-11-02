@@ -252,6 +252,7 @@ import type {
 } from '../../components/plant/views/dosing-equipment';
 import { createUvUnit } from '../../components/plant/views/pumps-plant';
 import { createTwinHeadPump } from '../../components/plant/views/boiler-plant';
+import { createPoolTemperatureController } from '../../components/plant/views/pool-temperature-controller';
 import { pumpSound } from '../../components/plant/views/pump-sound';
 import { HEATING_CIRCULATOR } from '../../components/plant/logic/pump-sound';
 import { partAudio } from '../../components/core/audio/part-audio';
@@ -365,6 +366,29 @@ function modelFor(
   // A pool plant room's pumps and their panel: its own pool's, from the
   // world (`live-plant.ts`).
   const pool = /^plant_(pool_0[1-4])$/.exec(room)?.[1] as PoolId | undefined;
+  if (
+    (pool === 'pool_01' || pool === 'pool_02') &&
+    kind === 'pool-temperature-controller'
+  ) {
+    const controller = createPoolTemperatureController(
+      kit,
+      pool,
+      arg === 'digital' ? 'digital' : 'analogue',
+    );
+    const object = new Group();
+    object.add(controller.group);
+    controller.group.position.z = item.d / 2;
+    markComponent(object, {
+      name: item.label,
+      model: { node: 'temperature-controller' },
+    });
+    return {
+      object,
+      parts: controller.parts,
+      update: controller.update,
+      status: controller.status,
+    };
+  }
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-panel') {
     const port = `plant_${pool}` as const;
     const store = () => roomWorld();

@@ -41,6 +41,28 @@ describe('the main pool mimic', () => {
       );
     }
   });
+
+  it('shows the local pool heat controller readings when the model supplies them', () => {
+    const p = {
+      ...plantAt(10),
+      temperatureControl: {
+        measuredTemperatureC: 28.7,
+        setpointC: 29.5,
+        demandFraction: 0.4,
+        commandedValvePosition: 0.4,
+        actualValvePosition: 0.3,
+        mode: 'auto' as const,
+        interlock: 'none' as const,
+      },
+    };
+    const state = mainPoolState(p);
+    expect(state.readouts['heat-control']).toMatchObject({
+      temperature: { value: 28.7, name: 'HX OUT' },
+      pressure: { value: 30, name: 'VALVE' },
+      flow: { value: 40, name: 'DEMAND' },
+      water: { value: 29.5, name: 'SET PT' },
+    });
+  });
 });
 
 describe('the gas mimic', () => {

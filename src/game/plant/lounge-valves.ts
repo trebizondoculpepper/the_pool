@@ -13,6 +13,9 @@ import { strokeTime } from '../../toolkit/components/plant/logic/actuated-valve'
 export const LOUNGE_VALVES = Object.values(INSTALLED_VALVES).filter(
   (valve) =>
     valve.tag.startsWith('PL1-') &&
+    !MODEL_VALVES.find((v) => v.id === valve.assetId)?.kind.includes(
+      'regulating',
+    ) &&
     // Not the dosing quills' ball valves (prompt 089), worked by hand.
     MODEL_VALVES.find((v) => v.id === valve.assetId)?.operator !== 'lever',
 );

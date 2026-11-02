@@ -193,6 +193,8 @@ import type { BathersState } from './bathers';
 import { STORE_CAPACITY, deliver, newChemicalStores } from './plant/chemicals';
 import type { Chemical, ChemicalStores } from './plant/chemicals';
 import type { PoolHeat, PoolId, PoolsState } from './plant/pools';
+import { newPoolTemperatureControl } from './plant/pool-temperature-control';
+import type { PoolTemperatureControlState } from './plant/pool-temperature-control';
 import {
   actOnGasZone,
   newGasZones,
@@ -367,7 +369,15 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 75;
+export const WORLD_VERSION = 76;
+
+const POOL_PRIMARY_ISOLATORS = {
+  pool_01: {
+    flow: 'plant_pool_01.exchanger.primary-flow.isolating',
+    return: 'plant_pool_01.exchanger.primary-return.isolating',
+  },
+  pool_02: { flow: 'valve-0070', return: 'valve-0071' },
+} as const;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -397,6 +407,7 @@ export interface World {
   };
   plant: PlantServices;
   pools: PoolsState;
+  poolTemperatureControls: Partial<Record<PoolId, PoolTemperatureControlState>>;
   /**
    * Each pool's water treatment (mission 101): its circuit's chemistry, the
    * balance tank and the pool's three cells, and its dosing controller
@@ -552,6 +563,10 @@ export function newWorld(): World {
     demo: { on: false, presses: 0 },
     plant: newPlantServices(),
     pools: newPools(),
+    poolTemperatureControls: {
+      pool_01: newPoolTemperatureControl(30),
+      pool_02: newPoolTemperatureControl(28),
+    },
     treatment,
     dosingPumps: newDosingPumps(),
     aqualis: triosFor(treatment, newPools()),
@@ -645,6 +660,36 @@ export type WorldAction =
   | { type: 'pool/make-up'; pool: PoolId; open: boolean }
   /** A pool's water's thermostat set, °C (kept within its range). */
   | { type: 'pool/setpoint'; pool: PoolId; celsius: number }
+  | {
+      type: 'pool/temperature-control';
+      pool: 'pool_01' | 'pool_02';
+      act: 'mode';
+      mode: 'auto' | 'hand';
+    }
+  | {
+      type: 'pool/temperature-control';
+      pool: 'pool_01' | 'pool_02';
+      act: 'manual-output';
+      output: number;
+    }
+  | {
+      type: 'pool/temperature-control';
+      pool: 'pool_01' | 'pool_02';
+      act: 'flow-isolator' | 'return-isolator';
+      open: boolean;
+    }
+  | {
+      type: 'pool/temperature-control';
+      pool: 'pool_01' | 'pool_02';
+      act: 'valve-stuck';
+      stuck: boolean;
+    }
+  | {
+      type: 'pool/temperature-control';
+      pool: 'pool_01' | 'pool_02';
+      act: 'sensor-fault';
+      fault: 'none' | 'low' | 'high';
+    }
   /**
    * A chemical tipped in by hand (`plant/hand-dose.ts`), `amount` in its
    * normal unit (kg, l or g), into its balance tank's water or the pool's
@@ -807,6 +852,34 @@ export function applyAction(world: World, action: WorldAction): World {
       };
     case 'plant/valve': {
       const installed = installedValveByCommandId(action.id);
+      const temperaturePool =
+        installed?.assetId ===
+        'plant_pool_01.exchanger.primary-flow.temperature-control'
+          ? 'pool_01'
+          : installed?.assetId === 'exchanger.primaryFlow.temperature-control'
+            ? 'pool_02'
+            : undefined;
+      if (temperaturePool) {
+        const hand = applyAction(world, {
+          type: 'pool/temperature-control',
+          pool: temperaturePool,
+          act: 'mode',
+          mode: 'hand',
+        });
+        const actuated = applyAction(hand, {
+          type: 'pool/temperature-control',
+          pool: temperaturePool,
+          act: 'manual-output',
+          output: action.open ? 1 : 0,
+        });
+        return {
+          ...actuated,
+          installedValves: {
+            ...actuated.installedValves,
+            [installed!.assetId]: action.open,
+          },
+        };
+      }
       if (installed?.assetId === 'PL2.hypo.return.bleed')
         return applyAction(world, {
           type: 'dosing-pump',
@@ -830,14 +903,37 @@ export function applyAction(world: World, action: WorldAction): World {
         isLoungeWasteValve(installed.assetId)
       )
         return world;
-      if (installed)
+      if (installed) {
+        let controlUpdate: {
+          pool: 'pool_01' | 'pool_02';
+          field: 'flowIsolatorOpen' | 'returnIsolatorOpen';
+        } | null = null;
+        for (const pool of ['pool_01', 'pool_02'] as const) {
+          const ids = POOL_PRIMARY_ISOLATORS[pool];
+          if (ids.flow === installed.assetId)
+            controlUpdate = { pool, field: 'flowIsolatorOpen' };
+          else if (ids.return === installed.assetId)
+            controlUpdate = { pool, field: 'returnIsolatorOpen' };
+        }
         return {
           ...world,
           installedValves: {
             ...world.installedValves,
             [installed.assetId]: action.open,
           },
+          ...(controlUpdate
+            ? {
+                poolTemperatureControls: {
+                  ...world.poolTemperatureControls,
+                  [controlUpdate.pool]: {
+                    ...world.poolTemperatureControls[controlUpdate.pool]!,
+                    [controlUpdate.field]: action.open,
+                  },
+                },
+              }
+            : {}),
         };
+      }
       const identifiedPlant = setPartOpen(
         world.identifiedPlant,
         action.id,
@@ -859,15 +955,78 @@ export function applyAction(world: World, action: WorldAction): World {
       };
     case 'pool/setpoint': {
       const celsius = clampSetpoint(action.celsius);
-      return world.pools[action.pool].setpoint === celsius
+      const controls = world.poolTemperatureControls[action.pool];
+      return world.pools[action.pool].setpoint === celsius &&
+        (!controls || controls.setpoint === celsius)
         ? world
         : {
             ...world,
+            poolTemperatureControls: controls
+              ? {
+                  ...world.poolTemperatureControls,
+                  [action.pool]: { ...controls, setpoint: celsius },
+                }
+              : world.poolTemperatureControls,
             pools: {
               ...world.pools,
               [action.pool]: { ...world.pools[action.pool], setpoint: celsius },
             },
           };
+    }
+    case 'pool/temperature-control': {
+      const old =
+        world.poolTemperatureControls[action.pool] ??
+        newPoolTemperatureControl(world.pools[action.pool].setpoint);
+      let next: PoolTemperatureControlState;
+      switch (action.act) {
+        case 'mode':
+          next = { ...old, mode: action.mode };
+          break;
+        case 'manual-output':
+          next = {
+            ...old,
+            manualOutput: Math.min(1, Math.max(0, action.output)),
+          };
+          break;
+        case 'flow-isolator':
+          next = { ...old, flowIsolatorOpen: action.open };
+          break;
+        case 'return-isolator':
+          next = { ...old, returnIsolatorOpen: action.open };
+          break;
+        case 'valve-stuck':
+          next = { ...old, valveStuck: action.stuck };
+          break;
+        case 'sensor-fault':
+          next = { ...old, sensorFault: action.fault };
+          break;
+      }
+      if (next === old) return world;
+      const isolatorId =
+        action.act === 'flow-isolator'
+          ? POOL_PRIMARY_ISOLATORS[action.pool].flow
+          : action.act === 'return-isolator'
+            ? POOL_PRIMARY_ISOLATORS[action.pool].return
+            : null;
+      const isolatorOpen =
+        action.act === 'flow-isolator' || action.act === 'return-isolator'
+          ? action.open
+          : undefined;
+      return {
+        ...world,
+        poolTemperatureControls: {
+          ...world.poolTemperatureControls,
+          [action.pool]: next,
+        },
+        ...(isolatorId && isolatorOpen !== undefined
+          ? {
+              installedValves: {
+                ...world.installedValves,
+                [isolatorId]: isolatorOpen,
+              },
+            }
+          : {}),
+      };
     }
     case 'hand/dose':
     case 'hand/dilute': {
@@ -1883,7 +2042,20 @@ function stepPlant(world: World, delta: number): World {
     jacuzzi,
     spaWash,
     ring,
+    world.poolTemperatureControls,
   );
+  const controlledInstalledValves: Record<string, boolean> = {
+    ...world.installedValves,
+  };
+  const controllerValveIds = {
+    pool_01: 'plant_pool_01.exchanger.primary-flow.temperature-control',
+    pool_02: 'exchanger.primaryFlow.temperature-control',
+  } as const;
+  for (const pool of ['pool_01', 'pool_02'] as const) {
+    const open = water.temperatureControls[pool]!.valvePosition >= 0.5;
+    if (controlledInstalledValves[controllerValveIds[pool]] !== open)
+      controlledInstalledValves[controllerValveIds[pool]] = open;
+  }
   const { lthw, boilerHouse } = stepLthw(world, water.heat, ring, delta);
   // Each pool's dosing pumps while their pool may be dosed (circulating,
   // its chemical service, its day tank's stock and open path); its water's
@@ -1971,6 +2143,8 @@ function stepPlant(world: World, delta: number): World {
   };
   return {
     ...world,
+    installedValves: controlledInstalledValves,
+    poolTemperatureControls: water.temperatureControls,
     time: world.time + delta,
     music: stepZoneMusic(
       world.music,

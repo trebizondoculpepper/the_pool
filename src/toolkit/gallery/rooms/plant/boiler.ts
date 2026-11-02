@@ -24,6 +24,7 @@ import type {
   GasHouse,
 } from '../../../components/plant/logic/boiler-house';
 import { createCombustionPanel } from '../../../components/plant/views/combustion-panel';
+import { createPoolTemperatureControlTrial } from '../../../components/plant/views/pool-temperature-control-trial';
 import { currentPlant } from './live-plant';
 import { GAS_MIMIC, gasState } from '../../logic/pool-mimics';
 import {
@@ -263,6 +264,14 @@ export function createLiveBoilerCascade(
  * product (`doc/research/plant-products-boiler-air.md`).
  */
 export const EXHIBITS: readonly PlantExhibit[] = [
+  {
+    title: 'Pool exchanger temperature control prototypes',
+    maker: 'penfold',
+    reference:
+      'Working game models inspired by West Controls 6000 analogue and CAL 3300 digital PID controllers (the 6000 model date is unverified), with outlet probes, two-port LTHW control valves and hand isolators; dev-only demo',
+    size: { w: 2.4, d: 1.2, h: 1.5, mount: 'floor' },
+    build: createPoolTemperatureControlTrial,
+  },
   {
     title: 'Condensing boilers in cascade',
     maker: 'hamwarmy',
