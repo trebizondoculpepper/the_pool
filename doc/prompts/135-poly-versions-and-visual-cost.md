@@ -18,7 +18,7 @@ Measured as the component benchmark measures it (`BenchSample` in `src/toolkit/g
 - its budget status: within budget, over, or listed in `KNOWN_OVER_BUDGET` with its reason;
 - its weight in the game, where the catalogue counts it (126): copies times cost, busy rooms counted double as `usageWeight` does, so the kinds that cost most overall stand out, not only the heaviest single objects.
 
-The game-wide catalogue (126) can then sort and filter its Game objects by visual cost and by weight. Settle in the plan whether the figures are measured live when a page or room opens or read from the last benchmark run, and show which.
+The game-wide catalogue (126) can then sort and filter its Game objects by visual cost and by weight. The figures are measured live, when the magic room opens (the owner, 2026-11-02), by the benchmark's own measurement of the item as it is built there, for both versions; the audit page and the CAD views show the figures from the item's last magic-room measurement, with when it was taken, and offer to open the room to measure afresh.
 
 ## Acceptance
 
