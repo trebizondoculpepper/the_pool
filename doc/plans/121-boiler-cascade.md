@@ -6,18 +6,18 @@ The plan and the figures for [mission 121](../prompts/121-boiler-cascade-model.m
 
 A pure block: `stepBoilerSequencer(state, inputs, dt)`. It reads the common flow header, the outside air, whether any load calls, and each boiler's availability, flame and lockout; it gives each boiler a call and a firing-rate target (`sequencerTargets`).
 
-| Figure            | Value                                                                                    | Real plant (research §2)                         |
-| ----------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------ |
-| Set point         | 80 °C, fixed                                                                             | A pool primary at a fixed set point (§2.2)       |
-| PI term           | Kp 0.1 of the plant per K, Ti 480 s                                                      | An integral or PID term on the header error      |
-| Minimum fire      | 20 % (5:1 turndown)                                                                      | 20 to 100 % on a 300 kW condensing boiler (§2.3) |
-| Stage up          | all called proven and ≥ 95 %, header 0.5 K low, for 30 s                                 | lead near full fire 2 to 10 min                  |
-| Stage down        | the last at minimum fire, header 1 K high, for 60 s                                      | at low fire for a delay                          |
-| Staging interval  | 45 s between successive changes                                                          | a staging interval                               |
-| Minimum run / off | 120 s / 60 s per boiler                                                                  | minimum run and off times (§2.5)                 |
-| Rotation          | every 6 world hours, to the available boiler with fewest hours run; or fixed             | round robin by hours run (§2.4)                  |
-| Frost             | pumps below 3 °C outside; the lead at minimum fire below 5 °C at the header, until 10 °C | §2.7                                             |
-| HEADER LOW        | 10 K under the set point while heat is wanted                                            | the sequencer's header low alarm                 |
+| Figure            | Value                                    | Real plant (research §2)                         |
+| ----------------- | ---------------------------------------- | ------------------------------------------------ |
+| Set point         | 80 °C, fixed                             | A pool primary at a fixed set point (§2.2)       |
+| PI term           | Kp 0.1 of the plant per K, Ti 480 s      | An integral or PID term on the header error      |
+| Minimum fire      | 20 % (5:1 turndown)                      | 20 to 100 % on a 300 kW condensing boiler (§2.3) |
+| Stage up          | all called proven and ≥ 95 %, header 0.5 K low, for 30 s | lead near full fire 2 to 10 min       |
+| Stage down        | the last at minimum fire, header 1 K high, for 60 s | at low fire for a delay                 |
+| Staging interval  | 45 s between successive changes          | a staging interval                               |
+| Minimum run / off | 120 s / 60 s per boiler                  | minimum run and off times (§2.5)                 |
+| Rotation          | every 6 world hours, to the available boiler with fewest hours run; or fixed | round robin by hours run (§2.4) |
+| Frost             | pumps below 3 °C outside; the lead at minimum fire below 5 °C at the header, until 10 °C | §2.7 |
+| HEADER LOW        | 10 K under the set point while heat is wanted | the sequencer's header low alarm            |
 
 The PI loop: the ring holds 20,950 kJ/K and the plant gives 1,800 kW, so the header moves 0.086 K/s per unit of demand; Kp 0.1 gives a closed loop of about two minutes, and Ti four times that. The integral is held within the boilers called (anti-windup), so the plant at full fire with the header short is what calls the next boiler.
 

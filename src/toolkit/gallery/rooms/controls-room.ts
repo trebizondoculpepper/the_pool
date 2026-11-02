@@ -6,6 +6,7 @@ import {
 import { createDistributionBoard } from '../../components/plant/views/electrical-switchgear';
 import { createPartSet } from '../../components/core/parts/parts';
 import { createRearFittingsBoard } from './rear-fittings-board';
+import { createJogDialBoard } from './jog-dial-board';
 import { createBusbarLineDemo } from './busbar-line-demo';
 import {
   createRenderer,
@@ -283,6 +284,14 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
     minX: -1.3 * m,
     maxX: -0.7 * m,
     minZ: (half.z - 0.35) * m,
+    maxZ: half.z * m,
+  });
+  // The CM6 cascade manager's turn-and-push knob (mission 122), on the
+  // south wall, tried here before dev39 assembles the unit.
+  place(createJogDialBoard(kit), 0.3, 1.5, half.z - 0.15, Math.PI, {
+    minX: -0.05 * m,
+    maxX: 0.65 * m,
+    minZ: (half.z - 0.3) * m,
     maxZ: half.z * m,
   });
   // The plate light switches with their locator LEDs (the owner,

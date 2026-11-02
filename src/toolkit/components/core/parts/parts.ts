@@ -689,6 +689,9 @@ export function selector(
     series?: DeviceSeries;
     /** A changeover switch's big rotary handle (`createChangeoverHandle`), three positions. */
     handle?: 'changeover';
+    /** A lever selector's ring nut mouldings and key bow, where not the dark defaults. */
+    ring?: readonly [string, string];
+    bow?: string;
   },
 ): Part & { position: ReadonlySignal<number> } {
   const a = beginPart(
@@ -703,7 +706,11 @@ export function selector(
         ? createCamSelector(kit)
         : props.series === 'xb4'
           ? createXB4Selector(kit, props.positions)
-          : createLeverSelector(kit, props.positions, { key: props.key });
+          : createLeverSelector(kit, props.positions, {
+              key: props.key,
+              ...(props.ring ? { ring: props.ring } : {}),
+              ...(props.bow ? { bow: props.bow } : {}),
+            });
   a.object.add(view.group);
   a.legend(props.legend, 0.03);
   // A binding may read a plain value (a room host's getter) rather than a
