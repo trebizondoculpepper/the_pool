@@ -21,6 +21,7 @@ While several agents work at once (the owner, 2026-11-01):
 
 ## Rules
 
+- Before placing a camera, taking pictures, or investigating what a room or object holds, use the tools in `doc/agent-tooling.md` (look links, the `?dev` catalogue, control descriptors, audits) rather than hunting coordinates or scene objects by hand; when you add or change such a tool, update that guide in the same commit (the owner, 2026-11-02).
 - Every room is, for now, a blank shell with a title card on one wall. Do not add equipment, pools or scenery until the owner asks.
 - The building is one contiguous world in metres (one scene unit is one metre); rooms are rectangles in `src/game/facility-plan.ts` joined by doorways in shared walls. No portals.
 - The exception is the pool loop (`src/toolkit/gallery/logic/pool-loop.ts`): the version-one pool halls are blocks joined one after another by short corridors of the corridor kit, round and round for ever, making no three-dimensional sense on purpose. Each corridor leaves a room by its north wall and enters the next by its south (so the walker keeps going forward and usually sees the way out across the room); walking along one hands the walker into the next room's scene, where the same corridor carries on. Each corridor is a short straight (1 m), one piece chosen at random (a left or right turn, or a flight of stairs up or down), and another short straight, so it always meets a room square on.
