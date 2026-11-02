@@ -268,6 +268,17 @@ describe('the control room’s upper row of mimics (the owner, 2026-11-01)', () 
     }
   });
 
+  it('hangs mission 120’s energy board in the east wall’s span kept for it, 2.5 × 1.3 m at 2.8 m', () => {
+    const energy = upper.find((p) => p.item.key === 'mimic-energy');
+    expect(energy).toBeDefined();
+    expect(energy!.side).toBe('east');
+    expect(along(energy!)).toBeCloseTo(-1.3);
+    expect(energy!.item.w).toBeCloseTo(2.5);
+    expect(energy!.item.h).toBeCloseTo(1.3);
+    expect(energy!.y).toBeCloseTo(3.45);
+    expect(UPPER_MIMIC_RESERVED).toEqual([]);
+  });
+
   it('keeps the reserved spans free, and the boards clear of each other', () => {
     const spans = [
       ...upper.map((p) => span(p.side as string, along(p), p.item.w, p.item.h)),

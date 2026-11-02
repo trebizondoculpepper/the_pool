@@ -35,6 +35,8 @@ import { trioWindows } from '../../../game/plant/aqualis-annunciator';
 import { osRunning, watchdogTripped } from '../../../game/plant/aqualis-os';
 import type { ChannelId } from '../../../game/plant/aqualis-types';
 import type { ParodySpec, ParodyWidget } from './parody-trial';
+import { facilityHeat } from './energy-mimic';
+import { newLthwRing } from '../../../game/plant/lthw-ring';
 
 /**
  * The bridge's touch panels wired to the world (mission 095; the owner,
@@ -1199,6 +1201,84 @@ function batherWelfare(): PanelBinding {
   };
 }
 
+/**
+ * CR-MP10, the energy mimic (mission 120), reimagined: each facility's
+ * heat from the LTHW ring, its rows the board's (the pools, then every
+ * area on the ring), and the ring's flow, return and supply.
+ */
+export const ENERGY_BY_FACILITY: ParodySpec = {
+  original: 'CR-MP10, THE HEAT ENERGY MIMIC',
+  title: 'HEAT ENERGY BY FACILITY',
+  code: 'CR-MP10',
+  colour: 'golden-tanoi',
+  size: { w: 1.1, h: 0.62 },
+  pages: [
+    {
+      name: 'FACILITIES',
+      columns: [
+        [
+          {
+            kind: 'readouts',
+            items: facilityHeat(newLthwRing())
+              .slice(0, 4)
+              .map((r) => [`${r.name} kW`, 'kW', 0, 0] as const),
+          },
+        ],
+        [
+          {
+            kind: 'readouts',
+            items: facilityHeat(newLthwRing())
+              .slice(4)
+              .map((r) => [`${r.name} kW`, 'kW', 0, 0] as const),
+          },
+        ],
+      ],
+    },
+    {
+      name: 'RING',
+      columns: [
+        [
+          {
+            kind: 'readouts',
+            items: [
+              ['LTHW FLOW', '°C', 0, 0],
+              ['LTHW RETURN', '°C', 0, 0],
+              ['SUPPLY', 'kW', 0, 0],
+              ['TOTAL', 'kW', 0, 0],
+            ],
+          },
+          { kind: 'lamps', labels: ['BOILERS FIRING', 'LTHW PUMPS'] },
+        ],
+      ],
+    },
+  ],
+};
+
+/** CR-MP10's wiring: the world's ring. */
+function energyMimic(): PanelBinding {
+  const readouts: Record<string, Read<number>> = {
+    'LTHW FLOW': (c) => Math.round(c.world.lthw.flow * 10) / 10,
+    'LTHW RETURN': (c) => Math.round(c.world.lthw.return * 10) / 10,
+    SUPPLY: (c) => Math.round(c.world.lthw.supply),
+    TOTAL: (c) =>
+      Math.round(facilityHeat(c.world.lthw).reduce((t, r) => t + r.total, 0)),
+  };
+  for (const row of facilityHeat(newLthwRing()))
+    readouts[`${row.name} kW`] = (c) =>
+      Math.round(
+        facilityHeat(c.world.lthw).find((r) => r.id === row.id)?.total ?? 0,
+      );
+  return {
+    code: 'CR-MP10',
+    model: { room: 'control_room', node: 'mimic-energy' },
+    readouts,
+    lamps: {
+      'BOILERS FIRING': (c) => c.world.lthw.firing,
+      'LTHW PUMPS': (c) => c.world.lthw.pumps,
+    },
+  };
+}
+
 /** The bridge's wired panels, by their specs' codes. */
 export const BRIDGE_BINDINGS: Readonly<Record<string, PanelBinding>> =
   Object.fromEntries(
@@ -1218,6 +1298,7 @@ export const BRIDGE_BINDINGS: Readonly<Record<string, PanelBinding>> =
       fillCabinet(),
       assistantDutyManager(),
       batherWelfare(),
+      energyMimic(),
     ].map((b) => [b.code, b]),
   );
 
@@ -1226,6 +1307,7 @@ export function bridgeSpec(code: string): ParodySpec {
   if (code === CENTRAL_CONTROL.code) return CENTRAL_CONTROL;
   if (code === ASSISTANT_DUTY_MANAGER.code) return ASSISTANT_DUTY_MANAGER;
   if (code === BATHER_WELFARE.code) return BATHER_WELFARE;
+  if (code === ENERGY_BY_FACILITY.code) return ENERGY_BY_FACILITY;
   const spec = PARODY_SPECS.find((s) => s.code === code);
   if (!spec) throw new Error(`No reimagined panel ${code}`);
   return spec;

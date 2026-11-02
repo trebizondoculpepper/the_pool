@@ -348,6 +348,10 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-1304',
     tag: 'CR-MP9',
   },
+  'control_room|mimic-energy|Mimic: heat energy by facility': {
+    assetId: 'asset-1305',
+    tag: 'CR-MP10',
+  },
   'control_room|annunciator|Alarm annunciator': {
     assetId: 'asset-0085',
     tag: 'CR-CP2',

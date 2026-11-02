@@ -11,6 +11,7 @@ import { JACUZZI_MIMIC, jacuzziMimicState } from '../logic/jacuzzi-mimic';
 import { GAS_MIMIC, gasState } from '../logic/pool-mimics';
 import { BOILER_HEAT_MIMIC, boilerHeatState } from '../logic/boiler-heat-mimic';
 import { createLoungeFilterMimic } from './lounge-filter-mimic';
+import { createEnergyMimic } from './energy-mimic';
 
 /** Whether two lists hold the same things: the boiler house sets a boiler in its list in place. */
 const same = (a: readonly unknown[], b: readonly unknown[]) =>
@@ -32,6 +33,11 @@ export function createUpperMimic(
   if (kind === 'mimic-lounge-filter') {
     const mimic = createLoungeFilterMimic(kit, store, true);
     return { object: mimic.group, parts: mimic.parts, update: mimic.update };
+  }
+  if (kind === 'mimic-energy') {
+    // Each facility's heat from the LTHW ring (mission 120).
+    const mimic = createEnergyMimic(kit, store ?? undefined);
+    return { object: mimic.object, parts: mimic.parts, update: mimic.update };
   }
   if (kind === 'mimic-jacuzzi') {
     const board = createMimicBoard(kit, JACUZZI_MIMIC, { maker: 'penfold' });

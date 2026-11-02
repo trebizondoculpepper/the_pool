@@ -384,6 +384,8 @@ const instruments = [
   ),
   machine('mimic-gas', 'mimic-gas', 'Mimic: boiler house gas'),
   machine('mimic-jacuzzi', 'mimic-jacuzzi', 'Mimic: jacuzzi water circuit'),
+  // Each facility's heat from the LTHW ring (mission 120).
+  machine('mimic-energy', 'mimic-energy', 'Mimic: heat energy by facility'),
   machine('annunciator', 'annunciator', 'Alarm annunciator'),
   machine('annunciator-pl1', 'annunciator', 'Lounge pool annunciator'),
   // The Olympic's and the wet hall's (mission 099).

@@ -1610,6 +1610,16 @@ export const UPPER_MIMICS: readonly {
     wall: 'east',
     along: -3.8,
   },
+  // Each facility's heat from the LTHW ring (mission 120), on the east
+  // wall's span kept for it.
+  {
+    key: 'mimic-energy',
+    label: 'Mimic: heat energy by facility',
+    w: 2.5,
+    h: 1.3,
+    wall: 'east',
+    along: -1.3,
+  },
   // The jacuzzi's water circuit, over the main pool's board.
   {
     key: 'mimic-jacuzzi',
@@ -1623,9 +1633,8 @@ export const UPPER_MIMICS: readonly {
 
 /**
  * Upper-row spans kept free for boards to come, nothing else hung there
- * (`room-equipment.test.ts` checks): mission 120's energy board, a
- * standard 2.4 × 1.2 m board in its frame (agreed with its agent, who
- * will say where it goes; this is its place until then).
+ * (`room-equipment.test.ts` checks). None now: mission 120's energy board
+ * took the east wall's span kept for it.
  */
 export const UPPER_MIMIC_RESERVED: readonly {
   name: string;
@@ -1633,15 +1642,7 @@ export const UPPER_MIMIC_RESERVED: readonly {
   along: number;
   w: number;
   h: number;
-}[] = [
-  {
-    name: 'Mission 120 energy mimic',
-    wall: 'east',
-    along: -1.3,
-    w: 2.5,
-    h: 1.3,
-  },
-];
+}[] = [];
 
 /** A room's machines, placed: a retired room's frozen layout (`retired-rooms.ts`), or its own, laid out now. */
 export function layoutRoom(room: string) {

@@ -369,6 +369,13 @@ export const PLACED_KINDS = {
     class: 'plant',
     purpose: 'Shows the jacuzzi’s water circuit.',
   },
+  'mimic-energy': {
+    type: 'Mimic panel',
+    status: 'none',
+    code: 'MP',
+    class: 'plant',
+    purpose: 'Shows each facility’s heat from the LTHW ring.',
+  },
   'mimic-boiler-heat': {
     type: 'Mimic panel',
     status: 'none',

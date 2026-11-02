@@ -73,6 +73,7 @@ export const WORLD_BINDINGS: Readonly<Record<string, WorldBinding>> = {
   // The control room's upper row (the owner, 2026-11-01).
   'mimic-lounge-filter': world('the lounge pool’s filters, pumps and valves'),
   'mimic-jacuzzi': world('the jacuzzi’s circulation and its pool'),
+  'mimic-energy': world('the LTHW ring: its supply and each consumer’s draw'),
   'make-up-flowmeter': world('the make-up water’s flow'),
   'make-up-recorder': world(
     'the make-up water: its flow, its total and its week’s record',
