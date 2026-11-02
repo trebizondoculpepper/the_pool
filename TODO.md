@@ -487,6 +487,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ## Housekeeping
 
+- [x] **Root launcher for the shared dev server** (done 2026-11-02, `6ac03a6b`): `./dev-server.sh` starts Vite on `0.0.0.0:5175` with a strict port; the server was stopped at the owner's request.
 - [ ] **The bench index** ([137](doc/prompts/137-bench-index.md); the owner, 2026-11-02; brief only): `bench.html` with no `bench=` opens on a navigable, expandable, searchable tree of Rooms, Things and Brands, every leaf a link (enter, audits, look links, item audit, CAD views, magic room, brand audit), one component shared with `?dev`'s catalogue and fed by one page registry.
 
 - [ ] Keep `doc/agent-tooling.md` current as 127, 129, 130 and 133 land: fill its placeholder audit sections and add each new tool (the owner, 2026-11-02).
