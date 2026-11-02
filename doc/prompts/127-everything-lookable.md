@@ -27,6 +27,7 @@ The owner, 2026-11-02: "we might be developing a thing, want to see some angles,
 - **One target, several pieces:** mission 125's rule (`src/toolkit/gallery/logic/look-ref.ts`, about line 124): owners in a room are grouped by tag first, and by model binding only where they have no tag, into one target with combined bounds (a pipe and its markings under one link). A `#n` suffix is kept for genuinely separate objects that share a name.
 - **Named parts:** where a person would ask to see a part close (a display, a keypad, a gauge's dial, a nameplate, a key switch), the component declares it as a named part (`part`), so `detail` reaches it.
 - **Worded signs change class:** today `decorativeKind` (`src/toolkit/gallery/logic/world-in-model.ts` about line 149) makes every `sign:*` decorative and `room-equipment.ts` (about line 1733) marks it so. This mission marks a sign with words on it by its name instead (still bound to nothing in the model), and the audit counts a worded sign marked decorative as a finding. The data side changes too: `kindCatalogue` (`src/toolkit/gallery/logic/kind-catalogue.ts`, about line 207) marks signs `look: 'none'` and exempt, so a worded sign changed only in the scene would stay absent from the catalogue. One sign classification, shared by the scene marking and `kindCatalogue`, decides which signs are named.
+- **Architectural components** (the owner, 2026-11-02): signs, electrical fittings (light switches, sockets, fused spurs and the like, as distinct from the modelled distribution), fire fittings (extinguishers, call points, fire doors' hardware) and doors are a class of their own: not decorative, since they play a game function beyond decoration, but not part of the simulation, at least not yet (fire alarms may be modelled one day). They are named, lookable and listed, carry the class `architectural`, and are never flagged as unbound. The one shared classification (scene marking and `kindCatalogue`) gives them that class; this mission marks them, and `decorativeKind` no longer covers them.
 - **Need not be:** architecture (walls, floors, ceilings, coves, door openings), the services ceiling, static set decoration, lights and effects. These are marked (`decorative`, or an architecture mark this mission adds), not left unmarked, so the audit can skip them.
 
 ## Part A: the audit
@@ -70,7 +71,6 @@ No change to how a look link chooses its view (125) or how the panel lists (126)
 ## Open questions for the owner
 
 1. Does 127 finish only when all rooms pass, or may it ship plant and dev-room coverage first, with the remaining rooms tracked in `TODO.md`?
-2. The shape of the shared kind/part/control/view-state descriptor (see Shared foundation), and which mission builds it first.
 
 ## Records
 

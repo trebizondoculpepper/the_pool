@@ -27,11 +27,12 @@ Every object in the room: the named ones first, by name or tag, then the unnamed
 ## What it flags
 
 - **Unnamed:** an engineering item with no tag or name.
-- **Unbound:** a named engineering item with no model node, which breaks the rule that nothing is put in the visual world that is not already in the model. Exempt: named worded signs (127 makes them named but model-free), controls that inherit a bound parent (as `unboundInScene` already allows), and rooms with no enhanced network.
+- **Unbound:** a named engineering item with no model node, which breaks the rule that nothing is put in the visual world that is not already in the model. Exempt: architectural components (below), controls that inherit a bound parent (as `unboundInScene` already allows), and rooms with no enhanced network.
 - **Orphan:** a bound node with no connections in the model at all; a schematic boundary with no in-room neighbour is not an orphan.
 - **Duplicate:** two things sharing one tag or asset id.
 - **No maker:** reuses 126's finding and its softer severity (`kind-catalogue.ts` treats missing maker data as a note), not a separate hard flag.
 - **Missing controls:** only where controls are described as data: a control the data expects that no room holds (it may be in another room), or a control in data wired to nothing. Until controls are data generally (see Shared foundation), this flag cannot be complete and the page says so.
+- **Architectural components** (the owner, 2026-11-02): signs, electrical fittings (light switches, sockets, fused spurs and the like, as distinct from the modelled distribution), fire fittings (extinguishers, call points, fire doors' hardware) and doors are a class of their own: not decorative, since they play a game function beyond decoration, but not part of the simulation, at least not yet (fire alarms may be modelled one day). They are named, lookable and listed, carry the class `architectural`, and are never flagged as unbound. They appear in the main list with the rest, their class shown.
 - Decorative items (`decorative`, `decorativeKind`) are listed apart and not flagged.
 
 A summary at the top counts each flag, and the page can filter to flagged rows only.
@@ -53,7 +54,7 @@ Which control drives which action is mostly written in view code (about 62 view 
 
 ## Open questions for the owner
 
-1. Should named worded signs and working doors appear in the main audit with "no model binding" as an accepted class, or in a separate fixtures section?
+None at present.
 
 ## Records
 
