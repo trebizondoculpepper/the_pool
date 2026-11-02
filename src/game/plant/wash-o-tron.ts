@@ -57,7 +57,10 @@ export type Waiting =
   | 'FILTER UNAVAILABLE'
   | 'NOT IN SERVICE'
   | 'LOCKED OUT'
-  | 'HOLD';
+  | 'HOLD'
+  | 'BUSY'
+  | 'NO CYCLE'
+  | 'VALVES NOT PROVED';
 
 export interface WashOTron {
   filters: WashFilter[];
@@ -210,6 +213,17 @@ const log = (s: WashOTron, time: number, text: string): string[] => {
   return [`${hh}:${mm} ${text}`, ...s.events].slice(0, 8);
 };
 
+const refuse = (
+  s: WashOTron,
+  time: number,
+  reason: Exclude<Waiting, null>,
+  action: string,
+): WashOTron => ({
+  ...s,
+  waiting: reason,
+  events: log(s, time, `${action} ${reason}`),
+});
+
 const setFilter = (
   s: WashOTron,
   n: number,
@@ -232,21 +246,28 @@ export function actOnWashOTron(
   switch (a.act) {
     case 'mode': {
       const f = s.filters[a.filter];
-      if (!f || f.lockout) return s;
+      if (!f) return s;
+      if (f.lockout) return refuse(s, time, 'LOCKED OUT', `F${a.filter + 1}`);
       // State buttons always take the filter into hand control. CYCLE NOW
       // alone starts the timed valve sequence.
       const out = s.washing === a.filter;
       return {
         ...s,
         filters: setFilter(s, a.filter, { ...go(f, a.mode), auto: false }),
+        waiting: null,
         ...(out ? { washing: null, step: null, stepTime: 0 } : {}),
         events: log(s, time, `F${a.filter + 1} ${a.mode.toUpperCase()}`),
       };
     }
     case 'auto': {
       const f = s.filters[a.filter];
-      if (!f || f.lockout) return s;
-      return { ...s, filters: setFilter(s, a.filter, { auto: !f.auto }) };
+      if (!f) return s;
+      if (f.lockout) return refuse(s, time, 'LOCKED OUT', `F${a.filter + 1}`);
+      return {
+        ...s,
+        waiting: null,
+        filters: setFilter(s, a.filter, { auto: !f.auto }),
+      };
     }
     case 'lockout': {
       const f = s.filters[a.filter];
@@ -259,6 +280,7 @@ export function actOnWashOTron(
           auto: lockout ? false : f.auto,
           ...(lockout ? go(f, 'isolate') : {}),
         }),
+        waiting: null,
         ...(lockout && s.washing === a.filter
           ? { washing: null, step: null, stepTime: 0 }
           : {}),
@@ -278,20 +300,25 @@ export function actOnWashOTron(
         events: log(s, time, s.running ? 'AUTO OFF' : 'AUTO ON'),
       };
     case 'hold':
-      return s.running || s.washing !== null ? { ...s, hold: !s.hold } : s;
+      return s.running || s.washing !== null
+        ? { ...s, hold: !s.hold, waiting: null }
+        : refuse(s, time, 'NO CYCLE', 'HOLD');
     case 'step':
       // End the step now: never a proof or the pit's admission skipped,
       // only its timer (STEP is refused while its valves are unproved).
-      if (s.washing === null || s.step === null) return s;
-      if (s.filters[s.washing].phase !== 'steady') return s;
-      return { ...s, stepTime: Number.POSITIVE_INFINITY };
+      if (s.washing === null || s.step === null)
+        return refuse(s, time, 'NO CYCLE', 'STEP');
+      if (s.filters[s.washing].phase !== 'steady')
+        return refuse(s, time, 'VALVES NOT PROVED', 'STEP');
+      return { ...s, waiting: null, stepTime: Number.POSITIVE_INFINITY };
     case 'skip': {
       // Pass this filter: back to filtering, still due.
-      if (s.washing === null) return s;
+      if (s.washing === null) return refuse(s, time, 'NO CYCLE', 'SKIP');
       const n = s.washing;
       return {
         ...s,
         filters: setFilter(s, n, go(s.filters[n], 'filter')),
+        waiting: null,
         washing: null,
         step: null,
         stepTime: 0,
@@ -302,21 +329,16 @@ export function actOnWashOTron(
       if (!sense) return s;
       const refusal = cycleRefusal(s, a.filter, sense);
       return refusal
-        ? refusal === 'BUSY'
-          ? s
-          : {
-              ...s,
-              waiting: refusal,
-              events: log(s, time, `F${a.filter + 1} ${refusal}`),
-            }
+        ? refuse(s, time, refusal, `F${a.filter + 1} CYCLE`)
         : startCycle(s, a.filter, sense);
     }
     case 'view':
       // In SETPOINTS, MODE steps through the setpoints before moving on.
       if (VIEWS[s.view] === 'SETPOINTS' && s.setpoint < SETPOINTS.length - 1)
-        return { ...s, setpoint: s.setpoint + 1, editing: null };
+        return { ...s, waiting: null, setpoint: s.setpoint + 1, editing: null };
       return {
         ...s,
+        waiting: null,
         view: (s.view + 1) % VIEWS.length,
         setpoint: 0,
         editing: null,
@@ -511,6 +533,7 @@ export function stepWashOTron(
             ...next,
             washing: null,
             stepTime: 0,
+            waiting: null,
             filters: setFilter(next, n, { lastWash: sense.time }),
             events: log(next, sense.time, `F${n + 1} WASHED`),
           }
@@ -518,7 +541,14 @@ export function stepWashOTron(
     }
     if (f.phase === 'fault') return { ...next, hold: true };
     if (sense.pitInhibit) return { ...next, waiting: 'PIT INHIBIT' };
-    if (f.phase !== 'steady') return { ...next, waiting: null };
+    if (f.phase !== 'steady')
+      return {
+        ...next,
+        waiting:
+          next.waiting === 'BUSY' || next.waiting === 'VALVES NOT PROVED'
+            ? next.waiting
+            : null,
+      };
     const stepTime = next.stepTime + dt;
     const limit =
       next.step === 'backwash'
@@ -528,7 +558,15 @@ export function stepWashOTron(
           : next.setpoints.rinse;
     if (stepTime > limit + WASH.overrun && Number.isFinite(stepTime))
       next = { ...next, alarms: raise(next.alarms, 'stepOverrun', true) };
-    if (stepTime < limit) return { ...next, stepTime, waiting: null };
+    if (stepTime < limit)
+      return {
+        ...next,
+        stepTime,
+        waiting:
+          next.waiting === 'BUSY' || next.waiting === 'VALVES NOT PROVED'
+            ? next.waiting
+            : null,
+      };
     // The step done: on to the next.
     const order: ProgrammeStep[] = ['backwash', 'settle', 'rinse'];
     const at = order.indexOf(next.step as ProgrammeStep);
@@ -538,6 +576,7 @@ export function stepWashOTron(
         ...next,
         step,
         stepTime: 0,
+        waiting: null,
         filters: setFilter(next, n, go(f, step)),
         events: log(next, sense.time, `F${n + 1} ${step.toUpperCase()}`),
       };
@@ -546,6 +585,7 @@ export function stepWashOTron(
       ...next,
       step: null,
       stepTime: 0,
+      waiting: null,
       filters: setFilter(next, n, go(f, 'filter')),
       events: log(next, sense.time, `F${n + 1} TO FILTER`),
     };

@@ -148,11 +148,16 @@ describe('the Lidoluxe Wash-O-Tron', () => {
     });
   });
 
-  it('ignores CYCLE NOW while any filter has the one sequencer', () => {
+  it('reports BUSY without queuing CYCLE NOW while another filter has the one sequencer', () => {
     let w = act(newWorld(), { act: 'cycle-now', filter: 2 });
-    const before = w.washOTron;
     w = act(w, { act: 'cycle-now', filter: 1 });
-    expect(w.washOTron).toBe(before);
+    expect(w.washOTron.washing).toBe(2);
+    expect(washDisplay(w.washOTron, { time: w.time, pitShare: 0 })).toEqual([
+      'INTERLOCK           ',
+      'BUSY                ',
+    ]);
+    w = advance(w, 2, 1);
+    expect(w.washOTron.waiting).toBe('BUSY');
     w = advance(w, 900, 1);
     expect(w.washOTron.washing).toBe(null);
     expect(w.washOTron.filters[1].lastWash).toBe(0);
@@ -183,8 +188,44 @@ describe('the Lidoluxe Wash-O-Tron', () => {
     expect(w.washOTron.waiting).toBe('LOW FLOW');
     w = advance(w, 2, 1);
     expect(washDisplay(w.washOTron, { time: w.time, pitShare: 0 })).toEqual([
-      'AUTO IDLE           ',
-      'WAIT LOW FLOW       ',
+      'INTERLOCK           ',
+      'LOW FLOW            ',
     ]);
+  });
+
+  it('shows a refused wash on the LCD even when another information page is selected', () => {
+    let w = newWorld();
+    w = act(w, { act: 'view' });
+    w = act(w, { act: 'view' });
+    expect(w.washOTron.view).toBe(2); // PIT page
+    w = applyAction(w, {
+      type: 'plant/feeder',
+      room: 'plant_pool_02',
+      on: false,
+    });
+    w = act(w, { act: 'cycle-now', filter: 2 });
+    expect(washDisplay(w.washOTron, { time: w.time, pitShare: 0 })).toEqual([
+      'INTERLOCK           ',
+      'LOW FLOW            ',
+    ]);
+    w = act(w, { act: 'view' });
+    expect(w.washOTron.waiting).toBe(null);
+    expect(washDisplay(w.washOTron, { time: w.time, pitShare: 0 })[0]).toBe(
+      'BACKWASH            ',
+    );
+  });
+
+  it('explains why a locked-out filter or an unproved step button was refused', () => {
+    let w = act(newWorld(), { act: 'lockout', filter: 1 });
+    w = act(w, { act: 'mode', filter: 1, mode: 'filter' });
+    expect(w.washOTron.waiting).toBe('LOCKED OUT');
+    w = newWorld();
+    w = act(w, { act: 'cycle-now', filter: 2 });
+    w = act(w, { act: 'step' });
+    expect(w.washOTron.waiting).toBe('VALVES NOT PROVED');
+    w = advance(w, 2, 1);
+    expect(washDisplay(w.washOTron, { time: w.time, pitShare: 0 })[1]).toBe(
+      'VALVES NOT PROVED   ',
+    );
   });
 });

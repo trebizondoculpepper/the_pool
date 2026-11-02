@@ -28,6 +28,9 @@ export interface DisplayInputs {
 
 /** Its LCD's two lines, 20 characters each. */
 export function washDisplay(s: WashOTron, i: DisplayInputs): [string, string] {
+  // A refusal belongs to the operator's last button press, not to the
+  // selected information page. Show it immediately wherever they are.
+  if (s.waiting) return [fit('INTERLOCK'), fit(s.waiting)];
   const view = VIEWS[s.view];
   if (view === 'PROGRAMME') {
     const top = `${s.running ? (s.hold ? 'HOLD' : 'AUTO') : 'MANUAL'}`;
@@ -44,7 +47,7 @@ export function washDisplay(s: WashOTron, i: DisplayInputs): [string, string] {
         fit(`${top} F${s.washing + 1} TO FILTER`),
         fit('VALVES RETURNING'),
       ];
-    return [fit(`${top} IDLE`), fit(s.waiting ? `WAIT ${s.waiting}` : '')];
+    return [fit(`${top} IDLE`), fit('')];
   }
   if (view === 'NEXT') {
     const due = s.filters
