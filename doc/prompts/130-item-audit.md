@@ -46,6 +46,13 @@ The magic room is built by the same view builders the real rooms use, so what it
 
 The magic room's panel steps through a curated set of representative looks (a valve open, shut and travelling; a pump stopped, running and tripped), with a separate knob for display pages where the item has them, never every combination of its controls. The magic room is for asking what the thing looks like; working it fully is what the conventional dev rooms are for, and the audit page links to the dev rooms that hold it.
 
+## High and low poly, and visual cost (the owner, 2026-11-02)
+
+- **Two versions:** every drawn kind has its full (high-poly) version, the view builder, and its low-poly version, the far version the museum already draws beyond 30 m (`createFarVersion`, `src/toolkit/components/core/views/far-version.ts`: flat colours merged into a few meshes, screens as dark glass, nothing that moves). Where a kind has a hand-made low-poly version of its own, that is the one shown.
+- **Visual cost:** beside each version, its cost, measured as the component benchmark measures it (`BenchSample` in `src/toolkit/gallery/logic/component-bench.ts`): triangles, draw calls, materials, textures and their size on the GPU, and whether it updates every frame (and its update time); with its budget status (within budget, over, or listed in `KNOWN_OVER_BUDGET` with its reason) and, where the catalogue counts it (126), its weight in the game (copies times cost, busy rooms counted double as `usageWeight` does), so the costliest kinds overall stand out. Settle in the plan whether the figures are measured live when the page or room opens or read from the last benchmark run, and show which.
+- **In the magic room:** the signpost's panel gains a HIGH · LOW selector that swaps the item between its two versions, and a small readout of the shown version's cost.
+- **On the audit page:** the cost of both versions side by side, near the top.
+
 ## Shared foundation
 
 The adapters' parts, controls, readings and state presets are the same data 127's named parts, 128's text verbs and 129's "controlled by" need: one shared kind/part/control/view-state descriptor (control ids, the world action each drives, visible readings, state presets). It is to be settled with the owner, not invented separately by this mission.

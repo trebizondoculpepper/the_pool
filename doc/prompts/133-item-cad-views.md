@@ -20,6 +20,10 @@ The object alone: no room, no furnishings, no pipes or neighbours, on a plain, e
 - **Rendered in the browser, then cached** (the owner, 2026-11-02): the first time an item's audit page opens, its four views are rendered there and kept in the browser's cache (IndexedDB, wrapped against blocked or full storage), so later visits show them at once; nothing is built or committed. Each cached image is keyed by the kind and a fingerprint of what drew it (the game's version and build, and the builder's identity), so a changed builder or a new build renders afresh and a stale image is never shown. While rendering, the page shows the views' frames with a short note.
 - **Kinds without a 3D representation** have no CAD views; their audit page shows their magic page (130) instead.
 
+## High and low poly (the owner, 2026-11-02)
+
+The four views have a HIGH · LOW selector, showing the object's full or low-poly version (130's two versions), each cached separately; each version's views carry its visual cost (130's figures: triangles, draw calls, texture size), so the two can be compared at a glance.
+
 ## Acceptance
 
 - The weather station console, a valve, a pump, a boiler and a mimic board each show four correct views on their audit pages, the object centred and filling its frame, its front where 125 says its front is.
