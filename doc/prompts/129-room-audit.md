@@ -21,7 +21,7 @@ Every object in the room: the named ones first, by name or tag, then the unnamed
 - **Type:** its component kind (valve, pump, mimic board, switch-fuse…), and its maker's brand where it has one.
 - **Model node:** where it is attached in the world simulation (its node, fitting or link path in the room's enhanced network, or other world binding), or _unbound_.
 - **Connects to:** its model connections through the model's ports, each labelled `drawn` (a pipe, cable, conduit or busbar laid in the room), `model only` (a link not drawn, such as a signal; the Jacuzzi schematic has some, and the control bus, `src/toolkit/gallery/logic/control-bus.ts`, ends at an imagined network beyond the room) or `boundary` (it leaves the room). Each neighbour links to its own row, or to another room's audit.
-- **Controlled by:** what drives it: the buttons, knobs, switches and mimic copies that act on it, and in which rooms (a local panel and its control-room copy, for example), with links to their rows, each relationship labelled `verified` (from control data) or `unknown`. Where it drives something itself (a panel's buttons), the reverse: what it controls.
+- **Controlled by:** what drives it: the buttons, knobs, switches and mimic copies that act on it, and in which rooms (a local panel and its control-room copy, for example), with links to their rows, from mission 131's control descriptors. Where it drives something itself (a panel's buttons), the reverse: what it controls.
 - **Shows:** what its own displays, lamps and position show now, derived through the existing inspection path (`src/game/plant/component-inspection.ts`) at a stated world snapshot, by the overlay's no-peeking rule. A display culled or unreadable (see 124) is not a missing object.
 
 ## What it flags
@@ -38,7 +38,7 @@ A summary at the top counts each flag, and the page can filter to flagged rows o
 
 ## The known gap: "controlled by"
 
-Which control drives which action is mostly written in view code (about 62 view modules; see `doc/research/text-adventure-mode.md`). The column is complete only where controls are described as data (mimic boards' specs, room equipment), and partial elsewhere; the page says which rows it could not resolve rather than leaving them blank. Lifting controls into data, which text adventure mode (128) also needs, completes it; record that in `TODO.md`, not in this mission.
+Which control drives which action is mostly written in view code (about 62 view modules; see `doc/research/text-adventure-mode.md`). The column is filled from mission 131's shared control descriptors, which come first (the owner, 2026-11-02), and fills in further as 131 covers more kinds. The audit ships without waiting for full coverage and does not label its columns partial: a blank cell is itself the sign that something is not yet described (the owner, 2026-11-02).
 
 ## Acceptance
 
@@ -49,13 +49,11 @@ Which control drives which action is mostly written in view code (about 62 view 
 
 ## Shared foundation
 
-"Controlled by" needs the same data as 128's text verbs and 130's magic-room presets: one shared kind/part/control/view-state descriptor (control ids, the world action each drives, visible readings, state presets). It is to be settled with the owner, not invented separately by this mission.
+"Controlled by" reads mission 131's shared kind/part/control/view-state descriptor (control ids, the world action each drives, visible readings, state presets), the same data 128's text verbs and 130's magic-room presets read (the owner, 2026-11-02: 131 is a separate mission, done first).
 
 ## Open questions for the owner
 
-1. Should 129 launch with its connection and control columns marked partial, filled as control data arrives, or wait for full control coverage?
-2. Should named worded signs and working doors appear in the main audit with "no model binding" as an accepted class, or in a separate fixtures section?
-3. The shape of the shared descriptor (see Shared foundation), and which mission builds it first.
+1. Should named worded signs and working doors appear in the main audit with "no model binding" as an accepted class, or in a separate fixtures section?
 
 ## Records
 
