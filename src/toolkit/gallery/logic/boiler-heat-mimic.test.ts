@@ -104,15 +104,8 @@ describe('boiler heat mimic', () => {
     expect(checkMimic(BOILER_HEAT_COPY, state)).toEqual([]);
     expect(state.lamps['enable-auto']).toBe(true);
     expect(state.lamps['plant-run']).toBe(true);
-    expect(
-      BOILER_HEAT_PANEL.buttons?.map((b) => boilerHeatPress(b.id)),
-    ).toEqual([
-      { act: 'enable', enable: 'off' },
-      { act: 'enable', enable: 'auto' },
-      { act: 'enable', enable: 'hand' },
-      { act: 'accept' },
-      { act: 'reset' },
-    ]);
+    // The boiler house's board works nothing: the CM6 has its controls.
+    expect(BOILER_HEAT_PANEL.buttons ?? []).toEqual([]);
     expect(
       BOILER_HEAT_COPY.buttons?.map((b) => boilerHeatPress(b.id)?.act),
     ).toEqual(['run', 'run']);

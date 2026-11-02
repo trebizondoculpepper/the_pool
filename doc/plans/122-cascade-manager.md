@@ -1,6 +1,6 @@
 # 122: The Hamwarmy CM6 boiler cascade manager
 
-Mission 122 ([brief](../prompts/122-cascade-manager-design.md)), `nicole_buruaah` in charge. The owner wants the boiler cascade controller as "a quite modern type machine … if it was 2010s", from the boilers' own maker, replacing mission 121's rough panel. Stages 1 and 2 (research, design, the unit built and tried on dev0 and in dev39 against its own view type) were started alongside 121 at the owner's request; stage 3 (the adapter from 121's `BoilerSequencerState`, installation by the common flow header, and the menus wired to 121's world actions) waits for 121 to merge.
+Mission 122 ([brief](../prompts/122-cascade-manager-design.md)), `nicole_buruaah` in charge. The owner wants the boiler cascade controller as "a quite modern type machine … if it was 2010s", from the boilers' own maker, replacing mission 121's rough panel. Stages 1 and 2 (research, design, the unit built and tried on dev0 and in dev39 against its own view type) were started alongside 121 at the owner's request; stage 3 (the adapter from 121's `BoilerSequencerState`, installation by the common flow header, and the menus wired to 121's world actions) followed once 121 had merged, the same day; the unit now lives in dev65, the boiler room, and in the boiler house.
 
 ## 1. Research: real 2010s cascade managers
 
@@ -36,23 +36,31 @@ Every page is 240 × 128 dots in the controller's 5 × 7 font, with an inverted 
 - **Mode and rotation:** MODE SERIES (shown, not changed: the boiler house runs series fill only), LEAD ROTATION (BY HOURS or FIXED), and the lead: LEAD NOW, read-only, by hours; FIXED LEAD, editable, when fixed.
 - **Boiler hours:** each boiler's hours run and burner starts; push opens the boiler.
 - **Boiler Bn:** its state, firing rate, flow temperature, hours, starts, its controller's code and whether it leads; turn for the next boiler, BACK to the list.
-- **Faults:** the plant's alarm, each locked-out boiler with its code, PLANT ENABLE OFF; or NO FAULTS. A lockout is reset at the boiler itself, which the help says.
+- **Faults:** the sequencer's alarms (BOILER LOCKOUT, HEADER LOW, NO BOILER AVAILABLE), each NEW until accepted and ACK after, each locked-out boiler with its code, PLANT ENABLE OFF, or NO FAULTS; then two command rows, ACCEPT ALARMS and RESET LOCKOUTS (every locked-out boiler reset), which took over mission 121's rough panel's ACCEPT and RESET.
 - **Unit information:** model, software 2.14, boilers, bus.
 - **Service** (the SERVICE key behind the flap): Modbus address and line settings, BACnet MAC, the USB socket, the boiler bus.
 - **Editing:** push on an editable row puts its value in an inverted box between < and >; turning changes it within its limits (the knob's cue goes red at a limit); push saves and sends the edit; BACK drops it. INFO shows a boxed help for the page until the next input. Left four minutes untouched, the unit returns home, dropping any edit.
 
 ## 4. Its interface to the plant
 
-The unit holds none of the plant. It is given a `CascadeManagerView` each frame (its owner caches it per world step) and gives back `CascadeEdit`s (set point, staging delays, minimum run, rotation, fixed lead) and the key switch's `PlantEnable`. Mission 121's `BoilerSequencerState` was shaped so that stage 3's adapter is thin: `enable`, `run`, `setpoint`, `rotation` ('hours' or 'fixed'), `lead`, `demand`, per-boiler `hoursRun` and `starts`, and the alarms; each boiler's code, rate, lockout and flow from `world.boilerHouse.boilers`, and the header from `world.lthw.flow`. Open for stage 3: whether 121's staging delays and minimum run are settings in the world (the menus can edit them) or constants in `SEQUENCER` (the rows then become read-only); the actions needed are listed for the coordinator when 121 merges.
+The unit holds none of the plant. It is given a `CascadeManagerView` each frame and gives back `CascadeEdit`s and the key switch's `PlantEnable`. Stage 3 (2026-11-02, after mission 121's `33977596`) binds it to the world in `src/toolkit/gallery/logic/cascade-manager-view.ts`, pure and tested:
+
+- **What it shows** (`cascadeViewOf`): `world.boilerHouse.sequencer` (PLANT ENABLE, RUN, the set point, the staging delays and minimum run, the rotation, the lead, the demand, each boiler's hours run and starts, and its three alarms, flashing until accepted), each boiler's controller from `world.boilerHouse.boilers` (its code: 1 purge, 2 ignition, 3 firing, 7 pump run-on, 9 blocked; its lockout, shown as E0n with its fault's code; its rate and flow; a boiler at standby that the sequencer has called shows as called), the header from `world.lthw.flow`, and the time of day from `world.time`.
+- **Its trend:** the world keeps no history of the header, so the unit keeps its own log, as a real controller does (`logHeader`): a reading every 20 s of world time, 108 of them; begun full of the first reading when the unit is first shown, and begun again if the world's time goes back.
+- **What it asks** (`cascadeAction`), as the world's `'boiler-house'` actions: the set point, staging delays and minimum run as `{ act: 'setting' }` (121's `SEQUENCER_SETTINGS` has exactly the unit's ranges and steps), the rotation as `{ act: 'rotation' }`, a fixed lead as `{ act: 'lead' }`, the key switch as `{ act: 'enable' }`, and the faults page's two command rows, ACCEPT ALARMS and RESET LOCKOUTS, as `{ act: 'accept' }` and `{ act: 'reset' }`.
+- **What it replaced:** mission 121's rough panel on BH-MP2 (PLANT ENABLE as three buttons, ACCEPT and RESET); BH-MP2 keeps its indications and works nothing. The control room's copy, CR-MP7, keeps START and STOP of the plant, which work in AUTO only.
 
 ## 5. Redraws and cost
 
 The display draws only when its description changes (the header to 0.1 °C, the trend's dot rows, the demand's percentage, the menus), compared before any drawing, and the description is only rebuilt when the view object, the menus or the flame frame change. Its flames flicker at five frames a second, only while a boiler fires; the display is an `lcd` of at most six pictures a second. Benchmark (`bench.html?bench=components&only=cascade manager`, 2026-11-02, Apple M5): within budget, 5 uploads a second idle and 5.8 running, 154k texels a second idle and 179k running (budgets 250k and 300k), 1.0 ms render, 113 draws.
 
-## 6. Trials
+## 6. Trials and installation
 
 - Dev0: the knob alone on the TURN-AND-PUSH KNOB board on the south wall, twice life size: push to edit, turn a value 0 to 20, push to save.
-- Dev39: the whole unit with its key switch, run by a stand-in sequencer ten times fast (`cascade-manager-trial.ts`, not the plant's model), with a trial station: START and STOP (AUTO only), TRIP B4, RESET, POWER.
+- Dev39 (stages 1 and 2): the whole unit, run by a stand-in sequencer, with a trial station. Removed in stage 3, with the stand-in.
+- Dev65, the boiler room (the owner, 2026-11-02): the unit among the boiler house's exhibits, on the world's sequencer.
+- The boiler house: BH-CP3, `asset-1308`, on the south wall 1.75 m from its west corner, by the low-loss header, its key-switch box to its right; registered in `installed-asset-ids.ts`, a node of the boiler house's schematic on the room's electrics, and classified (`equipment-kinds.ts`, `health.ts`, `world-bindings.ts`).
+- The owner's ruling on colour (2026-11-02): no black or near-black buttons, which render badly; the knob is light grey with an orange pointer, HOME and BACK light grey, INFO blue, and the key switch's ring nut light grey.
 
 ## Sources
 

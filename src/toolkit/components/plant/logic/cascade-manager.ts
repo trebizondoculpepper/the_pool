@@ -96,8 +96,11 @@ export interface CascadeManagerView {
   stageDownS: number;
   minRunS: number;
   boilers: readonly CascadeBoilerView[];
-  /** The plant's own alarm, in words ("HEADER HIGH LIMIT"), or null. */
-  alarm: string | null;
+  /**
+   * The plant's own alarms in words ("HEADER LOW"), each flashing until
+   * accepted, then steady until it clears.
+   */
+  alarms: readonly CascadeAlarm[];
   /** The time of day, seconds since midnight. */
   clock: number;
 }
@@ -115,7 +118,20 @@ export const CASCADE_LIMITS = {
 export type NumberSetting = keyof typeof CASCADE_LIMITS;
 
 /** A confirmed edit: what the unit asks of the sequencer. */
+/** One of the plant's alarms, as the unit shows it. */
+export interface CascadeAlarm {
+  text: string;
+  /** New: not yet accepted. */
+  flashing: boolean;
+}
+
+/**
+ * What the unit asks of the sequencer: a confirmed edit, or one of the
+ * faults page's commands, ACCEPT (its alarms accepted) and RESET (every
+ * locked-out boiler reset), which the boiler house's own panel had.
+ */
 export type CascadeEdit =
+  | { command: 'accept' | 'reset' }
   | { setting: NumberSetting; value: number }
   | { setting: 'rotation'; value: CascadeRotation }
   | { setting: 'lead'; value: number };
@@ -203,6 +219,8 @@ interface Row {
   edit?: Editable;
   /** A boilers-page row: push opens this boiler. */
   opens?: number;
+  /** A faults-page command row: push does it. */
+  does?: 'accept' | 'reset';
 }
 
 const minutes = (s: number) =>
@@ -306,8 +324,10 @@ function rows(
       ];
     }
     case 'faults': {
-      const faults: Row[] = [];
-      if (view.alarm) faults.push({ label: view.alarm, value: '' });
+      const faults: Row[] = view.alarms.map((a) => ({
+        label: a.text,
+        value: a.flashing ? 'NEW' : 'ACK',
+      }));
       view.boilers.forEach((b, i) => {
         if (b.state === 'lockout')
           faults.push({
@@ -317,7 +337,11 @@ function rows(
       });
       if (view.enable === 'off')
         faults.push({ label: 'PLANT ENABLE OFF', value: '' });
-      return faults.length ? faults : [{ label: 'NO FAULTS', value: '' }];
+      return [
+        ...(faults.length ? faults : [{ label: 'NO FAULTS', value: '' }]),
+        { label: 'ACCEPT ALARMS', value: '>', does: 'accept' },
+        { label: 'RESET LOCKOUTS', value: '>', does: 'reset' },
+      ];
     }
     case 'about':
       return [
@@ -398,7 +422,9 @@ export function canPush(ui: CascadeUi, view: CascadeManagerView) {
   if (!view.powered) return false;
   if (ui.info || ui.page === 'home' || ui.page === 'menu') return true;
   const row = selected(ui, view);
-  return !!row && (!!row.edit || row.opens !== undefined);
+  return (
+    !!row && (!!row.edit || row.opens !== undefined || row.does !== undefined)
+  );
 }
 
 /**
@@ -476,6 +502,7 @@ export function cascadeInput(
   const row = selected(ui, view);
   if (row?.opens !== undefined)
     return { ui: { ...next, page: 'boiler', boiler: row.opens, cursor: 0 } };
+  if (row?.does) return { ui: next, edit: { command: row.does } };
   if (!row?.edit) return { ui: next };
   if (ui.editing === null)
     return {
@@ -655,17 +682,18 @@ export function cascadeScreen(
           : view.running
             ? 'AUTO RUN'
             : 'AUTO STOP';
-    const banner = view.alarm
-      ? view.alarm
-      : locked >= 0
+    const banner =
+      locked >= 0
         ? `${boilerName(locked)} LOCKOUT ${view.boilers[locked].code ?? ''}`.trim()
-        : view.enable === 'off'
-          ? 'PLANT DISABLED'
-          : view.enable === 'hand'
-            ? 'HAND: BOILERS ON OWN STATS'
-            : !view.running
-              ? 'STOPPED: START IN CONTROL RM'
-              : 'PUSH KNOB FOR MENU';
+        : view.alarms.length
+          ? view.alarms[0].text
+          : view.enable === 'off'
+            ? 'PLANT DISABLED'
+            : view.enable === 'hand'
+              ? 'HAND: PLANT RUNS REGARDLESS'
+              : !view.running
+                ? 'STOPPED: START IN CONTROL RM'
+                : 'PUSH KNOB FOR MENU';
     const samples = view.trend.slice(-(TREND.w - 4));
     return {
       kind: 'home',
@@ -689,7 +717,7 @@ export function cascadeScreen(
         `${firing}/${view.boilers.length} FIRING`,
       ],
       banner,
-      alarm: !!view.alarm || locked >= 0,
+      alarm: view.alarms.length > 0 || locked >= 0,
       flame: firing ? Math.floor(seconds * FLAME_HZ) % 4 : 0,
       info,
     };
@@ -727,7 +755,13 @@ export function cascadeScreen(
           ? 'TURN: SELECT  PUSH: EDIT'
           : row?.opens !== undefined || ui.page === 'menu'
             ? 'TURN: SELECT  PUSH: OPEN'
-            : 'BACK: RETURN';
+            : row?.does === 'accept'
+              ? 'TURN: SELECT  PUSH: ACCEPT'
+              : row?.does === 'reset'
+                ? 'TURN: SELECT  PUSH: RESET'
+                : ui.page === 'faults'
+                  ? 'TURN: SELECT  BACK: RETURN'
+                  : 'BACK: RETURN';
   return {
     kind: 'list',
     title:
@@ -973,13 +1007,16 @@ export function boilerLed(b: CascadeBoilerView, flash: boolean): LedColour {
 
 /**
  * The unit's status LED: green steady while running in AUTO, green
- * flashing stopped in AUTO, amber in HAND, red on a fault, off with the
+ * flashing stopped in AUTO, amber in HAND, red on a fault (flashing
+ * until its alarm is accepted), off with the
  * plant disabled or no power.
  */
 export function statusLed(view: CascadeManagerView, flash: boolean): LedColour {
   if (!view.powered) return 'off';
-  if (view.alarm || view.boilers.some((b) => b.state === 'lockout'))
-    return flash ? 'red' : 'off';
+  // A new alarm flashes it; accepted, or a lockout alone, it is steady.
+  if (view.alarms.some((a) => a.flashing)) return flash ? 'red' : 'off';
+  if (view.alarms.length || view.boilers.some((b) => b.state === 'lockout'))
+    return 'red';
   if (view.enable === 'off') return 'off';
   if (view.enable === 'hand') return 'amber';
   return view.running || flash ? 'green' : 'off';

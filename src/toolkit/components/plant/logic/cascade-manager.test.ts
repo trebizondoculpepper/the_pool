@@ -25,13 +25,6 @@ import type {
 } from './cascade-manager';
 import { isLit } from '../../industrial-control/logic/dot-matrix';
 import type { DotFrame } from '../../industrial-control/logic/dot-matrix';
-import {
-  editCascadeTrial,
-  newCascadeTrial,
-  stepCascadeTrial,
-  trialView,
-  tripTrialBoiler,
-} from './cascade-manager-trial';
 
 const boiler = (state: CascadeBoilerState, rate = 0) => ({
   state,
@@ -63,7 +56,7 @@ const view = (over: Partial<CascadeManagerView> = {}): CascadeManagerView => ({
     boiler('lockout'),
     boiler('off'),
   ],
-  alarm: null,
+  alarms: [],
   clock: 14 * 3600 + 32 * 60,
   ...over,
 });
@@ -299,35 +292,37 @@ describe('the cascade manager’s LEDs', () => {
   });
 });
 
-describe('the development rooms’ stand-in sequencer', () => {
-  it('stages boilers on to hold the header near its set point', () => {
-    let s = newCascadeTrial();
-    for (let t = 0; t < 3600; t++) s = stepCascadeTrial(s, 1);
-    const v = trialView(s);
-    expect(v.boilers.some((b) => b.state === 'firing')).toBe(true);
-    expect(Math.abs(v.headerC - v.setpointC)).toBeLessThan(8);
+describe('the cascade manager’s faults page', () => {
+  const toFaults = [PUSH, TURN_UP, TURN_UP, TURN_UP, TURN_UP, PUSH];
+  const alarmed = view({
+    alarms: [{ text: 'BOILER LOCKOUT', flashing: true }],
   });
 
-  it('applies the unit’s edits and passes over a tripped lead', () => {
-    let s = editCascadeTrial(newCascadeTrial(), {
-      setting: 'setpoint',
-      value: 75,
+  it('lists the alarms, new or accepted, and the lockouts', () => {
+    const { ui } = run(toFaults, alarmed);
+    const s = cascadeScreen(alarmed, ui, 0);
+    expect(s.kind === 'list' && s.rows.map((r) => [r.label, r.value])).toEqual([
+      ['BOILER LOCKOUT', 'NEW'],
+      ['B5 LOCKOUT', ''],
+      ['ACCEPT ALARMS', '>'],
+      ['RESET LOCKOUTS', '>'],
+    ]);
+  });
+
+  it('accepts the alarms and resets the lockouts from its command rows', () => {
+    const accept = run([...toFaults, TURN_UP, TURN_UP, PUSH], alarmed);
+    expect(accept.edits).toEqual([{ command: 'accept' }]);
+    const reset = run([...toFaults, TURN_UP, TURN_UP, TURN_UP, PUSH], alarmed);
+    expect(reset.edits).toEqual([{ command: 'reset' }]);
+    expect(canPush(reset.ui, alarmed)).toBe(true);
+  });
+
+  it('flashes the status LED until the alarm is accepted, then holds it red', () => {
+    expect(statusLed(alarmed, false)).toBe('off');
+    expect(statusLed(alarmed, true)).toBe('red');
+    const accepted = view({
+      alarms: [{ text: 'BOILER LOCKOUT', flashing: false }],
     });
-    expect(s.setpointC).toBe(75);
-    s = editCascadeTrial(s, { setting: 'rotation', value: 'fixed' });
-    s = editCascadeTrial(s, { setting: 'lead', value: 3 });
-    s = tripTrialBoiler(s, 3, true);
-    s = stepCascadeTrial(s, 1);
-    expect(trialView(s).boilers[3].state).toBe('lockout');
-    expect(s.lead).toBe(4);
-  });
-
-  it('shuts down when disabled', () => {
-    let s = newCascadeTrial();
-    for (let t = 0; t < 1200; t++) s = stepCascadeTrial(s, 1);
-    s = { ...s, enable: 'off' };
-    for (let t = 0; t < 60; t++) s = stepCascadeTrial(s, 1);
-    expect(s.boilers.every((b) => b.state !== 'firing')).toBe(true);
-    expect(s.demand).toBe(0);
+    expect(statusLed(accepted, false)).toBe('red');
   });
 });

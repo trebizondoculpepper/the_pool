@@ -56,6 +56,12 @@ const combustion = machine(
   'combustion-panel',
   'Combustion and ventilation panel',
 );
+// The Hamwarmy CM6 boiler cascade manager (mission 122).
+const cascadeManager = machine(
+  'cascade-manager',
+  'cascade-manager',
+  'Boiler cascade manager',
+);
 const electrics = roomElectrics(room, [
   ...cascades,
   circulator,
@@ -64,6 +70,7 @@ const electrics = roomElectrics(room, [
   mimicGas,
   mimicHeat,
   combustion,
+  cascadeManager,
 ]);
 
 const valve = (id: string, edge: string, role: string): SchematicFitting => ({
@@ -95,6 +102,7 @@ export const BOILER_HOUSE_SCHEMATIC: RoomSchematic = {
     mimicGas,
     mimicHeat,
     combustion,
+    cascadeManager,
     machine('gas-header', 'header', 'Gas header'),
     machine('flow-header', 'header', 'Boiler flow header'),
     machine('return-header', 'header', 'Boiler return header'),

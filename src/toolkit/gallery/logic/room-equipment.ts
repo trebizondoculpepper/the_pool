@@ -1146,6 +1146,17 @@ export function roomEquipment(
             1.5,
             { walls: ['east'] },
           ),
+          // The Hamwarmy CM6 boiler cascade manager and its PLANT ENABLE
+          // key switch (mission 122), by the low-loss header, where its
+          // header sensor is and the boilers can be seen.
+          wall(
+            'cascade-manager',
+            'Boiler cascade manager',
+            0.46,
+            0.1,
+            0.26,
+            1.5,
+          ),
         ],
       };
     case 'hypo_store':
@@ -1922,6 +1933,9 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
       put(box, at('mimic-gas'), { wall: 'east', along: -1.4 }),
       put(box, at('mimic-boiler-heat'), { wall: 'east', along: 1.1 }),
       put(box, at('combustion-panel'), { wall: 'east', along: 3.15 }),
+      // On the south wall by the low-loss header (mission 122), facing
+      // the boilers up the room.
+      put(box, at('cascade-manager'), { wall: 'south', along: -1.75 }),
     ];
   },
   // The switch room (043, 2026-10-24: only what works): where the search

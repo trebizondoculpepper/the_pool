@@ -12,7 +12,6 @@ import {
   createDirtyWaterMimic,
   createFreshWaterMimic,
 } from '../../views/wet-hall';
-import { createCascadeManagerTrial } from '../../views/cascade-manager-trial';
 
 /** What this room is for, printed on its title card. */
 export const PURPOSE =
@@ -161,14 +160,6 @@ export const EXHIBITS: readonly PlantExhibit[] = [
         dispose: () => store.stop(),
       };
     },
-  },
-  {
-    title: 'Boiler cascade manager',
-    reference:
-      'Mission 122: the Hamwarmy CM6, after Hamworthy’s Merley, Siemens’ Albatros RVS cascade controllers and Viessmann’s Vitotronic 300-K, 300 × 240 × 85 mm, a 240 × 128 dot FSTN display, a turn-and-push knob, HOME, BACK and INFO keys, six boiler LEDs, its terminal flap and SERVICE key, and the PLANT ENABLE key switch beside it; run by a stand-in sequencer ten times fast, with a trial station to start, stop and trip boilers',
-    maker: 'hamwarmy',
-    size: { w: 0.5, d: 0.1, h: 0.46, mount: 'wall', y: 1.55 },
-    build: (kit) => createCascadeManagerTrial(kit),
   },
   {
     title: 'Chemical distribution terminals and control box',

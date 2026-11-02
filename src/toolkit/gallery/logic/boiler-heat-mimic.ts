@@ -89,24 +89,37 @@ export const BOILER_HEAT_MIMIC: MimicSpec = {
     size: 0.1,
     label,
   })),
-  labels: [{ text: 'LTHW FLOW', at: [0, 0.72] }],
+  labels: [
+    { text: 'LTHW FLOW', at: [0, 0.72] },
+    // Printed over the header's readouts, legible from a step back
+    // (mission 122; their LCD legends are small).
+    ...(
+      [
+        ['FLOW °C', -0.88],
+        ['RETURN °C', -0.44],
+        ['TOTAL', 0],
+        ['SET °C', 0.44],
+        ['DEMAND %', 0.88],
+      ] as const
+    ).map(([text, x]) => ({ text, at: [x, -0.575] as const, size: 0.75 })),
+  ],
   lamps: [
     ...positions.flatMap(({ id, x, y }) => [
       {
         id: `${id}-called`,
-        at: [x - 0.34, y + 0.13] as const,
+        at: [x - 0.4, y + 0.13] as const,
         colour: 'white' as const,
         label: 'CALLED',
       },
       {
         id: `${id}-ready`,
-        at: [x - 0.26, y + 0.13] as const,
+        at: [x - 0.3, y + 0.13] as const,
         colour: 'green' as const,
         label: 'READY',
       },
       {
         id: `${id}-fire`,
-        at: [x - 0.18, y + 0.13] as const,
+        at: [x - 0.2, y + 0.13] as const,
         colour: 'amber' as const,
         label: 'FIRE',
       },
@@ -118,7 +131,7 @@ export const BOILER_HEAT_MIMIC: MimicSpec = {
       },
       {
         id: `${id}-lead`,
-        at: [x - 0.02, y + 0.13] as const,
+        at: [x, y + 0.13] as const,
         colour: 'blue' as const,
         label: 'LEAD',
       },
@@ -142,11 +155,13 @@ export const BOILER_HEAT_MIMIC: MimicSpec = {
       colour: 'red',
       label: 'NO BOILER AVAILABLE',
     },
-    // PLANT ENABLE's position and the plant started (mission 121's rough panel).
-    { id: 'enable-off', at: [-1.08, 0.82], colour: 'white', label: 'OFF' },
-    { id: 'enable-auto', at: [-0.93, 0.82], colour: 'green', label: 'AUTO' },
-    { id: 'enable-hand', at: [-0.78, 0.82], colour: 'amber', label: 'HAND' },
-    { id: 'plant-run', at: [0.78, 0.82], colour: 'green', label: 'RUN' },
+    // PLANT ENABLE's position (the CM6's key switch) and the plant
+    // started, in the bottom row beside the alarms, clear of the title
+    // (mission 122).
+    { id: 'enable-off', at: [0.76, -0.83], colour: 'white', label: 'OFF' },
+    { id: 'enable-auto', at: [0.86, -0.83], colour: 'green', label: 'AUTO' },
+    { id: 'enable-hand', at: [0.96, -0.83], colour: 'amber', label: 'HAND' },
+    { id: 'plant-run', at: [1.08, -0.83], colour: 'green', label: 'RUN' },
   ],
   readouts: [
     ...positions.map(({ id, x, y }) => ({ id, at: [x + 0.21, y] as const })),
@@ -164,21 +179,12 @@ export const BOILER_HEAT_MIMIC: MimicSpec = {
 };
 
 /**
- * The boiler house's own board is the sequencer's rough panel too (mission
- * 121; mission 122 designs the real one): PLANT ENABLE as three buttons,
- * OFF · AUTO · HAND, the lit lamp over them its position, and ACCEPT and
- * RESET for its alarms and its boilers' lockouts. Local only.
+ * The boiler house's own board shows the sequencer and works nothing:
+ * mission 121's rough panel had PLANT ENABLE, ACCEPT and RESET on it,
+ * which the Hamwarmy CM6 cascade manager beside the low-loss header has
+ * taken over (mission 122): its key switch, and its faults page.
  */
-export const BOILER_HEAT_PANEL: MimicSpec = {
-  ...BOILER_HEAT_MIMIC,
-  buttons: [
-    { id: 'set-off', at: [-1.08, 0.72], colour: 'black', legend: 'OFF' },
-    { id: 'set-auto', at: [-0.93, 0.72], colour: 'black', legend: 'AUTO' },
-    { id: 'set-hand', at: [-0.78, 0.72], colour: 'black', legend: 'HAND' },
-    { id: 'accept', at: [0.93, 0.72], colour: 'black', legend: 'ACCEPT' },
-    { id: 'reset', at: [1.08, 0.72], colour: 'red', legend: 'RESET' },
-  ],
-};
+export const BOILER_HEAT_PANEL: MimicSpec = BOILER_HEAT_MIMIC;
 
 /** The control room's copy (CR-MP7): the same, and only START and STOP of the plant in AUTO. */
 export const BOILER_HEAT_COPY: MimicSpec = {
@@ -192,16 +198,6 @@ export const BOILER_HEAT_COPY: MimicSpec = {
 /** What a press of one of the boards' buttons asks of the boiler house. */
 export function boilerHeatPress(id: string): BoilerHouseAction | null {
   switch (id) {
-    case 'set-off':
-      return { act: 'enable', enable: 'off' };
-    case 'set-auto':
-      return { act: 'enable', enable: 'auto' };
-    case 'set-hand':
-      return { act: 'enable', enable: 'hand' };
-    case 'accept':
-      return { act: 'accept' };
-    case 'reset':
-      return { act: 'reset' };
     case 'start':
       return { act: 'run', run: true };
     case 'stop':

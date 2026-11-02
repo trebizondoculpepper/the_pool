@@ -390,6 +390,14 @@ export const PLACED_KINDS = {
     class: 'plant',
     purpose: 'Indicates combustion and ventilation status.',
   },
+  'cascade-manager': {
+    type: 'Control panel',
+    status: 'none',
+    code: 'CP',
+    class: 'plant',
+    purpose:
+      'Sequences the boilers to hold the flow header at its set point, with the PLANT ENABLE key switch.',
+  },
   'chem-bulk': {
     type: 'Chemical tank',
     status: 'none',

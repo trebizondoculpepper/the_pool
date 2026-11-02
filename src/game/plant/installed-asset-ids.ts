@@ -183,6 +183,11 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0047',
     tag: 'BH-CP2',
   },
+  // Mission 122: the next free id (asset-1307 is the weather console, CR-CP10).
+  'boiler_house|cascade-manager|Boiler cascade manager': {
+    assetId: 'asset-1308',
+    tag: 'BH-CP3',
+  },
   'hypo_store|chem-bulk:hypochlorite:1|Sodium hypochlorite bulk tank 1': {
     assetId: 'asset-0048',
     tag: 'HS-T1',

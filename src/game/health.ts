@@ -507,6 +507,8 @@ export const KIND_HEALTH_COVERAGE = {
   'mimic-gas': 'not health: a display of the gas chain',
   'mimic-boiler-heat': 'not health: a display of the heating',
   'combustion-panel': 'not in the world: no state yet',
+  'cascade-manager':
+    'boilers: the sequencer’s alarms; a display and its settings',
   'chem-bulk': 'chemicals: stock',
   'chem-pump':
     'not checked: a transfer pump; a day tank it leaves dry shows in its pool’s chemistry',

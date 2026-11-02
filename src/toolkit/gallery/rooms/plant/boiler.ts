@@ -1,3 +1,4 @@
+import { Group } from 'three';
 import { markComponent } from '../../../components/core/views/component-identity';
 import { createBoilerSounder } from '../../../components/plant/views/boiler-sounder';
 import { computed, signal } from '@preact/signals-core';
@@ -28,10 +29,21 @@ import { GAS_MIMIC, gasState } from '../../logic/pool-mimics';
 import {
   BOILER_HEAT_MIMIC,
   BOILER_HEAT_PANEL,
-  boilerHeatPress,
   boilerHeatState,
   cascadeOf,
 } from '../../logic/boiler-heat-mimic';
+import {
+  CM6_INSTALLED_WIDTH,
+  CM6_SIZE,
+  createCascadeManager,
+} from '../../../components/plant/views/cascade-manager';
+import type { CascadeManagerView } from '../../../components/plant/logic/cascade-manager';
+import {
+  cascadeAction,
+  cascadeViewOf,
+  logHeader,
+} from '../../logic/cascade-manager-view';
+import type { HeaderLog } from '../../logic/cascade-manager-view';
 import {
   createBoilerCascade,
   createCalorifier,
@@ -466,13 +478,9 @@ export const EXHIBITS: readonly PlantExhibit[] = [
       y: 1.7,
     },
     build(kit): LiveExhibit {
-      // The sequencer's rough panel too (mission 121): PLANT ENABLE, ACCEPT, RESET.
-      const board = createMimicBoard(kit, BOILER_HEAT_PANEL, {
-        press: (id) => {
-          const action = boilerHeatPress(id);
-          if (action) actOnHouse(action);
-        },
-      });
+      // Indications only: PLANT ENABLE, ACCEPT and RESET, its rough
+      // panel's (mission 121), are the CM6's beside it (mission 122).
+      const board = createMimicBoard(kit, BOILER_HEAT_PANEL);
       return {
         object: board.group,
         parts: board.parts,
@@ -493,6 +501,59 @@ export const EXHIBITS: readonly PlantExhibit[] = [
             ),
           );
         },
+      };
+    },
+  },
+  {
+    title: 'Boiler cascade manager',
+    maker: 'hamwarmy',
+    reference:
+      'Mission 122: the Hamwarmy CM6, after Hamworthy’s Merley, Siemens’ Albatros RVS cascade controllers and Viessmann’s Vitotronic 300-K: 300 × 240 × 85 mm, a 240 × 128 dot FSTN display, a turn-and-push knob, HOME, BACK and INFO keys, six boiler LEDs, a terminal flap over its SERVICE key, and the PLANT ENABLE key switch beside it; the world’s sequencer shown and worked',
+    size: {
+      w: CM6_INSTALLED_WIDTH + 0.02,
+      d: CM6_SIZE.d + 0.01,
+      h: CM6_SIZE.h + 0.02,
+      mount: 'wall',
+      y: 1.5,
+    },
+    build(kit): LiveExhibit {
+      // Its view, worked out once for each new world (or each new house
+      // where there is none), its header log kept as the unit would.
+      let log: HeaderLog | null = null;
+      let from: object | null = null;
+      let shown: CascadeManagerView | null = null;
+      const view = (): CascadeManagerView => {
+        const world = store()?.world.value;
+        const house = houseNow();
+        const key = world ?? house;
+        if (shown && from === key) return shown;
+        const flow = world?.lthw.flow ?? currentPlant().lthw;
+        const time = world?.time ?? room.seconds;
+        log = logHeader(log, time, flow);
+        from = key;
+        shown = cascadeViewOf(house, {
+          flow,
+          time,
+          log,
+          powered: world ? true : room.powered(),
+        });
+        return shown;
+      };
+      const cm = createCascadeManager(kit, {
+        view,
+        edit: (e) => actOnHouse(cascadeAction(e)),
+        setEnable: (enable) => actOnHouse({ act: 'enable', enable }),
+      });
+      // Centred on its footprint: the unit and its key-switch box.
+      cm.group.position.x = -(CM6_INSTALLED_WIDTH - CM6_SIZE.w) / 2;
+      const object = new Group();
+      object.add(cm.group);
+      return {
+        object,
+        parts: cm.parts,
+        update: (delta) => cm.update(delta),
+        status: cm.status,
+        dispose: () => cm.dispose(),
       };
     },
   },

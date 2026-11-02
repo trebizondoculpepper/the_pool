@@ -296,6 +296,7 @@ export const MODELS: Record<string, PlantExhibit> = {
   'combustion-panel': byTitle(BOILER, 'Combustion and ventilation panel'),
   'mimic-gas': byTitle(BOILER, 'Mimic: boiler house gas'),
   'mimic-boiler-heat': byTitle(BOILER, 'Mimic: boiler status and heat output'),
+  'cascade-manager': byTitle(BOILER, 'Boiler cascade manager'),
   'hypo-tank': byTitle(CHEMICALS, 'Sodium hypochlorite bulk tank'),
   'acid-ibc': byTitle(CHEMICALS, 'Acid IBC on spill pallet'),
   'spill-kit': byTitle(CHEMICALS, 'Chemical spill kit'),
