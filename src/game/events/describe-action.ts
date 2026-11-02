@@ -121,11 +121,41 @@ function said(
         text: action.running ? 'started' : 'stopped',
         severity: action.running ? 'info' : 'notice',
       };
-    case 'lthw/boilers':
+    case 'boiler-house': {
+      const a = action.action;
+      const tag = (i: number) => `B-${501 + i}`;
       return {
-        subject: 'BOILERS',
-        text: `${action.count} in service`,
+        subject:
+          a.act === 'press' || a.act === 'setpoint' ? tag(a.boiler) : 'BOILERS',
+        text:
+          a.act === 'press'
+            ? `${a.key.toUpperCase()} pressed`
+            : a.act === 'setpoint'
+              ? `flow set point ${a.celsius} °C`
+              : a.act === 'enable'
+                ? `PLANT ENABLE ${a.enable.toUpperCase()}`
+                : a.act === 'run'
+                  ? a.run
+                    ? 'plant STARTED'
+                    : 'plant STOPPED'
+                  : a.act === 'accept'
+                    ? 'alarms ACCEPTED'
+                    : a.act === 'reset'
+                      ? 'lockouts RESET'
+                      : a.act === 'lead'
+                        ? `lead ${tag(a.boiler)}`
+                        : a.act === 'rotation'
+                          ? `lead rotation ${a.rotation.toUpperCase()}`
+                          : a.act === 'fan'
+                            ? `combustion air fan ${['HAND', 'OFF', 'AUTO'][a.hoa] ?? a.hoa}`
+                            : 'combustion panel RESET',
+        severity:
+          (a.act === 'run' && !a.run) ||
+          (a.act === 'enable' && a.enable === 'off')
+            ? 'notice'
+            : 'info',
       };
+    }
     case 'lighting/supply':
       return {
         subject: 'DB-LIGHTING',

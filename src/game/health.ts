@@ -326,6 +326,27 @@ function otherFindings(world: World): HealthFinding[] {
       expected: 'all on',
       reason: 'some of the building is unlit',
     });
+  // The boiler house (mission 121): every boiler on and not locked out,
+  // the plant in AUTO and started.
+  world.boilerHouse.boilers.forEach((b, i) => {
+    if (!b.on || b.lockout)
+      add({
+        subsystem: 'heat',
+        asset: `B-${501 + i}`,
+        measured: b.lockout ? `locked out (${b.lockout})` : 'switched off',
+        expected: 'on, no lockout',
+        reason: 'a boiler is out of the sequence',
+      });
+  });
+  const seq = world.boilerHouse.sequencer;
+  if (seq.enable !== 'auto' || !seq.run)
+    add({
+      subsystem: 'heat',
+      asset: 'boiler sequencer',
+      measured: `${seq.enable}, ${seq.run ? 'started' : 'stopped'}`,
+      expected: 'auto, started',
+      reason: 'the boiler plant is not left in AUTO and started',
+    });
   if (world.olympicTank.makeup !== 'auto')
     add({
       subsystem: 'pools',
@@ -407,6 +428,7 @@ export const WORLD_HEALTH_COVERAGE = {
     'not checked: decoration lighting, its own on switch',
   boilerGas: 'gas: the boiler house’s safety chain made',
   lthw: 'heat: the LTHW ring at its set point, every load’s demand met',
+  boilerHouse: 'heat: no boiler locked out, the plant enabled',
   music: 'not health: the halls’ music',
   fireAlarm:
     'not checked: an alarm raised by hand, seen and heard where it sounds',

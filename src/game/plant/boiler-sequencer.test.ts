@@ -5,7 +5,6 @@ import {
   calledBoilers,
   newBoilerSequencer,
   rotaOf,
-  sequencerAlarmsPresent,
   sequencerTargets,
   setPlantEnable,
   setPlantRun,
@@ -170,6 +169,32 @@ describe('the boiler sequencer', () => {
     expect(run(fixed, 1, 200).s.lead).toBe(0);
   });
 
+  it('hands the load to a new lead, and sheds boilers the rest can carry', () => {
+    // Four firing for a 400 kW load: two are released, one at a time.
+    const busy = run(toy(newBoilerSequencer(), 70), 1200, 1000);
+    expect(busy.s.called).toEqual([0, 1, 2, 3]);
+    const light = run(busy, 1800, 400);
+    expect(light.s.called).toEqual([0, 1]);
+    expect(light.flow).toBeCloseTo(SEQUENCER.setpoint, 0);
+    // Rotated to B-504, not called: it is called, and the last in its rota released.
+    const rotated = run(
+      {
+        ...light,
+        s: {
+          ...light.s,
+          hoursRun: [50, 50, 50, 10, 50, 50],
+          sinceRotation: SEQUENCER.rotationHours * 3600,
+        },
+      },
+      1800,
+      400,
+    );
+    expect(rotated.s.lead).toBe(3);
+    expect(rotated.s.called[0]).toBe(3);
+    expect(rotated.s.called).toHaveLength(2);
+    expect(sequencerTargets(rotated.s)[3]).toBe(1);
+  });
+
   it('counts each boiler’s hours firing and its starts', () => {
     const end = run(toy(newBoilerSequencer(), 78), 3600, 200);
     expect(end.s.hoursRun[0]).toBeGreaterThan(0.9);
@@ -223,15 +248,7 @@ describe('the boiler sequencer', () => {
       'header-low': 'flashing',
       'none-available': 'flashing',
     });
-    const inputs = {
-      flow: down.flow,
-      available: t.available,
-      lockedOut: t.available.map((a) => !a),
-    };
-    const accepted = acceptSequencerAlarms(
-      down.s,
-      sequencerAlarmsPresent(down.s, inputs),
-    );
+    const accepted = acceptSequencerAlarms(down.s);
     expect(accepted.alarms.lockout).toBe('steady');
     const back = run(
       { ...down, s: accepted, available: [true, true, true, true, true, true] },

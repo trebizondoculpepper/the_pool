@@ -5,20 +5,22 @@ import {
   consumerK,
   newLthwRing,
   ringDraw,
-  ringSupply,
   stepRing,
-  supplyCapacity,
 } from './lthw-ring';
 import { WATER_HEAT } from './heat-loop';
 
-const ON = { gas: true, powered: true, circulating: true, boilers: 6 };
+/** A supply that holds the set point against `load`, within `capacity` (a stand-in for the boilers). */
+const holding = (capacity: number, load: number) => (flow: number) =>
+  Math.max(
+    0,
+    Math.min(capacity, load + (RING_CAPACITY * (RING.setpoint - flow)) / 120),
+  );
 
 describe('the LTHW ring', () => {
-  it('starts at its set point, its pumps running and its six boilers in service', () => {
+  it('starts at its set point, its pumps running', () => {
     const r = newLthwRing();
     expect(r.flow).toBe(RING.setpoint);
     expect(r.pumps).toBe(true);
-    expect(r.boilers).toBe(6);
   });
 
   it('has a time constant of minutes: its water against a full plant', () => {
@@ -29,18 +31,23 @@ describe('the LTHW ring', () => {
     expect((300 / RING_CAPACITY) * 60).toBeLessThan(2);
   });
 
-  it('can give up to its boilers in service, and nothing without gas, power or flow', () => {
-    expect(supplyCapacity(ON)).toBe(1800);
-    expect(supplyCapacity({ ...ON, boilers: 2 })).toBe(600);
-    expect(supplyCapacity({ ...ON, gas: false })).toBe(0);
-    expect(supplyCapacity({ ...ON, powered: false })).toBe(0);
-    expect(supplyCapacity({ ...ON, circulating: false })).toBe(0);
-  });
-
-  it('modulates to its load at its set point, and to its capacity when cold', () => {
-    expect(ringSupply(RING.setpoint, 1800, 300)).toBeCloseTo(300, 9);
-    expect(ringSupply(40, 1800, 300)).toBe(1800);
-    expect(ringSupply(90, 1800, 300)).toBe(0);
+  it('takes its supply in each sub-step, given its flow, return and the sub-step', () => {
+    const seen: [number, number, number][] = [];
+    stepRing(
+      newLthwRing(),
+      {
+        supply: (flow, ret, h) => (seen.push([flow, ret, h]), 0),
+        circulating: true,
+        draws: { a: 93.04 },
+        demand: 93.04,
+        maxStep: 1,
+      },
+      3,
+    );
+    expect(seen).toHaveLength(3);
+    expect(seen[0][0]).toBe(RING.setpoint);
+    expect(seen[0][0] - seen[0][1]).toBeCloseTo(1, 6);
+    expect(seen[0][2]).toBe(1);
   });
 
   it('gives each consumer what it asks while hot, and less as it cools', () => {
@@ -57,7 +64,7 @@ describe('the LTHW ring', () => {
       r = stepRing(
         r,
         {
-          capacity: 1800,
+          supply: holding(1800, 300 + RING.lossUA * (80 - RING.roomAir)),
           circulating: true,
           draws: { a: 200, b: 100 },
           demand: 300,
@@ -74,7 +81,7 @@ describe('the LTHW ring', () => {
   it('falls without supply, about a degree a minute under 300 kW', () => {
     const r = stepRing(
       newLthwRing(),
-      { capacity: 0, circulating: true, draws: { a: 300 }, demand: 300 },
+      { supply: () => 0, circulating: true, draws: { a: 300 }, demand: 300 },
       60,
     );
     expect(r.supply).toBe(0);
@@ -95,7 +102,7 @@ describe('the LTHW ring', () => {
       r = stepRing(
         r,
         {
-          capacity: i < 100 ? 600 : 0,
+          supply: i < 100 ? holding(600, draw) : () => 0,
           circulating: true,
           draws: { a: draw },
           demand: draw,

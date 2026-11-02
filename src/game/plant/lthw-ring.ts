@@ -12,9 +12,9 @@ import { GAS_ENERGY, WATER_HEAT } from './heat-loop';
  * reception, changing and its hot water: `heat-consumers.ts`) each draw
  * `min(demand, k·max(0, T_flow − T_secondary))`: what its own thermostat
  * and control valve ask, as far as the ring is hot enough to give it. The
- * supply (`ringSupply`) stands in for the boiler cascade until mission
- * 121's sequencer: capacity-limited, modulating to hold the set point, none
- * without gas, power or flow. The losses are a small fixed UA to the
+ * supply is the boiler house's (mission 121, `boiler-plant.ts`): its six
+ * boilers' outputs, as their sequencer fires them, stepped with the ring
+ * in each sub-step. The losses are a small fixed UA to the
  * boiler house's air. The return is the flow less what the loads took
  * from the ring's circulation.
  *
@@ -34,9 +34,7 @@ export const RING = {
   /** The boilers (B-501 to B-506) and each one's rated output, kW (`condensingBoilerModel`, HW 300). */
   boilers: 6,
   boilerKW: 300,
-  /** How fast the supply closes a gap at the header, seconds (its proportional term's time constant). */
-  response: 120,
-  /** Below this supply, kW, the stand-in's boilers count as not firing. */
+  /** Below this supply, kW, the boilers count as not firing. */
   firing: 0.5,
 } as const;
 
@@ -62,8 +60,6 @@ export interface LthwRingState {
   return: number;
   /** Its circulating pumps switched to run (they run while the boiler house has power). */
   pumps: boolean;
-  /** Boilers in service, for the stand-in supply's capacity (mission 121 gives the boilers' own states). */
-  boilers: number;
   /** The last step's mean flows, kW: supplied by the boilers, asked by the loads, delivered to them, lost. */
   supply: number;
   demand: number;
@@ -82,7 +78,6 @@ export function newLthwRing(): LthwRingState {
     flow: RING.setpoint,
     return: RING.setpoint,
     pumps: true,
-    boilers: RING.boilers,
     supply: 0,
     demand: 0,
     delivered: 0,
@@ -93,39 +88,14 @@ export function newLthwRing(): LthwRingState {
   };
 }
 
-/** What the boiler house can give the ring now. */
-export interface SupplyConditions {
-  /** Gas at the boilers' own isolators: the ECV and SSOV open (`boilerGasOn`). */
-  gas: boolean;
-  /** The boiler house's power. */
-  powered: boolean;
-  /** Water through the boilers: their flow switches made. */
-  circulating: boolean;
-  /** Boilers in service. */
-  boilers: number;
-}
-
-/** The supply's capacity, kW: its boilers in service at full fire, none without gas, power or flow. */
-export function supplyCapacity(c: SupplyConditions): number {
-  if (!c.gas || !c.powered || !c.circulating) return 0;
-  return Math.max(0, Math.min(RING.boilers, c.boilers)) * RING.boilerKW;
-}
-
-/**
- * The supply now, kW: the stand-in for the boiler cascade (mission 121
- * swaps its sequencer in here). It gives the ring's load (`load`, the
- * consumers' draw and the losses) and closes the gap to its set point over
- * `RING.response`, between nothing and its capacity.
- */
-export function ringSupply(flow: number, capacity: number, load: number) {
-  const want = load + (RING_CAPACITY * (RING.setpoint - flow)) / RING.response;
-  return Math.max(0, Math.min(capacity, want));
-}
-
 /** What the ring takes in a step. */
 export interface RingInputs {
-  /** The supply's capacity, kW (`supplyCapacity`). */
-  capacity: number;
+  /**
+   * The supply through a sub-step, kW, given the flow and return at its
+   * start and its length, s: the boiler house stepped with the ring
+   * (`boiler-plant.ts`), or a fixed figure.
+   */
+  supply: (flow: number, ret: number, h: number) => number;
   /** Whether its pumps move its water. */
   circulating: boolean;
   /** The consumers' draws this step, kW, by id, and what they asked in all. */
@@ -133,10 +103,13 @@ export interface RingInputs {
   demand: number;
   /** The heated areas' temperatures after the step. */
   areas?: Record<string, number>;
+  /** Its longest sub-step, s (by default five). */
+  maxStep?: number;
 }
 
 /**
- * The ring `dt` seconds on, in sub-steps of at most five seconds, the
+ * The ring `dt` seconds on, in sub-steps of at most five seconds (or
+ * `maxStep`), the supply worked out in each, the
  * consumers' draws held through the step (they were worked out at its
  * start's flow temperature). Its flows are the step's means, so that over
  * any run supplied = delivered + lost + the water's stored change.
@@ -147,14 +120,15 @@ export function stepRing(
   dt: number,
 ): LthwRingState {
   const delivered = Object.values(inputs.draws).reduce((t, q) => t + q, 0);
-  const n = Math.max(1, Math.ceil(dt / 5));
+  const n = Math.max(1, Math.ceil(dt / (inputs.maxStep ?? 5)));
   const h = dt / n;
+  const drop = inputs.circulating ? delivered / (WATER_HEAT * RING.flow) : 0;
   let flow = s.flow;
   let supply = 0;
   let losses = 0;
   for (let i = 0; i < n; i++) {
     const lost = RING.lossUA * (flow - RING.roomAir);
-    const given = ringSupply(flow, inputs.capacity, delivered + lost);
+    const given = Math.max(0, inputs.supply(flow, flow - drop, h));
     flow += ((given - delivered - lost) * h) / RING_CAPACITY;
     supply += given / n;
     losses += lost / n;
@@ -162,9 +136,7 @@ export function stepRing(
   return {
     ...s,
     flow,
-    return: inputs.circulating
-      ? flow - delivered / (WATER_HEAT * RING.flow)
-      : flow,
+    return: flow - drop,
     supply,
     demand: inputs.demand,
     delivered,

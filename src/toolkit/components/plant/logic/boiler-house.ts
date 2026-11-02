@@ -133,7 +133,22 @@ export interface BoilerInputs {
   pressure: number;
   /** Whether its electrical supply is on (by default, it is). */
   powered?: boolean;
+  /**
+   * The sequencer's firing-rate target, 0–1 (its 0–10 V power-control
+   * input, mission 121): in AUTO the burner modulates to it, never below
+   * its minimum fire, in place of its own flow temperature control. Left
+   * out, it modulates on its own flow, as a boiler on its own does.
+   */
+  modulation?: number;
+  /**
+   * Its water's rise across it at full fire, K: its output over its share
+   * of the circulation (mission 121). Left out, 22 K.
+   */
+  rise?: number;
 }
+
+/** A boiler's minimum fire, a share of its output (5:1 turndown). */
+export const MIN_FIRE = 0.2;
 
 /** Step `boiler` on by `delta` seconds. Returns a new state. */
 export function stepBoiler(
@@ -210,8 +225,13 @@ export function stepBoiler(
             b.forcing === 'high'
               ? 1
               : b.forcing === 'low'
-                ? 0.2
-                : Math.max(0.2, Math.min(1, (b.setpoint + 3 - b.flow) / 12));
+                ? MIN_FIRE
+                : inputs.modulation !== undefined
+                  ? Math.max(MIN_FIRE, Math.min(1, inputs.modulation))
+                  : Math.max(
+                      MIN_FIRE,
+                      Math.min(1, (b.setpoint + 3 - b.flow) / 12),
+                    );
           b.rate += (want - b.rate) * Math.min(1, delta * 0.5);
         }
         break;
@@ -221,7 +241,7 @@ export function stepBoiler(
         break;
     }
   // The water: heated by the burner, cooled toward the system's return.
-  const heat = b.code === 3 ? b.rate * 22 : 0;
+  const heat = b.code === 3 ? b.rate * (inputs.rise ?? 22) : 0;
   const target = inputs.systemReturn + heat;
   b.flow += (target - b.flow) * Math.min(1, delta * 0.08);
   b.return += (inputs.systemReturn - b.return) * Math.min(1, delta * 0.08);

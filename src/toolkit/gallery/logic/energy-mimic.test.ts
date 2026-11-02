@@ -39,7 +39,10 @@ describe('the energy mimic (mission 120)', () => {
     expect(s.readouts.total.heat.value).toBe(
       Math.round(running.lthw.delivered),
     );
-    expect(s.readouts.flow.heat.value).toBeCloseTo(80, 0);
+    // Within a degree: ten minutes into a new game the lead is at full fire
+    // and the header half a degree under, its stage-up differential, while
+    // the sequencer brings in a second boiler (mission 121).
+    expect(Math.abs(s.readouts.flow.heat.value - 80)).toBeLessThan(1);
     expect(s.readouts.supply.heat.value).toBeGreaterThan(100);
     expect(s.lamps.firing).toBe(true);
     expect(s.lamps['pool_02-heat']).toBe(true);

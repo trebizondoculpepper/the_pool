@@ -26,12 +26,13 @@ const delivered = (w: World) =>
 
 describe('the LTHW ring in the world', () => {
   it('starts a new game hot, every pool at temperature, its demand met', () => {
-    expect(ready.lthw.flow).toBeCloseTo(RING.setpoint, 1);
+    // The boilers' sequencer holds it within a fraction of a degree as the loads drift (mission 121).
+    expect(ready.lthw.flow).toBeCloseTo(RING.setpoint, 0);
     expect(ready.lthw.firing).toBe(true);
     expect(ready.lthw.delivered).toBeCloseTo(ready.lthw.demand, 3);
     expect(ready.lthw.supply).toBeCloseTo(
       ready.lthw.delivered + ready.lthw.losses,
-      1,
+      0,
     );
     for (const id of POOL_IDS)
       expect(ready.pools[id].temperature, id).toBeCloseTo(
@@ -76,7 +77,7 @@ describe('the LTHW ring in the world', () => {
       24 * 3600,
       30,
     );
-    expect(design.lthw.flow).toBeCloseTo(RING.setpoint, 1);
+    expect(design.lthw.flow).toBeCloseTo(RING.setpoint, 0);
     expect(design.lthw.demand).toBeGreaterThan(650);
     expect(design.lthw.demand).toBeLessThan(850);
     expect(design.lthw.demand).toBeLessThan(5 * RING.boilerKW);
@@ -104,7 +105,10 @@ describe('the LTHW ring in the world', () => {
           applyAction(ready, { type: 'weather/ambient', celsius: -3 }),
           false,
         ),
-        { type: 'lthw/boilers', count: 5 },
+        {
+          type: 'boiler-house',
+          action: { act: 'press', boiler: 5, key: 'power' },
+        },
       ),
       8 * 3600,
       30,
@@ -124,7 +128,10 @@ describe('the LTHW ring in the world', () => {
     expect(w.lthw.draws['pool_02/water']).toBeLessThan(700);
     // All six in service: the ring climbs back to its set point.
     const six = advance(
-      applyAction(w, { type: 'lthw/boilers', count: 6 }),
+      applyAction(w, {
+        type: 'boiler-house',
+        action: { act: 'press', boiler: 5, key: 'power' },
+      }),
       1800,
       10,
     );

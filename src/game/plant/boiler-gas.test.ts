@@ -76,7 +76,8 @@ describe('the boiler house’s gas safety', () => {
     // Pulled out, still no gas until GAS RESET; then the supply comes back.
     const released = advance(stop(starved, false), 10, 1);
     expect(released.lthw.supply).toBe(0);
-    const restored = advance(reset(released), 10, 1);
+    // A boiler purges and lights in ten seconds or so (mission 121).
+    const restored = advance(reset(released), 30, 1);
     expect(restored.lthw.supply).toBeGreaterThan(1);
     expect(restored.lthw.firing).toBe(true);
   });

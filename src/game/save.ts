@@ -1,4 +1,5 @@
 import { WORLD_VERSION, newWorld } from './world';
+import { newBoilerHouse } from './plant/boiler-plant';
 import { supplyFromCylinders } from '../toolkit/components/plant/logic/co2-supply';
 import type { World } from './world';
 import { DAY_TANKS, newDayTank } from './plant/chemical-distribution';
@@ -389,9 +390,32 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
   // running, its six boilers in service, the museum at its thermostat's
   // setting (`fillDefaults` adds it).
   70: (world) => world,
-  // 71 → 72: reserved for mission 121's boiler cascade; its owner will
-  // replace this pass-through when that migration lands.
-  71: (world) => world,
+  // 71 → 72: the boiler house in the world (mission 121): its six boilers'
+  // controllers, combustion and sequencer as a new game has them, in
+  // place of the stand-in supply's count of boilers in service; a boiler
+  // the count left out of service is switched off.
+  71: (world) => {
+    if (!isRecord(world)) return world;
+    const lthw = isRecord(world.lthw) ? world.lthw : undefined;
+    const count =
+      typeof lthw?.boilers === 'number' ? Math.round(lthw.boilers) : 6;
+    const house = newBoilerHouse();
+    const { boilers: _count, ...ring } = lthw ?? {};
+    return {
+      ...world,
+      ...(lthw ? { lthw: ring } : {}),
+      boilerHouse: {
+        ...house,
+        boilers: house.boilers.map((b, i) =>
+          i < count ? b : { ...b, on: false, code: 0, rate: 0 },
+        ),
+        sequencer: {
+          ...house.sequencer,
+          called: house.sequencer.called.filter((i) => i < count),
+        },
+      },
+    };
+  },
   // 72 → 73: the Olympic's one DMH 21-10 takes the place of its DMX pair.
   // A solenoid head's saved state cannot become a motor pump's, so the new
   // unit begins primed at its commissioned 60 % stroke; the pool and day

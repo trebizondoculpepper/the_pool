@@ -349,6 +349,7 @@ describe('a save', () => {
       jacuzziFibreIlluminator: newWorld().jacuzziFibreIlluminator,
       boilerGas: newWorld().boilerGas,
       lthw: newWorld().lthw,
+      boilerHouse: newWorld().boilerHouse,
       music: newWorld().music,
       fireAlarm: newWorld().fireAlarm,
       washOTron: newWorld().washOTron,

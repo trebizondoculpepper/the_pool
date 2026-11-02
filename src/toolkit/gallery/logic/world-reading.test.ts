@@ -97,12 +97,15 @@ describe('the plant as the world has it', () => {
   it('reads the LTHW ring: its flow, its return, its demand and supply (mission 120)', () => {
     const r = plantReadingOf(running);
     expect(r.lthw).toBeCloseTo(running.lthw.flow, 9);
-    expect(r.lthw).toBeCloseTo(80, 0);
+    // Within a degree while the sequencer stages a second boiler in (mission 121).
+    expect(Math.abs(r.lthw - 80)).toBeLessThan(1);
     expect(r.lthwReturn).toBeLessThan(r.lthw);
     expect(r.heatDemand).toBeGreaterThan(100);
-    // The supply gives the loads' draw and the ring's losses.
-    expect(r.heatSupply).toBeCloseTo(
-      running.lthw.delivered + running.lthw.losses,
+    // The supply gives the loads' draw and the ring's losses, once the
+    // boilers' sequencer has caught up with a new game's climbing load.
+    const settled = advance(running, 1800, 10);
+    expect(plantReadingOf(settled).heatSupply).toBeCloseTo(
+      settled.lthw.delivered + settled.lthw.losses,
       -1,
     );
     expect(r.boilersFiring).toBe(true);

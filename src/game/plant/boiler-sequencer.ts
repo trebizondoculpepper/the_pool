@@ -55,6 +55,8 @@ export const SEQUENCER = {
   minFire: 0.2,
   /** Near full fire: the called boilers' share at or above which another may be wanted. */
   saturated: 0.95,
+  /** The share the boilers left would run at, at most, for the last to be released though the header is not over. */
+  shed: 0.8,
   /** The header below the set point by this much, K, for the stage-up delay, s, calls the next boiler. */
   upDifferential: 0.5,
   stageUpDelay: 30,
@@ -225,14 +227,14 @@ function senseLamps(
   return changed ? out : lamps;
 }
 
-/** ACCEPT: flashing lamps steady while their alarm is in, dark once it has cleared. */
+/** ACCEPT: flashing lamps steady; one whose alarm has cleared goes dark at the next step. */
 export function acceptSequencerAlarms(
   s: BoilerSequencerState,
-  present: Record<SequencerAlarm, boolean>,
 ): BoilerSequencerState {
+  if (!SEQUENCER_ALARMS.some((id) => s.alarms[id] === 'flashing')) return s;
   const alarms = { ...s.alarms };
   for (const id of SEQUENCER_ALARMS)
-    if (alarms[id] === 'flashing') alarms[id] = present[id] ? 'steady' : 'off';
+    if (alarms[id] === 'flashing') alarms[id] = 'steady';
   return { ...s, alarms };
 }
 
@@ -332,10 +334,22 @@ export function stepBoilerSequencer(
       // Up: every called boiler proven and near full fire, the header short.
       const allFiring = called.every((i) => firing[i]);
       if (allFiring && want >= C.saturated * n && low) upTimer = s.upTimer + dt;
-      // Down: the last at minimum fire, the header over.
-      if (want - (n - 1) <= C.minFire && high) downTimer = s.downTimer + dt;
+      // Down: the last at minimum fire with the header over, or the rest
+      // able to carry its share below their shed point.
+      const spare = want + C.minFire <= C.shed * (n - 1);
+      if ((want - (n - 1) <= C.minFire && high) || spare)
+        downTimer = s.downTimer + dt;
+      // A new lead not yet called (rotated in while others fire) is handed the load.
+      const handover =
+        !called.includes(lead) &&
+        available[lead] &&
+        sinceChange[lead] >= C.minOff &&
+        stageTimer >= C.stageInterval;
       const last = called[n - 1];
-      if (
+      if (handover) {
+        call(lead);
+        upTimer = 0;
+      } else if (
         upTimer >= C.stageUpDelay &&
         stageTimer >= C.stageInterval &&
         next !== undefined
