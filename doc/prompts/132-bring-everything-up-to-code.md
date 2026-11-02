@@ -4,13 +4,16 @@ The owner, 2026-11-02: a separate mission from 127. 127 builds the audit screens
 
 ## What it does
 
+**Priority (the owner, 2026-11-02):** plant rooms first, then the museum, then the pools; dev rooms and magic rooms are low priority. The order below follows it.
+
 Instrument the builders, not a binder, room by room, each room a commit that leaves its audit cleaner:
 
 1. **Mark architecture and decoration** where rooms are built (the shell, the services ceiling, set dressing), so the first report is about things that matter.
 2. **Plant rooms, the boiler house and the control room** (the rooms the owner asks to see most): `room-equipment.ts`, the valves and pipes drawn from each room's network.
-3. **Dev rooms,** their exhibits and the objects they place directly (dev0's boards): each room's metadata (titles, kinds, parts) moved into a small pure module beside it, which the room marks its objects from and 126's catalogue reads in place of the room module's `EXHIBITS` (126, rewritten 2026-11-02 as the universal catalogue, left this move to 127).
-4. **Museum halls, corridors, the pool halls** and the rest.
+3. **The museum halls** (the owner's second priority, 2026-11-02).
+4. **The pool halls** (third), then corridors and the rest.
 5. **Named parts** on the components agents photograph most: the CM6, the mimic boards' readouts, the weather station console, the touch panels, the period PC's screen.
+6. **Last, low priority:** **Dev rooms,** their exhibits and the objects they place directly (dev0's boards): each room's metadata (titles, kinds, parts) moved into a small pure module beside it, which the room marks its objects from and 126's catalogue reads in place of the room module's `EXHIBITS` (126, rewritten 2026-11-02 as the universal catalogue, left this move to 127). Magic rooms are low priority too.
 
 A test compares, room by room, the look targets the catalogue lists with the owners `markComponent` marks, so the two never drift. No tag is invented by hand: an object that should have a tag gets it through the model or the register; one that has no tag is named.
 
