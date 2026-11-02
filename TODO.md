@@ -458,6 +458,10 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ## Housekeeping
 
+- [ ] **Look links** ([125](doc/prompts/125-look-links.md); the owner, 2026-11-02; brief only, reviewed by Codex): `?room=…&look=<ref>&mode=front|left|right|room|detail|above` puts the camera on a named object, fitted, walkable and with a clear line of sight, using the scene's existing component identities; `window.__poolLook` for scripts; `npm run look` captures PNGs.
+- [ ] **The object index** ([126](doc/prompts/126-object-index.md); the owner, 2026-11-02; brief only, after 125): a pure `lookCatalogue` shared with 127, and the dev panel's rooms (every room in `ROOMS`) opening into their lookable objects, each a look link, with search.
+- [ ] **Everything lookable** ([127](doc/prompts/127-everything-lookable.md); the owner, 2026-11-02; brief only): Part A an audit (`npm run look:audit`, `doc/look-audit.json`, `KNOWN_UNLOOKABLE`) after 125; Part B marking every room's objects, builder by builder, after 126's catalogue.
+
 - [x] **One filter model for every filter** (the owner, 2026-10-30; done 2026-10-30): the ideal filter's ports (`FilterPorts`, `filterActivity`, `stepFilter`) drive the lounge's, the Olympic's, the jacuzzi's and the footbath's filters and their status words. Left: the world still keeps each installation's beds in its own shape (arrays per battery); folding them into one `IdealFilterState[]` would need a WORLD_VERSION bump and was not needed for the shared model.
 - [x] **Chemical bund rim z-fighting** (2026-10-27; `f9285e3`): lower the black walls beneath separate red/yellow caps and fit the cap corners without overlapping faces.
 
