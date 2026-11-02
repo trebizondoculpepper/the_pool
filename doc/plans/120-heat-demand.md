@@ -98,7 +98,7 @@ The energy mimic is a Penfold board, 2.4 × 1.2 m, titled `HEAT ENERGY BY FACILI
 - one row per facility, built from the consumer list (the four pools, then every `AREAS` entry, so a new area adds a row). Each row has a lamp while it draws, its total kW and its share of the total; a pool's row also shows its water and air kW;
 - the total at the foot.
 
-Its digits sample the ring every 2 s of world time (as kW transducers refresh) and redraw only when a rounded value changes. It was tried in dev39 and is installed as CR-MP10 (`mimic-energy`, `asset-1305`) in the old control room's upper row: on the east wall, centred 1.3 m south of the middle, its bottom 2.8 m up, 2.5 × 1.3 m in its frame, in the span `ahnaa_dmitrieva` kept for it. It's a node of the control room's schematic and is listed on the bridge as HEAT ENERGY: a panel with the facilities' kW, the ring's flow, return, supply and total, and the FIRING and PUMPS lamps. On the component bench (fresh runs), both the dev39 exhibit and the installed board upload nothing idle or running.
+Its digits sample the ring every 2 s of world time (as kW transducers refresh) and redraw only when a rounded value changes. It was tried in dev39 and is installed as CR-MP10 (`mimic-energy`, `asset-1306`) in the old control room's upper row: on the east wall, centred 1.3 m south of the middle, its bottom 2.8 m up, 2.5 × 1.3 m in its frame, in the span `ahnaa_dmitrieva` kept for it. It's a node of the control room's schematic and is listed on the bridge as HEAT ENERGY: a panel with the facilities' kW, the ring's flow, return, supply and total, and the FIRING and PUMPS lamps. On the component bench (fresh runs), both the dev39 exhibit and the installed board upload nothing idle or running.
 
 ## Left for mission 121
 
