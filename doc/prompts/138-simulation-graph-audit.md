@@ -15,6 +15,8 @@ The simulation's graph as the code already has it: the plant model's blocks with
 A development page per node, reached from the model node column of the room audit (129) and the item audit (130), and from a new **Simulation** category in the `?dev` catalogue (126) that lists the nodes by graph and path, searchable. For each node, what can be read directly from the node:
 
 - **What it is:** its path, its kind (block, fitting, link, feeder…), its room, its tag where it has one, and its state fields with their current values in a fresh world (the no-peeking rule does not apply here: this is the simulation's own view, a development tool, and says so).
+- **Its ports** (the owner, 2026-11-02): every port the node shows the world (`doc/plant-model.md`: a block shows the world only its ports), each with its direction and what it carries (water, heat, power, signal), and what it joins on the far side, each a link.
+- **Its states, where known** (the owner, 2026-11-02): each state field, its possible values or range where the model or 131's descriptors define them (open, shut, travelling; stopped, running, tripped; 0 to 100 %), and its value now.
 - **Bound to:** every object in the game world bound to it (by its model binding in the scene marks, the register, and 131's descriptors), each with its look link (125), its room audit row (129) and its item audit (130).
 - **Upstream:** the nodes that feed it directly (its inputs through its ports, its supply, its controller, the controls whose world actions set it, per 131's `targets`), each a link to its own page.
 - **Downstream:** the nodes it feeds directly, each a link.
