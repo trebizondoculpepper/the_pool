@@ -386,6 +386,26 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
     expect(f.world().treatment.charges.pool_02.at(-1)?.rate).toBeCloseTo(
       1 / 60,
     );
+    // An amount over a time: 17 kg through three hours.
+    for (const line of [
+      'dose pool_01 bicarb 17kg / 3h',
+      'dose pool_01 bicarb 17 kg/3h',
+      'dose pool_01 bicarb 17kg over 180min',
+    ]) {
+      runLine(f.host, line);
+      expect(f.world().treatment.charges.pool_01.at(-1)).toMatchObject({
+        amount: 17,
+        into: 'balance-tank',
+      });
+      expect(f.world().treatment.charges.pool_01.at(-1)?.rate).toBeCloseTo(
+        17 / 180,
+      );
+    }
+    runLine(f.host, 'dose pool_02 cacl2 5kg / 2h pool');
+    expect(f.world().treatment.charges.pool_02.at(-1)).toMatchObject({
+      amount: 5,
+      into: 'pool',
+    });
     // Its finish, logged by the watchers as the world feeds it.
     const before = f.world();
     const after = advance(before, 18 * 60, 1);
@@ -528,7 +548,7 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
   it('help knows them', () => {
     const f = fakeHost();
     expect(texts(runLine(f.host, 'help dose'))[0]).toMatch(
-      /^dose <pool> <chemical> <amount>\[unit\] \[<rate>\/min\|\/h\] \[balance-tank\|pool\]/,
+      /^dose <pool> <chemical> <amount>\[unit\] \[<rate>\/min\|\/h \| \/ <time>\] \[balance-tank\|pool\]/,
     );
     expect(texts(runLine(f.host, 'help doses'))[0]).toMatch(/^doses \[pool\]/);
     expect(texts(runLine(f.host, 'help test_kit'))[0]).toMatch(

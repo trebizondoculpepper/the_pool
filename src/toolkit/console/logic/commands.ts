@@ -116,8 +116,31 @@ const INTO_WORDS: Record<string, DoseInto> = {
   pool: 'pool',
 };
 
+/** An amount, `/` or `over`, then a time and anything after it. */
+const OVER_TIME =
+  /^(.+?)\s*(?:\/|\bover\b)\s*(\d*\.?\d+)\s*(s|secs?|seconds?|m|mins?|minutes?|h|hrs?|hours?)\b(.*)$/i;
+
+/** Minutes in each time unit `dose` takes. */
+const MINUTES_IN: Record<string, number> = {
+  s: 1 / 60,
+  sec: 1 / 60,
+  secs: 1 / 60,
+  second: 1 / 60,
+  seconds: 1 / 60,
+  m: 1,
+  min: 1,
+  mins: 1,
+  minute: 1,
+  minutes: 1,
+  h: 60,
+  hr: 60,
+  hrs: 60,
+  hour: 60,
+  hours: 60,
+};
+
 const DOSE_USAGE =
-  '<pool> <chemical> <amount>[unit] [<rate>/min|/h] [balance-tank|pool]';
+  '<pool> <chemical> <amount>[unit] [<rate>/min|/h | / <time>] [balance-tank|pool]';
 
 /** A pool named by a command, or a failure listing them. */
 function poolNamed(command: string, word: string | undefined) {
@@ -545,8 +568,19 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         return fail(`dose: no chemical "${args[1]}" (chemicals lists them)`);
       if (!args[2])
         return fail(`dose: how much ${chemical.name}? (in ${chemical.unit})`);
-      const rest = args.slice(3);
+      let rest = args.slice(3);
       let typed = args[2];
+      // An amount over a time, fed evenly through it: 17kg / 3h, 17kg/3h,
+      // 17 kg over 90min (the owner, 2026-11-02).
+      let over: number | undefined;
+      const spread = OVER_TIME.exec(args.slice(2).join(' '));
+      if (spread) {
+        over = Number(spread[2]) * (MINUTES_IN[spread[3].toLowerCase()] ?? 1);
+        if (!(over > 0))
+          return fail(`dose: over how long? (${spread[2]}${spread[3]})`);
+        typed = spread[1].replace(/\s+/g, '');
+        rest = spread[4].trim() ? spread[4].trim().split(/\s+/) : [];
+      }
       // A unit given as a word of its own: 18 kg. Only a unit: a bare
       // number after the amount is not one (the owner, 2026-11-02: "5 1"
       // was read as 51 kg, all at once).
@@ -565,8 +599,8 @@ export const COMMANDS: readonly ConsoleCommand[] = [
       const parsed = parseAmount(chemical, typed);
       if ('error' in parsed) return fail(`dose: ${parsed.error}`);
       // A rate, anywhere after the amount: 1kg/min, or 1 kg/min.
-      let rate: number | undefined;
-      for (let i = 0; i < rest.length; i++) {
+      let rate = over === undefined ? undefined : parsed.amount / over;
+      for (let i = 0; over === undefined && i < rest.length; i++) {
         const joined =
           i + 1 < rest.length && /^\d*\.?\d+$/.test(rest[i])
             ? rest[i] + rest[i + 1]
