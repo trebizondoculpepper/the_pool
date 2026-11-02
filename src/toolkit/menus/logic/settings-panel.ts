@@ -58,6 +58,7 @@ export type PanelAction =
   | 'resume'
   | 'save'
   | 'copyLink'
+  | 'copyReport'
   | 'quitToTitle'
   | 'quitToDesktop'
   | 'devPanel';
@@ -130,6 +131,7 @@ export interface PanelOffers {
   quitToDesktop?: boolean;
   noclip?: boolean;
   copyLink?: boolean;
+  copyReport?: boolean;
   devPanel?: boolean;
 }
 
@@ -317,6 +319,13 @@ export function settingsPanel(offers: PanelOffers): PanelZone[] {
         kind: 'push',
         id: 'copyLink',
         legend: 'VIEW LINK',
+        colour: 'blue',
+      });
+    if (offers.copyReport)
+      game.push({
+        kind: 'push',
+        id: 'copyReport',
+        legend: 'PLANT REPORT',
         colour: 'blue',
       });
     game.push({

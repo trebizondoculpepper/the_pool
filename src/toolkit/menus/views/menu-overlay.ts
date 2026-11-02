@@ -277,6 +277,7 @@ export function createMenuOverlay({
       inGame,
       noclip: !!actions.noclip,
       copyLink: !!actions.copyCamera,
+      copyReport: !!actions.copyPlantReport,
       devPanel: !!actions.devPanel,
       quitToDesktop: !!actions.quitToDesktop,
     });

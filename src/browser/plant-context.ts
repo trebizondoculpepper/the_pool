@@ -128,7 +128,7 @@ const element = <K extends keyof HTMLElementTagNameMap>(
   return node;
 };
 
-function reportText(store: WorldStore, search: string): string {
+function reportText(store: WorldStore, search: string, limit = 100): string {
   const world = store.world.value;
   const wash = plantWashFacts(world);
   const equipment = plantEquipmentFacts(world);
@@ -162,8 +162,8 @@ function reportText(store: WorldStore, search: string): string {
       (event) =>
         `${Math.floor(event.time)}s · ${event.subject || 'plant'} · ${event.severity} · ${event.text}`,
     ),
-    `Equipment matching ${search ? JSON.stringify(search) : 'all'}: ${matching.length}; showing first 100.`,
-    ...matching.slice(0, 100).map(
+    `Equipment matching ${search ? JSON.stringify(search) : 'all'}: ${matching.length}; showing first ${Math.min(matching.length, limit)}.`,
+    ...matching.slice(0, limit).map(
       (fact) =>
         `${fact.ref} · ${fact.name} · ${fact.room ?? 'room unavailable'} · ${fact.kind} · ${fact.status ?? 'state unavailable'}${
           fact.details
@@ -191,6 +191,14 @@ function reportText(store: WorldStore, search: string): string {
       : []),
   ];
   return lines.join('\n');
+}
+
+/** A player-requested copy, for assistants that cannot inspect the page. */
+export async function copyPlantReport(store: WorldStore): Promise<string> {
+  if (!contextEnabled())
+    return 'AI plant context is off. Turn it on in the report.';
+  await navigator.clipboard.writeText(reportText(store, '', 500));
+  return 'Live plant-state report copied.';
 }
 
 /** Install once beside the game canvas. The ordinary page gets only a short semantic index. */

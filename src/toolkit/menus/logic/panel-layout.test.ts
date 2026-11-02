@@ -12,6 +12,7 @@ const zones = settingsPanel({
   inGame: true,
   noclip: true,
   copyLink: true,
+  copyReport: true,
   devPanel: true,
   quitToDesktop: true,
 });

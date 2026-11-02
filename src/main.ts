@@ -348,6 +348,10 @@ const pauseMenu = createPauseMenu({
     }
   },
   copyCamera: () => copyCameraLocation(),
+  copyPlantReport: () =>
+    import('./browser/plant-context').then(({ copyPlantReport }) =>
+      copyPlantReport(worldStore('dev')),
+    ),
 });
 if (panelsWanted)
   void Promise.all([
@@ -379,6 +383,10 @@ if (panelsWanted)
             }
           },
           copyCamera: () => copyCameraLocation(),
+          copyPlantReport: () =>
+            import('./browser/plant-context').then(({ copyPlantReport }) =>
+              copyPlantReport(worldStore('dev')),
+            ),
         },
         bindings: BINDINGS,
         touchHelp: controlsHelp('touch'),

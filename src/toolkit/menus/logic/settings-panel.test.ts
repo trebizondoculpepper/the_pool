@@ -30,6 +30,7 @@ describe('the settings panel', () => {
       inGame: true,
       noclip: true,
       copyLink: true,
+      copyReport: true,
       devPanel: true,
       quitToDesktop: true,
     });
@@ -38,6 +39,7 @@ describe('the settings panel', () => {
       'resume',
       'save',
       'copyLink',
+      'copyReport',
       'quitToTitle',
       'quitToDesktop',
       'devPanel',

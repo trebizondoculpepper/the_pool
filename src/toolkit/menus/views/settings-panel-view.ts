@@ -97,6 +97,7 @@ export interface SettingsPanelActions {
   noclip?: Readable<boolean>;
   setNoclip?: (on: boolean) => void;
   copyCamera?: () => Promise<string>;
+  copyPlantReport?: () => Promise<string>;
 }
 
 export interface SettingsPanelView {
@@ -521,6 +522,12 @@ function build_(
         return say(savedMessage(actions.save(), new Date()));
       case 'copyLink':
         void actions.copyCamera?.().then(() => say('VIEW LINK COPIED'));
+        return;
+      case 'copyReport':
+        void actions.copyPlantReport?.().then(
+          (message) => say(message.toUpperCase()),
+          () => say('COPY FAILED'),
+        );
         return;
       case 'quitToTitle':
         return actions.quitToTitle();

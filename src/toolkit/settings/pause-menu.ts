@@ -59,6 +59,7 @@ export interface PauseMenuActions {
   noclip?: Readable<boolean>;
   setNoclip?: (on: boolean) => void;
   copyCamera?: () => Promise<string>;
+  copyPlantReport?: () => Promise<string>;
 }
 
 const TABS = ['Game', 'Graphics', 'Audio', 'Controls'] as const;
@@ -254,6 +255,17 @@ export function createPauseMenu(actions: PauseMenuActions) {
       void actions.copyCamera!().then((message) => {
         saved.textContent = message;
       });
+    });
+  if (actions.copyPlantReport)
+    button('Game', 'Copy Plant Report', () => {
+      void actions.copyPlantReport!().then(
+        (message) => {
+          saved.textContent = message;
+        },
+        () => {
+          saved.textContent = 'The report could not be copied here.';
+        },
+      );
     });
   // A panel for VibeTopList's vote button, set into the menu's control
   // panel like one of its own: a brushed steel plate in a hazard border,
