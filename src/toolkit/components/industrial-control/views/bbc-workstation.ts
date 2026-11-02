@@ -10,6 +10,7 @@ import { kitPaint } from '../../core/views/eighties-controls';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import { createWorkstationPowerBox } from '../../architectural/views/workstation-power-box';
 import { createOfficeChair } from '../../site-dressing/views/office-chair';
+import { declareSeat } from '../../../controls/input/seating';
 import { createBbcMicro } from './bbc-micro';
 import { createCubMonitor } from './cub-monitor';
 import { createBbcDiskDrive } from './bbc-disk-drive';
@@ -82,13 +83,26 @@ export function createBbcWorkstation(
     .copy(bbc.group.position)
     .add(new Vector3(-0.31, 0, -0.04));
   const chair = createOfficeChair(1);
-  chair.group.position.set(
+  // A seat to sit on (the owner, 2026-11-02): it faces the desk (-z), so
+  // the chair's model, which stood as it was, is turned back within it.
+  const seat = new Group();
+  seat.position.set(
     bbc.group.position.x,
     0,
     (0.7 * 4.5) / originalMetre + 0.42,
   );
-  chair.group.rotation.y = 0.12;
-  group.add(bbc.group, cub.group, disk.group, chair.group);
+  seat.rotation.y = 0.12 + Math.PI;
+  chair.group.rotation.y = -Math.PI;
+  seat.add(chair.group);
+  declareSeat(seat, {
+    height: 0.45,
+    lookAt: {
+      x: cub.group.position.x,
+      y: cub.group.position.y + 0.2,
+      z: cub.group.position.z,
+    },
+  });
+  group.add(bbc.group, cub.group, disk.group, seat);
   const cable = new Mesh(
     new TubeGeometry(
       new CatmullRomCurve3([

@@ -71,6 +71,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The control room's operator chair at the BBC Micro can be sat on: it declares its seat, facing the Cub monitor within reach of the keyboard.
 - Text selected in the console's log can be copied on a Mac again: pressing Command (or any modifier, or a key while text is selected) no longer sends focus to the command line, which cleared the selection before Cmd+C.
 - The bridge's main viewscreen no longer risks showing black for a page chosen for it (OUTSIDE CONDITIONS, OLYMPIC FILTER WASHING): its own surface is taken away while another page is shown, rather than kept behind it showing a black page (mission 124).
 - The dev panel's World state box now starts on the `dev` slot, labelled "dev (your game)", which is where the game is saved; it offered an unused `game` slot first, so a download or bug report could export no save. The bug report template says the same.
