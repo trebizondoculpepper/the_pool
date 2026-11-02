@@ -15,7 +15,7 @@ import {
   zoneAt,
 } from './dev-corridor-plan';
 
-describe("dev_corridor's plan", () => {
+describe("dev59's plan", () => {
   it('loops: four sides of 50 m bring you back where you started', () => {
     const route = [
       [-LOOP_HALF, -LOOP_HALF],
@@ -106,7 +106,7 @@ describe("dev_corridor's plan", () => {
   });
 });
 
-describe("dev_corridor's doorways", () => {
+describe("dev59's doorways", () => {
   it('arrives in front of a door, facing away from it, and walking back in goes through it', () => {
     for (const door of LOOP_DOORS) {
       const at = arrivalAt(door);

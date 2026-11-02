@@ -1,7 +1,7 @@
 import type { Footprint } from '../toolkit/controls/logic/walk-collision';
 
 /**
- * dev_corridor's plan: a corridor that loops round a square, 50 m a side
+ * dev59's plan: a corridor that loops round a square, 50 m a side
  * on its centre line and 3 m wide, so that walking 50 m, turning, four
  * times over brings you back to where you started (200 m of corridor). It
  * is the hub of the dev rooms: spring doors on its outer walls lead to

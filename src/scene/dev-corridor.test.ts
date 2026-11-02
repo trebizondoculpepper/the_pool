@@ -53,7 +53,7 @@ const VIEWS = {
   corner: { x: -LOOP_HALF, z: -LOOP_HALF, yaw: (3 * Math.PI) / 4 },
 };
 
-describe('dev_corridor', () => {
+describe('dev59', () => {
   it.each(Object.entries(VIEWS))(
     'draws within the budget from a %s, only the zones in view',
     (_name, { x, z, yaw }) => {
@@ -114,8 +114,8 @@ describe('dev_corridor', () => {
     expect(corridor.doors).toHaveLength(LOOP_DOORS.length);
     const rooms = LOOP_ROOMS.filter(Boolean);
     expect(rooms).toContain('dev0');
-    expect(rooms).toContain('dev_pumps');
-    expect(rooms).not.toContain('dev_corridor');
+    expect(rooms).toContain('dev61');
+    expect(rooms).not.toContain('dev59');
     expect(new Set(rooms).size).toBe(rooms.length);
     corridor.parts.dispose();
   });

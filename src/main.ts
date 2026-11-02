@@ -1035,7 +1035,7 @@ const importStarter = async (
     return (await import('./rendering/plant-corridor-room'))
       .startPlantCorridorRoom;
   }
-  if (room === 'dev_corridor' || room === 'dev_courtyard')
+  if (room === 'dev59' || room === 'dev60')
     // One world: the courtyard is walked into from the corridor.
     return (await import('./rendering/dev-corridor-room')).startDevCorridorRoom;
   if (room === 'dev1')
@@ -1177,8 +1177,8 @@ const importStarter = async (
 const starter = createRoomModuleCache(importStarter);
 /** The corridor and the courtyard are one world, kept as one. */
 const keyOf = (room: RoomId) =>
-  room === 'dev_courtyard'
-    ? 'dev_corridor'
+  room === 'dev60'
+    ? 'dev59'
     : room === 'CR_A_ROUND'
       ? 'CR_A_UP'
       : room === 'CR_A_STEPS'
@@ -1480,6 +1480,21 @@ const openRoom = async () => {
     url.search = '';
     history.replaceState(null, '', url);
   }
+  // An old room name (`dev_boiler`, before dev rooms were all numbered)
+  // is shown as the numbered room it became, here and in `from`.
+  {
+    const url = new URL(location.href);
+    let renamed = false;
+    for (const key of ['room', 'from']) {
+      const given = url.searchParams.get(key);
+      const id = resolveRoomId(given);
+      if (given && id && id !== given) {
+        url.searchParams.set(key, id);
+        renamed = true;
+      }
+    }
+    if (renamed) history.replaceState(null, '', url);
+  }
   const params = new URLSearchParams(location.search);
   if (!params.has('room')) {
     noclip.value = false;
@@ -1609,10 +1624,11 @@ window.addEventListener('pool-plant:coordinate-hop', (event) => {
       zoom: number;
     }>
   ).detail;
-  if (!ROOMS.includes(pose.room)) return;
+  const room = resolveRoomId(pose.room);
+  if (!room) return;
   const url = new URL(location.href);
   url.search = new URLSearchParams({
-    room: pose.room,
+    room,
     x: pose.x.toFixed(2),
     y: pose.y.toFixed(2),
     z: pose.z.toFixed(2),
@@ -1946,13 +1962,15 @@ const travel = (event: Event) => {
   const { to, from, through } = (
     event as CustomEvent<{ to: string; from: string; through?: boolean }>
   ).detail;
-  if (!ROOMS.includes(to as RoomId)) return;
+  const room = resolveRoomId(to);
+  if (!room) return;
+  const left = resolveRoomId(from) ?? (from as RoomId);
   const url = new URL(location.href);
   url.search = '';
-  url.searchParams.set('room', to);
-  url.searchParams.set('from', from);
+  url.searchParams.set('room', room);
+  url.searchParams.set('from', left);
   history.pushState(null, '', url);
-  if (through && handOver(to as RoomId, from as RoomId)) return;
+  if (through && handOver(room, left)) return;
   void openRoom().catch(showError);
 };
 const popstate = () => {

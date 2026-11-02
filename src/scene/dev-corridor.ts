@@ -83,8 +83,8 @@ const LOOPED: readonly (RoomId | null)[] = [
   null,
   ...ROOMS.filter(
     (id) =>
-      id !== 'dev_corridor' &&
-      id !== 'dev_courtyard' &&
+      id !== 'dev59' &&
+      id !== 'dev60' &&
       id !== 'plant_corridor' &&
       id !== 'dev11' &&
       !id.startsWith('plant_fit_'),
@@ -95,7 +95,7 @@ export const LOOP_ROOMS: readonly (RoomId | null)[] = LOOP_DOORS.filter(
 ).map((_, i) => LOOPED[i] ?? null);
 
 /**
- * dev_corridor: the corridor that loops round a 50 m square
+ * dev59: the corridor that loops round a 50 m square
  * (`dev-corridor-plan.ts`), in the look of the old underground service
  * corridor (dev7): painted breeze block, blue, purple and teal triangles
  * at the turns, orange marking, industrial signage, a concrete floor and
@@ -146,7 +146,7 @@ export function createDevCorridor(
   }: CorridorOptions = {},
 ) {
   const group = new Group();
-  group.name = 'dev_corridor';
+  group.name = 'dev59';
   const parts = createPartSet();
   const zones = new Map<LoopZone, { group: Group; still: Group }>();
   for (const id of LOOP_ZONES) {

@@ -24,7 +24,7 @@ describe('settings from the address', () => {
     expect(settingsFromUrl('?resolution=')).toEqual({});
     expect(settingsFromUrl('?resolution=Infinity')).toEqual({});
     expect(settingsFromUrl('')).toEqual({});
-    expect(settingsFromUrl('?room=dev_pumps&noclip=1')).toEqual({});
+    expect(settingsFromUrl('?room=dev61&noclip=1')).toEqual({});
     expect(settingsFromUrl('?graphics=ultra')).toEqual({});
   });
 

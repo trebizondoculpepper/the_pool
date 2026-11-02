@@ -78,9 +78,9 @@ export const CORRIDOR_VIEWS: Record<
 };
 
 /**
- * dev_corridor (which took over dev7): the corridor that loops round a
+ * dev59 (which took over dev7): the corridor that loops round a
  * 50 m square, the hub of the dev rooms (`src/scene/dev-corridor.ts`), and
- * the courtyard inside it (dev_courtyard, `dev-courtyard-room.ts`), joined
+ * the courtyard inside it (dev60, `dev-courtyard-room.ts`), joined
  * so that one walks from one to the other through a door (prompt 009,
  * stage B): one renderer, one camera, one controller, and a scene for each
  * room (each lit only by its own lights), the courtyard drawn after the
@@ -99,10 +99,10 @@ export const CORRIDOR_VIEWS: Record<
 export function startDevCorridorRoom(
   canvas: HTMLCanvasElement,
   {
-    id = 'dev_corridor',
+    id = 'dev59',
     ...options
   }: CorridorOptions & {
-    id?: 'dev_corridor' | 'plant_corridor';
+    id?: 'dev59' | 'plant_corridor';
   } = {},
 ) {
   const ceiling = options.ceiling ?? LOOP_CEILING;
@@ -238,9 +238,7 @@ export function startDevCorridorRoom(
   };
   const startRoom = new URLSearchParams(location.search).get('room');
   const startPose = (name: string | null) =>
-    startRoom === 'dev_courtyard'
-      ? (yardPose(name) ?? yardPose('start')!)
-      : pose(name);
+    startRoom === 'dev60' ? (yardPose(name) ?? yardPose('start')!) : pose(name);
   const walk = createFirstPerson({
     scene,
     canvas,
@@ -579,16 +577,14 @@ export function startDevCorridorRoom(
   };
   return Object.assign(dispose, {
     /**
-     * Arrive from room `previous`, or (`room` dev_courtyard, as `?room=`
+     * Arrive from room `previous`, or (`room` dev60, as `?room=`
      * asks) in the courtyard.
      */
     enter(previous: string | null, room?: string) {
       leaving = false;
       const name = new URLSearchParams(location.search).get('view');
       const view =
-        room === 'dev_courtyard'
-          ? (yardPose(name) ?? yardPose('start'))
-          : pose(name);
+        room === 'dev60' ? (yardPose(name) ?? yardPose('start')) : pose(name);
       if (view) {
         walk.place(view.x, view.z, view.yaw, view.pitch);
         return;

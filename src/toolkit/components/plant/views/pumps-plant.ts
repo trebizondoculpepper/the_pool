@@ -47,7 +47,7 @@ import type {
 } from '../logic/end-suction-pump';
 
 /**
- * The pool circulation plant (dev_pumps), in metres, each machine at the
+ * The pool circulation plant (dev61), in metres, each machine at the
  * size of the commercial product it is modelled on
  * (`doc/research/plant-products-pumps-balance.md`), under a maker of the
  * game's own. Floor machines stand on the floor at their origin, their

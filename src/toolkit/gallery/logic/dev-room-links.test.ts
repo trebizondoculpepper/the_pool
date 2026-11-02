@@ -3,7 +3,9 @@ import {
   CHAIN,
   DEV_ROOM_COLOURS,
   DEV_ROOM_NAMES,
+  DEV_ROOMS,
   ROOMS,
+  ROOM_ALIASES,
   devPortals,
   devWalls,
   resolveRoomId,
@@ -12,15 +14,11 @@ import { slide } from '../../controls/logic/walk-collision';
 
 const bounds = { minX: -5, maxX: 5, minZ: -5, maxZ: 5 };
 describe('the rooms', () => {
-  it('lead every room in the chain back to dev_corridor, its hub', () => {
+  it('lead every room in the chain back to dev59, its hub', () => {
     for (const id of CHAIN) {
       const to = devPortals(id, bounds, 1).map((p) => p.to);
       expect(to).toEqual(
-        id === 'dev_corridor'
-          ? []
-          : id === 'dev16'
-            ? ['dev_corridor', 'dev18']
-            : ['dev_corridor'],
+        id === 'dev59' ? [] : id === 'dev16' ? ['dev59', 'dev18'] : ['dev59'],
       );
     }
   });
@@ -59,6 +57,43 @@ describe('the rooms', () => {
   it('resolves only the rooms it has', () => {
     expect(resolveRoomId('dev7')).toBe('dev7');
     expect(resolveRoomId('nowhere')).toBeUndefined();
+  });
+
+  it('gives every dev room a number, and may give it a name', () => {
+    const dev = ROOMS.filter((id) => id.startsWith('dev'));
+    expect(dev).toEqual(expect.arrayContaining([...DEV_ROOMS]));
+    for (const id of dev) {
+      expect(id).toMatch(/^dev\d+[a-z]?(_\d+)?$/);
+      expect(DEV_ROOM_NAMES[id]).toMatch(
+        new RegExp(`^${id.replace(/_\d+$/, '').toUpperCase()}( · |$)`),
+      );
+    }
+  });
+
+  it('resolves every old name to the numbered room it became', () => {
+    expect(Object.keys(ROOM_ALIASES).sort()).toEqual(
+      [
+        'dev_air',
+        'dev_balance',
+        'dev_boiler',
+        'dev_chemicals',
+        'dev_control',
+        'dev_corridor',
+        'dev_courtyard',
+        'dev_dosing',
+        'dev_electrical',
+        'dev_ozone',
+        'dev_pumps',
+      ].sort(),
+    );
+    for (const [old, id] of Object.entries(ROOM_ALIASES)) {
+      expect(ROOMS).not.toContain(old);
+      expect(ROOMS).toContain(id);
+      expect(resolveRoomId(old)).toBe(id);
+    }
+    expect(resolveRoomId('dev_boiler')).toBe('dev65');
+    expect(DEV_ROOM_NAMES.dev65).toBe('DEV65 · BOILER ROOM');
+    expect(resolveRoomId('toString')).toBeUndefined();
   });
 
   it('have solid walls all round, portals or none', () => {

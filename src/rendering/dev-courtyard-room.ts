@@ -56,7 +56,7 @@ const PEDESTAL_SKIES: readonly {
 ];
 
 /**
- * dev_courtyard: the light well in the middle of the office block, open to
+ * dev60: the light well in the middle of the office block, open to
  * the sky (`src/scene/dev-courtyard.ts`), the dev room for skies, as a room
  * module: it has no renderer, canvas or controls of its own, but a scene
  * of its own (its daylight lights only it) that the corridor's room draws
@@ -80,7 +80,7 @@ export function createDevCourtyardRoom(
   const freeEnvironment = useEnvironment(renderer, scene, 0.15);
   /** Everything of the courtyard's, turned and placed by `place`. */
   const root = new Group();
-  root.name = 'dev_courtyard root';
+  root.name = 'dev60 root';
   scene.add(root);
   const courtyard = createDevCourtyard(kit);
   courtyard.group.scale.setScalar(m);

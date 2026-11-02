@@ -21,7 +21,7 @@ import { createMagFlowmeter } from './mag-flowmeter';
 import { FLOWMETER, METER } from '../logic/booster-set';
 
 /**
- * The balance tank room's plant (dev_balance), in metres, each modelled
+ * The balance tank room's plant (dev62), in metres, each modelled
  * on a commercial product (`doc/research/plant-products-pumps-balance.md`)
  * under a maker of the game's own. Floor machines stand on the floor at
  * their origin, their front toward +z; wall equipment has its back at

@@ -8,7 +8,7 @@ import {
 import type { LoopSide } from './dev-corridor-plan';
 
 /**
- * How the courtyard (dev_courtyard) is joined to the corridor (dev_corridor)
+ * How the courtyard (dev60) is joined to the corridor (dev59)
  * so that one can walk from one to the other. They do not fit: the
  * courtyard is an 18 m square, the space inside the loop 47 m. So the
  * courtyard is put, in the corridor's frame, behind whichever of the four

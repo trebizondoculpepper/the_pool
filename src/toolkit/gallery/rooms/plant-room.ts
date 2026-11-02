@@ -164,15 +164,15 @@ const EXHIBITS: Record<
     START?: { x: number; z: number; yaw: number };
   }>
 > = {
-  dev_pumps: () => import('./plant/pumps'),
-  dev_balance: () => import('./plant/balance'),
-  dev_chemicals: () => import('./plant/chemicals'),
-  dev_dosing: () => import('./plant/dosing'),
-  dev_boiler: () => import('./plant/boiler'),
-  dev_air: () => import('./plant/air'),
-  dev_electrical: () => import('./plant/electrical'),
-  dev_control: () => import('./plant/control'),
-  dev_ozone: () => import('./plant/ozone'),
+  dev61: () => import('./plant/pumps'),
+  dev62: () => import('./plant/balance'),
+  dev63: () => import('./plant/chemicals'),
+  dev64: () => import('./plant/dosing'),
+  dev65: () => import('./plant/boiler'),
+  dev66: () => import('./plant/air'),
+  dev67: () => import('./plant/electrical'),
+  dev68: () => import('./plant/control'),
+  dev69: () => import('./plant/ozone'),
   dev10: () => import('./plant/services'),
   dev12: () => import('./plant/pool-fittings'),
   dev13: () => import('./plant/signage'),
@@ -219,7 +219,7 @@ const EXHIBITS: Record<
  */
 const SERVICE_CEILINGS: Partial<Record<ExhibitRoomId, ServiceCeilingOptions>> =
   {
-    dev_pumps: { seed: 11, acoustic: true },
+    dev61: { seed: 11, acoustic: true },
   };
 /** The least clear height under a services ceiling's lowest layer. */
 const SERVICE_CLEAR = 4;
@@ -231,7 +231,7 @@ const SERVICE_ZONE = BEAM_DEPTH + 1.45;
  * plant rooms, each piece modelled at true size from a referenced product
  * and shown with its name and reference, in a plain concrete-and-blockwork
  * room (`layoutPlantRoom`). Its one way out is a spring door to
- * dev_corridor. The room is built while its exhibits load, and they appear
+ * dev59. The room is built while its exhibits load, and they appear
  * when they arrive.
  */
 export function startEquipmentRoom(

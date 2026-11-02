@@ -45,8 +45,8 @@ export const COURTYARD_HEIGHT =
   COURTYARD_STOREYS.reduce((a, b) => a + b, 0) + 0.7;
 
 /**
- * dev_courtyard: the light well in the middle of the office block that
- * dev_corridor loops round, an 18 m square three storeys deep and open to
+ * dev60: the light well in the middle of the office block that
+ * dev59 loops round, an 18 m square three storeys deep and open to
  * the sky, where the staff go out to smoke. Its four walls are the
  * building's inner facades, blank buff brick on the ground floor (the
  * corridor behind it has no windows) with a spring door in the middle of
@@ -59,7 +59,7 @@ export const COURTYARD_HEIGHT =
  */
 export function createDevCourtyard(kit: PanelKit) {
   const group = new Group();
-  group.name = 'dev_courtyard';
+  group.name = 'dev60';
   const still = new Group();
   group.add(still);
   const parts = createPartSet();

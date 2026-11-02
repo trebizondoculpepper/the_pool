@@ -1,5 +1,5 @@
 /**
- * The skies the courtyard (dev_courtyard) shows over its open top, as
+ * The skies the courtyard (dev60) shows over its open top, as
  * presets a sky shader and the room's lights are drawn from, and how one
  * gives way to the next. Pure logic: colours as [r, g, b] in 0 to 1
  * (linear-ish, as the shader takes them), angles in radians.

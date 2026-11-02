@@ -10,7 +10,7 @@ import {
 } from '../../components/general-safety/logic/gas-detection';
 /**
  * A scripted state of the pool plant for the control room's development
- * room (dev_control), so that its instruments have something real to show
+ * room (dev68), so that its instruments have something real to show
  * until the plant is simulated: a four-minute loop in which filter 2
  * slowly blocks, the hall's humidity drifts high and the free chlorine
  * dips low, each raising its alarm, while everything else runs normally.

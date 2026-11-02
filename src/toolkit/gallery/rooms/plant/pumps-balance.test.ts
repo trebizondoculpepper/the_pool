@@ -48,8 +48,8 @@ afterEach(() => vi.unstubAllGlobals());
 const SLACK = 0.15;
 
 describe.each([
-  ['dev_pumps', PUMPS],
-  ['dev_balance', BALANCE],
+  ['dev61', PUMPS],
+  ['dev62', BALANCE],
   ['dev12', POOL_FITTINGS],
 ])('the %s exhibits', (_, exhibits) => {
   it.each(exhibits.map((e) => [e.title, e] as const))(

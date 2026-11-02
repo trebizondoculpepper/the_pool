@@ -51,7 +51,7 @@ describe('portals', () => {
     portals.update(0.1, stop.x, west.z);
     expect(dispatchEvent).toHaveBeenCalledOnce();
     expect(dispatchEvent.mock.calls[0][0].detail).toEqual({
-      to: 'dev_corridor',
+      to: 'dev59',
       from: 'dev1',
     });
     portals.update(0.1, stop.x, west.z);
@@ -91,7 +91,7 @@ describe('portals', () => {
   it('stand an arrival clear of the way out, facing into the room', () => {
     const links = devPortals('dev1', bounds, 1);
     const portals = createPortals('dev1', links, 0, 1);
-    const pose = portals.arrival('dev_corridor')!;
+    const pose = portals.arrival('dev59')!;
     expect(pose.x).toBeCloseTo(-5 + 0.15 + 1.2);
     expect(pose.z).toBeCloseTo(links[0].z);
     expect(Math.sin(pose.yaw)).toBeCloseTo(1);

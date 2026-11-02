@@ -4,7 +4,7 @@ import type { MuseumHallId } from './museum-plan';
 
 /**
  * How the rooms join. The development rooms are separate rooms, each with a
- * single way out: a spring door back to dev_corridor, the corridor that
+ * single way out: a spring door back to dev59, the corridor that
  * loops round a square and has a door to every other room
  * (`src/scene/dev-corridor.ts` gives its doors to `ROOMS` in order). The
  * courtyard is walked into from the corridor. Adapted from the
@@ -81,18 +81,18 @@ export type GalleryRoomId =
   | 'dev58'
   | 'retired0'
   | 'retired1'
-  | 'dev_corridor';
+  | 'dev59';
 /** One development room per pool plant room, each showing its equipment. */
 export type EquipmentRoomId =
-  | 'dev_pumps'
-  | 'dev_balance'
-  | 'dev_chemicals'
-  | 'dev_dosing'
-  | 'dev_boiler'
-  | 'dev_air'
-  | 'dev_electrical'
-  | 'dev_control'
-  | 'dev_ozone';
+  | 'dev61'
+  | 'dev62'
+  | 'dev63'
+  | 'dev64'
+  | 'dev65'
+  | 'dev66'
+  | 'dev67'
+  | 'dev68'
+  | 'dev69';
 export type DevRoomId = GalleryRoomId | EquipmentRoomId;
 /** The main plant room alone at each trial size, metres a side (`plant-fit-room.ts`). */
 export const PLANT_FIT_SIZES = [47, 42, 40, 37] as const;
@@ -102,7 +102,7 @@ export const PLANT_FIT_ROOMS: readonly PlantFitRoomId[] = PLANT_FIT_SIZES.map(
 );
 export type RoomId =
   | DevRoomId
-  | 'dev_courtyard'
+  | 'dev60'
   | 'PR_A'
   | 'CR_A_UP'
   | 'CR_A_ROUND'
@@ -160,15 +160,15 @@ export interface Portal {
 }
 
 export const EQUIPMENT_ROOMS: readonly EquipmentRoomId[] = [
-  'dev_pumps',
-  'dev_balance',
-  'dev_chemicals',
-  'dev_dosing',
-  'dev_boiler',
-  'dev_air',
-  'dev_electrical',
-  'dev_control',
-  'dev_ozone',
+  'dev61',
+  'dev62',
+  'dev63',
+  'dev64',
+  'dev65',
+  'dev66',
+  'dev67',
+  'dev68',
+  'dev69',
 ];
 
 /** The development rooms, in order. */
@@ -192,23 +192,23 @@ export const DEV_ROOMS: readonly DevRoomId[] = [
   'dev16',
   'dev17',
   'dev19',
-  'dev_corridor',
+  'dev59',
   ...EQUIPMENT_ROOMS,
 ];
 
-/** The rooms whose way out is a door to dev_corridor. */
+/** The rooms whose way out is a door to dev59. */
 export const CHAIN: readonly RoomId[] = DEV_ROOMS.filter(
   (id) => id !== 'dev11',
 );
 
 /**
- * Every room with a URL of its own, in the order dev_corridor's doors
+ * Every room with a URL of its own, in the order dev59's doors
  * take them (the corridor and courtyard themselves are skipped).
  */
 export const ROOMS: readonly RoomId[] = [
   ...DEV_ROOMS,
-  // Reached through dev_corridor's courtyard doors, not by a portal.
-  'dev_courtyard',
+  // Reached through dev59's courtyard doors, not by a portal.
+  'dev60',
   // Reached through dev16, not from the corridor: its security office.
   'dev18',
   // By its URL only: Dev19 plumbed by Codex's rules, and the best of a
@@ -372,8 +372,28 @@ export const ROOMS: readonly RoomId[] = [
   ...PLANT_FIT_ROOMS,
 ];
 
-/** A room id from a URL, if it names one. */
+/**
+ * The dev rooms' old names, from before every dev room had a number (the
+ * owner, 2026-11-02), each to the numbered room it became: old links,
+ * saved places and shots still find their rooms through it.
+ */
+export const ROOM_ALIASES: Readonly<Record<string, RoomId>> = {
+  dev_corridor: 'dev59',
+  dev_courtyard: 'dev60',
+  dev_pumps: 'dev61',
+  dev_balance: 'dev62',
+  dev_chemicals: 'dev63',
+  dev_dosing: 'dev64',
+  dev_boiler: 'dev65',
+  dev_air: 'dev66',
+  dev_electrical: 'dev67',
+  dev_control: 'dev68',
+  dev_ozone: 'dev69',
+};
+
+/** A room id from a URL, if it names one, an old name as the room it became. */
 export function resolveRoomId(id: string | null): RoomId | undefined {
+  if (id !== null && Object.hasOwn(ROOM_ALIASES, id)) return ROOM_ALIASES[id];
   return ROOMS.includes(id as RoomId) ? (id as RoomId) : undefined;
 }
 
@@ -491,17 +511,17 @@ export const DEV_ROOM_NAMES: Record<RoomId, string> = {
   dev58: 'DEV58 · DOSING: THE AQUALIS CONTROLLER',
   retired0: 'RETIRED0 · OLYMPIC PLANT ROOM, 2026-10-23',
   retired1: 'RETIRED1 · JACUZZI PLANT ROOM, 2026-10-25',
-  dev_corridor: 'DEV CORRIDOR',
-  dev_courtyard: 'COURTYARD',
-  dev_pumps: 'DEV · PUMPS AND FILTRATION',
-  dev_balance: 'DEV · BALANCE TANKS',
-  dev_chemicals: 'DEV · CHEMICAL STORE',
-  dev_dosing: 'DEV · DOSING',
-  dev_boiler: 'DEV · BOILER ROOM',
-  dev_air: 'DEV · AIR HANDLING',
-  dev_electrical: 'DEV · ELECTRICAL',
-  dev_control: 'DEV · CONTROL CENTRE',
-  dev_ozone: 'DEV · OZONE',
+  dev59: 'DEV59 · DEV CORRIDOR',
+  dev60: 'DEV60 · COURTYARD',
+  dev61: 'DEV61 · PUMPS AND FILTRATION',
+  dev62: 'DEV62 · BALANCE TANKS',
+  dev63: 'DEV63 · CHEMICAL STORE',
+  dev64: 'DEV64 · DOSING',
+  dev65: 'DEV65 · BOILER ROOM',
+  dev66: 'DEV66 · AIR HANDLING',
+  dev67: 'DEV67 · ELECTRICAL',
+  dev68: 'DEV68 · CONTROL CENTRE',
+  dev69: 'DEV69 · OZONE',
   museum0: hallName('museum0'),
   museum1: hallName('museum1'),
   museum2: hallName('museum2'),
@@ -628,17 +648,17 @@ export const DEV_ROOM_COLOURS: Record<RoomId, string> = {
   dev58: '#1f7fd6',
   retired0: '#6d7a6f',
   retired1: '#6d7a6f',
-  dev_corridor: '#2d9ca0',
-  dev_courtyard: '#7fa36a',
-  dev_pumps: '#2f6fb0',
-  dev_balance: '#4a9bb8',
-  dev_chemicals: '#d1a21c',
-  dev_dosing: '#8c6bc4',
-  dev_boiler: '#c75a2f',
-  dev_air: '#6e9f7a',
-  dev_electrical: '#d47f1f',
-  dev_control: '#5c6f86',
-  dev_ozone: '#4b5fc1',
+  dev59: '#2d9ca0',
+  dev60: '#7fa36a',
+  dev61: '#2f6fb0',
+  dev62: '#4a9bb8',
+  dev63: '#d1a21c',
+  dev64: '#8c6bc4',
+  dev65: '#c75a2f',
+  dev66: '#6e9f7a',
+  dev67: '#d47f1f',
+  dev68: '#5c6f86',
+  dev69: '#4b5fc1',
   museum0: '#2a9d96',
   museum1: '#2a9d96',
   museum2: '#2a9d96',
@@ -655,7 +675,7 @@ export const WALL_THICKNESS = 0.3;
 
 /**
  * A room's way out, in scene units (`metre` per metre): since the dev
- * rooms were wired to dev_corridor's doors (`doc/prompts/009`), every room
+ * rooms were wired to dev59's doors (`doc/prompts/009`), every room
  * has a single way out, a spring door back to the corridor, which leads
  * round the loop to every other: on its west wall near its south end
  * (dev3 on its north wall, clear of the doors already there). The
@@ -685,7 +705,7 @@ export function devPortals(
   if (id === 'dev16')
     return [
       {
-        to: 'dev_corridor',
+        to: 'dev59',
         side: 'west',
         x: bounds.minX,
         z: bounds.maxZ - 1.1 * metre,
@@ -697,8 +717,8 @@ export function devPortals(
         z: bounds.maxZ - 1.1 * metre,
       },
     ];
-  if (!CHAIN.includes(id) || id === 'dev_corridor') return [];
-  const to: RoomId = 'dev_corridor';
+  if (!CHAIN.includes(id) || id === 'dev59') return [];
+  const to: RoomId = 'dev59';
   // In dev3, in the north wall's corner, clear of the doors shown there.
   if (id === 'dev3')
     return [
