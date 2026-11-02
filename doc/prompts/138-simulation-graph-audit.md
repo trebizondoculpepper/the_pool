@@ -1,6 +1,6 @@
 # 138: The simulation graph audit
 
-The owner, 2026-11-02: one more kind of audit before the audit itself (132) begins. Brief only; not started until the owner says. Read `CLAUDE.md`, `doc/plant-model.md`, then 126, 127, 129, 130 and 131.
+The owner, 2026-11-02: one more kind of audit before the audit itself (132) begins. Brief only; not started until the owner says. The plan is `doc/plans/138-simulation-graph-audit.md`. Read `CLAUDE.md`, `doc/plant-model.md`, then 126, 127, 129, 130 and 131.
 
 ## What it is for
 
@@ -8,37 +8,37 @@ From any node of the simulation, find out what it does in the world: which objec
 
 ## The nodes
 
-The simulation's graph as the code already has it: the plant model's blocks within blocks, each addressed by path (`src/game/sim/blocks.ts`, `doc/plant-model.md`: `boilerHouse/B-501/controller`, a field after `:`), each room's enhanced network (nodes, fittings and links of the schematics, as the plumber builds them), and the electrical supply (`src/game/plant/electrical.ts`, `services.ts`, `installed-feeders.ts`: feeders, isolators, distribution). **In scope (the owner, 2026-11-02): every domain of the simulation:** electrical (feeders, isolators, distribution, motors and loads), heating (the boilers and their cascade, the LTHW ring, heat exchangers, each consumer's heat demand), hydrodynamic (pumps, pipes, valves, filters, tanks, flows and levels) chemical (dosing, stores, day tanks, the water's chemistry and the air's), and control and warning systems (controllers, sequencers, programmes and interlocks; sensors and their signals; alarms, annunciators, lamps and the control rooms' copies of them). They join wherever one domain drives another (a pump's motor is a load on a feeder and moves water; a boiler burns gas and heats the ring; a dosing pump moves chemical into a circuit), and the impact search crosses those joins. The plan settles how each domain's graph is read from the code and how the joins are found, not invented; world state outside the four domains (doors, lights, the bridge's displays) appears as leaf nodes, so a door is shown reaching only itself.
+The simulation's graph as the code already has it: the plant model's blocks within blocks, each addressed by path (`src/game/sim/blocks.ts`, `doc/plant-model.md`: `boilerHouse/B-501/controller`, a field after `:`), each room's enhanced network (nodes, fittings and links of the schematics, as the plumber builds them), and the electrical supply (`src/game/plant/electrical.ts`, `services.ts`, `installed-feeders.ts`: feeders, isolators, distribution). **In scope (the owner, 2026-11-02): every domain of the simulation:** electrical (feeders, isolators, distribution, motors and loads), heating (the boilers and their cascade, the LTHW ring, heat exchangers, each consumer's heat demand), hydrodynamic (pumps, pipes, valves, filters, tanks, flows and levels) chemical (dosing, stores, day tanks, the water's chemistry and the air's), and control and warning systems (controllers, sequencers, programmes and interlocks; sensors and their signals; alarms, annunciators, lamps and the control rooms' copies of them). They join wherever one domain drives another (a pump's motor is a load on a feeder and moves water; a boiler burns gas and heats the ring; a dosing pump moves chemical into a circuit), and the pages show those joins. The plan settles how each domain's graph is read from the code and how the joins are found, not invented; world state outside the four domains (doors, lights, the bridge's displays) appears as leaf nodes, so a door is shown reaching only itself.
 
-## The page, simple version (first)
+## The page: seven sections (the owner, 2026-11-02)
 
-A development page per node, reached from the model node column of the room audit (129) and the item audit (130), and from a new **Simulation** category in the `?dev` catalogue (126) that lists the nodes by graph and path, searchable. For each node, what can be read directly from the node:
+A development page per node, reached from the model node column of the room audit (129) and the item audit (130), and from a new **Simulation** category in the `?dev` catalogue (126) that lists the nodes by domain, room and path, searchable, with a `bench.html` route like the other audits. This is the simulation's own view, a development tool, and says so: the no-peeking rule does not apply. Each node's page has seven sections:
 
-- **What it is:** its path, its kind (block, fitting, link, feeder…), its room, its tag where it has one, and its state fields with their current values in a fresh world (the no-peeking rule does not apply here: this is the simulation's own view, a development tool, and says so).
-- **Its ports** (the owner, 2026-11-02): every port the node shows the world (`doc/plant-model.md`: a block shows the world only its ports), each with its direction and what it carries (water, heat, power, signal), and what it joins on the far side, each a link.
-- **Its states, where known** (the owner, 2026-11-02): each state field, its possible values or range where the model or 131's descriptors define them (open, shut, travelling; stopped, running, tripped; 0 to 100 %), and its value now.
-- **Bound to:** every object in the game world bound to it (by its model binding in the scene marks, the register, and 131's descriptors), each with its look link (125), its room audit row (129) and its item audit (130).
-- **Upstream:** the nodes that feed it directly (its inputs through its ports, its supply, its controller, the controls whose world actions set it, per 131's `targets`), each a link to its own page.
-- **Downstream:** the nodes it feeds directly, each a link.
-- **Controlled by:** the controls in the world that act on it, with where they are.
+1. **What is it:** its path, domain, kind, room, tag, derived name and description, and the maker of the object bound to it.
+2. **How does it connect:** its ports (`doc/plant-model.md`: a block shows the world only its ports), each with its direction and medium (water, heat, power, chemical, signal, alarm) and what it joins on the far side, each a link to that node's page.
+3. **What state does it hold:** each field with its type, units, range or possible values where known, its normal state from the schematic, its current value in a fresh world, and whether it is saved in the world.
+4. **What makes it change:** what drives its state (its inputs, physics, a controller, a control), whether instantly or over time, the faults and trips it models (the status-words rule: On/Off unless faults are modelled), and the event-log lines it produces.
+5. **What is it related to:** its direct upstream and downstream only, the controls acting on it, the sensors reading it, and the alarms it can raise and on which annunciators.
+6. **Where does it appear in the world:** its bound objects (look links, room audit and item audit rows), the displays, lamps and mimics showing it in its own room and in both control rooms, and whether the player can see it and act on it.
+7. **Is anything wrong with it:** flags for invisible (simulated, nothing shows it), uncontrollable (its kind should be workable but nothing acts on it), no effect (nothing downstream), no source (nothing upstream), an alarm not on both control rooms (every warning shows on the old control room and the bridge), and a missing or duplicate tag.
 
-## The impact search, later version (second)
+## The impact search: a later mission
 
-A search from the node along the graph, downstream (and, as a separate view, upstream), through every edge kind (water, heat, power, chemical, signal, control, alarm), that lists every object in the world the node can potentially affect, directly or indirectly: by room, by kind, with counts and the path by which each is reached (so "why does the main power reach this gauge?" has an answer). Its result for the main incoming supply should be most of the plant; for a door, just the door. It shows what fraction of the world's bound objects a node reaches, and can be sorted to find the nodes with the widest and narrowest reach, and nodes that reach nothing in the world at all.
+Deferred by the owner (2026-11-02), as potentially very large: a search from a node along the graph, downstream and upstream, through every edge kind, listing every object in the world the node can affect directly or indirectly, with the path by which each is reached (the main supply reaching most of the plant, a door only itself). This mission leaves a clean hook for it (the graph's direct-neighbour function and edges carrying their medium and evidence) and builds no walk and records no counts.
 
 ## Shared with the rest
 
-Reuses 126's catalogue, 127's scene marks, 129's connection graph (its drawn / model only / boundary labels) and 131's descriptors; the graph walk is one pure module in `logic/`, tested, which 129's "connects to" column and 134's plant-wide diagnostics could also use. Built from data, not by building scenes, except where a binding is only known from a scene (then by 127's scanner, one room at a time, on demand).
+Reuses 126's catalogue, 127's scene marks, 129's connection graph (its drawn / model only / boundary labels) and 131's descriptors; the graph (its nodes, edges and direct neighbours) is one pure module in `logic/`, tested, which 129's connections column and 134's `plant-connections.ts` could also use. Built from data, not by building scenes, except where a binding is only known from a scene (then by 127's scanner, one room at a time, on demand).
 
 ## Scope
 
-Machinery only (the owner's standing rule for the audits): prove it on a few nodes, for example a Jacuzzi plant room valve, the Jacuzzi cabinet's pump, the main incoming supply (for the impact search) and a door. No whole-game run, no counts recorded; the audit itself is 132's.
+Machinery only (the owner's standing rule for the audits): prove it on a few nodes, for example a Jacuzzi plant room valve, the Jacuzzi cabinet's pump, the main incoming supply, an alarm and its annunciator point, and a door as a leaf. No whole-game run, no counts recorded; the audit itself is 132's.
 
 ## Acceptance
 
-- Simple version: each of the example nodes has a page listing its bindings, its direct upstream and downstream, and its controls, all as links that lead to each other's pages and to the world objects.
-- Impact search: the main supply reaches most of the plant's bound objects, a Jacuzzi valve reaches the Jacuzzi's circuit and its displays, a door reaches only itself, each with the path shown.
-- Pure parts (the graph join, the direct neighbours, the walk) in `logic/` with tests beside them.
+- Each example node (a Jacuzzi plant room valve, the Jacuzzi cabinet's pump, the main incoming supply, an alarm point, a door) has a page with all seven sections, every neighbour, control, alarm and bound object a link to its own page or to the world object.
+- The door's page shows it reaching only itself; the alarm's shows whether it reaches both control rooms.
+- Pure parts (the graph, the joins between domains, the direct neighbours, the sections' data, the flags) in `logic/` with tests beside them; the impact search's hook in place, unimplemented.
 
 ## Records
 
