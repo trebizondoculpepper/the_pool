@@ -146,6 +146,8 @@ Bound objects: 127's scene marks and the room's `world-in-model` binding (`{ nod
 
 ### 4.6a The reverse: from an object to its nodes (the owner, 2026-11-02)
 
+**Deferred (the owner, 2026-11-02): not in this mission.** The reverse links, from an object's audit (129's rows, 130's placements) to its nodes, are a later to-do in `TODO.md`. What follows is kept as the design for then. This mission keeps only the declared part data the forward graph itself needs (the pump part's route through the cabinet's ports, the annunciator windows' alarms, the feeder parts), and adds no node links or flags to 129's or 130's pages.
+
 Every object's audit (its row in its room's audit, 129, and each placement on its kind's item audit, 130) shows the simulation nodes bound to it, each a link through `resolveRef` (section 2). An object binds at most one node at its own level (a valve to its fitting, a pump to its block, an annunciator to its own power and fault-relay node), and its ports line up with that node's ports, listed beside them. Composite objects bind more through their named parts, each part to its own node (a mimic board's lamps and readouts to the alarm and reading nodes they show; the Jacuzzi cabinet's pump part to `part:cabinet/pump`), listed under the part. Architectural objects say they are not simulated; members of a group say which group node they belong to (2a).
 
 **The data contract.** Today 127's `TargetRecord` has one object-level `model` ref and `parts: string[]` (labels only); 129's `AuditRow` has the same one `model`; 131's `Reading` has no model ref. Nothing yet maps a part or a port to a node, so this mission declares that mapping itself and offers the fields to their owners:
