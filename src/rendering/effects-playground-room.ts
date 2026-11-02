@@ -53,6 +53,7 @@ import type {
   EffectSettings,
 } from '../game/effect-settings';
 import { createTeleprinter } from '../toolkit/components/industrial-control/views/teleprinter';
+import { mightyPrintParts } from '../toolkit/components/industrial-control/parts/mightyprint';
 import { createCanvasTexture } from '../toolkit/components/core/views/screens';
 import { createFirstPerson } from '../toolkit/controls/input/first-person';
 import {
@@ -1389,6 +1390,9 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
     stand: true,
     drop: STAND,
   });
+  // Its panel: ON LINE, FORM FEED and LINE FEED buttons and the power
+  // rocker, worked like the effects consoles' (the `controls` map below).
+  const teletypeParts = mightyPrintParts(kit, teletype);
   teletype.group.scale.setScalar(m);
   // Beyond the right-hand desk's end.
   teletype.group.position.set((desksW / 2 + 0.55) * m, STAND * m, 3.1 * m);
@@ -1518,6 +1522,7 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
     ...desk.uses,
     ...passages.uses,
     ...panels.flatMap((panel) => [...panel.uses]),
+    ...teletypeParts.uses,
   ]);
 
   const notes = document.createElement('div');
@@ -1708,6 +1713,7 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
     for (const panel of panels)
       panel.update(seconds, delta, reducedMotion.matches);
     teletype.update(delta, reducedMotion.matches);
+    teletypeParts.update(delta);
     walk.update(delta);
     passages.update(delta, walk.walker.x, walk.walker.z, !walk.following);
     patterns.step(delta);
@@ -1758,6 +1764,7 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
     for (const panel of panels) panel.dispose();
     reflections.dispose();
     teletype.dispose();
+    teletypeParts.dispose();
     for (const mesh of shown.values()) mesh.material.dispose();
     apparitionGeometry.dispose();
     echoes.dispose();

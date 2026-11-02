@@ -76,7 +76,7 @@ const FACE_METRES = (FACE_H / DPI) * 0.0254;
 const PAPER = '#ded7b6';
 const HOLE = '#9d957c';
 const PERF = '#c1b99d';
-const INK = '#353c38';
+const INK = '#141815';
 
 /** The print line: column 0 at the left margin, 80 columns at 10 to the inch. */
 const MARGIN_PX = 54;

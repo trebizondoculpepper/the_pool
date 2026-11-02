@@ -2,38 +2,45 @@ import { signal } from '@preact/signals-core';
 import { markComponent } from '../../core/views/component-identity';
 import { beginPart } from '../../core/parts/parts';
 import type { Part } from '../../core/parts/parts';
-import { click, partAudio } from '../../core/audio/part-audio';
-import type { LoopRecipe } from '../../core/audio/part-audio';
-import { noiseSource } from '../../core/audio/part-loops';
+import { click, partAudio, recording } from '../../core/audio/part-audio';
+import type { LoopRecipe, SoundRecipe } from '../../core/audio/part-audio';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import type { TeleprinterView } from '../views/teleprinter';
 import type { PrinterLamps } from '../logic/dot-matrix-printer';
 
 /**
- * The MightyPrint 80's head printing: a 9-pin head's rasp, its noise
- * buzzed at the rate its pins fire. Synthesised for now; a recording of an
- * FX-80 is a follow-up (`TODO.md`).
+ * The MightyPrint 80's head printing: distinct 0.70-second excerpts of a
+ * real Star LC-10 dot-matrix printer (Priwo's public-domain recording,
+ * `CREDITS.md` and the audio asset record), shuffled so every variant is
+ * used once per set and no two repeats are adjacent. One plays at each
+ * printed line's start, not every frame.
  */
-const DOT_MATRIX: LoopRecipe = (context, out) => {
-  const rasp = noiseSource(context);
-  const band = context.createBiquadFilter();
-  band.type = 'bandpass';
-  band.frequency.value = 2900;
-  band.Q.value = 1.1;
-  const level = context.createGain();
-  level.gain.value = 0.025;
-  // The pins strike in bursts, about 160 characters a second.
-  const pins = context.createOscillator();
-  pins.type = 'square';
-  pins.frequency.value = 160;
-  const depth = context.createGain();
-  depth.gain.value = 0.02;
-  pins.connect(depth).connect(level.gain);
-  rasp.connect(band).connect(level).connect(out);
-  rasp.start();
-  pins.start();
-  return [rasp, pins];
-};
+const LINE_SOUNDS: SoundRecipe[] = [1, 2, 3, 4, 5].map((i) =>
+  recording(
+    new URL(`../../core/audio/assets/printer-line-${i}.wav`, import.meta.url),
+    0.11,
+  ),
+);
+
+/** Every recorded line once per shuffled set, with no adjacent repeats. */
+function createLineSoundPicker(random: () => number = Math.random) {
+  let bag: number[] = [];
+  let previous = -1;
+  return () => {
+    if (!bag.length) {
+      bag = LINE_SOUNDS.map((_, index) => index);
+      for (let i = bag.length - 1; i > 0; i--) {
+        const j = Math.floor(random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+      }
+      // Selection removes the last item; keep set boundaries distinct too.
+      const last = bag.length - 1;
+      if (bag[last] === previous) [bag[0], bag[last]] = [bag[last], bag[0]];
+    }
+    previous = bag.pop()!;
+    return LINE_SOUNDS[previous];
+  };
+}
 
 /** Its paper-feed motor stepping the platen round. */
 const PAPER_FEED: LoopRecipe = (context, out) => {
@@ -155,13 +162,17 @@ export function mightyPrintParts(
       key: `${a.object.uuid}:${id}`,
     });
   }
-  const printing = signal(false);
   const feeding = signal(false);
-  a.holdWhile(printing, DOT_MATRIX, printer.group);
   a.holdWhile(feeding, PAPER_FEED, printer.group);
+  const pickLine = createLineSoundPicker();
+  // One recorded line sound at each printed line's start (not every frame,
+  // and not for the paper's own feeds, which the feed motor voices).
+  let wasPrinting = false;
   a.updates.push(() => {
-    printing.value = machine.printing;
     feeding.value = machine.feeding;
+    if (machine.printing && !wasPrinting)
+      partAudio.play(pickLine(), printer.group);
+    wasPrinting = machine.printing;
   });
   return a.part();
 }

@@ -87,6 +87,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - The old control room's Fresh Water Distribution mimic (CR-MP4) is drawn, a remote copy without the booster's RESET: it had been a placeholder (the owner, 2026-11-01).
 - The Olympic plant room has its own annunciator again, PL2-CP5, the twin of the control room's: on the south wall over the deck-level landing, at eye height for someone standing on the landing by the pool door, fed from the room's local control panel (the owner, 2026-11-01: mission 099 had put PL2's annunciator only in the control room and on the bridge).
 - Release uploads use the game's current itch.io account after its page moved from `salimfadhley` to `trebizondoculpepper` (the owner, 2026-11-01).
+- Dev31's recording MightyPrint has working buttons again (the owner, 2026-11-02): its ON LINE, FORM FEED and LINE FEED buttons and its power rocker join the room's controls, worked through the same parts (`mightyprint.ts`) as dev68's alarm printer.
+- The MightyPrint's printed lines are darker and its printing louder (the owner, 2026-11-02): its ink draw is a near-black green-grey, and it prints each line's sound from real Star LC-10 recordings (Priwo, public domain; `printer-line-1.wav` through `printer-line-5.wav`), shuffled with no adjacent repeats at a line's start at gain 0.11 (about 10 dB up from the 0.035 first tried), replacing its synthesised head rasp; the feed motor keeps its synthesised loop.
 
 ### Removed
 
