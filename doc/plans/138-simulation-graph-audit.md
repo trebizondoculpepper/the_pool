@@ -205,4 +205,4 @@ Tests: `graph.test.ts` (ids round-trip; Jacuzzi neighbours equal 129's), `joins.
 A second opinion (Codex, 2026-11-02) checked this plan against the code; its factual corrections are folded in above. These are the owner's to decide:
 
 1. ~~Should architectural doors have simulation-node pages?~~ Decided (the owner, 2026-11-02): no; an architectural object page outside the graph (see 2a).
-2. **Simulation as its own `?dev` tab or only through 137's registry?** The owner asked for a Simulation category; 137 asks for one page registry feeding both the bench index and `?dev`, and a separate tab risks a parallel navigation. Options: (A) a fourth tab now, moved into 137's tree when 137 lands; (B) wait for 137's registry and add Simulation there only. Recommendation: A, registering through 137's registry as soon as it exists.
+2. ~~Simulation as its own `?dev` tab or only through 137's registry?~~ Decided (the owner, 2026-11-02): A, a fourth `?dev` tab now, moved into 137's tree, registering through its registry, when 137 lands.
