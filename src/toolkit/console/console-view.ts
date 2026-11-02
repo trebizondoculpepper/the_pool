@@ -253,7 +253,16 @@ export function createConsole(options: ConsoleOptions) {
       event.preventDefault();
       close();
     } else if (event.target !== input) {
-      input.focus();
+      // Typing elsewhere goes to the command line, but not a modifier, a
+      // shortcut (Cmd/Ctrl+C to copy what is selected in the log), or
+      // anything while text is selected: focusing the input would clear
+      // the selection before it could be copied (the owner, 2026-11-02).
+      const selecting = (window.getSelection()?.toString() ?? '') !== '';
+      const modifier = ['Meta', 'Control', 'Alt', 'Shift', 'OS'].includes(
+        event.key,
+      );
+      if (!modifier && !event.metaKey && !event.ctrlKey && !selecting)
+        input.focus();
     } else if (event.key === 'Enter') {
       event.preventDefault();
       submit();

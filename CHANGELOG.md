@@ -71,6 +71,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Text selected in the console's log can be copied on a Mac again: pressing Command (or any modifier, or a key while text is selected) no longer sends focus to the command line, which cleared the selection before Cmd+C.
 - The bridge's main viewscreen no longer risks showing black for a page chosen for it (OUTSIDE CONDITIONS, OLYMPIC FILTER WASHING): its own surface is taken away while another page is shown, rather than kept behind it showing a black page (mission 124).
 - The dev panel's World state box now starts on the `dev` slot, labelled "dev (your game)", which is where the game is saved; it offered an unused `game` slot first, so a download or bug report could export no save. The bug report template says the same.
 - The console's `dose` no longer reads a bare number after the amount as part of it: `dose pool_02 bicarb 5 1` put in 51 kg at once; now it asks whether 1 is a rate and how to say one. A feed rate may now be given per hour as well as per minute (`1kg/h`). Or give the amount over a time, fed evenly through it: `dose pool_02 bicarb 17kg / 3h` (also `17kg/3h`, `17 kg over 180min`).
