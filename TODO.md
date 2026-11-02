@@ -275,6 +275,8 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ### Lighting features
 
+- [x] **Hanging industrial lights in the old control room** (done 2026-11-02, `6c59f6d5`): three guarded Lumenhaus pendants above the mimic boards, with bulbs and light sources on the control-room lighting circuit.
+
 - [x] **LED lens gradient** (the owner, 2026-11-01; ce57bc50): every LED's lens face shaded by one shared 64 px greyscale radial gradient (`led-lens.ts`, `ledLensFace()`), tinted by its colour, face only, its sides plain; lit with a hot spot.
   - [ ] `createPilotLamp` and `createJewelLamp` could adopt `ledLensFace()`.
   - [ ] The hot spot may want strengthening on the smallest LEDs.
@@ -282,6 +284,8 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 - [ ] **A direct/indirect "halo" ceiling panel** ([040](doc/prompts/040-direct-indirect-panel.md), photograph in `doc/research/lighting/`): a suspended LED panel lighting the room through its diffuser and washing the ceiling round it, for the modern public spaces.
 
 ### Plant features
+
+- [x] **Independent annunciator bleepers** (done 2026-11-02, `6c59f6d5`): each physical board keeps its original alarm sound with a stable pitch drawn from a 10 Hz standard deviation and independently timed pulses; the old control room's central board now sounds its horn too.
 
 - [ ] **Boiler sequence control** (the owner, 2026-11-01; [research](doc/research/boiler-house-control.md)): a sequencer in the world regulating the LTHW header to a setpoint (fixed, or compensated with a floor for the pools), staging boilers in and out one at a time with minimum run and off times, rotating the lead round robin by hours run, skipping locked-out boilers, frost protection; replaces the stand-in timers in `boiler.ts` and `control-room-demo.ts`; BH-MP2 and its control-room copy show header temperatures, LEAD, CALLED and FIRING; sequencer settings local to the boiler house.
   - Planned as three missions, `nicole_buruaah` in charge (the owner, 2026-11-01): [120](doc/prompts/120-heat-demand-lthw-ring.md) real heat demand, the LTHW ring and its consumers (in progress); [121](doc/prompts/121-boiler-cascade-model.md) the boilers and the sequencer modelled in the world, with a rough panel; [122](doc/prompts/122-cascade-manager-design.md) the cascade manager designed, a 2010s Hamwarmy unit with a graphic display, a turn-and-push knob, per-boiler LEDs and a key-switch PLANT ENABLE.
