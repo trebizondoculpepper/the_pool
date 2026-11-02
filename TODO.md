@@ -458,7 +458,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ## Housekeeping
 
-- [x] **Look links** ([125](doc/prompts/125-look-links.md), [plan](doc/plans/125-look-links.md); the owner, 2026-11-02; done 2026-11-02, COMMIT): `?room=…&look=<ref>&mode=front|left|right|room|detail|above` puts the camera on a named object, fitted, walkable and with a clear line of sight, using the scene's existing component identities; `window.__poolLook` for scripts; `node scripts/look.ts` captures PNGs.
+- [x] **Look links** ([125](doc/prompts/125-look-links.md), [plan](doc/plans/125-look-links.md); the owner, 2026-11-02; done 2026-11-02, 95347a2d): `?room=…&look=<ref>&mode=front|left|right|room|detail|above` puts the camera on a named object, fitted, walkable and with a clear line of sight, using the scene's existing component identities; `window.__poolLook` for scripts; `node scripts/look.ts` captures PNGs.
   - [ ] `npm run look` as an alias for `node scripts/look.ts` (needs a `package.json` change, which waits for the owner's word or the next dependency change).
   - [ ] Rooms without the look hook (the pool halls, corridors, museum halls and the other gallery rooms) answer "no lookable objects yet": add `look: { settled }` to their handles as 127 marks them.
   - [ ] The CM6 display is not a named part yet, so `detail` reaches its keys but not its screen (127's named parts).
