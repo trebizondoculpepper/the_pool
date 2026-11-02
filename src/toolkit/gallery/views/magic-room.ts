@@ -1,8 +1,6 @@
 import {
-  AmbientLight,
-  DirectionalLight,
   Group,
-  HemisphereLight,
+  Mesh,
   PerspectiveCamera,
   Raycaster,
   Scene,
@@ -31,15 +29,26 @@ import {
 import { createFirstPerson } from '../../controls/input/first-person';
 import { useOnHit } from '../../controls/input/touch-point';
 import type { Footprint } from '../../controls/logic/walk-collision';
-import { devWalls } from '../logic/dev-room-links';
+import { WALL_THICKNESS, devWalls } from '../logic/dev-room-links';
 import { choiceAt, itemAuditLink, panelChoices } from '../logic/item-audit';
 import { magicRoomLayout } from '../logic/magic-room-layout';
+import { GRAPH_PAPER } from '../logic/cad-views';
+import {
+  axisLines,
+  cadGridPlane,
+  cadLights,
+  createAxisTriad,
+  disposeCadGridPlane,
+} from './cad-sheet';
 import { adapterFor } from './magic-adapters';
 import type { MagicChoice } from './magic-adapters';
 
 /**
  * The magic room (mission 130, `bench.html?bench=magic-room&kind=<kind>`):
- * a plain grey room generated round one item (`logic/magic-room-layout.ts`),
+ * a room generated round one item, its floor, walls and ceiling ruled as
+ * a CAD sheet (1 m squares, 10 cm subdivisions, on whole world metres) and
+ * a wall item's stub as centimetre graph paper, under flat shadowless light
+ * with an X/Y/Z triad in the corner, (`logic/magic-room-layout.ts`),
  * built by the game's own view builder through its adapter, with a
  * signpost carrying a small Penfold panel whose LOOK and PAGE selectors
  * step it through its curated looks and display pages. Not a room of the
@@ -113,14 +122,8 @@ export function runMagicRoom(root: HTMLElement) {
   const freeEnvironment = useEnvironment(renderer, scene, 0.4);
   renderer.setClearColor('#2a2c2e');
   const camera = new PerspectiveCamera(60, 1, 0.05, 80 * m);
-  // Even light, no fittings.
-  scene.add(
-    new AmbientLight('#f4f4f2', 0.9),
-    new HemisphereLight('#f6f6f2', '#6d6f70', 0.7),
-  );
-  const key = new DirectionalLight('#ffffff', 0.8);
-  key.position.set(-3 * m, 8 * m, 6 * m);
-  scene.add(key);
+  // Flat CAD light: even, shadowless, no falloff.
+  scene.add(...cadLights(m));
 
   const kit = createPanelKit();
   const t = tools(kit);
@@ -162,6 +165,54 @@ export function runMagicRoom(root: HTMLElement) {
       (w.bottom + w.top) / 2 / m,
       (w.minZ + w.maxZ) / 2 / m,
     );
+
+  // The CAD sheet: grid planes just inside the floor, ceiling and walls, on whole world metres.
+  const sheets: Mesh[] = [];
+  const sheet = (
+    w: number,
+    h: number,
+    cx: number,
+    cy: number,
+    place: (p: Mesh) => void,
+    style = undefined as typeof GRAPH_PAPER | undefined,
+  ) => {
+    const p = cadGridPlane(w, h, cx, cy, renderer, style);
+    place(p);
+    room.add(p);
+    sheets.push(p);
+  };
+  const W = 2 * halfX;
+  const D = 2 * halfZ;
+  const e = 0.003;
+  // The walls straddle the room's bounds: their inner faces stand half a wall in.
+  const inset = WALL_THICKNESS / 2 + e;
+  sheet(W, D, 0, 0, (p) => {
+    p.rotation.x = -Math.PI / 2;
+    p.position.y = e;
+  });
+  sheet(W, D, 0, 0, (p) => {
+    p.rotation.x = Math.PI / 2;
+    p.position.y = height - e;
+  });
+  sheet(W, height, 0, height / 2, (p) =>
+    p.position.set(0, height / 2, -halfZ + inset),
+  );
+  sheet(W, height, 0, height / 2, (p) => {
+    p.rotation.y = Math.PI;
+    p.position.set(0, height / 2, halfZ - inset);
+  });
+  sheet(D, height, 0, height / 2, (p) => {
+    p.rotation.y = Math.PI / 2;
+    p.position.set(-halfX + inset, height / 2, 0);
+  });
+  sheet(D, height, 0, height / 2, (p) => {
+    p.rotation.y = -Math.PI / 2;
+    p.position.set(halfX - inset, height / 2, 0);
+  });
+  // Its origin, on the floor at the room's centre.
+  const origin = axisLines(0.4);
+  origin.position.y = 2 * e;
+  room.add(origin);
 
   // Its title card on the north wall, behind the item.
   const card = t.printed(
@@ -220,6 +271,17 @@ export function runMagicRoom(root: HTMLElement) {
       (s.minX + s.maxX) / 2,
       s.height / 2,
       (s.minZ + s.maxZ) / 2,
+    );
+    // The face the item hangs on is centimetre graph paper, to read its size off.
+    const sw = s.maxX - s.minX;
+    const cx = (s.minX + s.maxX) / 2;
+    sheet(
+      sw,
+      s.height,
+      cx,
+      s.height / 2,
+      (p) => p.position.set(cx, s.height / 2, s.maxZ + e),
+      GRAPH_PAPER,
     );
   }
 
@@ -391,6 +453,7 @@ export function runMagicRoom(root: HTMLElement) {
     camera.aspect = width / h;
     camera.updateProjectionMatrix();
   };
+  const triad = createAxisTriad(root);
   const observer = new ResizeObserver(resize);
   observer.observe(canvas);
   resize();
@@ -404,10 +467,13 @@ export function runMagicRoom(root: HTMLElement) {
     controls.update(delta);
     item.update?.(delta);
     renderer.render(scene, camera);
+    triad.render(renderer, camera);
   });
   addEventListener('pagehide', () => {
     renderer.setAnimationLoop(null);
     observer.disconnect();
+    triad.dispose();
+    for (const p of sheets) disposeCadGridPlane(p);
     walk.dispose();
     controls.dispose();
     item.parts?.dispose();
