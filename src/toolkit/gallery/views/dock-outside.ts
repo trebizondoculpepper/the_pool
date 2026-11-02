@@ -20,6 +20,7 @@ import { createSkyDome } from '../../../scene/sky-dome';
 import { createSkyChanger } from '../../../game/skies';
 import { createBreezeBlockTextures } from '../../../scene/breeze-block-texture';
 import { YARD, dockFloorAt, dockSteps } from '../logic/dock-yard';
+import { inSideDoorway } from '../logic/dock-sky';
 
 /**
  * What the loading dock's openings look out on (prompt 073): tarmac as far
@@ -136,9 +137,9 @@ export function createDockOutside(
     // sky in the hypochlorite store's doorway): no sky at all, the blocks
     // below being behind the eye there.
     const local = group.worldToLocal(eyeLocal.copy(eyeAt));
-    const inDoorway =
-      local.z > wallZ &&
-      (Math.abs(local.x) > width / 2 - 0.05 || local.z > -wallZ - 0.05);
+    // Not beyond the back wall: from the main corridor, through the dock's
+    // doors, the sky shows in the lorry openings (the owner, 2026-11-02).
+    const inDoorway = inSideDoorway(local, { wallZ, width });
     if (inDoorway) outside.constant = -1e9;
     // And nothing of the yard either (the owner, 2026-10-26: the bins and
     // the skip over the hypochlorite store, seen from its doorway, the

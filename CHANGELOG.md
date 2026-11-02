@@ -73,6 +73,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The loading bay's sky and yard now show through its lorry openings when looked at from the main corridor through the bay's doors, not only once the walker has crossed the threshold; the chemical stores' side doorways still show no sky.
 - The boiler house's CM6 cascade manager (BH-CP3) and the control room's weather station (CR-CP10) now have conduits up to their room's control bus.
 - The control room's operator chair at the BBC Micro can be sat on: it declares its seat, facing the Cub monitor within reach of the keyboard.
 - Text selected in the console's log can be copied on a Mac again: pressing Command (or any modifier, or a key while text is selected) no longer sends focus to the command line, which cleared the selection before Cmd+C.
