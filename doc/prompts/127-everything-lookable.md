@@ -33,7 +33,7 @@ The owner, 2026-11-02: "we might be developing a thing, want to see some angles,
 - **What it runs:** a development page beside the component benchmark (`bench.html?bench=lookables`, one room or all), built on `world-in-model-scene.ts`'s owner walk, with its own lookability classification (a model-bound object is not automatically lookable; a decorative mark must not hide a worded sign).
 - **What it reports,** per room:
   - **unlabelled:** meshes with no marked owner that are not architecture or decoration, grouped under their nearest named ancestor, largest first by bounding volume, ignoring pieces under 5 cm across (a stray mesh the size of a boiler matters; a screw does not);
-  - **unreachable:** catalogue (126) and register entries with no object in the built room;
+  - **unreachable:** catalogue (126, `lookCatalogue`) and register entries with no object in the built room, and catalogue entries 126 expects to resolve that do not;
   - **duplicates:** two separate targets answering to one tag in a room (an error), or to one name (listed, resolved by `#n`);
   - **bad fronts:** targets whose `front` look sees under half its rays or whose front faces a wall within 0.3 m.
 - **Where the report goes:** a committed JSON file (`doc/look-audit.json`, with a short Markdown summary beside it), so the dev panel (126) can show each room's unlabelled count without building rooms, and a change in it shows in a diff.
@@ -45,7 +45,7 @@ Instrument the builders, not a binder. The order:
 
 1. **Mark architecture and decoration** where rooms are built (the shell, the services ceiling, set dressing), so the first report is about things that matter.
 2. **Plant rooms, the boiler house and the control room** (the rooms the owner asks to see most): `room-equipment.ts`, the valves and pipes drawn from each room's network.
-3. **Dev rooms,** their exhibits and the objects they place directly (dev0's boards), through 126's per-room metadata.
+3. **Dev rooms,** their exhibits and the objects they place directly (dev0's boards): each room's metadata (titles, kinds, parts) moved into a small pure module beside it, which the room marks its objects from and 126's catalogue reads in place of the room module's `EXHIBITS` (126, rewritten 2026-11-02 as the universal catalogue, left this move to 127).
 4. **Museum halls, corridors, the pool halls** and the rest.
 5. **Named parts** on the components agents photograph most: the CM6, the mimic boards' readouts, the weather station console, the touch panels, the period PC's screen.
 
