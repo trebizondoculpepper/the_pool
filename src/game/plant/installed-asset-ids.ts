@@ -348,8 +348,10 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-1304',
     tag: 'CR-MP9',
   },
+  // asset-1305 is the Olympic's DMH pump (installed-fixtures.ts); this
+  // board, registered after it, takes the next.
   'control_room|mimic-energy|Mimic: heat energy by facility': {
-    assetId: 'asset-1305',
+    assetId: 'asset-1306',
     tag: 'CR-MP10',
   },
   'control_room|annunciator|Alarm annunciator': {
