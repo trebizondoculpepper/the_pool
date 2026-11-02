@@ -6,6 +6,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Mission 141 technical proposal, revised after ChatGPT confirmed it can only list and read existing tabs: a compact graph atlas and automatically selected live fault bundles in the readable page, with bounded paths, explicit coverage limits and a Dr Aqualis example.
+- Mission 140 brief for plant-wide, read-only AI diagnostics: heating, electrical, controls, air handling and hydraulics, with model-backed cause-and-effect paths, command-versus-actual evidence, simulation-time trends and browser-based fault trials.
 - Mission 139: live water-quality readings for the main pool and balance tank of all four circuits, CO₂ demand versus actual delivery and line pressure, wet-hall hydraulics, LTHW and pool heating state, and simulation-time chemistry trends in the browser's accessible text, full plant report and read-only `getProcessState(pool?)` query.
 - The root `dev-server.sh` starts the shared Vite server on the LAN at port 5175.
 - Browser plant context now reads the central annunciator, boiler cascade alarms and fire call points, distinguishing active conditions from retained lamp indications and including their measurements in the report (mission 134).
