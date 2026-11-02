@@ -117,7 +117,7 @@ const INTO_WORDS: Record<string, DoseInto> = {
 };
 
 const DOSE_USAGE =
-  '<pool> <chemical> <amount>[unit] [<rate>/min] [balance-tank|pool]';
+  '<pool> <chemical> <amount>[unit] [<rate>/min|/h] [balance-tank|pool]';
 
 /** A pool named by a command, or a failure listing them. */
 function poolNamed(command: string, word: string | undefined) {
@@ -547,14 +547,21 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         return fail(`dose: how much ${chemical.name}? (in ${chemical.unit})`);
       const rest = args.slice(3);
       let typed = args[2];
-      // A unit given as a word of its own: 18 kg.
+      // A unit given as a word of its own: 18 kg. Only a unit: a bare
+      // number after the amount is not one (the owner, 2026-11-02: "5 1"
+      // was read as 51 kg, all at once).
       if (
         rest[0] &&
+        /^[a-zµ³]+$/i.test(rest[0]) &&
         !(rest[0].toLowerCase() in INTO_WORDS) &&
-        !/\/min$/i.test(rest[0]) &&
         /^\d*\.?\d+$/.test(typed)
       )
         typed += rest.shift();
+      // A bare number where a rate belongs: refused, with how to say one.
+      if (rest[0] && /^\d*\.?\d+$/.test(rest[0]) && !rest[1])
+        return fail(
+          `dose: is ${rest[0]} a rate? Say it with its unit and time: ${rest[0]}${chemical.unit}/min or ${rest[0]}${chemical.unit}/h`,
+        );
       const parsed = parseAmount(chemical, typed);
       if ('error' in parsed) return fail(`dose: ${parsed.error}`);
       // A rate, anywhere after the amount: 1kg/min, or 1 kg/min.

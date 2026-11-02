@@ -348,10 +348,14 @@ export function parseRate(
   chemical: HandChemicalInfo,
   text: string,
 ): { rate: number } | { error: string } | null {
-  const m = /^(.+?)\s*\/\s*min$/i.exec(text.trim());
+  // Per minute, or per hour (the owner, 2026-11-02: 1 kg an hour).
+  const m = /^(.+?)\s*\/\s*(min|h|hr|hour)$/i.exec(text.trim());
   if (!m) return null;
   const a = parseAmount(chemical, m[1]);
-  return 'error' in a ? { error: `the rate: ${a.error}` } : { rate: a.amount };
+  const perMinute = /^min$/i.test(m[2]) ? 1 : 1 / 60;
+  return 'error' in a
+    ? { error: `the rate: ${a.error}` }
+    : { rate: a.amount * perMinute };
 }
 
 /** A rate as the log and Show dose say it, as `dose` takes it: `1kg/min`, `130g/min`, `250ml/min`. */

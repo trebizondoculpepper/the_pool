@@ -371,6 +371,21 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
     expect(texts(runLine(f.host, 'dose pool_01 acid 2l 1kg/min'))[0]).toMatch(
       /the rate: hydrochloric acid \(10 %\) is measured by volume/,
     );
+    // A bare number after the amount is not a unit (the owner, 2026-11-02:
+    // "5 1" was taken as 51 kg, all at once); a rate may be per hour.
+    const tank = f.world().treatment.circuits.pool_02.tank.alkalinity;
+    expect(texts(runLine(f.host, 'dose pool_02 bicarb 5 1'))[0]).toMatch(
+      /is 1 a rate\? .*1kg\/min or 1kg\/h/,
+    );
+    expect(f.world().treatment.circuits.pool_02.tank.alkalinity).toBe(tank);
+    runLine(f.host, 'dose pool_02 bicarb 5 1kg/h');
+    expect(f.world().treatment.charges.pool_02.at(-1)).toMatchObject({
+      chemical: 'bicarbonate',
+      amount: 5,
+    });
+    expect(f.world().treatment.charges.pool_02.at(-1)?.rate).toBeCloseTo(
+      1 / 60,
+    );
     // Its finish, logged by the watchers as the world feeds it.
     const before = f.world();
     const after = advance(before, 18 * 60, 1);
@@ -513,7 +528,7 @@ describe('the stand-ins: dose, chemicals and test_kit', () => {
   it('help knows them', () => {
     const f = fakeHost();
     expect(texts(runLine(f.host, 'help dose'))[0]).toMatch(
-      /^dose <pool> <chemical> <amount>\[unit\] \[<rate>\/min\] \[balance-tank\|pool\]/,
+      /^dose <pool> <chemical> <amount>\[unit\] \[<rate>\/min\|\/h\] \[balance-tank\|pool\]/,
     );
     expect(texts(runLine(f.host, 'help doses'))[0]).toMatch(/^doses \[pool\]/);
     expect(texts(runLine(f.host, 'help test_kit'))[0]).toMatch(

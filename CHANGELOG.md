@@ -25,6 +25,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The console's `dose` no longer reads a bare number after the amount as part of it: `dose pool_02 bicarb 5 1` put in 51 kg at once; now it asks whether 1 is a rate and how to say one. A feed rate may now be given per hour as well as per minute (`1kg/h`).
 - The Wash-O-Tron now shows an interlock reason on its two-line LCD regardless of which information page is selected. A busy sequencer, locked-out filter and STEP pressed before valve proof explain their refusals; MODE dismisses a button refusal and returns to the chosen page.
 - The Wash-O-Tron keeps a CYCLE NOW refusal visible on its PROGRAMME display while AUTO is idle, so low flow, pit capacity and other interlocks no longer look like a dead button. CYCLE NOW now heads each filter's button bank.
 - Dr Aqualis now says when the Trio is handling hypochlorite, acid or CO₂ dosing, reports offline and saturated channels as equipment problems, and sends combined chlorine to First Aid’s Breakpoint procedure. During First Aid, its Water page shows treatment targets and the closed-pool status, while his advice focuses on the programme and equipment faults.
