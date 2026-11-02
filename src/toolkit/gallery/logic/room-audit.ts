@@ -60,7 +60,7 @@ export function auditNetwork(room: string): AuditNetwork | undefined {
 }
 
 /** Each link's fittings in order: the plumber's `along`, with any fitting it lists on no link (a shared port's) put on its own. */
-function alongOf(
+export function alongOf(
   x: NonNullable<ReturnType<typeof roomNetwork>>['expansion'],
 ): Map<string, string[]> {
   const out = new Map([...x.along].map(([k, fs]) => [k, fs.map((f) => f.id)]));

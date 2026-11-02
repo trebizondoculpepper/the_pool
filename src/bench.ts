@@ -50,6 +50,19 @@ if (!import.meta.env.DEV) {
   const { runUnbrandedPage } =
     await import('./toolkit/gallery/views/brand-audit-page');
   await runUnbrandedPage(root);
+} else if (root && which === 'sim-node') {
+  // Mission 138: a simulation node's page, every node, an architectural object.
+  const { runSimNodePage } =
+    await import('./toolkit/gallery/views/sim-node-page');
+  runSimNodePage(root);
+} else if (root && which === 'sim-graph') {
+  const { runSimGraphPage } =
+    await import('./toolkit/gallery/views/sim-node-page');
+  runSimGraphPage(root);
+} else if (root && which === 'sim-object') {
+  const { runSimObjectPage } =
+    await import('./toolkit/gallery/views/sim-node-page');
+  await runSimObjectPage(root);
 } else if (root) {
   const p = document.createElement('p');
   p.innerHTML =

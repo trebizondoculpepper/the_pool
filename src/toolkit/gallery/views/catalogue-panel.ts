@@ -47,7 +47,7 @@ import type { CostSort, KeyValueStore } from '../logic/visual-cost';
  * drawn when it is opened.
  */
 
-type Category = 'rooms' | 'kinds' | 'brands';
+type Category = 'rooms' | 'kinds' | 'brands' | 'simulation';
 interface Saved {
   category: Category;
   query: string;
@@ -190,6 +190,7 @@ export function createCataloguePanel(): HTMLElement {
   const roomsTab = tab('rooms', 'Rooms');
   const kindsTab = tab('kinds', 'Game objects');
   const brandsTab = tab('brands', 'Brands');
+  const simTab = tab('simulation', 'Simulation');
   const check = (
     key: 'used' | 'outside' | 'bad' | 'deprecated' | 'measured',
     label: string,
@@ -233,7 +234,14 @@ export function createCataloguePanel(): HTMLElement {
     el(
       'div',
       { className: 'cat-bar' },
-      el('div', { className: 'cat-tabs' }, roomsTab, kindsTab, brandsTab),
+      el(
+        'div',
+        { className: 'cat-tabs' },
+        roomsTab,
+        kindsTab,
+        brandsTab,
+        simTab,
+      ),
       search,
     ),
     filters,
@@ -586,10 +594,93 @@ export function createCataloguePanel(): HTMLElement {
     return shown;
   };
 
+  // Mission 138: the simulation graph's nodes, by domain then room, built
+  // on first opening (the graph is loaded only then).
+  let sim:
+    | {
+        id: string;
+        name: string;
+        tag?: string;
+        kind: string;
+        room: string;
+        domain: string;
+        link: string;
+      }[]
+    | undefined;
+  let simLoading = false;
+  const renderSimulation = (words: readonly string[]) => {
+    if (!sim) {
+      if (!simLoading) {
+        simLoading = true;
+        void Promise.all([
+          import('../logic/sim-graph/index'),
+          import('../logic/sim-graph/node-page'),
+        ]).then(([{ simGraph }, { simList, nodeLink }]) => {
+          sim = simList(simGraph()).map((x) => ({
+            id: x.node.id,
+            name: x.node.name,
+            ...(x.node.tag ? { tag: x.node.tag } : {}),
+            kind: x.node.kind,
+            room: x.node.room,
+            domain: x.media[0] ?? 'no medium',
+            link: nodeLink(x.node.id),
+          }));
+          render();
+        });
+      }
+      list.append(el('p', { className: 'cat-status' }, 'Building the graph…'));
+      return 0;
+    }
+    const rows = sim.filter((n) =>
+      matchesSearch(words, [n.id, n.name, n.tag ?? '', n.kind, n.room]),
+    );
+    list.append(
+      el(
+        'div',
+        { className: 'cat-row' },
+        el(
+          'a',
+          { href: 'bench.html?bench=sim-graph', className: 'cat-ref' },
+          'Every node, filtered',
+        ),
+        el(
+          'span',
+          { className: 'cat-meta' },
+          'Not simulated: architectural objects, from each room’s Audit',
+        ),
+      ),
+    );
+    const domains = [...new Set(rows.map((n) => n.domain))].sort();
+    for (const d of domains) {
+      const details = el('details', {});
+      details.append(el('summary', {}, d));
+      for (const room of [
+        ...new Set(rows.filter((n) => n.domain === d).map((n) => n.room)),
+      ].sort()) {
+        const inner = el('details', {});
+        inner.append(el('summary', {}, room));
+        for (const n of rows.filter((x) => x.domain === d && x.room === room))
+          inner.append(
+            el(
+              'div',
+              { className: 'cat-row' },
+              el('a', { href: n.link, className: 'cat-ref' }, n.tag ?? n.id),
+              el('span', { className: 'cat-name' }, n.name),
+              el('span', { className: 'cat-meta' }, n.kind),
+            ),
+          );
+        details.append(inner);
+      }
+      list.append(details);
+    }
+    return rows.length;
+  };
+
   function render() {
     roomsTab.classList.toggle('is-on', state.category === 'rooms');
     kindsTab.classList.toggle('is-on', state.category === 'kinds');
     brandsTab.classList.toggle('is-on', state.category === 'brands');
+    simTab.classList.toggle('is-on', state.category === 'simulation');
     filters.hidden = state.category !== 'kinds';
     list.replaceChildren();
     if (!kinds.length) return;
@@ -599,15 +690,19 @@ export function createCataloguePanel(): HTMLElement {
         ? renderRooms(words)
         : state.category === 'kinds'
           ? renderKinds(words)
-          : renderBrands(words);
+          : state.category === 'simulation'
+            ? renderSimulation(words)
+            : renderBrands(words);
     const bad = kinds.filter((k) => isBadlyNamed(k.worst)).length;
     const counted = new Set(entries.map((e) => e.room)).size;
     status.textContent =
       state.category === 'rooms'
         ? `${shown} of ${ROOMS.length} rooms · ${counted} counted from data, the rest not counted until mission 127${exhibitsLoaded ? '' : ' · loading dev rooms’ exhibits…'}`
-        : state.category === 'brands'
-          ? `${BRANDS.length} brands, each with its audit page (mission 136), and the unbranded goods`
-          : `${shown} of ${kinds.length} kinds · ${bad} badly named · counts cover the plant rooms${exhibitsLoaded ? ' and the exhibit dev rooms' : ' (dev rooms loading…)'}; museum halls, pool halls and corridors not counted (127)`;
+        : state.category === 'simulation'
+          ? `${shown} simulation nodes (mission 138), by domain then room`
+          : state.category === 'brands'
+            ? `${BRANDS.length} brands, each with its audit page (mission 136), and the unbranded goods`
+            : `${shown} of ${kinds.length} kinds · ${bad} badly named · counts cover the plant rooms${exhibitsLoaded ? ' and the exhibit dev rooms' : ' (dev rooms loading…)'}; museum halls, pool halls and corridors not counted (127)`;
   }
 
   const build = (input: Parameters<typeof kindCatalogue>[0] = {}) => {

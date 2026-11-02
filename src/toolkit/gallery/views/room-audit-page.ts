@@ -17,6 +17,8 @@ import type {
   RoomFlag,
 } from '../logic/room-audit';
 import { auditInFrame, count, el, table } from './look-audit-page';
+import { resolveRef } from '../logic/sim-graph/graph';
+import { nodeLink } from '../logic/sim-graph/node-page';
 
 /**
  * The room audit page (mission 129, `bench.html?bench=room-audit&room=<id>`):
@@ -149,13 +151,42 @@ function drawRows(root: HTMLElement, v: RoomAuditView, snapshot: string) {
         ),
       ),
     );
+  // Mission 138: a model ref links to its simulation node's page (a
+  // connector to its run's section on its active end's page, every target
+  // listed); an architectural object to its not-simulated page.
+  const modelCell = (r: AuditRow) => {
+    if (!r.model)
+      return r.class === 'architectural'
+        ? el(
+            'a',
+            {
+              href: `?bench=sim-object&room=${encodeURIComponent(room)}&ref=${encodeURIComponent(r.ref)}`,
+            },
+            'not simulated',
+          )
+        : el('span', { className: 'note' }, 'unbound');
+    const targets = resolveRef(room, r.model);
+    return el(
+      'div',
+      {},
+      r.model,
+      ...targets.map((t, i) =>
+        el(
+          'div',
+          {},
+          el(
+            'a',
+            { href: nodeLink(t.page, t.anchor).replace(/^bench\.html/, '') },
+            targets.length > 1 ? `run ${i}: ${t.label}` : 'its node',
+          ),
+        ),
+      ),
+    );
+  };
   const line = (r: AuditRow) => [
     nameCell(r),
     typeCell(r),
-    r.model ??
-      (r.class === 'architectural'
-        ? ''
-        : el('span', { className: 'note' }, 'unbound')),
+    modelCell(r),
     connCell(r),
     ctlCell(r),
     list(r.shows.map((s) => `${s.label}: ${s.value}`)),
@@ -289,6 +320,12 @@ export async function runRoomAuditPage(root: HTMLElement) {
         'a',
         { href: `?bench=lookables&room=${encodeURIComponent(room)}` },
         'Its look audit (127)',
+      ),
+      ' · ',
+      el(
+        'a',
+        { href: `?bench=sim-graph&room=${encodeURIComponent(room)}` },
+        'Its simulation nodes (138)',
       ),
       ' · mission 129',
     ),
