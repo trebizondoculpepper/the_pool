@@ -105,6 +105,9 @@ const ENHANCED: Partial<
   ),
 };
 
+/** A room's enhanced network as built (its expansion and its links), for 129's room audit. */
+export const roomNetwork = (room: string) => ENHANCED[room]?.();
+
 export function roomModel(room: string): RoomModel | undefined {
   const built = ENHANCED[room]?.();
   if (!built) return undefined;

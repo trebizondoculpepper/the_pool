@@ -29,7 +29,7 @@ const STYLE = `
 .la button { font: inherit; padding: 8px 14px; min-height: 40px; }
 `;
 
-const el = <K extends keyof HTMLElementTagNameMap>(
+export const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K,
   props: Partial<HTMLElementTagNameMap[K]> = {},
   ...children: (Node | string)[]
@@ -39,7 +39,7 @@ const el = <K extends keyof HTMLElementTagNameMap>(
   return e;
 };
 
-const table = (
+export const table = (
   head: string[],
   rows: (Node | string)[][],
   numeric: number[] = [],
@@ -77,7 +77,7 @@ const table = (
     ),
   );
 
-const count = (label: string, n: number, bad = false) =>
+export const count = (label: string, n: number, bad = false) =>
   el(
     'div',
     { className: 'count' },

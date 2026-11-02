@@ -118,8 +118,8 @@ export function lookLink(room: string, ref: string, mode: LookMode = 'front') {
 }
 
 /**
- * The per-room audit page mission 129 will serve (its URL is settled in
- * 129's plan; until then the catalogue shows the item disabled).
+ * The per-room audit page (mission 129, `doc/plans/129-room-audit.md`),
+ * served by `bench.html` on the development server.
  */
 export const auditLink = (room: string) =>
   `bench.html?bench=room-audit&room=${encodeURIComponent(room)}`;

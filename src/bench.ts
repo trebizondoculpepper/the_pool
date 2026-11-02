@@ -3,7 +3,8 @@
  * `?bench=components` runs the component benchmark (mission 094,
  * `toolkit/gallery/views/component-bench.ts`); `?bench=lookables` the look
  * audit (mission 127, `toolkit/gallery/views/look-audit-page.ts`), one room
- * with `&room=<id>`, else every room's summary.
+ * with `&room=<id>`, else every room's summary; `?bench=room-audit&room=<id>`
+ * the room audit (mission 129, `toolkit/gallery/views/room-audit-page.ts`).
  */
 const root = document.querySelector<HTMLElement>('#bench');
 const which = new URLSearchParams(location.search).get('bench');
@@ -18,9 +19,13 @@ if (!import.meta.env.DEV) {
   const { runLookAuditPage } =
     await import('./toolkit/gallery/views/look-audit-page');
   await runLookAuditPage(root);
+} else if (root && which === 'room-audit') {
+  const { runRoomAuditPage } =
+    await import('./toolkit/gallery/views/room-audit-page');
+  await runRoomAuditPage(root);
 } else if (root) {
   const p = document.createElement('p');
   p.innerHTML =
-    '<a href="?bench=components&slot=bench094">Run the component benchmark</a> · <a href="?bench=lookables">The look audit</a>';
+    '<a href="?bench=components&slot=bench094">Run the component benchmark</a> · <a href="?bench=lookables">The look audit</a> · <a href="?bench=room-audit&room=plant_pool_03">A room audit</a>';
   root.append(p);
 }

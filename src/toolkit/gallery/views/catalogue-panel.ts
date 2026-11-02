@@ -270,13 +270,11 @@ export function createCataloguePanel(): HTMLElement {
     const audit = el(
       'a',
       {
-        className: 'is-disabled',
-        title: 'The room audit page, coming in mission 129',
+        href: auditLink(room),
+        title: 'The room audit (mission 129): everything the room holds',
       },
-      'Audit (coming in 129)',
+      'Audit',
     );
-    audit.setAttribute('aria-disabled', 'true');
-    audit.dataset.href = auditLink(room);
     menu.append(
       el('summary', { title: 'Room menu' }, '⋯'),
       el('div', { className: 'cat-menu-items' }, open, cat, audit),
