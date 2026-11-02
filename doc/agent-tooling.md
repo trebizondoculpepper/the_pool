@@ -4,6 +4,7 @@ A practical guide for agents (and humans) designing or debugging The Pool. The o
 
 ## Contents
 
+- [The bench index](#the-bench-index): the front door to rooms, things, brands and development pages
 - [I want to see X](#i-want-to-see-x): look links
 - [I want to know what is in room Y](#i-want-to-know-what-is-in-room-y): the `?dev` catalogue
 - [Where is kind K used?](#where-is-kind-k-used): the kinds' catalogue
@@ -14,6 +15,14 @@ A practical guide for agents (and humans) designing or debugging The Pool. The o
 - [Audits (in progress)](#audits-in-progress): 127, 129, 130, 133 (done)
 - [Benchmarks, dev servers and pictures](#benchmarks-dev-servers-and-pictures)
 - [Rules of thumb for agents](#rules-of-thumb-for-agents)
+
+## The bench index
+
+Open `bench.html` on the development server for a searchable tree of every room, thing, brand, simulation node and registered development page (mission 137; [brief](prompts/137-bench-index.md), [plan](plans/137-bench-index.md)). Expand Rooms for a room's enter, audit and look-audit pages and its named contents; Things for item audits (including CAD views), magic rooms, magic pages and placements; Brands for each brand's audit, its kinds and unbranded goods; Simulation for the graph list, each node page and known architectural-object pages. Tools holds the component benchmark, whole look audit and `?dev`.
+
+Search matches tags, names, refs, kinds, asset ids, brands and rooms across the tree. Up and Down move, Right opens a branch or steps through a leaf's extra links (alternate looks, audit rows, "in Things"), Left closes or returns to the row, Home and End jump, and Enter follows the focused link. Open a branch directly with `bench.html#rooms/plant/boiler_house` or the short `#rooms/boiler_house`; `?open=rooms/plant/boiler_house` works too. Open branches and search are remembered locally.
+
+New bench pages register their branch, subject and link in `src/toolkit/gallery/logic/page-registry.ts`; today's registrations are in `bench-pages.ts` and `sim-bench-pages.ts`. Import a later page's registration module from `views/bench-index-page.ts`, or it cannot appear. The pure tree model is `logic/bench-index.ts`, the view is `views/tree-view.ts`. Moving the `?dev` catalogue onto that same tree remains a follow-up.
 
 ## I want to see X
 

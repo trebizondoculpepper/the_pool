@@ -488,7 +488,9 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 ## Housekeeping
 
 - [x] **Root launcher for the shared dev server** (done 2026-11-02, `6ac03a6b`): `./dev-server.sh` starts Vite on `0.0.0.0:5175` with a strict port; the server was stopped at the owner's request.
-- [ ] **The bench index** ([137](doc/prompts/137-bench-index.md); the owner, 2026-11-02; brief only): `bench.html` with no `bench=` opens on a navigable, expandable, searchable tree of Rooms, Things and Brands, every leaf a link (enter, audits, look links, item audit, CAD views, magic room, brand audit), one component shared with `?dev`'s catalogue and fed by one page registry.
+- [x] **The bench index** ([137](doc/prompts/137-bench-index.md), [plan](doc/plans/137-bench-index.md); the owner, 2026-11-02; done 2026-11-02, commit `137: bench index tree`): `bench.html` with no `bench=` opens on a navigable, expandable, searchable tree of Rooms, Things, Brands and Simulation, every leaf a link (enter, audits, look links, item audit, CAD views, magic room, brand audit, simulation node and architectural-object pages), fed by one page registry.
+- [ ] **Share the bench tree with `?dev`** (follow-up to [137](doc/prompts/137-bench-index.md)): move the catalogue's navigation onto the shared tree component, now that mission 138 has freed `catalogue-panel.ts`.
+- [ ] **Bench index refinements** (follow-up to [137](doc/prompts/137-bench-index.md)): preserve focus when the index redraws after asynchronous exhibit loading; send kinds without magic-room adapters to their explanatory item-audit section rather than an empty magic room.
 
 - [ ] Keep `doc/agent-tooling.md` current as 127, 129, 130 and 133 land: fill its placeholder audit sections and add each new tool (the owner, 2026-11-02).
 - [ ] **A Report a bug button on the Esc panel** (the owner, 2026-11-02; for later): it only opens a new GitHub bug report page (the template `.github/ISSUE_TEMPLATE/bug_report.yml`); it sits in the same panel module as, and right beside, the Copy plant-state report button (mission 134), as the `?dev` panel pairs them too.

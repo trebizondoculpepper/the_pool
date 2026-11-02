@@ -10,7 +10,9 @@
  * `toolkit/gallery/views/item-audit-page.ts`, `magic-room.ts`);
  * `?bench=brand-audit&brand=<id>` a brand's audit (every brand without
  * `brand`) and `?bench=unbranded` the unbranded goods (mission 136,
- * `toolkit/gallery/views/brand-audit-page.ts`).
+ * `toolkit/gallery/views/brand-audit-page.ts`). With no `bench=`, the
+ * bench index (mission 137, `toolkit/gallery/views/bench-index-page.ts`):
+ * every page registered in `logic/page-registry.ts` as one tree.
  */
 const root = document.querySelector<HTMLElement>('#bench');
 const which = new URLSearchParams(location.search).get('bench');
@@ -64,8 +66,7 @@ if (!import.meta.env.DEV) {
     await import('./toolkit/gallery/views/sim-node-page');
   await runSimObjectPage(root);
 } else if (root) {
-  const p = document.createElement('p');
-  p.innerHTML =
-    '<a href="?bench=components&slot=bench094">Run the component benchmark</a> · <a href="?bench=lookables">The look audit</a> · <a href="?bench=room-audit&room=plant_pool_03">A room audit</a> · <a href="?bench=item-audit&kind=weather-station">An item audit</a> · <a href="?bench=brand-audit">The brands</a>';
-  root.append(p);
+  const { runBenchIndex } =
+    await import('./toolkit/gallery/views/bench-index-page');
+  await runBenchIndex(root);
 }
