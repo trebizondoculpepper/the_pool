@@ -48,10 +48,9 @@ import type { HandChemical } from './hand-dose';
  * offline acid pump before the pH it lets drift); within a severity, by
  * `RANK`, root causes first.
  *
- * **Where.** The three automatic chemicals are 'automatic' while their
- * channel is online; otherwise hypochlorite and acid go by hand into the
- * 'balance-tank' (and CO₂, having no hand route, is only advised when its
- * channel is online). Every other hand chemical goes into the
+ * **Where.** A connected channel owns its chemical even if it is offline
+ * or at capacity; Dr Aqualis advises repair rather than a manual dose.
+ * Every other hand chemical goes into the
  * 'balance-tank', except dilution (fresh water for the pool) and
  * superchlorination (a shock dose into the pool), which are 'pool'.
  *
@@ -87,9 +86,7 @@ export const ALARM_LIMITS = {
 
 /**
  * A dosing channel asked for this share of its most or more is flat out
- * (`Ctx.pinned`): the pumps' own chemicals are then advised by hand as
- * well, to help it catch up (`doc/plans/aqualis-advice-verification.md`,
- * Part 4: the Olympic's undersized acid pump).
+ * (`Ctx.pinned`): Dr Aqualis reports its capacity limit.
  */
 export const PINNED = 0.98;
 
@@ -256,12 +253,12 @@ function howOf(
 ): string {
   if (where === 'automatic') {
     const device = DEVICE[additive as ChannelId] ?? 'pump';
+    if (c && !c.online(additive as ChannelId))
+      return `The ${device} is offline; restore it before the controller can dose.`;
+    if (c?.pinned(additive as ChannelId))
+      return `The ${device} is working at full capacity; check why demand exceeds its output.`;
     return `The ${device} is doing this; leave it to work.`;
   }
-  const helping =
-    c && additive === 'acid' && c.online('acid') && c.pinned('acid')
-      ? `The ${DEVICE[additive]} is flat out and cannot catch up: help it by hand. `
-      : '';
   const again =
     visits > 1
       ? ` Too much at once: ${firstText} now, retest after a turnover (${hoursText(c ? turnoverOf(c.s) : 4)}) and repeat, ${visits} visits.`
@@ -281,11 +278,10 @@ function howOf(
       : '';
   if (additive === 'superchlorinate')
     return `${closeFirst}Spread it across the pool${at}, and keep the pool closed until the chlorine is back in its band.${again}`;
-  if (where === 'pool')
-    return `${helping}Spread it across the pool${at}.${again}`;
+  if (where === 'pool') return `Spread it across the pool${at}.${again}`;
   if (additive === 'acid')
-    return `${helping}Feed it into the balance tank${at}, acid into water.${again}`;
-  return `${helping}Feed it into the balance tank${at}.${again}`;
+    return `Feed it into the balance tank${at}, acid into water.${again}`;
+  return `Feed it into the balance tank${at}.${again}`;
 }
 
 function nameOf(additive: Additive) {
@@ -348,6 +344,7 @@ interface Ctx {
   V: number;
   T: number;
   online: (id: ChannelId) => boolean;
+  connected: (id: ChannelId) => boolean;
   /** Online but asked for all it has (`PINNED`): it cannot catch up alone. */
   pinned: (id: ChannelId) => boolean;
   /** The pool open to bathers: bather safety bounds every instruction. */
@@ -536,21 +533,32 @@ type Draft = Omit<Advice, 'mood' | 'where' | 'tier' | 'dose' | 'hasDose'> & {
 };
 
 /**
- * Where an additive goes. The pumps' own chemicals are theirs while their
- * channel is online. By hand, into the balance tank while the pool is
+ * Where an additive goes. Connected channels own their chemicals even
+ * when offline or saturated. By hand, into the balance tank while the pool is
  * open (PWTAG: never into the pool with bathers in it); closed, spread
  * straight over the pool, which the Trio's tapping then sees only mixed.
- * CO₂ by hand always at its injection point (the pool's return).
+ * CO₂ is only recommended while its channel is online.
  */
 function whereOf(additive: Additive | null, c: Ctx | null): Where | null {
   if (!additive) return null;
   if (additive === 'dilution' || additive === 'superchlorinate') return 'pool';
-  if (additive === 'co2') return c?.online('co2') ? 'automatic' : 'pool';
-  if (additive === 'hypochlorite' && c?.online('hypochlorite'))
-    return 'automatic';
-  if (additive === 'acid' && c?.online('acid') && !c.pinned('acid'))
+  if (
+    (additive === 'co2' ||
+      additive === 'hypochlorite' ||
+      additive === 'acid') &&
+    c?.connected(additive)
+  )
     return 'automatic';
   return c && !c.open ? 'pool' : 'balance-tank';
+}
+
+function controllerDirection(c: Ctx, id: ChannelId, action: string): string {
+  if (!c.connected(id)) return action;
+  if (!c.online(id))
+    return `The ${DEVICE[id]} is offline; restore it at the equipment before the controller can ${action}.`;
+  if (c.pinned(id))
+    return `The ${DEVICE[id]} is working at full capacity; let it run and check why demand exceeds its output.`;
+  return `The ${DEVICE[id]} is taking care of this automatically; no hand dose is needed.`;
 }
 
 function readingRules(c: Ctx): Draft[] {
@@ -571,7 +579,7 @@ function readingRules(c: Ctx): Draft[] {
           ? 'alarm'
           : 'warning',
       problem: `Free chlorine low (${twoDp(fc)} mg/l): the germs are winning.`,
-      direction: 'Raise it with sodium hypochlorite.',
+      direction: controllerDirection(c, 'hypochlorite', 'raise the chlorine'),
       additive: 'hypochlorite',
       prescribe: () => {
         const g = Math.max(0, t.freeChlorine.set - c.w.freeChlorine) * V;
@@ -655,7 +663,7 @@ function readingRules(c: Ctx): Draft[] {
     // Normal practice: the alkalinity first, then the pH. Bicarbonate
     // nudges the pH up (towards 8.3): where the pH is already above its
     // band that would take it past its alarm limit, so the pH comes first
-    // (the acid pump's, or acid by hand), and the bicarbonate after.
+    // (the acid pump's, once restored if offline), and the bicarbonate after.
     const acidOnline = c.online('acid') || c.online('co2');
     const waits = r.ph > t.ph.high;
     add({
@@ -666,12 +674,16 @@ function readingRules(c: Ctx): Draft[] {
       direction: waits
         ? acidOnline
           ? `Let the ${c.online('co2') ? 'CO₂' : 'acid pump'} bring the pH into its band first; then raise the alkalinity with sodium bicarbonate.`
-          : 'Lower the pH with acid by hand first; then raise the alkalinity with sodium bicarbonate.'
+          : c.connected('acid')
+            ? 'Restore the acid pump to lower the pH first; then raise the alkalinity with sodium bicarbonate.'
+            : 'Lower the pH with acid by hand first; then raise the alkalinity with sodium bicarbonate.'
         : r.ph < t.ph.set
           ? 'Raise the alkalinity with sodium bicarbonate.'
           : acidOnline
             ? `Raise it with sodium bicarbonate. This will lift the pH a little; the ${c.online('co2') ? 'CO₂' : 'acid pump'} will bring it back down.`
-            : 'Raise it with sodium bicarbonate, then lower the pH with acid by hand: the bicarbonate lifts it a little.',
+            : c.connected('acid')
+              ? 'Raise it with sodium bicarbonate, then let the acid pump bring the pH back down once restored.'
+              : 'Raise it with sodium bicarbonate, then lower the pH with acid by hand: the bicarbonate lifts it a little.',
       additive: waits ? null : 'bicarbonate',
       prescribe: waits
         ? null
@@ -713,17 +725,10 @@ function readingRules(c: Ctx): Draft[] {
       reading: 'alkalinity',
       severity: 'warning',
       problem: `Alkalinity high (${whole(alk)} mg/l): the pH will keep creeping up.`,
-      direction: 'Bring it down with hydrochloric acid, a little at a time.',
+      direction: controllerDirection(c, 'acid', 'lower the alkalinity'),
       additive: 'acid',
-      // The acid pump takes it down as it holds the pH (the CO₂ the acid
-      // makes leaves, and the pH with it); by hand only where the pump is
-      // flat out or offline.
-      where:
-        c.online('acid') && !c.pinned('acid')
-          ? 'automatic'
-          : c.open
-            ? 'balance-tank'
-            : 'pool',
+      // The connected pump owns this chemical even when offline or saturated.
+      where: whereOf('acid', c),
       prescribe: () => {
         const g = gramsFor(
           c,
@@ -748,11 +753,7 @@ function readingRules(c: Ctx): Draft[] {
           'l',
           c,
           per / CHANNELS.acid.gramsPerUnit,
-          c.online('acid') && !c.pinned('acid')
-            ? 'automatic'
-            : c.open
-              ? 'balance-tank'
-              : 'pool',
+          whereOf('acid', c) ?? undefined,
         );
       },
     });
@@ -773,7 +774,7 @@ function readingRules(c: Ctx): Draft[] {
         reading: 'ph',
         severity,
         problem,
-        direction: 'Bring it down with CO₂; it spares the alkalinity.',
+        direction: controllerDirection(c, 'co2', 'lower the pH'),
         additive: 'co2',
         prescribe: () =>
           doseOf(
@@ -789,7 +790,7 @@ function readingRules(c: Ctx): Draft[] {
         reading: 'ph',
         severity,
         problem,
-        direction: 'Bring it down with hydrochloric acid.',
+        direction: controllerDirection(c, 'acid', 'lower the pH'),
         additive: 'acid',
         prescribe: () => {
           const g = acidFor(c.w, t.ph.set, V, c.T);
@@ -926,7 +927,7 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Water scaling (LSI ${signed(lsi)}): cloudy water and crusty pipes.`,
       direction: caused
         ? 'Put the pH, alkalinity and hardness right first, then look again.'
-        : 'Lower the pH a touch with hydrochloric acid.',
+        : controllerDirection(c, 'acid', 'lower the pH a touch'),
       additive: caused ? null : 'acid',
       prescribe: caused
         ? null
@@ -1163,13 +1164,11 @@ function draftsOf(
     V: Math.max(1e-6, settings.dynamics.volumeM3),
     T,
     online: (id) => statusOf(id) === 'online',
-    // Flat out, and (for acid) against a structural demand: the alkalinity
-    // at or above its set point, whose CO₂ loss keeps lifting the pH. With
-    // less, the pump catches up alone, and a hand dose only replaces its own.
+    connected: (id) => statusOf(id) !== 'unconnected',
+    // At its limit, advice reports capacity rather than a manual top-up.
     pinned: (id) =>
       statusOf(id) === 'online' &&
-      (channels.find((ch) => ch.id === id)?.demand ?? 0) >= PINNED &&
-      (id !== 'acid' || readings.alkalinity >= settings.targets.alkalinity.set),
+      (channels.find((ch) => ch.id === id)?.demand ?? 0) >= PINNED,
     open: options.open ?? true,
     makeUp: Math.max(0.1, settings.dynamics.flowM3h * 0.1),
     superchlorinating: options.superchlorinating ?? false,

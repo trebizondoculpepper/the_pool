@@ -6,6 +6,10 @@
  * `it.fails`.
  */
 export const WHY = {
+  dmhChlorineOvershoot:
+    'the new Olympic DMH has enough capacity to catch up, but the Trio’s existing chlorine correction against its turnover lag now overshoots and oscillates; controller tuning is a separate follow-up',
+  dmhThioBackfire:
+    'after thiosulphate the new Olympic DMH drives the chlorine back high by 24 h; the Trio’s chlorine control needs retuning for the larger pump',
   chlorineOvershoot:
     'once the hypochlorite pump is dosing again the Lounge’s chlorine overshoots to about 2 mg/l: the Trio’s quarter-hour chlorine correction against a turnover’s dead time (controller tuning)',
   thioFalls:

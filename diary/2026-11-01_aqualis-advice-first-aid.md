@@ -1,0 +1,7 @@
+# Dr Aqualis advice and First Aid display
+
+The owner found Dr Aqualis telling players to hand-dose chemicals that the Trio itself controls. I changed advice for connected hypochlorite, acid and CO₂ channels so an online controller takes responsibility, an offline device calls for repair, and a pump at capacity reports its limit. The cabinet's Show dose button now explains that no hand dose is needed for those channels; the dose solver and its reference arithmetic remain available underneath for verification. Genuine hand chemicals keep their numeric Show dose.
+
+Combined chlorine now points to the Trio's Breakpoint First Aid procedure rather than a hand hypochlorite shock. While First Aid runs, the Water page uses the treatment target, labels it, and shows POOL CLOSED for programmes that require closure. Dr Aqualis shows procedure progress and relevant equipment faults, with thiosulphate advice kept during Bring chlorine down, instead of ordinary swimming-water diagnoses.
+
+The Olympic DMH upgrade landed concurrently in the shared checkout. Its larger output resolves several old verification failures and reveals chlorine overshoot after low chlorine or a pump trip, and a high rebound after thiosulphate. The verification suite retains its success criteria; these outcomes are documented as known controller-tuning findings. The owner brief was missing from its documented Downloads path, so README, mission 114, its plans and current owner directions provided the context.

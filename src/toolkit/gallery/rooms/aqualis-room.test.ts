@@ -306,15 +306,13 @@ describe('dev58’s host: First Aid', () => {
     });
   });
 
-  it('works to the programme’s settings, Show dose giving a hand dose of hypochlorite', () => {
+  it('works to the programme’s settings without asking for hand hypochlorite', () => {
     const host = createAqualisRoomHost('incident-diarrhoea', { boot: false });
     start(host, 'diarrhoea');
     expect(host.workingSettings().targets.freeChlorine.set).toBe(20);
     host.step(1);
     expect(host.outputs().hypochlorite).toBeGreaterThan(0.9);
-    const low = host.advice().find((a) => a.id === 'free-chlorine-low');
-    expect(low?.additive).toBe('hypochlorite');
-    expect(low?.dose?.amount).toBeGreaterThan(10);
+    expect(host.advice().map((a) => a.id)).toEqual(['first-aid']);
   });
 
   it('holds every output off through a dosing pause, and doses again after STOP', () => {
@@ -351,7 +349,7 @@ describe('dev58’s host: First Aid', () => {
     const host = createAqualisRoomHost('combined-high', { boot: false });
     expect(
       host.advice().find((a) => a.id === 'combined-chlorine-high')?.direction,
-    ).toContain('Or start First Aid › Breakpoint shock.');
+    ).toContain('Start First Aid › Breakpoint shock');
   });
 
   it('ends a formed stool’s programme after its hold, the plain settings back and Dr Aqualis saying so', () => {

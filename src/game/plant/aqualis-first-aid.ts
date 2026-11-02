@@ -374,8 +374,8 @@ function pointerOf(a: Advice): FirstAidId | null {
 
 /**
  * Dr Aqualis's advice with First Aid's in it: an incident report first
- * (until its programme starts), then a running programme's status (or a
- * word on one just ended), then the advisor's own. With none running, a
+ * (until its programme starts), then a running programme's status and
+ * equipment faults (or a word on one just ended). With none running, a
  * combined chlorine high points at Breakpoint shock and a chlorine far too
  * high (the thiosulphate advice) at Bring chlorine down; an incident
  * silences "every reading in its band".
@@ -390,8 +390,22 @@ export function withFirstAid(
 ): Advice[] {
   const head: Advice[] = [];
   if (f.incident) head.push(incidentAdvice(f.incident));
-  if (f.state) head.push(runningAdvice(f.state));
-  else if (f.ended) head.push(endedAdvice(f.ended));
+  const state = f.state;
+  if (state) {
+    // During a procedure, show its progress and equipment faults that may
+    // prevent it finishing. Ordinary water diagnoses use swimming targets.
+    head.push(runningAdvice(state));
+    return [
+      ...head,
+      ...advice.filter(
+        (a) =>
+          a.id.endsWith('-offline') ||
+          (state.id === 'chlorine-down' &&
+            a.id === 'free-chlorine-high' &&
+            a.additive === 'thiosulphate'),
+      ),
+    ];
+  } else if (f.ended) head.push(endedAdvice(f.ended));
   const rest = advice
     .filter((a) => !(f.incident && a.id === 'all-well'))
     .map((a) => {
@@ -399,7 +413,12 @@ export function withFirstAid(
       return to
         ? {
             ...a,
-            direction: `${a.direction} Or start First Aid › ${FIRST_AID[to].name}.`,
+            direction:
+              to === 'breakpoint'
+                ? `Start First Aid › ${FIRST_AID[to].name}; the controller will raise and hold the chlorine.`
+                : `${a.direction} Or start First Aid › ${FIRST_AID[to].name}.`,
+            hasDose: to === 'breakpoint' ? false : a.hasDose,
+            dose: to === 'breakpoint' ? null : a.dose,
           }
         : a;
     });

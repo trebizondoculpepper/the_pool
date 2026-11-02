@@ -19,6 +19,7 @@ import type { BootApp } from '../../core/logic/boot-sequence';
 import {
   FIRST_AID,
   FIRST_AID_IDS,
+  firstAidSettings,
   firstAidStatus,
 } from '../../../../game/plant/aqualis-first-aid';
 import type {
@@ -442,7 +443,8 @@ export function withShownDose(
   if (s.page !== 'doctor' || !s.showDose || !advice.length) return advice;
   const i = Math.min(s.advice, advice.length - 1);
   const a = advice[i];
-  if (a.dose || !a.hasDose) return advice;
+  // An automatic channel has no hand dose to calculate or prescribe.
+  if (a.dose || !a.hasDose || a.where === 'automatic') return advice;
   const out = [...advice];
   out[i] = { ...a, dose: fill(a) };
   return out;
@@ -754,7 +756,7 @@ export function displayModel(
   // crash is the host's: it draws no page at all).
   const status = fa
     ? {
-        text: `FIRST AID: ${firstAidStatus(fa)}`,
+        text: `FIRST AID${FIRST_AID[fa.id].closePool ? ' · POOL CLOSED' : ''}: ${firstAidStatus(fa)}`,
         alarms,
         tint: 'amber' as const,
         banner: true,
@@ -787,8 +789,9 @@ export function displayModel(
       hand: inputs.selector === 'hand' ? inputs.hand[id] : null,
     };
   });
+  const treatment = firstAidSettings(fa, inputs.settings);
   const water = READING_IDS.map((id) => {
-    const t = id === 'temperature' ? null : inputs.settings.targets[id];
+    const t = id === 'temperature' ? null : treatment.targets[id];
     const v = r ? r[id] : null;
     let along: number | null = null;
     if (t && v !== null) {
@@ -800,7 +803,10 @@ export function displayModel(
     }
     return {
       id,
-      name: READING_LABELS[id].name,
+      name:
+        fa && treatment !== inputs.settings && id === 'freeChlorine'
+          ? 'Free chlorine · treatment target'
+          : READING_LABELS[id].name,
       unit: READING_LABELS[id].unit,
       value: v === null ? '—' : formatReading(id, v),
       band: t && v !== null ? bandOf(v, t) : null,

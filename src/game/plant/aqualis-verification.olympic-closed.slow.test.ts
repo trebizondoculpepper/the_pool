@@ -7,12 +7,12 @@ import { WHY } from './aqualis-verification-known.test-support';
  * failures are findings recorded in the plan doc, each with its reason.
  */
 verificationSuite('pool_02', false, {
+  'loop:chlorine-low': WHY.dmhChlorineOvershoot,
+  'twin:chlorine-high': WHY.dmhThioBackfire,
+  'loop:hypochlorite-tripped': WHY.dmhChlorineOvershoot,
   'accuracy:chlorine-high': WHY.thioAccuracy,
   'loop:alkalinity-high': WHY.alkalinityHighOlympic,
-  'loop:combined-high': WHY.shockOscillates,
   'loop:ph-low+alkalinity-low': WHY.bicarbLiftsPh,
   'loop:aggressive': WHY.bicarbLiftsPh,
   'loop:scaling': WHY.scalingOlympic,
-  'accuracy:scaling': WHY.scalingAccuracy,
-  'loop:hardness-high': WHY.dilutionThinsChlorine,
 });

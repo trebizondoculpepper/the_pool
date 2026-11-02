@@ -22,6 +22,7 @@ import {
   pressDisplay,
   tabRects,
   tickDisplay,
+  withShownDose,
 } from './aqualis-display';
 import { DEMO_SCENE_SECONDS, DEMO_SECONDS } from './aqualis-demo';
 import type { DisplayInputs, DisplayState } from './aqualis-display';
@@ -165,6 +166,19 @@ describe('the Aqualis display', () => {
     expect(
       displayRegions(s, inputs()).find((r) => r.id === 'show-dose')?.enabled,
     ).toBe(false);
+  });
+
+  it('does not solve a hand dose for a controller-owned chemical', () => {
+    const s: DisplayState = {
+      ...newDisplay(),
+      page: 'doctor',
+      showDose: true,
+    };
+    const original = [advice('acid')];
+    const result = withShownDose(s, original, () => {
+      throw new Error('automatic channel must not request a hand dose');
+    });
+    expect(result).toBe(original);
   });
 
   it('edits the pool dynamics and keeps a target ordered', () => {
@@ -354,7 +368,7 @@ describe('the Aqualis display’s First Aid', () => {
     for (const page of ['pumps', 'water', 'doctor', 'settings'] as const) {
       const m = displayModel({ ...newDisplay(), page }, ins);
       expect(m.status).toMatchObject({
-        text: 'FIRST AID: Diarrhoea · raising chlorine to 20 mg/l',
+        text: 'FIRST AID · POOL CLOSED: Diarrhoea · raising chlorine to 20 mg/l',
         tint: 'amber',
       });
     }
@@ -362,6 +376,31 @@ describe('the Aqualis display’s First Aid', () => {
       displayModel(newDisplay(), inputs({ inhibit: 'first-aid-pause' })).status
         .text,
     ).toBe('Dosing paused: First Aid');
+  });
+
+  it('judges hyperchlorination against the temporary treatment target while marking the pool closed', () => {
+    const s: DisplayState = { ...newDisplay(), page: 'water' };
+    const treatment = running();
+    const m = displayModel(
+      s,
+      inputs({
+        firstAid: treatment,
+        poolOpen: false,
+        readings: { ...inputs().readings!, freeChlorine: 20 },
+      }),
+    );
+    expect(m.water.find((w) => w.id === 'freeChlorine')).toMatchObject({
+      band: 'ok',
+      name: 'Free chlorine · treatment target',
+    });
+    expect(m.status.text).toContain('POOL CLOSED');
+    const swimming = displayModel(
+      s,
+      inputs({ readings: { ...inputs().readings!, freeChlorine: 20 } }),
+    );
+    expect(swimming.water.find((w) => w.id === 'freeChlorine')?.band).toBe(
+      'high',
+    );
   });
 
   it('redraws only when the words change: its time left by the minute', () => {

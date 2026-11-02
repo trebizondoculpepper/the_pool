@@ -65,14 +65,15 @@ describe('Show dose says how the dose goes in', () => {
     expect(a.where).toBe('automatic');
     expect(a.dose?.how).toMatch(/leave it to work/);
   });
-  it('acid by hand, with its pump offline: poured slowly, acid into water', () => {
+  it('an offline acid pump remains the controller’s channel', () => {
     const a = adviceFor('pool_01', { ph: 7.5 }, 'ph-high', true, [
       channelView('hypochlorite', { kind: 'online' }),
       channelView('acid', { kind: 'offline', reason: 'manual', fault: null }),
       channelView('co2', { kind: 'unconnected' }),
     ]);
-    expect(a.where).toBe('balance-tank');
-    expect(a.dose?.how).toMatch(/acid into water/);
+    expect(a.where).toBe('automatic');
+    expect(a.direction).toContain('restore it');
+    expect(a.dose?.how).toMatch(/offline; restore it/);
   });
   it('a dilution: drained to waste and refilled at the make-up’s rate', () => {
     const a = adviceFor('pool_01', { hardness: 1100 }, 'calcium-hardness-high');

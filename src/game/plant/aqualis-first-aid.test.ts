@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { DEFAULT_TARGETS } from './aqualis-types';
-import type { AqualisReadings, AqualisSettings } from './aqualis-types';
+import type { Advice, AqualisReadings, AqualisSettings } from './aqualis-types';
 import {
   FIRST_AID_RULES,
   firstAidHolds,
@@ -133,5 +133,56 @@ describe('Dr Aqualis on First Aid', () => {
       'First Aid: Dosing pause · dosing held · 30 min left.',
     );
     expect(a.direction).not.toContain('closed');
+  });
+
+  it('gives procedure progress and equipment faults while First Aid is running', () => {
+    const ordinary: Advice = {
+      id: 'free-chlorine-low',
+      reading: 'freeChlorine',
+      severity: 'warning',
+      tier: 2,
+      problem: 'Free chlorine low',
+      direction: 'Raise it',
+      additive: 'hypochlorite',
+      where: 'automatic',
+      dose: null,
+      hasDose: true,
+      mood: 'pointing',
+    };
+    const offline: Advice = {
+      ...ordinary,
+      id: 'hypochlorite-offline',
+      reading: null,
+      direction: 'Restore the pump',
+      hasDose: false,
+    };
+    const shown = withFirstAid([ordinary, offline], {
+      ...none,
+      state: startFirstAid('diarrhoea', water(), settings),
+    });
+    expect(shown.map((a) => a.id)).toEqual([
+      'first-aid',
+      'hypochlorite-offline',
+    ]);
+  });
+
+  it('points combined chlorine at the controller-managed Breakpoint procedure', () => {
+    const combined: Advice = {
+      id: 'combined-chlorine-high',
+      reading: 'combinedChlorine',
+      severity: 'warning',
+      tier: 2,
+      problem: 'Combined chlorine high',
+      direction: 'Superchlorinate by hand',
+      additive: 'superchlorinate',
+      where: 'pool',
+      dose: null,
+      hasDose: true,
+      mood: 'pointing',
+    };
+    const [shown] = withFirstAid([combined], none);
+    expect(shown.direction).toContain('Start First Aid › Breakpoint shock');
+    expect(shown.direction).not.toContain('by hand');
+    expect(shown.hasDose).toBe(false);
   });
 });

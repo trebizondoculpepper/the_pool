@@ -207,7 +207,7 @@ describe('advise: each rule', () => {
     expect(a.where).toBe('automatic');
   });
 
-  it('pH high with no automatic dosing goes by hand into the balance tank', () => {
+  it('pH high with an offline acid pump calls for repair, not a hand dose', () => {
     const { r, water } = scene({ ph: 7.55 });
     const off = [
       view('hypochlorite', { kind: 'online' }),
@@ -216,7 +216,36 @@ describe('advise: each rule', () => {
     ];
     const x = find(advise(r, SETTINGS, off, water), 'ph-high');
     expect(x.additive).toBe('acid');
-    expect(x.where).toBe('balance-tank');
+    expect(x.where).toBe('automatic');
+    expect(x.direction).toContain('offline');
+    expect(x.direction).toContain('restore');
+  });
+
+  it('reports a saturated acid pump as a capacity limit without prescribing hand acid', () => {
+    const { r, water } = scene({ ph: 7.55, alkalinity: 240 });
+    const channels = [
+      view('hypochlorite', { kind: 'online' }),
+      { ...view('acid', { kind: 'online' }), demand: 1 },
+      view('co2', { kind: 'unconnected' }),
+    ];
+    const x = find(advise(r, SETTINGS, channels, water), 'alkalinity-high');
+    expect(x.where).toBe('automatic');
+    expect(x.direction).toContain('full capacity');
+    expect(x.dose?.how).not.toContain('by hand');
+  });
+
+  it('leaves low chlorine and high pH to their connected channels', () => {
+    const chlorine = scene({ freeChlorine: 0.7 });
+    const low = find(
+      advise(chlorine.r, SETTINGS, ALL_ONLINE, chlorine.water),
+      'free-chlorine-low',
+    );
+    expect(low.where).toBe('automatic');
+    expect(low.direction).toContain('no hand dose');
+    const ph = scene({ ph: 7.55 });
+    const high = find(advise(ph.r, SETTINGS, ALL_ONLINE, ph.water), 'ph-high');
+    expect(high.additive).toBe('co2');
+    expect(high.direction).toContain('no hand dose');
   });
 
   it('dilution and superchlorination go into the pool', () => {
