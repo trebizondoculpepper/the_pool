@@ -21,11 +21,21 @@ Investigate in this order:
 3. Find why a console's screen shows the same page correctly: a different holder, mesh, size or layering.
 4. Only then consider the 2048 px cap, the page failing to draw, or display reach.
 
+## How the screens should work (the owner, 2026-11-02)
+
+Today a screen is cleared by drawing a black page over it (the viewscreen's built-in surface showing `BLANK`, `bridge-viewscreen.ts:54` and `:97`, while a selected page is added beside it in the same holder). The owner wants that draw-over system gone. Instead, the black screen and the World Federation of Baths boot screen are ordinary LCARS pages of their own, and each screen shows exactly one page at a time, chosen by its state:
+
+- **Unpowered or off:** the black page.
+- **Booting:** the boot page (the existing boot screens, `ui2d`'s `BootScreen` and `bridge-lights-up.ts`'s boot as the power rises).
+- **Running:** its normal page, the one selected for it.
+
+Switching state switches the page on the one surface; nothing is layered over anything to hide it. This applies to the main viewscreen and to every bridge console screen. With one surface per screen there is nothing left to fight the selected page for the depth test, which is the first suspect for the black pages, so the redesign is expected to be the fix; the investigation confirms it (step 1 above) and the finding says so.
+
 ## What to deliver
 
 1. A short written finding in `doc/plans/124-bridge-viewscreen-black.md`: the cause, with evidence (a screenshot standing near and one from the captain's chair, each sent separately, and what step 1 recorded).
-2. A fix for the confirmed failure path (likely the page layering, if the inspection supports it), within the component benchmark's budget (`bench.html?bench=components`) and the displays-redraw-only-on-change rule. Keep the shared reach rules untouched unless the evidence implicates them; any change to them for all displays needs the owner's agreement first.
-3. A test in `logic/` of the confirmed failure path (for example, that only the selected page is shown in the viewscreen's holder), not a reach-profile test by default.
+2. The redesign above, removing the draw-over `BLANK` system, and a fix for the confirmed failure path if it is anything else, within the component benchmark's budget (`bench.html?bench=components`) and the displays-redraw-only-on-change rule. Keep the shared reach rules untouched unless the evidence implicates them; any change to them for all displays needs the owner's agreement first.
+3. Tests in `logic/`: each screen's page follows its state (off, booting, running) and only one page is ever shown on a screen; and a test of the confirmed failure path, not a reach-profile test by default.
 
 ## Coordination
 
