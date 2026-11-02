@@ -53,7 +53,7 @@ Wait for `done` (finished, found or not); take a picture only once `ready` (plac
 
 **From the in-game console** (open with the backquote key): `look <ref> [front|left|right|room|detail|above]` in the present room; `cam` prints the link to the present view.
 
-**From a script**: `node scripts/look.ts <room|-> <ref> [mode,mode…]` drives headless Chrome against a running dev server (it never starts one; `LOOK_URL` overrides the default `http://127.0.0.1:5175`), saves `doc/marketing/tmp/look/<room>_<ref>_<mode>.png`, prints each result and its pose link, and exits non-zero on a refusal or a 60 s timeout. Use `-` for the room to let the register find it. The `npm run look` alias is not yet in the committed `package.json`; until it is, call the script with `node`.
+**From a script**: `npm run look -- <room|-> <ref> [mode,mode…]` (or `node scripts/look.ts`) drives headless Chrome against a running dev server (it never starts one; `LOOK_URL` overrides the default `http://127.0.0.1:5175`), saves `doc/marketing/tmp/look/<room>_<ref>_<mode>.png`, prints each result and its pose link, and exits non-zero on a refusal or a 60 s timeout. Use `-` for the room to let the register find it.
 
 ## I want to know what is in room Y
 
