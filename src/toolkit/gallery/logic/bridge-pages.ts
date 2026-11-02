@@ -1,4 +1,5 @@
 import { OLYMPIC_FILTER_WASHING } from './olympic-filter-washing';
+import { OUTSIDE_WEATHER } from './outside-weather';
 import { BRIDGE_BINDINGS, bridgeSpec } from './bridge-bindings';
 import { STATION_NAMES } from './station-schematics';
 import { OVERVIEWS } from './schematic-overviews';
@@ -138,6 +139,16 @@ export const BRIDGE_PAGES: readonly BridgePage[] = [
     source: OLYMPIC_FILTER_WASHING.id,
     model: OLYMPIC_FILTER_WASHING.model,
   },
+  // The weather outside (mission 123).
+  {
+    id: OUTSIDE_WEATHER.id,
+    title: OUTSIDE_WEATHER.title,
+    short: OUTSIDE_WEATHER.short,
+    kind: 'custom',
+    suits: EVERY,
+    source: OUTSIDE_WEATHER.id,
+    model: OUTSIDE_WEATHER.model,
+  },
   ...STATION_NAMES.map((station): BridgePage => ({
     id: `schematics.${kebab(station)}`,
     title: station,
@@ -203,6 +214,7 @@ export const ROLE_PAGES: Readonly<Record<string, readonly string[]>> = {
   'boiler-helmsman': [
     'cr-mp2',
     'schematics.boiler-helmsman',
+    'outside-weather',
     'overview.heating',
     'overview.gas',
     'display.heat-and-gas',
@@ -228,6 +240,7 @@ export const ROLE_PAGES: Readonly<Record<string, readonly string[]>> = {
   'central-control': [
     'cc-01',
     'schematics.central-control',
+    'outside-weather',
     'schematics.main-viewscreen',
     'display.site-status',
     'display.the-whole-plant',

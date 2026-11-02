@@ -7,6 +7,10 @@ import {
   olympicFilterWashingPage,
 } from './olympic-filter-washing';
 import type { LivePage, PageLive } from './olympic-filter-washing';
+import {
+  createOutsideWeatherPanel,
+  outsideWeatherPage,
+} from './outside-weather';
 
 /**
  * The bridge's own pages built (`logic/bridge-pages.ts`): each as a page
@@ -29,6 +33,11 @@ export const CUSTOM_PAGES: Readonly<Record<string, CustomPageBuilder>> = {
     page: olympicFilterWashingPage,
     surface: (kit, size, live) =>
       createOlympicFilterWashingPanel(kit, live, size),
+  },
+  // The weather outside (mission 123).
+  'outside-weather': {
+    page: outsideWeatherPage,
+    surface: (kit, size, live) => createOutsideWeatherPanel(kit, live, size),
   },
 };
 
