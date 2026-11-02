@@ -1757,6 +1757,15 @@ const openRoom = async () => {
       // At the top: download or upload a save slot (the owner, 2026-11-01).
       directory.querySelector('.world-transfer')?.remove();
       directory.prepend(createWorldTransferPanel());
+      // The universal catalogue (mission 126), under the panel's header.
+      if (!directoryShell.querySelector('.catalogue'))
+        void import('./toolkit/gallery/views/catalogue-panel')
+          .then(({ createCataloguePanel }) =>
+            directoryShell
+              .querySelector('.directory-head')
+              ?.after(createCataloguePanel()),
+          )
+          .catch(showError);
       directory.hidden = false;
       document.title = 'The Pool — Dev panel';
     } else {

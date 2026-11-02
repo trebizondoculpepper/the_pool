@@ -33,7 +33,7 @@ import { createPanelKit } from '../../components/core/views/eighties-controls';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { clockStopped, paused } from '../../controls/logic/paused';
 import { roomWorld } from '../../save/world-store';
-import { EQUIPPED_ROOMS, layoutRoom } from '../logic/room-equipment';
+import { placedRoomItems } from '../logic/room-usage';
 import type { Item } from '../logic/room-equipment';
 import {
   BUSY_ROOMS,
@@ -186,11 +186,10 @@ const EXHIBIT_MODULES: Record<
 function roomItems() {
   const rooms: { room: string; keys: string[] }[] = [];
   const first = new Map<string, { item: Item; room: string }>();
-  for (const room of EQUIPPED_ROOMS) {
-    const placed = layoutRoom(room)?.placed ?? [];
-    rooms.push({ room, keys: placed.map((p) => p.item.key) });
-    for (const p of placed)
-      if (!first.has(p.item.key)) first.set(p.item.key, { item: p.item, room });
+  for (const { room, items } of placedRoomItems()) {
+    rooms.push({ room, keys: items.map((item) => item.key) });
+    for (const item of items)
+      if (!first.has(item.key)) first.set(item.key, { item, room });
   }
   return { rooms, first };
 }

@@ -29,6 +29,11 @@ import { co2StatusLines } from '../../../game/plant/co2-status';
 import { weatherLines } from '../../../game/weather';
 import { swapRefusal } from '../../components/plant/logic/co2-supply';
 import { splitStatements, tokenise } from './command-line';
+import {
+  FINDING_WORDS,
+  kindCatalogue,
+} from '../../gallery/logic/kind-catalogue';
+import { lookCatalogue } from '../../gallery/logic/look-catalogue';
 import { objectStatus, statusNames } from './object-status';
 
 /**
@@ -457,6 +462,50 @@ export const COMMANDS: readonly ConsoleCommand[] = [
       return host.look(ref, mode)
         ? `looking at ${ref}${mode ? ` (${mode})` : ''}: see the notice, or window.__poolLook`
         : fail('look: no room to look in');
+    },
+  },
+  {
+    name: 'looks',
+    usage: '[filter]',
+    help: "this room's catalogue: each named thing's look ref, name and kind (mission 126)",
+    run(host, [filter]) {
+      const room = host.currentRoom();
+      if (!room) return fail('looks: not in a room');
+      const entries = lookCatalogue(room).filter((e) =>
+        matching(filter, e.ref, e.title, e.kind, e.assetId ?? ''),
+      );
+      if (!entries.length)
+        return `${room}: nothing catalogued from data here yet (mission 127)`;
+      return entries.map(
+        (e) =>
+          `${e.ref.padEnd(16)}${e.title.padEnd(44)}${e.kindWord}${e.findings.length ? `  [${e.findings.join(', ')}]` : ''}`,
+      );
+    },
+  },
+  {
+    name: 'catalogue',
+    usage: '[kind]',
+    help: 'every kind of game object: copies, outside dev rooms, findings; or one kind in full (mission 126)',
+    run(_host, [key]) {
+      const kinds = kindCatalogue();
+      if (!key)
+        return kinds.map(
+          (k) =>
+            `${k.key.padEnd(24)}${String(k.usage.count).padStart(4)}${String(k.usage.outsideDev).padStart(5)}  ${k.worst.join(', ')}`,
+        );
+      const k = kinds.find((x) => x.key === key);
+      if (!k) return fail(`catalogue: no kind '${key}'`);
+      return [
+        `${k.key}: ${k.word} (${k.class}${k.maker ? `, ${k.maker}` : ''})`,
+        `${k.usage.count} in all, ${k.usage.outsideDev} outside dev rooms: ${k.usage.rooms.join(', ')}`,
+        ...(k.worst.length
+          ? [`findings: ${k.worst.map((f) => FINDING_WORDS[f]).join(', ')}`]
+          : []),
+        ...k.copies.map(
+          (c) =>
+            `  ${c.ref.padEnd(16)}${c.room.padEnd(18)}${c.name}${c.findings.length ? `  [${c.findings.join(', ')}]` : ''}`,
+        ),
+      ];
     },
   },
   {

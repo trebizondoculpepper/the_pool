@@ -6,6 +6,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- The universal catalogue (mission 126) at the top of the dev panel (`?dev`): Rooms, every room in `ROOMS` opening into its named things (each a look link, with its parts under it, and a menu of Open, Catalogue and Audit, the last coming in mission 129), and Game objects, every kind of game object with its copies, parts, where it is used (copies in all, the rooms, copies outside the dev rooms) and how well it is named, with filters (used anywhere, used outside dev rooms, badly named) and a search. Built from data alone (`look-catalogue.ts`, `kind-catalogue.ts`, `room-usage.ts`), never from a scene; console `looks` and `catalogue [kind]`.
+
 - Look links (mission 125): `?room=<room>&look=<ref>&mode=front|left|right|room|detail|above&fit=0.8&shot=1` puts the camera on a named object (tag, asset id, model binding, name or slug, `ref/part`, `#n`), fitted to the frame, standing where a walker could, with the line of sight checked by nine rays; refusals say why; `window.__poolLook` for scripts, a `look` console command, and `node scripts/look.ts` to save PNGs. dev rooms' exhibits and dev0's weather station console are now named for it.
 
 - A GitHub bug report template (`.github/ISSUE_TEMPLATE/bug_report.yml`): it explains how to download the game's state file from the dev panel's World state box (`?dev`) and asks for it to be attached, with what happened, steps, version and platform.

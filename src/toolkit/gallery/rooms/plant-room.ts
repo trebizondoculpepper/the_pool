@@ -149,7 +149,7 @@ export interface RoomFinish {
   titleCard?: { x: number; y: number; z: number; yaw: number; scale?: number };
 }
 
-const EXHIBITS: Record<
+export const EXHIBITS: Record<
   ExhibitRoomId,
   () => Promise<{
     EXHIBITS: readonly PlantExhibit[];
