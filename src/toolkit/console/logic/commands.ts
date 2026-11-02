@@ -26,6 +26,7 @@ import {
   testKitSummary,
 } from '../../../game/plant/test-kit';
 import { co2StatusLines } from '../../../game/plant/co2-status';
+import { weatherLines } from '../../../game/weather';
 import { swapRefusal } from '../../components/plant/logic/co2-supply';
 import { splitStatements, tokenise } from './command-line';
 import { objectStatus, statusNames } from './object-status';
@@ -691,6 +692,26 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         by: 'console',
       });
       return formatTestKit(t);
+    },
+  },
+  {
+    name: 'weather',
+    usage: '[<°C>|live]',
+    help: 'Manchester’s weather: the reading, its age and its source; weather 3 holds a test outside temperature, weather live releases it',
+    complete: (_host, args) => (args.length ? [] : ['live']),
+    run(host, [word]) {
+      if (word === 'live')
+        host.dispatch({ type: 'weather/test', celsius: null });
+      else if (word !== undefined) {
+        const celsius = Number(word);
+        if (!Number.isFinite(celsius) || celsius < -40 || celsius > 45)
+          return fail(
+            'weather: say weather, weather <°C> (-40 to 45), or weather live',
+          );
+        host.dispatch({ type: 'weather/test', celsius });
+      }
+      const w = host.world();
+      return weatherLines(w.weather, w.ambient, Date.now());
     },
   },
   {

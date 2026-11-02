@@ -115,6 +115,25 @@ function said(
       return { subject: 'PLANT', text: 'SLOW START begun' };
     case 'weather/ambient':
       return { subject: 'WEATHER', text: `outside ${action.celsius} °C` };
+    case 'weather/reading': {
+      const r = action.reading;
+      return {
+        subject: 'WEATHER',
+        text:
+          r.source === 'open-meteo'
+            ? `Manchester ${r.temperature.toFixed(1)} °C (Open-Meteo)`
+            : `NO DATA, ESTIMATED ${r.temperature.toFixed(1)} °C`,
+      };
+    }
+    case 'weather/test':
+      return {
+        subject: 'WEATHER',
+        text:
+          action.celsius === null
+            ? 'test temperature released: live weather'
+            : `test temperature ${action.celsius} °C held`,
+        severity: 'notice',
+      };
     case 'lthw/pumps':
       return {
         subject: 'LTHW PUMPS',

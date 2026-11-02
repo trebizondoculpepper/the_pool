@@ -401,6 +401,8 @@ export const WORLD_HEALTH_COVERAGE = {
   startup: 'not health: a SLOW START sequence’s clock',
   lighting: 'lighting: supply and every zone',
   ambient: 'not health: the weather, a load on the plant',
+  weather:
+    'not health: the weather outside (mission 123), which ambient follows',
   gas: 'gas: every detected zone clear',
   identifiedPlant:
     'not checked: the footbath’s and jacuzzi’s identified parts are judged by their pools’ flow and level; their own states have no rule yet',

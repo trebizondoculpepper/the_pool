@@ -185,6 +185,8 @@ import type {
   CentralBattery,
 } from '../toolkit/components/plant/logic/electrical-room';
 import { AMBIENT } from './plant/thermal';
+import { easeAmbient, newWeather, takeReading, weatherTarget } from './weather';
+import type { WeatherReading, WeatherState } from './weather';
 import type { LightingState, LightingZoneId } from './plant/lighting';
 import { fullOff, fullOn, slowStartAt, slowStartBegin } from './plant/startup';
 import type { BathersState } from './bathers';
@@ -365,7 +367,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 74;
+export const WORLD_VERSION = 75;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -448,6 +450,8 @@ export interface World {
   centralBattery: CentralBattery;
   /** The outside's temperature, °C: everything unheated settles to it (`thermal.ts`). */
   ambient: number;
+  /** Manchester's weather (mission 123): the last reading, eased into `ambient` (`weather.ts`). */
+  weather: WeatherState;
   /** The toxic gas detection's rooms: their air, detectors and leaks (`gas.ts`). */
   gas: GasZones;
   /** Named engineering blocks. Controls and the inventory resolve IDs here. */
@@ -563,6 +567,7 @@ export function newWorld(): World {
     sewer: newSewerMonitor(),
     makeUpRecord: newFlowRecord(),
     ambient: AMBIENT,
+    weather: newWeather(),
     gas: newGasZones(),
     identifiedPlant: newIdentifiedPlant(),
     installedValves: newInstalledValveStates(),
@@ -612,6 +617,10 @@ export type WorldAction =
   | { type: 'plant/full-on' }
   | { type: 'plant/slow-start' }
   | { type: 'weather/ambient'; celsius: number }
+  /** A reading of the weather outside, live or estimated (mission 123), which `ambient` then follows. */
+  | { type: 'weather/reading'; reading: WeatherReading }
+  /** A test temperature held from the console (`weather 3`); null releases it (`weather live`). */
+  | { type: 'weather/test'; celsius: number | null }
   /** The LTHW ring's pumps switched to run or stop (mission 120). */
   | { type: 'lthw/pumps'; running: boolean }
   /** The boiler house worked: a boiler's keys, its sequencer's panel, its combustion panel (mission 121). */
@@ -1224,6 +1233,14 @@ export function applyAction(world: World, action: WorldAction): World {
       return world.ambient === action.celsius
         ? world
         : { ...world, ambient: action.celsius };
+    case 'weather/reading': {
+      const weather = takeReading(world.weather, action.reading);
+      return weather === world.weather ? world : { ...world, weather };
+    }
+    case 'weather/test':
+      return world.weather.test === action.celsius
+        ? world
+        : { ...world, weather: { ...world.weather, test: action.celsius } };
     case 'lthw/pumps':
       return world.lthw.pumps === action.running
         ? world
@@ -1449,7 +1466,13 @@ export function stepWorld(world: World, delta: number): World {
     delta,
   );
   const lifts = stepLifts(world.lifts, delta);
-  const stepped = { ...next, plant, intake, lifts };
+  // The outside follows the weather's reading, eased (mission 123).
+  const ambient = easeAmbient(
+    world.ambient,
+    weatherTarget(world.weather),
+    delta,
+  );
+  const stepped = { ...next, plant, intake, lifts, ambient };
   // The annunciator senses the plant's alarms, whichever room the walker
   // is in (the reading is kept for the displays that read it after).
   const annunciator = senseAlarms(

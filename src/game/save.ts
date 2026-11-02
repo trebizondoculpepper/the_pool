@@ -442,6 +442,9 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
     const { washNow: _pending, ...washOTron } = world.washOTron;
     return { ...world, washOTron };
   },
+  // 74 → 75: the weather outside (mission 123): no reading yet, so the
+  // saved ambient holds until the first (`fillDefaults` adds it).
+  74: (world) => world,
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

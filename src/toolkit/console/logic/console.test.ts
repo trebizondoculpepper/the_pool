@@ -146,6 +146,21 @@ describe('the commands', () => {
     expect(texts(runLine(host, 'help open'))[0]).toMatch(/^open <tag>/);
   });
 
+  it('shows the weather and holds a test temperature until weather live', () => {
+    const t = fakeHost();
+    expect(texts(runLine(t.host, 'weather')).join('\n')).toMatch(
+      /no reading yet/,
+    );
+    runLine(t.host, 'weather 3');
+    expect(t.world().weather.test).toBe(3);
+    expect(texts(runLine(t.host, 'weather')).join('\n')).toMatch(
+      /TEST temperature 3 °C/,
+    );
+    runLine(t.host, 'weather live');
+    expect(t.world().weather.test).toBeNull();
+    expect(texts(runLine(t.host, 'weather hot'))[0]).toMatch(/^weather: say/);
+  });
+
   it('opens and shuts a valve by its tag, and logs it as the console’s', () => {
     const t = fakeHost();
     runLine(t.host, 'close PL1-F1-IV1');

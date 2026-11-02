@@ -86,6 +86,7 @@ import { settings } from './toolkit/settings/settings-store';
 import { effect } from '@preact/signals-core';
 import { partAudio } from './toolkit/components/core/audio/part-audio';
 import { renderPlantManual } from './toolkit/manual/plant-manual';
+import { startWeatherFeed } from './toolkit/weather/weather-feed';
 
 // Which build this is, until the title screen shows it.
 console.info(`Pool Plant ${versionLabel()}`);
@@ -197,6 +198,8 @@ const saveGame = () => {
   return worldStore('dev').save();
 };
 const positionSaveTimer = window.setInterval(rememberPlayer, 10_000);
+// Manchester's weather, live from Open-Meteo or estimated (mission 123).
+startWeatherFeed(() => worldStore('dev'));
 window.addEventListener('pagehide', rememberPlayer);
 const saveHiddenPosition = () => {
   if (document.visibilityState === 'hidden') rememberPlayer();
