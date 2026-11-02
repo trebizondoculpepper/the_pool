@@ -1,33 +1,44 @@
 #!/usr/bin/env bash
-# Pre-commit: refuse a commit whose staged files are not formatted (the
-# owner, 2026-11-02), as CI's `npm run format:check` would.
+# Pre-commit: format every staged file, as CI's `npm run format:check`
+# expects (the owner, 2026-11-02: badly formatted code is simply wrong, so
+# fix it rather than refuse it).
 #
-# It checks the STAGED content of each file (what will be committed), never
-# the working tree, and never changes or stages anything: several agents
-# share this checkout and stage hunks, so a hook that formatted and re-added
-# whole files could commit another agent's unstaged edits. Fix a refusal
-# with `npx vp fmt <files>`, re-stage your own hunks, and commit again.
+# What is committed is the staged content, formatted: each staged file's
+# staged version is run through `vp fmt` and written back to the index as
+# it is, so only the hunks you staged are committed, formatted, even when
+# the file holds other changes not staged. The same file in the working
+# tree is then formatted too, so it agrees with what was committed; in the
+# shared checkout that may reformat another agent's unstaged lines in that
+# file, which changes only their layout (the owner accepts this: agents
+# broadcast before pushing and can recover).
 # Enabled by `git config core.hooksPath .githooks` (`npm install` does it,
-# through package.json's `prepare`). Skip once with `git commit --no-verify`
-# only when you mean to.
+# through package.json's `prepare`).
 set -u
 cd "$(git rev-parse --show-toplevel)" || exit 1
 vp="node_modules/.bin/vp"
 [ -x "$vp" ] || { echo "pre-commit: $vp not found; run npm install" >&2; exit 1; }
-bad=()
+changed=()
 while IFS= read -r -d '' f; do
   # Files the formatter ignores (vite.config.ts's fmt.ignorePatterns) or
-  # cannot parse are skipped: vp names no target for them.
+  # cannot parse are left alone: vp names no target for them.
+  [ -e "$f" ] || continue
   if "$vp" fmt --check "$f" 2>&1 | grep -q "Expected at least one target"; then
     continue
   fi
-  staged=$(git show ":$f" 2>/dev/null) || continue
-  formatted=$(printf '%s\n' "$staged" | "$vp" fmt --stdin-filepath="$f" 2>/dev/null) || continue
-  [ "$staged" == "$formatted" ] || bad+=("$f")
+  mode=$(git ls-files -s -- "$f" | awk '{print $1; exit}')
+  staged=$(git cat-file blob ":$f") || continue
+  formatted=$(git cat-file blob ":$f" | "$vp" fmt --stdin-filepath="$f" 2>/dev/null) || {
+    echo "pre-commit: could not format $f (a syntax error?)" >&2
+    exit 1
+  }
+  if [ "$staged" != "$formatted" ]; then
+    blob=$(printf '%s\n' "$formatted" | git hash-object -w --stdin)
+    git update-index --cacheinfo "$mode,$blob,$f"
+    "$vp" fmt "$f" >/dev/null 2>&1 || true
+    changed+=("$f")
+  fi
 done < <(git diff --cached --name-only --diff-filter=ACMR -z)
-if [ ${#bad[@]} -gt 0 ]; then
-  echo "pre-commit: these staged files are not formatted:" >&2
-  printf '  %s\n' "${bad[@]}" >&2
-  echo "Run: npx vp fmt ${bad[*]}   then re-stage your own changes." >&2
-  exit 1
+if [ ${#changed[@]} -gt 0 ]; then
+  echo "pre-commit: formatted ${changed[*]}" >&2
 fi
+exit 0
