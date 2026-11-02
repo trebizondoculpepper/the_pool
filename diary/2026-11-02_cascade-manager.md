@@ -1,0 +1,9 @@
+# The Hamwarmy CM6 cascade manager — 2026-11-02
+
+Mission 122 designed the boiler house's cascade manager and installed it in place of mission 121's rough panel. The owner wanted it started alongside 121, so stages 1 and 2 were built against the unit's own view type: research on the Hamworthy Merley, Siemens' Albatros controllers and Viessmann's Vitotronic 300-K (real dimensions were thin; the Merley's display unit is about 144 × 96 mm and its wall box about 400 × 300 × 150 mm), a page-by-page design, a pure screen model drawn into a 240 × 128 dot frame, a turn-and-push knob that follows the game's rotary rule with a push on its cap, and the unit tried on dev0 and in dev39 against a stand-in sequencer (`5569a152`).
+
+The owner ruled out black or near-black buttons, which render badly: the knob became light grey with an orange pointer, HOME and BACK light grey, INFO blue, and the selector part gained ring and bow colours so the key switch could follow. The owner also moved the unit's trial from dev39 to the boiler room, renumbered dev65.
+
+Stage 3 (`2eed5078`) bound it to 121's sequencer through a small tested adapter, wired its menus, a new faults page (ACCEPT ALARMS, RESET LOCKOUTS) and its key switch to the world's `'boiler-house'` actions, and installed it in the boiler house as BH-CP3 (asset-1308; asset-1307 went to the weather console in the meantime). BH-MP2 lost its rough-panel buttons and was tidied at the coordinator's request: printed names over its header readouts, spaced lamp labels, its enable lamps moved out from under its title.
+
+Two lessons from the shared checkout: a `git pull --rebase --autostash` that conflicts on reapplying the stash leaves every other agent's changes staged, so the index has to be put back by hand; and a stale cherry-pick state in the checkout can capture the next plain commit. The world keeps no history of the LTHW header, so the unit logs its own trend while shown; that is a follow-up in `TODO.md`.
