@@ -36,6 +36,12 @@ A grey development room that exists for no other reason: generated for the one i
 
 The magic room is built by the same view builders the real rooms use, so what it shows is what the game shows. Each renderable kind gets an explicit factory adapter giving its size, its mounting (floor, wall, hanging), sample readings, its state presets and a setter that applies one to the built view; an item whose builder needs a world binding is given the preset's stand-in reading. `KindEntry` (`kind-catalogue.ts`, about line 114) has no product reference or state fields, and many kinds have no reusable builder, so the adapters are new work. The sizing generator can be pure, but walk collision and room construction are verified separately with the real builders (oversized, overhead, pipe-run and tiny items especially), and display presets are checked on the real rendered surface, particularly while 124 is open.
 
+## Which kinds get which (the owner, 2026-11-02)
+
+- **Every kind** in the catalogue gets an item audit page.
+- **A magic room** only for a kind with a 3D representation (a view builder that draws it).
+- **A magic page** for a kind with no 3D representation (a model block with no drawing of its own, a signal, a controller's logic, a schedule, an abstract kind): a plain text page, linked from its audit like a magic room, that describes what it does: its role in the model, its ports and what they join, its states and what changes them, what reads it and what it drives, and where it shows itself in the game (the displays, lamps and mimics that read it). Written from the model and 131's descriptors, never by hand, so it stays true as the model changes; it is also the shape text adventure mode (128) can reuse for things the player cannot see.
+
 ## Shared foundation
 
 The adapters' parts, controls, readings and state presets are the same data 127's named parts, 128's text verbs and 129's "controlled by" need: one shared kind/part/control/view-state descriptor (control ids, the world action each drives, visible readings, state presets). It is to be settled with the owner, not invented separately by this mission.
@@ -53,9 +59,7 @@ The audit can mark a kind deprecated (a short list in data, with the reason and 
 
 ## Open questions for the owner
 
-1. Should every catalogue kind get a magic room (signs, pipework, abstract or unrenderable kinds included), or should the audit cover all kinds while magic rooms cover physical kinds with a view builder?
-2. Should the magic panel step through every combination of a component's controls, or a curated set of representative appearances with separate page controls?
-3. The shape of the shared descriptor (see Shared foundation), and which mission builds it first.
+1. Should the magic panel step through every combination of a component's controls, or a curated set of representative appearances with separate page controls?
 
 ## Records
 
