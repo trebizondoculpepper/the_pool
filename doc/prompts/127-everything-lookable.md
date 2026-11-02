@@ -42,19 +42,11 @@ The owner, 2026-11-02: "we might be developing a thing, want to see some angles,
   - **bad fronts:** targets whose `front` look sees under half its rays or whose front faces a wall within 0.3 m.
 - **Not a display check:** a target passing the geometry and ray checks is reachable, not proved readable; whether a display shows its content (mission 124's black viewscreen) is a separate check.
 - **Where the report goes:** a committed JSON file (`doc/look-audit.json`, with a short Markdown summary beside it), so the dev panel (126) can show each room's unlabelled count without building rooms, and a change in it shows in a diff.
-- **How it fails:** `npm run look:audit` (headless Chrome against the dev server, as 125's capture script) runs it, writes the report, and exits non-zero when any room has unlabelled, unreachable or duplicate-tag findings not listed, with its reason, in `KNOWN_UNLOOKABLE` (`logic/look-audit.ts`) and flagged in `TODO.md`. It is run before a commit that adds or moves equipment, as the component benchmark is; making it part of CI is a later step.
+- **How it reports:** `npm run look:audit` (headless Chrome against the dev server, as 125's capture script) runs it, writes the report, and exits non-zero when any room has unlabelled, unreachable or duplicate-tag findings not listed, with its reason, in `KNOWN_UNLOOKABLE` (`logic/look-audit.ts`) and flagged in `TODO.md`. It is run before a commit that adds or moves equipment, as the component benchmark is; making it part of CI is a later step.
 
-## Part B: the coverage
+## Scope: the audit screens, not the fixing (the owner, 2026-11-02)
 
-Instrument the builders, not a binder. The order:
-
-1. **Mark architecture and decoration** where rooms are built (the shell, the services ceiling, set dressing), so the first report is about things that matter.
-2. **Plant rooms, the boiler house and the control room** (the rooms the owner asks to see most): `room-equipment.ts`, the valves and pipes drawn from each room's network.
-3. **Dev rooms,** their exhibits and the objects they place directly (dev0's boards): each room's metadata (titles, kinds, parts) moved into a small pure module beside it, which the room marks its objects from and 126's catalogue reads in place of the room module's `EXHIBITS` (126, rewritten 2026-11-02 as the universal catalogue, left this move to 127).
-4. **Museum halls, corridors, the pool halls** and the rest.
-5. **Named parts** on the components agents photograph most: the CM6, the mimic boards' readouts, the weather station console, the touch panels, the period PC's screen.
-
-A test compares, room by room, the look targets the catalogue lists with the owners `markComponent` marks, so the two never drift. No tag is invented by hand: an object that should have a tag gets it through the model or the register; one that has no tag is named.
+127 is done when the audit screens and `npm run look:audit` work, fully, for every room: they build each room, list and classify everything in it, and report every finding. It is not done when rooms pass. Bringing every room up to code (marking, naming and tagging what the audit finds, room by room) is a separate mission, [132](132-bring-everything-up-to-code.md), which takes over what this brief once called Part B. 127 makes only the marking changes its screens need to be correct (the shared classification, including the architectural class, and the catalogue-versus-scene comparison), not the room-by-room fixes.
 
 ## Shared foundation
 
@@ -62,7 +54,7 @@ Missions 128, 129 and 130 each need one descriptor per kind of what it is made o
 
 ## Keeping it that way
 
-A rule in `CLAUDE.md`: a new object in any room is lookable, named from the model, the register or the room's catalogue; new components declare their named parts; a new or changed room passes `npm run look:audit`.
+A rule in `CLAUDE.md`: a new object in any room is lookable, named from the model, the register or the room's catalogue; new components declare their named parts; a new or changed room passes `npm run look:audit` once 132 has brought the rooms up to code.
 
 ## Not in this mission
 
@@ -70,7 +62,7 @@ No change to how a look link chooses its view (125) or how the panel lists (126)
 
 ## Open questions for the owner
 
-1. Does 127 finish only when all rooms pass, or may it ship plant and dev-room coverage first, with the remaining rooms tracked in `TODO.md`?
+None at present.
 
 ## Records
 
