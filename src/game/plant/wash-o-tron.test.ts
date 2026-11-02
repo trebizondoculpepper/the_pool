@@ -87,11 +87,9 @@ describe('the Lidoluxe Wash-O-Tron', () => {
     expect(newWorld().washOTron.running).toBe(true);
   });
 
-  it('washes a filter in AUTO forced to BACKWASH by hand without taking it out of AUTO', () => {
-    let w = act(newWorld(), { act: 'mode', filter: 2, mode: 'backwash' });
+  it('CYCLE NOW immediately starts the common timed sequence in AUTO', () => {
+    let w = act(newWorld(), { act: 'cycle-now', filter: 2 });
     expect(w.washOTron.filters[2].auto).toBe(true);
-    expect(w.washOTron.washNow).toBe(2);
-    w = advance(w, 60, 1);
     expect(w.washOTron.washing).toBe(2);
     expect(w.washOTron.step).toBe('backwash');
     // Through SETTLE and RINSE on its own timers, back to FILTER, still in AUTO.
@@ -101,8 +99,74 @@ describe('the Lidoluxe Wash-O-Tron', () => {
     expect(w.washOTron.filters[2].auto).toBe(true);
   });
 
-  it('still takes a filter out of AUTO when another state is chosen by hand', () => {
-    const w = act(newWorld(), { act: 'mode', filter: 1, mode: 'isolate' });
+  it('BACKWASH is a manual state button, not another route into the cycle', () => {
+    const w = act(newWorld(), { act: 'mode', filter: 1, mode: 'backwash' });
     expect(w.washOTron.filters[1].auto).toBe(false);
+    expect(w.washOTron.washing).toBe(null);
+  });
+
+  it('CYCLE NOW completes with automatic scheduling off and leaves it off', () => {
+    let w = act(newWorld(), { act: 'run' });
+    w = act(w, { act: 'auto', filter: 3 });
+    expect(w.washOTron.running).toBe(false);
+    expect(w.washOTron.filters[3].auto).toBe(false);
+    w = act(w, { act: 'cycle-now', filter: 3 });
+    expect(w.washOTron.washing).toBe(3);
+    w = advance(w, 900, 1);
+    expect(w.washOTron.washing).toBe(null);
+    expect(w.washOTron.filters[3].mode).toBe('filter');
+    expect(w.washOTron.filters[3].auto).toBe(false);
+    expect(w.washOTron.running).toBe(false);
+  });
+
+  it('switching scheduled AUTO off during a cycle leaves its sequencer running', () => {
+    let w = act(newWorld(), { act: 'cycle-now', filter: 1 });
+    w = advance(w, 60, 1);
+    w = act(w, { act: 'run' });
+    expect(w.washOTron.running).toBe(false);
+    expect(w.washOTron.washing).toBe(1);
+    w = advance(w, 900, 1);
+    expect(w.washOTron.washing).toBe(null);
+    expect(w.washOTron.filters[1]).toMatchObject({
+      mode: 'filter',
+      phase: 'steady',
+    });
+  });
+
+  it('keeps CYCLE NOW lit through the return valves until FILTER is proved', () => {
+    let w = act(newWorld(), { act: 'cycle-now', filter: 1 });
+    for (let t = 0; t < 900 && w.washOTron.step !== null; t++)
+      w = advance(w, 1, 1);
+    expect(w.washOTron.washing).toBe(1);
+    expect(w.washOTron.filters[1].phase).not.toBe('steady');
+    w = advance(w, 45, 1);
+    expect(w.washOTron.washing).toBe(null);
+    expect(w.washOTron.filters[1]).toMatchObject({
+      mode: 'filter',
+      phase: 'steady',
+    });
+  });
+
+  it('ignores CYCLE NOW while any filter has the one sequencer', () => {
+    let w = act(newWorld(), { act: 'cycle-now', filter: 2 });
+    const before = w.washOTron;
+    w = act(w, { act: 'cycle-now', filter: 1 });
+    expect(w.washOTron).toBe(before);
+    w = advance(w, 900, 1);
+    expect(w.washOTron.washing).toBe(null);
+    expect(w.washOTron.filters[1].lastWash).toBe(0);
+  });
+
+  it('refuses an unsafe button cycle without saving a pending request', () => {
+    let w = {
+      ...newWorld(),
+      wetHall: { ...newWorld().wetHall, backwashTank: 80 },
+    };
+    w = act(w, { act: 'cycle-now', filter: 2 });
+    expect(w.washOTron.washing).toBe(null);
+    expect(w.washOTron.waiting).toBe('PIT CAPACITY');
+    w = { ...w, wetHall: { ...w.wetHall, backwashTank: 0 } };
+    w = advance(w, 5, 1);
+    expect(w.washOTron.washing).toBe(null);
   });
 });

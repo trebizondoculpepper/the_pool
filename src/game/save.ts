@@ -411,6 +411,13 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
       },
     };
   },
+  // 73 → 74: the Wash-O-Tron has no pending wash queue. A previously
+  // requested but not started wash is dropped; an active cycle carries on.
+  73: (world) => {
+    if (!isRecord(world) || !isRecord(world.washOTron)) return world;
+    const { washNow: _pending, ...washOTron } = world.washOTron;
+    return { ...world, washOTron };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

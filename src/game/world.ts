@@ -88,7 +88,7 @@ import {
 import type { ChemControlAction, ChemControlBox } from './plant/chem-control';
 import { actOnWashOTron, newWashOTron } from './plant/wash-o-tron';
 import type { WashAction, WashOTron } from './plant/wash-o-tron';
-import { stepWashWorld } from './plant/wash-o-tron-world';
+import { stepWashWorld, washSensingOfWorld } from './plant/wash-o-tron-world';
 import {
   actOnChangeover,
   changeoverFlow,
@@ -364,7 +364,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 73;
+export const WORLD_VERSION = 74;
 
 /**
  * Where the main corridor's control room doors lead (the owner,
@@ -1110,7 +1110,14 @@ export function applyAction(world: World, action: WorldAction): World {
     case 'wash-o-tron':
       return {
         ...world,
-        washOTron: actOnWashOTron(world.washOTron, action.action, world.time),
+        washOTron: actOnWashOTron(
+          world.washOTron,
+          action.action,
+          world.time,
+          action.action.act === 'cycle-now'
+            ? washSensingOfWorld(world)
+            : undefined,
+        ),
       };
     case 'pit-pumps':
       return {

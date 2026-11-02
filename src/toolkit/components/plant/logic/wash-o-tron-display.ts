@@ -39,6 +39,11 @@ export function washDisplay(s: WashOTron, i: DisplayInputs): [string, string] {
         fit(`${mmss(t)}/${mmss(limit)}`),
       ];
     }
+    if (s.washing !== null)
+      return [
+        fit(`${top} F${s.washing + 1} TO FILTER`),
+        fit('VALVES RETURNING'),
+      ];
     return [fit(`${top} IDLE`), fit(s.waiting ? `WAIT ${s.waiting}` : '')];
   }
   if (view === 'NEXT') {
@@ -48,18 +53,16 @@ export function washDisplay(s: WashOTron, i: DisplayInputs): [string, string] {
         at: f.lastWash + s.setpoints.interval * 3600 - i.time,
         f,
       }))
-      .filter((x) => !x.f.lockout)
+      .filter((x) => x.f.auto && !x.f.lockout)
       .sort((a, b) => a.at - b.at)[0];
-    if (!due) return [fit('NEXT NONE'), fit('ALL LOCKED OUT')];
+    if (!due) return [fit('NEXT NONE'), fit('NO FILTERS IN AUTO')];
     const h = Math.max(0, due.at) / 3600;
     return [
       fit(`NEXT F${due.n + 1}`),
       fit(
-        s.washNow !== null
-          ? `F${s.washNow + 1} WASH NOW`
-          : due.at <= 0
-            ? 'DUE'
-            : `IN ${Math.floor(h)}h${String(Math.floor((h % 1) * 60)).padStart(2, '0')}`,
+        due.at <= 0
+          ? 'DUE'
+          : `IN ${Math.floor(h)}h${String(Math.floor((h % 1) * 60)).padStart(2, '0')}`,
       ),
     ];
   }

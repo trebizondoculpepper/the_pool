@@ -275,6 +275,7 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
   const autoLit: Signal<boolean>[] = [];
   const lockLit: Signal<boolean>[] = [];
   const faultLit: Signal<boolean>[] = [];
+  const cycleLit: Signal<boolean>[] = [];
   const top = mimicY - mimicH / 2 - 0.05;
   for (let n = 0; n < 5; n++) {
     const x = colX(n);
@@ -355,9 +356,23 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         drive: fault,
         name: `Filter ${n + 1} fault lamp`,
       }),
-      x,
+      x - 0.045,
       top - 4 * 0.075 + 0.005,
       0.55,
+    );
+    const cycle = signal(false);
+    cycleLit.push(cycle);
+    mount(
+      pushButton(kit, {
+        colour: 'blue',
+        head: 'illuminated',
+        legend: 'CYCLE NOW',
+        lamp: cycle,
+        name: `Filter ${n + 1} CYCLE NOW`,
+        action: () => c?.act({ act: 'cycle-now', filter: n }),
+      }),
+      x + 0.045,
+      top - 4 * 0.075,
     );
     const tag = createMicroLabel(kit, `FILTER ${n + 1}`, {
       height: 0.008,
@@ -420,21 +435,6 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
   button('HOLD', 'amber', { act: 'hold' }, rx - 0.035, r3, holdLit);
   button('STEP', 'white', { act: 'step' }, rx + 0.035, r3);
   button('SKIP', 'white', { act: 'skip' }, rx + 0.105, r3);
-  // WASH NOW: the filter the NEXT view shows is washed out of turn.
-  const washNowLit = signal(false);
-  let washNowFilter = 0;
-  mount(
-    pushButton(kit, {
-      colour: 'blue',
-      head: 'illuminated',
-      legend: 'WASH NOW',
-      lamp: washNowLit,
-      name: 'Wash-O-Tron WASH NOW',
-      action: () => c?.act({ act: 'wash-now', filter: washNowFilter }),
-    }),
-    rx + 0.07,
-    r1 - 0.075,
-  );
   // The annunciator: four windows, ACCEPT and RESET.
   const ALARM_LEGENDS: [Alarm, string][] = [
     ['stepOverrun', 'STEP\nOVERRUN'],
@@ -484,6 +484,7 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
         autoLit[n].value = f.auto;
         lockLit[n].value = f.lockout;
         faultLit[n].value = f.phase === 'fault' && flashing.value;
+        cycleLit[n].value = s.washing === n;
         const open = c.valves(n);
         FILTER_VALVES.forEach((v, k) =>
           (
@@ -496,8 +497,6 @@ export function createWashOTron(kit: PanelKit, c?: WashOTronControls) {
       runLit.value = s.running;
       holdLit.value = s.hold && flashing.value;
       programmeLit.value = s.unlocked > 0;
-      washNowLit.value = s.washNow !== null;
-      washNowFilter = s.washing ?? s.filters.findIndex((f) => !f.lockout);
       ALARM_LEGENDS.forEach(([k], i) => {
         const a = s.alarms[k];
         const on = a.on && (a.accepted || flashing.value);

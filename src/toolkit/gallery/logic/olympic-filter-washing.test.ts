@@ -67,7 +67,7 @@ describe('OLYMPIC FILTER WASHING (mission 095)', () => {
     expect(programmeView(newWorld()).words).toBe('AUTO · IDLE');
   });
 
-  it('CLEAN NOW washes the filter at once: the Wash-O-Tron’s WASH NOW, the programme started, its dirt washed out', () => {
+  it('CYCLE NOW washes the filter at once through the Wash-O-Tron, leaving AUTO as it was', () => {
     let w = newWorld();
     const before = dirtPercent(w, 2);
     const cmd = cleanNow(w, 2);
@@ -75,7 +75,7 @@ describe('OLYMPIC FILTER WASHING (mission 095)', () => {
     if (cmd.kind !== 'act') return;
     expect(cmd.actions).toContainEqual({
       type: 'wash-o-tron',
-      action: { act: 'wash-now', filter: 2 },
+      action: { act: 'cycle-now', filter: 2 },
     });
     w = press(w, cmd).world;
     expect(w.washOTron.running).toBe(true);
@@ -142,9 +142,10 @@ describe('OLYMPIC FILTER WASHING (mission 095)', () => {
     expect(refusalWords(lockoutFilter(0))).toMatch(/^LOCAL CONTROL ONLY/);
   });
 
-  it('refuses CLEAN NOW of the filter already washing', () => {
+  it('refuses CYCLE NOW of any filter while one is already washing', () => {
     let w = press(newWorld(), cleanNow(newWorld(), 4)).world;
     w = advance(w, 60, 1);
     expect(press(w, cleanNow(w, 4)).refused).toMatch(/WASHING NOW/);
+    expect(press(w, cleanNow(w, 3)).refused).toMatch(/WASHING NOW/);
   });
 });

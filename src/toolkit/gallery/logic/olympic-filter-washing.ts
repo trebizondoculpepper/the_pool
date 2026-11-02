@@ -4,8 +4,9 @@ import {
   OLYMPIC_DIRT_REF,
   olympicFlowsOf,
 } from '../../../game/plant/olympic-battery';
-import { washVolume } from '../../../game/plant/wash-o-tron';
+import { cycleRefusal, washVolume } from '../../../game/plant/wash-o-tron';
 import type { ProgrammeStep, WashOTron } from '../../../game/plant/wash-o-tron';
+import { washSensingOfWorld } from '../../../game/plant/wash-o-tron-world';
 import { WET_HALL_PLANT } from '../../../game/plant/wet-hall';
 import { refusal } from './bridge-bindings';
 
@@ -17,8 +18,8 @@ import { refusal } from './bridge-bindings';
  * bridge page showing the Olympic's five filters as the world has them,
  * each one's state under the Lidoluxe Wash-O-Tron (`wash-o-tron.ts`), its
  * DIRT %, its bed's pressure difference and flow, and the wash
- * programme's progress; CLEAN NOW asks the Wash-O-Tron to wash a filter
- * out of turn (`wash-now`), as its own WASH NOW does, and the programme's
+ * programme's progress; CYCLE NOW starts the Wash-O-Tron's single timed
+ * cycle (`cycle-now`) on one filter, and the programme's
  * RUN and HOLD are worked from here. A filter's mode, its AUTO and its
  * LOCKOUT stay at the controller in the plant room (`CLAUDE.md`: local
  * controls stay local). Everything is read from the world; nothing is
@@ -90,9 +91,8 @@ export interface FilterTile {
   name: string;
   state: string;
   kind: TileKind;
-  /** Handed to the programme (its AUTO), and asked to be washed next out of turn. */
+  /** Handed to the automatic scheduler (its AUTO). */
   auto: boolean;
-  queued: boolean;
   dirt: number;
   /** Over its due point. */
   due: boolean;
@@ -111,7 +111,7 @@ export function filterTiles(world: World): FilterTile[] {
   const flows = olympicFlowsOf(world);
   return Array.from({ length: FILTERS }, (_, n): FilterTile => {
     const f = s.filters[n];
-    const washing = s.washing === n && s.step !== null;
+    const washing = s.washing === n;
     let state: string;
     let kind: TileKind;
     if (f.lockout) {
@@ -121,7 +121,7 @@ export function filterTiles(world: World): FilterTile[] {
       state = 'VALVE FAULT';
       kind = 'fault';
     } else if (washing) {
-      state = STEP_WORDS[s.step!];
+      state = s.step === null ? 'TO SERVICE' : STEP_WORDS[s.step];
       kind = 'washing';
       if (f.phase !== 'steady') state += ' · VALVES';
     } else if (f.phase !== 'steady') {
@@ -147,15 +147,14 @@ export function filterTiles(world: World): FilterTile[] {
       state,
       kind,
       auto: f.auto,
-      queued: s.washNow === n && !washing,
       dirt,
       due: dirt >= 100,
       dp: face?.bedBar ?? 0,
       flow: face?.riser ?? 0,
       progress:
-        washing && f.phase === 'steady'
+        washing && s.step !== null && f.phase === 'steady'
           ? Math.min(1, s.stepTime / Math.max(1, stepLimit(s, s.step!)))
-          : washing
+          : washing && s.step !== null
             ? 0
             : null,
     };
@@ -195,19 +194,17 @@ export function programmeView(world: World): ProgrammeView {
   }
   const pit = world.wetHall.backwashTank;
   const pitHigh = WET_HALL_PLANT.backwashTank * WET_HALL_PLANT.backwashHigh;
-  const words = !s.running
-    ? 'AUTO OFF'
-    : s.hold
-      ? s.washing !== null
-        ? `HOLD · F${s.washing + 1} ${STEP_WORDS[s.step!] ?? ''}`.trim()
-        : 'HOLD'
-      : s.washing !== null && s.step !== null
-        ? `F${s.washing + 1} ${STEP_WORDS[s.step]}`
-        : s.waiting
-          ? `WAITING · ${s.waiting}`
-          : s.washNow !== null
-            ? `F${s.washNow + 1} QUEUED`
-            : 'AUTO · IDLE';
+  const words = s.hold
+    ? s.washing !== null
+      ? `HOLD · F${s.washing + 1} ${STEP_WORDS[s.step!] ?? ''}`.trim()
+      : 'HOLD'
+    : s.washing !== null
+      ? `F${s.washing + 1} ${s.step === null ? 'TO SERVICE' : STEP_WORDS[s.step]}`
+      : s.waiting
+        ? `WAITING · ${s.waiting}`
+        : s.running
+          ? 'AUTO · IDLE'
+          : 'MANUAL · IDLE';
   return {
     running: s.running,
     hold: s.hold,
@@ -243,12 +240,8 @@ function wash(
 }
 
 /**
- * CLEAN NOW on filter `n`: the Wash-O-Tron's WASH NOW, the filter washed
- * next, out of turn, as soon as the programme may start it (four left in
- * service, the pumps running, room in the backwash pit). With the
- * programme off (AUTO OFF) it is started too, since nothing washes
- * without it. Refused for a filter locked out or not in service (its
- * mode is set at the controller), or one already washing.
+ * CYCLE NOW on filter `n`: start the same timed sequence the scheduler uses.
+ * It works with scheduling on or off and never queues behind another wash.
  */
 export function cleanNow(world: World, n: number): WashCommand {
   const s = world.washOTron;
@@ -257,7 +250,8 @@ export function cleanNow(world: World, n: number): WashCommand {
   if (!f) return { kind: 'refused', why: `no filter ${n + 1}` };
   if (f.lockout)
     return { kind: 'local', at: `${tag}’s lockout, ${WASH_O_TRON_AT}` };
-  if (s.washing === n) return { kind: 'refused', why: `${tag} is washing now` };
+  if (s.washing !== null)
+    return { kind: 'refused', why: `F${s.washing + 1} is washing now` };
   if (f.phase === 'fault')
     return { kind: 'local', at: `RESET, ${WASH_O_TRON_AT}` };
   if (f.mode !== 'filter' || f.phase !== 'steady')
@@ -265,13 +259,12 @@ export function cleanNow(world: World, n: number): WashCommand {
       kind: 'local',
       at: `${tag} not in service · its FILTER button, ${WASH_O_TRON_AT}`,
     };
-  const actions: WorldAction[] = [wash({ act: 'wash-now', filter: n })];
-  if (!s.running) actions.push(wash({ act: 'run' }));
-  const busy = s.washing !== null ? ` · AFTER F${s.washing + 1}` : '';
+  const refusal = cycleRefusal(s, n, washSensingOfWorld(world));
+  if (refusal) return { kind: 'refused', why: refusal };
   return {
     kind: 'act',
-    actions,
-    says: `${tag} WASH REQUESTED${s.running ? '' : ' · PROGRAMME STARTED'}${busy}${s.hold ? ' · PROGRAMME ON HOLD' : ''}`,
+    actions: [wash({ act: 'cycle-now', filter: n })],
+    says: `${tag} CYCLE STARTED`,
   };
 }
 
@@ -288,7 +281,7 @@ export function runProgramme(world: World): WashCommand {
 /** HOLD: a running programme held where it is, or let go on. */
 export function holdProgramme(world: World): WashCommand {
   const s = world.washOTron;
-  if (!s.running)
+  if (!s.running && s.washing === null)
     return { kind: 'refused', why: 'the programme is off · RUN it first' };
   return {
     kind: 'act',

@@ -54,11 +54,14 @@ export type Waiting =
   | 'PIT CAPACITY'
   | 'PIT INHIBIT'
   | 'LOW FLOW'
-  | 'FILTER UNAVAILABLE';
+  | 'FILTER UNAVAILABLE'
+  | 'NOT IN SERVICE'
+  | 'LOCKED OUT'
+  | 'HOLD';
 
 export interface WashOTron {
   filters: WashFilter[];
-  /** The programme running (AUTO), held, the filter it is washing and its step. */
+  /** Automatic scheduling enabled; a button-started cycle also runs with this off. */
   running: boolean;
   hold: boolean;
   washing: number | null;
@@ -66,8 +69,6 @@ export interface WashOTron {
   /** Seconds into the step, counted only once it is proved. */
   stepTime: number;
   waiting: Waiting;
-  /** A filter asked to be washed now, out of turn. */
-  washNow: number | null;
   /** Its setpoints, seconds and hours. */
   setpoints: Setpoints;
   /** Its display: the view shown, and the setpoint being edited there. */
@@ -169,7 +170,6 @@ export function newWashOTron(filters = 5): WashOTron {
     step: null,
     stepTime: 0,
     waiting: null,
-    washNow: null,
     setpoints: {
       backwash: 300,
       settle: 60,
@@ -196,7 +196,7 @@ export type WashAction =
   | { act: 'hold' }
   | { act: 'step' }
   | { act: 'skip' }
-  | { act: 'wash-now'; filter: number }
+  | { act: 'cycle-now'; filter: number }
   | { act: 'view' }
   | { act: 'unlock' }
   | { act: 'adjust'; by: 1 | -1 }
@@ -227,24 +227,14 @@ export function actOnWashOTron(
   s: WashOTron,
   a: WashAction,
   time: number,
+  sense?: WashSensing,
 ): WashOTron {
   switch (a.act) {
     case 'mode': {
       const f = s.filters[a.filter];
       if (!f || f.lockout) return s;
-      // BACKWASH pressed on a filter in AUTO, with the programme running,
-      // forces its wash without taking it out of AUTO (the owner,
-      // 2026-10-31): the programme washes it next, BACKWASH → SETTLE →
-      // RINSE → FILTER on its own timers, then carries on as before.
-      if (a.mode === 'backwash' && f.auto && s.running) {
-        if (s.washing === a.filter) return s;
-        return {
-          ...s,
-          washNow: a.filter,
-          events: log(s, time, `F${a.filter + 1} WASH FORCED`),
-        };
-      }
-      // Any other state chosen by hand takes the filter out of the programme.
+      // State buttons always take the filter into hand control. CYCLE NOW
+      // alone starts the timed valve sequence.
       const out = s.washing === a.filter;
       return {
         ...s,
@@ -283,11 +273,12 @@ export function actOnWashOTron(
       return {
         ...s,
         running: !s.running,
-        hold: false,
+        hold: s.washing !== null ? s.hold : false,
+        waiting: null,
         events: log(s, time, s.running ? 'AUTO OFF' : 'AUTO ON'),
       };
     case 'hold':
-      return s.running ? { ...s, hold: !s.hold } : s;
+      return s.running || s.washing !== null ? { ...s, hold: !s.hold } : s;
     case 'step':
       // End the step now: never a proof or the pit's admission skipped,
       // only its timer (STEP is refused while its valves are unproved).
@@ -307,8 +298,19 @@ export function actOnWashOTron(
         events: log(s, time, `F${n + 1} SKIPPED`),
       };
     }
-    case 'wash-now':
-      return s.filters[a.filter]?.lockout ? s : { ...s, washNow: a.filter };
+    case 'cycle-now': {
+      if (!sense) return s;
+      const refusal = cycleRefusal(s, a.filter, sense);
+      return refusal
+        ? refusal === 'BUSY'
+          ? s
+          : {
+              ...s,
+              waiting: refusal,
+              events: log(s, time, `F${a.filter + 1} ${refusal}`),
+            }
+        : startCycle(s, a.filter, sense);
+    }
     case 'view':
       // In SETPOINTS, MODE steps through the setpoints before moving on.
       if (VIEWS[s.view] === 'SETPOINTS' && s.setpoint < SETPOINTS.length - 1)
@@ -405,6 +407,44 @@ export function washVolume(s: Setpoints): number {
   return (WASH.washFlow * (s.backwash + s.rinse)) / 3600;
 }
 
+/** One shared admission check, whether a timer or a button chose the filter. */
+export function cycleRefusal(
+  s: WashOTron,
+  n: number,
+  sense: WashSensing,
+): Exclude<Waiting, null> | 'BUSY' | null {
+  if (s.washing !== null) return 'BUSY';
+  if (s.hold) return 'HOLD';
+  const f = s.filters[n];
+  if (!f) return 'NOT IN SERVICE';
+  if (f.lockout) return 'LOCKED OUT';
+  if (f.mode !== 'filter' || f.phase !== 'steady') return 'NOT IN SERVICE';
+  const inService = s.filters.filter(
+    (other, i) =>
+      i !== n && other.mode === 'filter' && other.phase === 'steady',
+  ).length;
+  if (inService < WASH.minInService || sense.loungeWashing)
+    return 'FILTER UNAVAILABLE';
+  if (!sense.pumping) return 'LOW FLOW';
+  if (sense.pitInhibit) return 'PIT INHIBIT';
+  if (sense.pit + washVolume(s.setpoints) > sense.pitHigh)
+    return 'PIT CAPACITY';
+  return null;
+}
+
+/** The only entry to the timed valve sequence. */
+function startCycle(s: WashOTron, n: number, sense: WashSensing): WashOTron {
+  return {
+    ...s,
+    washing: n,
+    step: 'backwash',
+    stepTime: 0,
+    waiting: null,
+    filters: setFilter(s, n, go(s.filters[n], 'backwash')),
+    events: log(s, sense.time, `F${n + 1} BACKWASH`),
+  };
+}
+
 /** The controller `dt` seconds on. */
 export function stepWashOTron(
   s: WashOTron,
@@ -458,12 +498,24 @@ export function stepWashOTron(
   let alarms = raise(next.alarms, 'valveFault', faulted);
   alarms = raise(alarms, 'pitInhibit', sense.pitInhibit);
   next = { ...next, alarms };
-  if (!next.running || next.hold) return { ...next, waiting: null };
+  if (next.hold) return next;
 
   // A wash under way: its step's timer, once proved.
-  if (next.washing !== null && next.step !== null) {
+  if (next.washing !== null) {
     const n = next.washing;
     const f = next.filters[n];
+    if (next.step === null) {
+      if (f.phase === 'fault') return { ...next, hold: true };
+      return f.mode === 'filter' && f.phase === 'steady'
+        ? {
+            ...next,
+            washing: null,
+            stepTime: 0,
+            filters: setFilter(next, n, { lastWash: sense.time }),
+            events: log(next, sense.time, `F${n + 1} WASHED`),
+          }
+        : next;
+    }
     if (f.phase === 'fault') return { ...next, hold: true };
     if (sense.pitInhibit) return { ...next, waiting: 'PIT INHIBIT' };
     if (f.phase !== 'steady') return { ...next, waiting: null };
@@ -492,54 +544,34 @@ export function stepWashOTron(
     }
     return {
       ...next,
-      washing: null,
       step: null,
       stepTime: 0,
-      filters: setFilter(next, n, { ...go(f, 'filter'), lastWash: sense.time }),
-      events: log(next, sense.time, `F${n + 1} WASHED`),
+      filters: setFilter(next, n, go(f, 'filter')),
+      events: log(next, sense.time, `F${n + 1} TO FILTER`),
     };
   }
 
   // None under way: the next due, if it may start.
+  if (!next.running) return next;
   const due = (i: number) =>
-    next.washNow === i ||
     sense.time - next.filters[i].lastWash >= next.setpoints.interval * 3600;
   const candidate = next.filters.findIndex(
     (f, i) =>
-      (f.auto || next.washNow === i) &&
+      f.auto &&
       !f.lockout &&
       f.mode === 'filter' &&
       f.phase === 'steady' &&
       due(i),
   );
   if (candidate < 0) return { ...next, waiting: null };
-  const inService = next.filters.filter(
-    (f, i) => i !== candidate && f.mode === 'filter' && f.phase === 'steady',
-  ).length;
-  if (inService < WASH.minInService || sense.loungeWashing)
+  const refusal = cycleRefusal(next, candidate, sense);
+  if (refusal)
     return {
       ...next,
-      waiting: 'FILTER UNAVAILABLE',
-      alarms: raise(next.alarms, 'lowCirc', inService < WASH.minInService),
+      waiting: refusal === 'BUSY' ? null : refusal,
+      alarms: raise(next.alarms, 'lowCirc', refusal === 'FILTER UNAVAILABLE'),
     };
-  if (!sense.pumping) return { ...next, waiting: 'LOW FLOW' };
-  if (sense.pitInhibit) return { ...next, waiting: 'PIT INHIBIT' };
-  if (sense.pit + washVolume(next.setpoints) > sense.pitHigh)
-    return { ...next, waiting: 'PIT CAPACITY' };
-  return {
-    ...next,
-    washing: candidate,
-    step: 'backwash',
-    stepTime: 0,
-    waiting: null,
-    washNow: next.washNow === candidate ? null : next.washNow,
-    filters: setFilter(
-      next,
-      candidate,
-      go(next.filters[candidate], 'backwash'),
-    ),
-    events: log(next, sense.time, `F${candidate + 1} BACKWASH`),
-  };
+  return startCycle(next, candidate, sense);
 }
 
 /** The valves the controller commands for filter `n`, open or shut, in its phase. */

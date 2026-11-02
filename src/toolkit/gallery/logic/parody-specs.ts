@@ -1223,6 +1223,7 @@ export const PARODY_SPECS: readonly ParodySpec[] = [
               kind: 'buttons',
               labels: ['AUTO', 'LOCKOUT', 'AIR SCOUR · NOT FITTED'],
             },
+            { kind: 'buttons', labels: ['CYCLE NOW'] },
             {
               kind: 'lamps',
               labels: [
@@ -1253,7 +1254,7 @@ export const PARODY_SPECS: readonly ParodySpec[] = [
           ],
           [
             { kind: 'buttons', labels: ['MODE', '−', '+', 'ENTER'] },
-            { kind: 'buttons', labels: ['PROGRAMME', 'WASH NOW'] },
+            { kind: 'buttons', labels: ['PROGRAMME'] },
             { kind: 'buttons', labels: ['HOLD', 'STEP', 'SKIP'] },
           ],
         ],

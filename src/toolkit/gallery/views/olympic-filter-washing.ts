@@ -34,7 +34,7 @@ import type { LiveExhibit } from '../rooms/plant/exhibit';
  * strip along the top (its state, the wash's progress and time left, the
  * backwash pit, RUN and HOLD), and a tile for each of the Olympic's five
  * filters (its tag, its state, its DIRT % as a bar with the backwash-due
- * mark, its bed's pressure difference and flow, CLEAN NOW and LOCKOUT).
+ * mark, its bed's pressure difference and flow, CYCLE NOW and LOCKOUT).
  * Its presses ask the world (`logic/olympic-filter-washing.ts`); a refusal
  * is a deny bleep and its reason across the page's top. A page any
  * console may show (`page.node`), or a panel of its own
@@ -130,7 +130,7 @@ export function olympicFilterWashingPage(live: PageLive): LivePage {
   );
 
   // The filters, a row each: its state, its DIRT % with the backwash-due
-  // mark, its bed's pressure difference and flow, CLEAN NOW, LOCKOUT.
+  // mark, its bed's pressure difference and flow, CYCLE NOW, LOCKOUT.
   const tiles = Array.from({ length: FILTERS }, (_, n) => {
     const state = new Indicator({
       label: 'IN SERVICE',
@@ -155,7 +155,7 @@ export function olympicFilterWashingPage(live: PageLive): LivePage {
       grow: 0.9,
     });
     const clean = new Button({
-      label: 'CLEAN NOW',
+      label: 'CYCLE NOW',
       id: `clean/${n}`,
       colour: 'orange-peel',
       pill: true,
@@ -220,11 +220,9 @@ export function olympicFilterWashingPage(live: PageLive): LivePage {
             ? `${f.state} ${Math.round(f.progress * 100)}%`
             : f.state,
         );
-        t.state.setSub(
-          `${f.tag} · ${f.queued ? 'QUEUED' : f.auto ? 'AUTO' : 'HAND'}`,
-        );
+        t.state.setSub(`${f.tag} · ${f.auto ? 'AUTO' : 'HAND'}`);
         t.state.setColour(KIND_COLOUR[f.kind]);
-        t.state.setFlashing(f.kind === 'fault' || f.queued);
+        t.state.setFlashing(f.kind === 'fault');
         t.dirt.set(
           f.dirt / DIRT_FULL_SCALE,
           `${Math.round(f.dirt)}%`,
@@ -232,7 +230,7 @@ export function olympicFilterWashingPage(live: PageLive): LivePage {
         );
         t.dp.set(f.dp.toFixed(2));
         t.flow.set(f.flow.toFixed(0));
-        t.clean.setLit(f.queued || f.kind === 'washing');
+        t.clean.setLit(world.washOTron.washing === n);
       });
     },
   };

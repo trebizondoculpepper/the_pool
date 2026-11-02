@@ -523,9 +523,11 @@ function said(
         text:
           a.act === 'mode'
             ? `F${a.filter + 1} ${a.mode.toUpperCase()}`
-            : 'filter' in a
-              ? `F${a.filter + 1} ${a.act.toUpperCase()}`
-              : a.act.toUpperCase(),
+            : a.act === 'cycle-now'
+              ? `F${a.filter + 1} CYCLE NOW`
+              : 'filter' in a
+                ? `F${a.filter + 1} ${a.act.toUpperCase()}`
+                : a.act.toUpperCase(),
       };
     }
     case 'pit-pumps':

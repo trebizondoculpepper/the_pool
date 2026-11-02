@@ -1,0 +1,5 @@
+# Wash-O-Tron CYCLE NOW
+
+The owner found the Olympic Wash-O-Tron's global WASH NOW confusing: it targeted a different filter from the NEXT display and could queue a repeat wash of the filter already running. We agreed on one illuminated CYCLE NOW button per filter, no queued requests, and a single timed valve sequencer shared by scheduled starts and button starts. The scheduler is a separate layer; a button-started cycle runs even with scheduled AUTO off, while a press during any active cycle does nothing. Manual BACKWASH is again a manual valve state, with no hidden timed-cycle shortcut.
+
+I reserved `WORLD_VERSION` 74 after the Olympic DMH agent took 73, and kept out of `world.ts` and `save.ts` until that agent committed and freed them. The save migration discards the old pending `washNow` field while preserving an active wash. The bridge's per-filter control now invokes the same CYCLE NOW action and cannot queue behind another filter. Focused model, bridge and migration tests passed; the full project checks are being run before commit.

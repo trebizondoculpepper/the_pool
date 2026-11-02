@@ -95,7 +95,32 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(73);
+    expect(WORLD_VERSION).toBe(74);
+  });
+
+  it('drops a pending Wash-O-Tron request from a version 73 save but preserves its active cycle', () => {
+    const old = newWorld();
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 73,
+        savedAt: 5,
+        world: {
+          ...old,
+          washOTron: {
+            ...old.washOTron,
+            washNow: 2,
+            washing: 1,
+            step: 'rinse',
+          },
+        },
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.world.washOTron.washing).toBe(1);
+    expect(loaded.world.washOTron.step).toBe('rinse');
+    expect('washNow' in loaded.world.washOTron).toBe(false);
   });
 
   it('replaces an old Olympic DMX state with the commissioned DMH at 72 → 73', () => {

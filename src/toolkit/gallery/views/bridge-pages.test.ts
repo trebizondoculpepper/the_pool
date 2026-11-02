@@ -24,7 +24,7 @@ describe('the bridge’s own pages (mission 095)', () => {
       expect(BRIDGE_BINDINGS[code], code).toBeDefined();
   });
 
-  it('CLEAN NOW on the page asks the world to wash that filter; a locked-out filter’s is refused with a deny', () => {
+  it('CYCLE NOW on the page starts that filter; a locked-out filter’s is refused with a deny', () => {
     let world: World = newWorld();
     const sent: WorldAction[] = [];
     const refusals: string[] = [];
@@ -41,9 +41,9 @@ describe('the bridge’s own pages (mission 095)', () => {
     expect(press('clean/1')?.sound).toBe('confirm');
     expect(sent).toContainEqual({
       type: 'wash-o-tron',
-      action: { act: 'wash-now', filter: 1 },
+      action: { act: 'cycle-now', filter: 1 },
     });
-    expect(world.washOTron.washNow).toBe(1);
+    expect(world.washOTron.washing).toBe(1);
     expect(world.washOTron.running).toBe(true);
     expect(press('lockout/0')?.sound).toBe('deny');
     expect(refusals.at(-1)).toMatch(/^LOCAL CONTROL ONLY/);

@@ -12,7 +12,7 @@ import {
   stepWashOTron,
   valvesMatch,
 } from './wash-o-tron';
-import type { FilterValve, WashOTron } from './wash-o-tron';
+import type { FilterValve, WashOTron, WashSensing } from './wash-o-tron';
 
 /**
  * The Wash-O-Tron in the world (prompt 072): what it senses of the
@@ -40,35 +40,38 @@ export function filterValves(
   ) as Record<FilterValve, boolean>;
 }
 
+type WashWorld = {
+  time: number;
+  washOTron: WashOTron;
+  installedValves: Valves;
+  olympic: OlympicBatteryState;
+  pools: PoolsState;
+  plant: PlantServices;
+  motors?: MotorsState;
+  wetHall: WetHallState;
+};
+
+/** The same physical interlocks for an automatic or button-started cycle. */
+export function washSensingOfWorld(world: WashWorld): WashSensing {
+  const flows = olympicFlowsOf(world);
+  return {
+    time: world.time,
+    pumping: flows.pumping,
+    bedFlow: flows.filters.map((f) => f.bed),
+    pit: world.wetHall.backwashTank,
+    pitHigh: WET_HALL_PLANT.backwashTank * WET_HALL_PLANT.backwashHigh,
+    pitInhibit: world.wetHall.inhibit,
+    loungeWashing: false,
+  };
+}
+
 export function stepWashWorld(
-  world: {
-    time: number;
-    washOTron: WashOTron;
-    installedValves: Valves;
-    olympic: OlympicBatteryState;
-    pools: PoolsState;
-    plant: PlantServices;
-    motors?: MotorsState;
-    wetHall: WetHallState;
-  },
+  world: WashWorld,
   delta: number,
 ): { washOTron: WashOTron; installedValves: Valves } {
-  const flows = olympicFlowsOf(world);
-  let s = stepWashOTron(
-    world.washOTron,
-    {
-      time: world.time,
-      pumping: flows.pumping,
-      bedFlow: flows.filters.map((f) => f.bed),
-      pit: world.wetHall.backwashTank,
-      pitHigh: WET_HALL_PLANT.backwashTank * WET_HALL_PLANT.backwashHigh,
-      pitInhibit: world.wetHall.inhibit,
-      loungeWashing: false,
-    },
-    delta,
-  );
+  let s = stepWashOTron(world.washOTron, washSensingOfWorld(world), delta);
   // A valve worked by hand mid-wash: the programme held, its fault raised.
-  if (s.washing !== null && s.running && !s.hold) {
+  if (s.washing !== null && !s.hold) {
     const f = s.filters[s.washing];
     if (
       f.phase === 'steady' &&

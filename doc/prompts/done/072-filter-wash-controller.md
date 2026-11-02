@@ -26,7 +26,7 @@ The owner, 2026-10-26, watching a filter washed by a script: "there needs to be 
 - **What shows a wash:** each filter's sight glass, its gauges, the pit's level and lamps.
 - **Rules that apply:** every engineering item works and is modelled after a real product; new controls are tried on dev0's boards, assemblies in dev39; a board shown in two places is one world state (memory: mimic copies, one node); controls in the control room repeat what the plant room's board carries, but mode selectors and resets stay local (CLAUDE.md, 2026-10-25).
 
-## The console
+## The console (original design; CYCLE NOW revision below)
 
 **The Lidoluxe Wash-O-Tron**: the filter maker's own retrofit controller, about 1996, fitted beside the battery; a beige powder-coated case, the Lidoluxe badge and a model plate (WASH-O-TRON 5 · 1996), surface conduit to the valves' actuators. Lidoluxe's badge on the controller, Penfold's panel-builder's mark on the panel (adopted below). Laid out as a mimic.
 
@@ -47,6 +47,10 @@ The owner, 2026-10-26, watching a filter washed by a script: "there needs to be 
 ## The programme
 
 One filter at a time, in turn or worst first by pressure drop; never taking a filter out while too few would be left filtering for the circulation. Each wash: [AIR SCOUR →] BACKWASH → SETTLE (all shut, a short timer, the sand dropping back) → RINSE → FILTER; the air scour step is in the programme but configured off here, its setpoint showing AIR SCOUR: NOT FITTED on the display, and nothing of it in the world (no blower, no air valves) until it is fitted; each step ended by its timer or earlier by what a real controller senses (the pressure drop; a turbidity cell on the backwash out, if one is fitted), never by the model's dirt directly. It waits while the pit is inhibited and resumes after. A valve worked by hand during a step puts it on HOLD with VALVE FAULT.
+
+## Owner revision: one sequencer and CYCLE NOW (2026-11-02)
+
+The owner separated automatic scheduling from the timed valve sequence. The controller has one sequencer with one active filter address; the schedule and a per-filter CYCLE NOW button both enter the same BACKWASH → SETTLE → RINSE → FILTER logic. The programme AUTO button enables scheduled starts, but turning it off does not stop an active cycle, and CYCLE NOW can start a complete cycle with scheduling off. Each filter's CYCLE NOW lamp stays on through the return to proved FILTER. A press while any cycle is active does nothing, with no queue. A press refused by flow, filter availability or pit interlocks starts nothing and leaves no pending request. The global WASH NOW button and its queue are removed. The state buttons, including BACKWASH, always select manual valve states and do not secretly start a timed cycle. The bridge's per-filter control uses the same CYCLE NOW action.
 
 ## Later, not now
 
