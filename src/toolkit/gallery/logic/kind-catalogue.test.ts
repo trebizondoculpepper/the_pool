@@ -92,3 +92,20 @@ describe('kindCatalogue', () => {
     );
   });
 });
+
+describe('architectural components (mission 127)', () => {
+  test('signs are architectural, lookable and not given engineering findings', () => {
+    const sign = kinds.find((k) => k.key === 'sign')!;
+    expect(sign.class).toBe('architectural');
+    expect(sign.exempt).toBe(false);
+    expect(sign.copies.length).toBeGreaterThan(0);
+    for (const c of sign.copies) {
+      expect(c.look).not.toBe('none');
+      expect(c.findings).not.toContain('no-tag');
+      expect(c.findings).not.toContain('no-maker');
+    }
+    expect(kinds.find((k) => k.key === 'fire-point')?.class).toBe(
+      'architectural',
+    );
+  });
+});

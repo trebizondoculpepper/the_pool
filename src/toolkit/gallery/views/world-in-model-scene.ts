@@ -44,14 +44,17 @@ export function unboundInScene(
     )
       owner = owningComponent(owner.object.parent);
     const identity = owner?.identity;
-    if (identity?.decorative) return;
+    // Decoration, the building's fabric and architectural components
+    // (signs, fittings, doors: mission 127) are not in the model.
+    if (identity?.decorative || identity?.fabric || identity?.architectural)
+      return;
     // A named part of something (a cupboard's labels, a switch's sensor):
     // decoration if that is, in the model if that is.
     if (identity && !identity.tag && !identity.model)
       for (let p = owner!.object.parent; p; p = p.parent) {
         const whole = componentOf(p);
         if (!whole) continue;
-        if (whole.decorative) return;
+        if (whole.decorative || whole.fabric || whole.architectural) return;
         const bound =
           (whole.model && isBound(whole.model, model)) ||
           // A part's panel, known by its plate's tag (prompt 068).

@@ -4,12 +4,13 @@ import {
   plantInventory,
 } from '../../../game/plant/equipment-catalogue';
 import { EQUIPMENT_KINDS } from '../../../game/plant/equipment-kinds';
-import type { Classification } from '../../../game/plant/equipment-kinds';
 import { EQUIPMENT_ROOM_CODES } from '../../../game/plant/room-names';
 import { brandById } from '../../components/core/logic/brands';
 import type { BrandId } from '../../components/core/logic/brands';
 import { ROOM_ALIASES } from './dev-room-links';
 import { slugOf } from './look-ref';
+import { objectClass } from './object-class';
+import type { ObjectClass } from './object-class';
 import { placedRoomItems } from './room-usage';
 import type { RoomItems } from './room-usage';
 
@@ -72,7 +73,8 @@ export interface KindModel {
   maker?: BrandId;
 }
 
-export type KindClass = Classification | 'unclassified';
+/** The shared classification's (`object-class.ts`, mission 127), or none. */
+export type KindClass = ObjectClass | 'unclassified';
 
 /** Where a copy's identity comes from. */
 export type CopySource =
@@ -87,6 +89,7 @@ export type CopySource =
  * Whether a look link to it is expected to land: `expected`, a thing a
  * room with the look hook marks by this ref; `unverified`, named in data
  * but not known to be marked in its scene (127 checks); `none`, decoration.
+ * An architectural component (a sign) is lookable, never `none`.
  */
 export type Lookable = 'expected' | 'unverified' | 'none';
 
@@ -174,7 +177,7 @@ const kindInfo = (key: string) =>
           string,
           {
             type: string;
-            class: Classification;
+            class: ObjectClass;
             purpose: string;
             brand?: BrandId;
           }
@@ -203,8 +206,7 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
       const installed =
         INSTALLED_ASSET_IDS[`${room}|${item.key}|${item.label}`];
       if (installed) layoutTags.add(installed.tag);
-      const info = kindInfo(kind);
-      const decorative = kind === SIGN_KEY || info?.class === 'decorative';
+      const decorative = objectClass(item.key) === 'decorative';
       copies.push({
         room,
         kind,
@@ -228,8 +230,7 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
     const subject = subjects.get(entry.id);
     const kind = subject?.kind ?? entry.kind;
     if (kind === 'plant-room') continue;
-    const info = kindInfo(kind);
-    const decorative = info?.class === 'decorative';
+    const decorative = objectClass(kind) === 'decorative';
     copies.push({
       room: subject?.room ?? '',
       kind,
@@ -254,7 +255,7 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
   // The dev rooms' exhibits: a model of a placed kind counts as a copy of it.
   for (const exhibit of input.exhibits ?? []) {
     const kind = exhibit.kind ?? `exhibit:${slugOf(exhibit.title)}`;
-    const decorative = kindInfo(kind)?.class === 'decorative';
+    const decorative = objectClass(kind) === 'decorative';
     copies.push({
       room: exhibit.room,
       kind,
@@ -286,10 +287,12 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
   for (const c of copies) {
     if (c.exempt) continue;
     const info = kindInfo(c.kind);
+    const architectural = objectClass(c.kind) === 'architectural';
     const f: Finding[] = [];
-    if (!info) f.push('no-kind');
+    if (!info && c.kind !== SIGN_KEY) f.push('no-kind');
     const dev = isDevRoom(c.room);
-    if (!c.tag && !dev) f.push('no-tag');
+    // An architectural component is found by its name, not a plant tag.
+    if (!c.tag && !dev && !architectural) f.push('no-tag');
     const code = roomCode(c.room);
     if (c.tag && code && c.tag !== code && !c.tag.startsWith(`${code}-`))
       f.push('tag-not-hierarchical');
@@ -306,6 +309,7 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
     if (
       info &&
       info.class !== 'decorative' &&
+      !architectural &&
       !c.maker &&
       !info.brand &&
       !models[c.kind]?.maker
@@ -327,8 +331,7 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
     const info = kindInfo(key);
     const list = byKind.get(key) ?? [];
     const exhibitTitle = key.startsWith('exhibit:') ? list[0]?.name : undefined;
-    const cls: KindClass =
-      key === SIGN_KEY ? 'decorative' : (info?.class ?? 'unclassified');
+    const cls: KindClass = objectClass(key) ?? 'unclassified';
     const makers = new Set(list.map((c) => c.maker));
     const maker =
       info?.brand ??
@@ -337,10 +340,10 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
     const exempt = cls === 'decorative';
     const own: Finding[] = [];
     if (!exempt) {
-      if (!info) own.push('no-kind');
+      if (!info && key !== SIGN_KEY) own.push('no-kind');
       const named =
         maker || (list.length > 0 && list.every((c) => c.maker !== undefined));
-      if (info && !named) own.push('no-maker');
+      if (info && !named && cls !== 'architectural') own.push('no-maker');
     }
     const worst = [...new Set([...own, ...list.flatMap((c) => c.findings)])];
     const rooms = [...new Set(list.map((c) => c.room))];
@@ -356,7 +359,7 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
       purpose:
         info?.purpose ??
         (key === SIGN_KEY
-          ? 'A notice on a wall; worded signs become named things in mission 127.'
+          ? 'A notice on a wall: an architectural component, named by its words (mission 127).'
           : 'A development room exhibit that no kind in the register claims.'),
       registered: !!info,
       copies: list,

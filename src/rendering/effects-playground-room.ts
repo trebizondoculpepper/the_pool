@@ -1582,6 +1582,8 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   const walk = createFirstPerson({
+    // Its scene, for the torch and a look's scan (mission 127).
+    scene,
     canvas,
     camera,
     metre: m,

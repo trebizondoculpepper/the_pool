@@ -25,6 +25,17 @@ export interface ComponentIdentity {
   /** Set decoration: it sits there and does nothing (never a working item). */
   decorative?: true;
   /**
+   * An architectural component (the owner, 2026-11-02, mission 127): a
+   * sign, an electrical or fire fitting, a door. Named and lookable, not
+   * part of the simulation, so never unbound and never decoration.
+   */
+  architectural?: true;
+  /**
+   * The building's fabric (mission 127): walls, floors, ceilings, coves,
+   * openings. Not lookable and not decoration; the look audit skips it.
+   */
+  fabric?: true;
+  /**
    * A part inside a component (prompt 068): a button, lamp or readout,
    * described in its own words; the nearest marked owner, so it wins over
    * its panel. Every mesh of it (cap, bezel, legend) is the one part.

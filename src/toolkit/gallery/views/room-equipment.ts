@@ -34,6 +34,7 @@ import { CO2_DOSERS } from '../../../game/plant/co2-dosing';
 import type { Co2PanelAction } from '../../../game/plant/co2-dosing';
 import type { PitPumpAction } from '../../../game/plant/wet-hall';
 import { decorativeKind } from '../logic/world-in-model';
+import { architecturalKind } from '../logic/object-class';
 import { createSpaSandFilter } from '../../components/plant/views/spa-pack-parts';
 import {
   SPA_FILTERS,
@@ -1728,9 +1729,14 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
       object.add(frame);
     }
     object.name ||= p.item.label;
-    // A sign, furniture, or what the owner ruled so: set decoration (prompt 064).
+    // Furniture, or what the owner ruled so: set decoration (prompt 064).
     const decorative = decorativeKind(p.item.key);
     if (decorative) markComponent(object, { decorative: true });
+    // A sign, a fire fitting: an architectural component, named by its
+    // label (mission 127), lookable but not part of the model.
+    const architectural = architecturalKind(p.item.key);
+    if (architectural)
+      markComponent(object, { name: p.item.label, architectural: true });
     // Its identity, for the information overlay (prompt 061).
     const installed =
       INSTALLED_ASSET_IDS[`${room}|${p.item.key}|${p.item.label}`];
@@ -1744,6 +1750,7 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
       markComponent(object, {
         tag: installed.tag,
         ...(decorative ? { decorative: true } : {}),
+        ...(architectural ? { name: p.item.label, architectural: true } : {}),
         ...(node ? { model: { node } } : {}),
         // Its own live state, where its machine models it (prompt 068).
         ...(isLive(built) && built.status ? { status: built.status } : {}),

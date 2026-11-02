@@ -154,6 +154,18 @@ startErrorReporting();
 
 const showError = (error: unknown) => {
   reportError(error);
+  // The look audit's adapter (mission 127): a room that fails to build says so.
+  if (new URLSearchParams(location.search).get('audit') === 'look') {
+    const out = window as unknown as {
+      __poolLookAudit?: { done?: boolean };
+    };
+    if (!out.__poolLookAudit?.done)
+      out.__poolLookAudit = {
+        done: true,
+        error: `the room failed to build: ${String(error)}`,
+        stack: error instanceof Error ? error.stack : undefined,
+      } as { done: boolean };
+  }
   const message = document.querySelector<HTMLParagraphElement>('#error');
   if (message) {
     message.hidden = false;
@@ -1656,6 +1668,68 @@ const runLook = async (
   result.done = true;
 };
 
+/**
+ * The look audit's room-build adapter (mission 127): the room built by the
+ * game as any visit builds it, then scanned once (`look-audit-scene.ts`)
+ * when it has settled (its look hook, else a few seconds of frames), the
+ * result left on `window.__poolLookAudit` for the audit page and script.
+ */
+const runLookAudit = async (
+  room: RoomId,
+  key: string,
+  handle: RoomHandle,
+  ownRevision: number,
+  opened: number,
+) => {
+  const out = window as unknown as { __poolLookAudit: unknown };
+  out.__poolLookAudit = { room, done: false };
+  if (handle.look) await handle.look.settled;
+  else
+    for (const until = performance.now() + 3000; performance.now() < until;)
+      await nextFrame();
+  await nextFrame();
+  if (ownRevision !== revision || current !== key) return;
+  const build = performance.now() - opened;
+  const surface = surfaceOf(key);
+  const control = surface ? firstPersonOn(surface) : null;
+  const walk = control?.lookSurface();
+  if (!control || !walk?.scene) {
+    out.__poolLookAudit = { room, done: true, error: 'no scene to scan' };
+    return;
+  }
+  const [{ auditBuiltRoom }, { EXHIBITS }] = await Promise.all([
+    import('./toolkit/gallery/views/look-audit-scene'),
+    import('./toolkit/gallery/rooms/plant-room'),
+  ]);
+  const loader = (
+    EXHIBITS as Record<
+      string,
+      (() => Promise<{ EXHIBITS?: readonly { title: string }[] }>) | undefined
+    >
+  )[room];
+  const exhibits = loader
+    ? ((await loader().catch(() => null))?.EXHIBITS ?? []).map((e) => ({
+        room,
+        title: e.title,
+      }))
+    : [];
+  const audit = auditBuiltRoom(
+    {
+      scene: walk.scene,
+      metre: control.metre,
+      floorY: control.floorY,
+      floorAt: walk.floorAt,
+      solids: () => control.lookSurface().solids,
+      bounds: walk.bounds,
+      fov: walk.fov,
+      aspect: walk.aspect,
+    },
+    room,
+    { hook: Boolean(handle.look), input: { exhibits }, build },
+  );
+  out.__poolLookAudit = { room, done: true, audit };
+};
+
 const openRoom = async () => {
   const ownRevision = ++revision;
   recordingShot?.stop();
@@ -1782,6 +1856,7 @@ const openRoom = async () => {
   // so it is placed where the link says, off the floor if need be.
   noclip.value = params.get('noclip') === 'true';
   const room = resolveRoomId(params.get('room'))!;
+  const opened = performance.now();
   const start = await starter(room);
   await resetEffects();
   if (ownRevision !== revision) return;
@@ -1843,6 +1918,16 @@ const openRoom = async () => {
       showError,
     );
   else hideLookNotice();
+  if (params.get('audit') === 'look')
+    void runLookAudit(room, key, loaded.handle, ownRevision, opened).catch(
+      (error: unknown) => {
+        (window as unknown as { __poolLookAudit: unknown }).__poolLookAudit = {
+          done: true,
+          error: String(error),
+          stack: error instanceof Error ? error.stack : undefined,
+        };
+      },
+    );
   if (peekBack(keyOf(room))) void startDryPeek().catch(showError);
   void preloadCluster().catch(showError);
 };

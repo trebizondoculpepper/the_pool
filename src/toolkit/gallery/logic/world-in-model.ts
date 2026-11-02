@@ -21,7 +21,7 @@ import type {
   Expansion,
   PlumbEdge,
 } from '../../../game/plant/plumbing-expansion';
-import { PLACED_KINDS } from '../../../game/plant/equipment-kinds';
+import { architecturalKind, decorativeClass } from './object-class';
 import { ROOM_SWITCH_FUSES } from '../../../game/plant/installed-feeders';
 import { ROOM_SERVICES } from '../../../game/plant/services';
 
@@ -135,26 +135,15 @@ export function isBound(binding: Binding | undefined, model?: RoomModel) {
 const DECORATIVE = { binding: { decorative: true } as const };
 
 /**
- * Kinds the owner has ruled set decoration (2026-10-22): the stores' safety
- * showers, spill kits and PPE cabinets, and the control room's water-test kit.
+ * Whether a placed item, by its key, is set decoration: the shared
+ * classification's (`object-class.ts`, mission 127). Signs are no longer
+ * decoration but architectural components (the owner, 2026-11-02).
  */
-const RULED_DECORATIVE: ReadonlySet<string> = new Set([
-  'safety-shower',
-  'spill-kit',
-  'ppe-cabinet',
-  'water-test-kit',
-]);
+export const decorativeKind = decorativeClass;
 
-/** Whether a placed item, by its key, is set decoration. */
-export const decorativeKind = (key: string) => {
-  const kind = key.split(':')[0];
-  return (
-    kind === 'sign' ||
-    RULED_DECORATIVE.has(kind) ||
-    (Object.hasOwn(PLACED_KINDS, kind) &&
-      PLACED_KINDS[kind as keyof typeof PLACED_KINDS].class === 'decorative')
-  );
-};
+/** Whether a placed item is exempt from the model: decoration, or an architectural component. */
+const exemptKind = (key: string) =>
+  decorativeClass(key) || architecturalKind(key);
 
 /** What the Olympic plant room draws: its plumbing, every piece by its model id. */
 function olympicThings(): DrawnThing[] {
@@ -169,7 +158,7 @@ function olympicThings(): DrawnThing[] {
     ...plumbed.items.map((i): DrawnThing => ({
       kind: 'machine',
       name: i.label,
-      ...(decorativeKind(i.key) ? DECORATIVE : { binding: { node: i.key } }),
+      ...(exemptKind(i.key) ? DECORATIVE : { binding: { node: i.key } }),
     })),
     ...plumbed.fittings.map((f): DrawnThing => ({
       kind: kindOf(f),
@@ -284,7 +273,7 @@ export function drawnThings(room: string): DrawnThing[] {
       ? olympicThings()
       : [
           ...(layoutRoom(room)?.placed ?? []).map((p): DrawnThing =>
-            decorativeKind(p.item.key)
+            exemptKind(p.item.key)
               ? { kind: 'machine', name: p.item.label, ...DECORATIVE }
               : machineOfKind(room, p.item.label, p.item.key.split(':')[0]),
           ),

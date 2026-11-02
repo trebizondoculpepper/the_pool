@@ -12,6 +12,7 @@ import { kitPaint } from '../../core/views/eighties-controls';
 import { tools } from '../../core/views/fitting-tools';
 import { createBrandBadge } from '../../core/views/brand-badge';
 import { beginPart } from '../../core/parts/parts';
+import { markComponent } from '../../core/views/component-identity';
 import { cardReader } from './card-reader';
 import { createDoorWarningStickers } from '../views/door-warning-stickers';
 import type { DoorWarningSelection } from '../logic/door-warnings';
@@ -203,6 +204,12 @@ export function plantRoomDoor(
     kit.materials.push(material);
     return new Mesh(new PlaneGeometry(sw, sh), material);
   }
+  // An architectural component (mission 127): named by its plate, lookable,
+  // not part of the plant model.
+  markComponent(a.object, {
+    name: `${plate.charAt(0)}${plate.slice(1).toLowerCase()} door`,
+    architectural: true,
+  });
   return {
     ...a.part(),
     angle: () => state.angle,

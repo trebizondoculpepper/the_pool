@@ -11,7 +11,7 @@ A practical guide for agents (and humans) designing or debugging The Pool. The o
 - [Drive the world headlessly](#drive-the-world-headlessly): `poolWorld`, the console, `exhibitRoom`
 - [Reproduce a player's bug](#reproduce-a-players-bug): state files and the event log
 - [Pose links (the fallback)](#pose-links-the-fallback)
-- [Audits (in progress)](#audits-in-progress): 127, 129, 130, 133
+- [Audits (in progress)](#audits-in-progress): 127 (done), 129, 130, 133
 - [Benchmarks, dev servers and pictures](#benchmarks-dev-servers-and-pictures)
 - [Rules of thumb for agents](#rules-of-thumb-for-agents)
 
@@ -104,7 +104,7 @@ A position in the link places the walker: `?room=<room>&x=…&z=…[&y=…]&yaw=
 
 These are being built now; the sections will be filled as each lands on `main`.
 
-- **127, everything lookable** (`doc/plans/127-everything-lookable.md`, brief `doc/prompts/127-everything-lookable.md`). In progress, not yet on `main` on 2026-11-02. In the working tree: `scripts/look-audit.ts` (`node scripts/look-audit.ts [rooms…]`, planned alias `npm run look:audit`) opens `?room=<room>&audit=look&shot=1`, waits for `window.__poolLookAudit` (`{ room, done, audit | error }`), and writes `doc/look-audit.json` (per room findings) and `doc/look-audit.md` (headline numbers: targets, unlabelled, unreachable, unverified, duplicate tags and names, bad fronts); it exits non-zero on unexcused findings (`KNOWN_UNLOOKABLE` in `src/toolkit/gallery/logic/look-audit.ts`). `bench.html?bench=lookables` is its page. Confirm against `main` before relying on it.
+- **127, everything lookable** (done; plan `doc/plans/127-everything-lookable.md`). `npm run look:audit` (`node scripts/look-audit.ts [rooms…]`) needs the dev server running (it never starts one); it asks the server for the game's `ROOMS`, opens `?room=<room>&audit=look&shot=1` in headless Chrome, one fresh tab a room, waits for `window.__poolLookAudit` (`{ room, done, audit | error }`), and writes `doc/look-audit.json` (each room's counts, failing count, timing and findings) and `doc/look-audit.md` (the headline table). Named rooms merge into the existing report. It exits non-zero when a room fails or cannot be built; findings are excused only in `KNOWN_UNLOOKABLE` (`src/toolkit/gallery/logic/look-audit.ts`, empty: 132 works them off). Screens: `bench.html?bench=lookables&room=<room>` (one room built in a frame, every finding and every target's record) and `bench.html?bench=lookables` (every room's summary from the committed report, with a button to rerun all in the page). Shared with 129: the scanner `src/toolkit/gallery/views/look-audit-scene.ts` (`scanScene`, `auditBuiltRoom`), the pure records `logic/look-audit.ts` (`lookTargets`, `TargetRecord`, `auditRoom`), the adapter `?audit=look` in `src/main.ts`, and the one classification `logic/object-class.ts` (`objectClass`: `architectural` for signs, fire fittings and doors).
 - **129, room audit** (`doc/prompts/129-room-audit.md`): placeholder. The catalogue's per-room Audit item will point at `bench.html?bench=room-audit&room=<room>` (`auditLink`), not yet served.
 - **130, item audit, magic room and magic page** (`doc/prompts/130-item-audit.md`): placeholder.
 - **133, CAD views on the item audit page** (`doc/prompts/133-item-cad-views.md`): placeholder.

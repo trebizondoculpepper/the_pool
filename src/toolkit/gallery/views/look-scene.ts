@@ -2,6 +2,7 @@ import {
   Box3,
   InstancedMesh,
   Mesh,
+  PerspectiveCamera,
   Quaternion,
   Raycaster,
   Vector3,
@@ -13,6 +14,7 @@ import type { Footprint } from '../../controls/logic/walk-collision';
 import type { FlightBounds } from '../../controls/logic/noclip';
 import {
   LOOK_LIMITS,
+  SEEN_ENOUGH,
   centreOf,
   chooseLook,
   cornersOf,
@@ -20,7 +22,7 @@ import {
 } from '../logic/look-camera';
 import type { LookBox, LookCandidate, Vec3 } from '../logic/look-camera';
 import { resolveLookRef } from '../logic/look-ref';
-import type { LookMode, LookOwner } from '../logic/look-ref';
+import type { LookMode, LookOwner, LookTarget } from '../logic/look-ref';
 
 /**
  * A look link's work in a room's scene (mission 125,
@@ -80,7 +82,7 @@ export function lookOwners(root: Object3D) {
   const index = new Map<Object3D, number>();
   root.traverse((o) => {
     const identity = componentOf(o);
-    if (!identity || identity.decorative) return;
+    if (!identity || identity.decorative || identity.fabric) return;
     if (!identity.tag && !identity.name && !identity.model && !identity.part)
       return;
     const ancestors: number[] = [];
@@ -103,7 +105,10 @@ export function lookOwners(root: Object3D) {
 }
 
 /** The world box of `objects` and everything under them, in metres. */
-function boxOf(objects: readonly Object3D[], metre: number): LookBox | null {
+export function boxOf(
+  objects: readonly Object3D[],
+  metre: number,
+): LookBox | null {
   const box = new Box3();
   for (const o of objects) {
     o.updateWorldMatrix(true, true);
@@ -125,7 +130,7 @@ function boxOf(objects: readonly Object3D[], metre: number): LookBox | null {
 }
 
 /** Its front: its own +z, in the world. */
-function frontOf(object: Object3D): Vec3 {
+export function frontOf(object: Object3D): Vec3 {
   const q = new Quaternion();
   object.getWorldQuaternion(q);
   const v = new Vector3(0, 0, 1).applyQuaternion(q);
@@ -138,8 +143,10 @@ const shown = (object: Object3D) => {
   return true;
 };
 
+const SPRITE_CAMERA = new PerspectiveCamera();
+
 /** Whether a hit mesh hides what is behind it. */
-function blocks(object: Object3D) {
+export function blocks(object: Object3D) {
   if (!(object instanceof Mesh) && !(object instanceof InstancedMesh))
     return false;
   if (!shown(object)) return false;
@@ -173,6 +180,8 @@ function raysSeen(
     })),
   ];
   const ray = new Raycaster();
+  // A sprite asks the ray's camera (it never blocks: not a mesh).
+  ray.camera = SPRITE_CAMERA;
   const from = new Vector3(eye.x * metre, eye.y * metre, eye.z * metre);
   const inTarget = (o: Object3D) => {
     for (let p: Object3D | null = o; p; p = p.parent)
@@ -225,8 +234,25 @@ export function lookIn(
       ...(resolved.matches ? { matches: resolved.matches } : {}),
       warnings: [],
     };
+  return lookAt(room, objects, resolved.target, mode, fit);
+}
+
+/**
+ * Look at a resolved target (its owners' objects from `lookOwners`): the
+ * look link's work after resolution, shared with the look audit (mission
+ * 127), which resolves every target of a room once. `lazy` stops at the
+ * first candidate a walker can stand at that sees enough, which is the one
+ * `chooseLook` would pick, without testing the rest.
+ */
+export function lookAt(
+  room: LookRoom,
+  objects: readonly Object3D[],
+  target: LookTarget,
+  mode: LookMode,
+  fit: number,
+  lazy = false,
+): LookOutcome {
   const warnings: string[] = [];
-  const { target } = resolved;
   if (mode === 'detail' && !target.part)
     warnings.push('detail wants a part (ref/part): framed the whole object');
   const framed = (target.part?.members ?? target.members).map(
@@ -272,14 +298,13 @@ export function lookIn(
   // The whole target hides nothing of itself (a part's own panel included).
   const own = new Set(target.members.map((i) => objects[i]));
   const solids = room.solids();
-  const results = candidates.map((c) => {
+  const results: (LookCandidate & { walkable: boolean; seen: number })[] = [];
+  for (const c of candidates) {
     const walkable = standable(room, solids, c.x, c.z);
-    return {
-      ...c,
-      walkable,
-      seen: walkable ? raysSeen(room.scene, c, box, own, m) : 0,
-    };
-  });
+    const seen = walkable ? raysSeen(room.scene, c, box, own, m) : 0;
+    results.push({ ...c, walkable, seen });
+    if (lazy && walkable && seen >= SEEN_ENOUGH) break;
+  }
   const choice = chooseLook(results);
   warnings.push(...choice.warnings);
   const chosen = results[choice.index];
