@@ -228,6 +228,9 @@ export function addWalkableTankRoof(
         cz,
       );
       m.name = 'Tank roof guard';
+      // Edge-stop only: invisible, no visible guardrails (mission 151; the
+      // owner, 2026-11-03: edges stop the walker like a wall).
+      m.visible = false;
     }
     for (const [px, pz] of [
       [x0, z0],
@@ -235,6 +238,7 @@ export function addWalkableTankRoof(
     ] as const) {
       const post = t.box(group, rail, T, H, T, px, roof.top + H / 2, pz);
       post.name = 'Tank roof guard';
+      post.visible = false;
     }
   }
 }
@@ -309,8 +313,11 @@ export function createBalanceTank(kit: PanelKit) {
     1.2,
     '#f2d34a',
   );
-  // Caged ladder up the face to the roof.
-  const ladder = createHumanLadder('caged', top + 0.05, { kit }).group;
+  // Caged ladder up the face to the roof; the guarded roof is its top landing.
+  const ladder = createHumanLadder('caged', top + 0.05, {
+    kit,
+    landing: false,
+  }).group;
   ladder.position.set(-2.55, 0, front + 0.02);
   group.add(ladder);
   addWalkableTankRoof(

@@ -86,6 +86,8 @@ export function createHumanLadder(
     enabled?: () => boolean;
     topEnabled?: () => boolean;
     bottomEnabled?: () => boolean;
+    /** Build a guarded top landing at the top (a caged ladder on a wall/stair). A tank's ladder wants none — the tank's guarded roof takes its place (mission 151). */
+    landing?: boolean;
   } = {},
 ) {
   const layout = humanLadderLayout(kind, height, options);
@@ -103,28 +105,30 @@ export function createHumanLadder(
         : createCagedLadder(options.kit, height, kind === 'caged');
   }
   if (kind === 'caged' || kind === 'utility') {
-    const metal = new MeshStandardMaterial({
-      color: '#565d60',
-      metalness: 0.62,
-      roughness: 0.45,
-    });
-    options.kit?.materials.push(metal);
-    const side = Math.sign(layout.topExit[2]) || -1;
-    const centre = side * 0.54;
-    const deck = new Mesh(new BoxGeometry(1.18, 0.06, 0.9), metal);
-    deck.name = 'Ladder top service landing';
-    deck.position.set(0, layout.top - 0.03, centre);
-    group.add(deck);
-    for (const x of [-0.57, 0.57]) {
-      const rail = new Mesh(new BoxGeometry(0.035, 1.05, 0.9), metal);
-      rail.name = 'Ladder landing guard';
-      rail.position.set(x, layout.top + 0.525, centre);
-      group.add(rail);
+    if (options.landing !== false) {
+      const metal = new MeshStandardMaterial({
+        color: '#565d60',
+        metalness: 0.62,
+        roughness: 0.45,
+      });
+      options.kit?.materials.push(metal);
+      const side = Math.sign(layout.topExit[2]) || -1;
+      const centre = side * 0.54;
+      const deck = new Mesh(new BoxGeometry(1.18, 0.06, 0.9), metal);
+      deck.name = 'Ladder top service landing';
+      deck.position.set(0, layout.top - 0.03, centre);
+      group.add(deck);
+      for (const x of [-0.57, 0.57]) {
+        const rail = new Mesh(new BoxGeometry(0.035, 1.05, 0.9), metal);
+        rail.name = 'Ladder landing guard';
+        rail.position.set(x, layout.top + 0.525, centre);
+        group.add(rail);
+      }
+      const end = new Mesh(new BoxGeometry(1.18, 1.05, 0.035), metal);
+      end.name = 'Ladder landing end guard';
+      end.position.set(0, layout.top + 0.525, centre + side * 0.44);
+      group.add(end);
     }
-    const end = new Mesh(new BoxGeometry(1.18, 1.05, 0.035), metal);
-    end.name = 'Ladder landing end guard';
-    end.position.set(0, layout.top + 0.525, centre + side * 0.44);
-    group.add(end);
   }
   group.name = `${kind} human access ladder`;
   group.userData.live = true;
@@ -244,7 +248,10 @@ export function roomRoofDecks(root: Object3D): WalkableDeck[] {
   root.traverse((o) => {
     if (!o.name.startsWith('Tank roof deck')) return;
     const box = new Box3().setFromObject(o);
-    const pad = 0.05;
+    // Generous: the walker stepping off the ladder's top must land on the
+    // roof from any direction (the height gate in `deckAt` blocks stepping
+    // up from the floor, so a wide deck is safe — mission 151).
+    const pad = 0.5;
     decks.push({
       minX: box.min.x - pad,
       maxX: box.max.x + pad,

@@ -146,7 +146,10 @@ export function createTank(
     );
     group.add(plate);
     if (ladderDepth) {
-      const ladder = createHumanLadder('caged', tank.top + 0.05, { kit }).group;
+      const ladder = createHumanLadder('caged', tank.top + 0.05, {
+        kit,
+        landing: false,
+      }).group;
       ladder.position.set(-nx / 2 + 0.45, 0, back + nz / 2 + 0.02);
       group.add(ladder);
       // The roof is walkable and guarded, reached from the ladder's side.
