@@ -8,7 +8,11 @@ Subject: _The Pool_: a simulation game of a pool plant room, and an invitation t
 
 Dear Luke,
 
-I'm a software developer working on _The Pool_, a game that simulates the engineering and operation of a large leisure centre's swimming pools: not the pool hall, but the plant rooms behind it. You can play the current development build in a web browser here, with no download or sign-up: https://trebizondoculpepper.github.io/the_pool/ (the source is at https://github.com/trebizondoculpepper/the_pool).
+I'm a software developer working on _The Pool_, a game that simulates the engineering and operation of a large leisure centre's swimming pools: not the pool hall, but the plant rooms behind it. You can play the current development build in a web browser, with no download or sign-up:
+
+**Play it here: https://trebizondoculpepper.github.io/the_pool/**
+
+(Its source code is at https://github.com/trebizondoculpepper/the_pool.)
 
 The player walks round the plant in first person and works it by hand. Everything is a working component of a running model, not scenery: valves open and shut, pumps start and trip, gauges and meters read the model's values, lamps light, chart recorders record. What is in it now:
 
@@ -28,3 +32,5 @@ I'd be very happy to give you a short demonstration, online or in person, and to
 Kind regards,
 
 Sal Fadhley
+
+_The Pool_ — play it in your browser: https://trebizondoculpepper.github.io/the_pool/
