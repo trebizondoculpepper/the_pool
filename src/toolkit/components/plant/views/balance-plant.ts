@@ -17,6 +17,7 @@ import {
 import { brandLivery } from '../../core/views/brand-livery';
 import type { BrandId } from '../../core/logic/brands';
 import { FINISH, plantTools } from './plant-tools';
+import { createGuardRail } from './railings';
 import type { DN, Point } from './plant-tools';
 import { createHumanLadder } from '../../architectural/views/human-ladder';
 import { createMagFlowmeter } from './mag-flowmeter';
@@ -187,9 +188,9 @@ export function addWalkableTankRoof(
   },
   open: 'x+' | 'x-' | 'z+' | 'z-' = 'z+',
 ) {
-  const t = plantTools(kit);
   // The roof-deck marker: invisible (solids are by footprint, so it never
-  // blocks), found by name for the room's floor lookup.
+  // blocks), found by name for the room's floor lookup. It sits exactly on
+  // the roof; the lookup pads it by plan-metres (mission 151).
   const marker = new Mesh(
     new BoxGeometry(roof.maxX - roof.minX, 0.01, roof.maxZ - roof.minZ),
     new MeshBasicMaterial({ transparent: true, opacity: 0 }),
@@ -202,44 +203,38 @@ export function addWalkableTankRoof(
   );
   group.add(marker);
   kit.materials.push(marker.material);
-  // The guardrails, on every side but the ladder's.
-  const rail = t.paint('#5a6066', 0.5, 0.3);
-  const H = 1.1;
-  const T = 0.05;
-  const sides: [number, number, number, number][] = [];
-  if (open !== 'z+') sides.push([roof.minX, roof.maxZ, roof.maxX, roof.maxZ]);
-  if (open !== 'z-') sides.push([roof.minX, roof.minZ, roof.maxX, roof.minZ]);
-  if (open !== 'x+') sides.push([roof.maxX, roof.minZ, roof.maxX, roof.maxZ]);
-  if (open !== 'x-') sides.push([roof.minX, roof.minZ, roof.minX, roof.maxZ]);
-  for (const [x0, z0, x1, z1] of sides) {
-    const horiz = x0 !== x1;
-    const len = Math.abs(horiz ? x1 - x0 : z1 - z0);
-    const cx = (x0 + x1) / 2;
-    const cz = (z0 + z1) / 2;
-    for (const h of [H, H * 0.5]) {
-      const m = t.box(
-        group,
-        rail,
-        horiz ? len : T,
-        0.05,
-        horiz ? T : len,
-        cx,
-        roof.top + h,
-        cz,
-      );
-      m.name = 'Tank roof guard';
-      // Edge-stop only: invisible, no visible guardrails (mission 151; the
-      // owner, 2026-11-03: edges stop the walker like a wall).
-      m.visible = false;
+  // The guardrails, on every side but the ladder's, built with the same
+  // `createGuardRail` as the gantry and the stairs (mission 151; the owner,
+  // 2026-11-03): a rail lies along x from −len/2, so each side is placed and
+  // rotated to lie along it, its top flush at the roof.
+  const sides: ('z+' | 'z-' | 'x+' | 'x-')[] = [];
+  if (open !== 'z+') sides.push('z+');
+  if (open !== 'z-') sides.push('z-');
+  if (open !== 'x+') sides.push('x+');
+  if (open !== 'x-') sides.push('x-');
+  for (const side of sides) {
+    const rail = createGuardRail(kit, {
+      length:
+        side === 'z+' || side === 'z-'
+          ? roof.maxX - roof.minX
+          : roof.maxZ - roof.minZ,
+      finish: 'galvanised',
+    });
+    rail.name = 'Tank roof guard';
+    // The rail's own base is at its origin's horizontal line; sit it flush
+    // on the roof edge.
+    const cx = (roof.minX + roof.maxX) / 2;
+    const cz = (roof.minZ + roof.maxZ) / 2;
+    if (side === 'z+') rail.position.set(cx, roof.top, roof.maxZ);
+    else if (side === 'z-') rail.position.set(cx, roof.top, roof.minZ);
+    else if (side === 'x+') {
+      rail.rotation.y = Math.PI / 2;
+      rail.position.set(roof.maxX, roof.top, cz);
+    } else {
+      rail.rotation.y = -Math.PI / 2;
+      rail.position.set(roof.minX, roof.top, cz);
     }
-    for (const [px, pz] of [
-      [x0, z0],
-      [x1, z1],
-    ] as const) {
-      const post = t.box(group, rail, T, H, T, px, roof.top + H / 2, pz);
-      post.name = 'Tank roof guard';
-      post.visible = false;
-    }
+    group.add(rail);
   }
 }
 

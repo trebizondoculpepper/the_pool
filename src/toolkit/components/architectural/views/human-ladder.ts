@@ -19,6 +19,7 @@ import {
 import { createPoolLadder } from '../../../gallery/views/pool-ladder';
 import { deckAt } from '../../../gallery/logic/walkable-deck';
 import type { WalkableDeck } from '../../../gallery/logic/walkable-deck';
+import { METRE } from '../../core/logic/units';
 import { createTankLadder } from '../../plant/views/tank-ladder';
 import { createCagedLadder } from '../../plant/views/railings';
 
@@ -248,10 +249,11 @@ export function roomRoofDecks(root: Object3D): WalkableDeck[] {
   root.traverse((o) => {
     if (!o.name.startsWith('Tank roof deck')) return;
     const box = new Box3().setFromObject(o);
-    // Generous: the walker stepping off the ladder's top must land on the
-    // roof from any direction (the height gate in `deckAt` blocks stepping
-    // up from the floor, so a wide deck is safe — mission 151).
-    const pad = 0.5;
+    // Pad the lookup by 0.4 plan-metres on every side so the walker stepping
+    // off the ladder's topExit lands on the roof, not in a gap (mission
+    // 151). The height gate in `deckAt` blocks stepping up from the floor,
+    // so the wider footprint is safe.
+    const pad = 0.4 * METRE;
     decks.push({
       minX: box.min.x - pad,
       maxX: box.max.x + pad,
