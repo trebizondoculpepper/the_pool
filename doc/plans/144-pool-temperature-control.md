@@ -2,6 +2,10 @@
 
 Plan, 2026-11-02. Based on mission 144, mission 120's LTHW ring, the current `thermal.ts` and the pool room schematics. Mission 144 reserved and uses `WORLD_VERSION` 76 through agent-inbox.
 
+## Controller design decision (the owner, 2026-11-03)
+
+The pool temperature controller in plants 1 and 2 is the controller designed in mission 146: the Water Margin fascia (SET and ACTUAL red 7-segment readouts, SET POINT 25–35 °C in 0.5, BAND 1–10 K, HAND/OFF/AUTO, a valve-open LED bar, laid out on the `face-grid`), reading the ideal controller model (`modulating-control.ts`) and driving the modulating valve. The owner chose it as **the** controller — no longer provisional — superseding the provisional controller visuals described below (the West 6000 / CAL 3300 inspired units in the 8U wall enclosures). This mission's controller requirement is that design; the earlier provisional `createPoolTemperatureController` and this design unify under the one `pool-temperature-controller` kind (`room-equipment.ts`, the room pipework). The rest of this plan — mounts, cabinets, cable to the control bus, local controls, world state — stands, with the controller visual being the mission 146 Water Margin design.
+
 ## Model
 
 Add a per-pool water-heating control state for `pool_01` and `pool_02`: local AUTO/HAND mode, set point, sensor measurement, controller demand, requested valve position, actual valve position, and fault/inhibit status. Prefer a per-pool record matching existing world-state patterns; keep it on the one `World`, stepped when the player is in any room.

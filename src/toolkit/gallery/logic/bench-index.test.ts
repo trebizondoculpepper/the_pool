@@ -51,7 +51,10 @@ describe('the bench index (mission 137)', () => {
   });
 
   it('reaches the acceptance pages from the tree alone', () => {
-    const hrefs = all(index).map((n) => n.href ?? '');
+    const hrefs = all(index).flatMap((n) => [
+      n.href ?? '',
+      ...(n.links?.map((l) => l.href) ?? []),
+    ]);
     expect(hrefs).toContain('bench.html?bench=room-audit&room=boiler_house');
     expect(hrefs).toContain('bench.html?bench=item-audit&kind=weather-station');
     expect(hrefs).toContain('bench.html?bench=magic-room&kind=weather-station');
@@ -60,6 +63,16 @@ describe('the bench index (mission 137)', () => {
     expect(
       hrefs.some((h) => h.startsWith('./?room=boiler_house&look=BH-CP3')),
     ).toBe(true);
+  });
+
+  it('opens an installed object page from the main row while keeping look views explicit', () => {
+    const controller = nodeAt(index, 'rooms/plant/plant_pool_02/PL2-TC1');
+    expect(controller?.href).toBe(
+      'bench.html?bench=object-detail&room=plant_pool_02&ref=PL2-TC1',
+    );
+    expect(controller?.links?.find((l) => l.label === 'front')?.href).toBe(
+      './?room=plant_pool_02&look=PL2-TC1',
+    );
   });
 
   it('gives every leaf a usable link', () => {

@@ -216,6 +216,41 @@ export function drawBrandMark(
       ctx.stroke();
       break;
     }
+    case 'waves': {
+      // A pair of stylized waves forming a W: each wave a full period,
+      // crest to trough to crest, the two crests meeting at the W's
+      // middle apex, their troughs its two bottom vertices; a droplet of
+      // the second colour hangs in the hollow where the watershed sheds
+      // it.
+      ctx.strokeStyle = main;
+      ctx.lineWidth = r * 0.2;
+      ctx.beginPath();
+      for (let side = 0; side < 2; side++) {
+        for (let i = 0; i <= 24; i++) {
+          const t = i / 24;
+          const px = side ? t * r * 0.82 : -r * 0.82 + t * r * 0.82;
+          const py = -Math.cos(t * Math.PI * 2) * r * 0.7;
+          if (i) ctx.lineTo(px, py);
+          else ctx.moveTo(px, py);
+        }
+      }
+      ctx.stroke();
+      ctx.fillStyle = second;
+      ctx.beginPath();
+      ctx.moveTo(0, r * 0.14);
+      ctx.bezierCurveTo(
+        r * 0.08,
+        r * 0.24,
+        r * 0.17,
+        r * 0.38,
+        r * 0.17,
+        r * 0.5,
+      );
+      ctx.arc(0, r * 0.5, r * 0.17, 0, Math.PI);
+      ctx.bezierCurveTo(-r * 0.17, r * 0.38, -r * 0.08, r * 0.24, 0, r * 0.14);
+      ctx.fill();
+      break;
+    }
     case 'cog': {
       ctx.fillStyle = main;
       ctx.beginPath();

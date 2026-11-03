@@ -12,6 +12,7 @@ export function music_source(
   kit: PanelKit,
   binding: MusicBinding,
   titles: readonly string[],
+  options: { depth?: number } = {},
 ) {
   const a = beginPart(kit, 'music_source');
   const controls = createPartSet();
@@ -20,6 +21,7 @@ export function music_source(
     style: 'controls',
     colour: 'grey',
     label: 'SYNCLEX · MUSIC SOURCE',
+    ...(options.depth === undefined ? {} : { depth: options.depth }),
   });
   a.object.add(unit.group);
   // Itself, for the information overlay: what it is playing.

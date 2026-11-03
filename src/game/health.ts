@@ -384,6 +384,8 @@ export const WORLD_HEALTH_COVERAGE = {
   demo: 'not health: dev14’s demonstration button',
   plant: 'services: feeders, sources and isolators',
   pools: 'pools: level, flow, temperature, chemistry, tank, humidity, trips',
+  poolTemperatureControls:
+    'heating: pool exchanger controller setpoint, mode, isolators and control valve',
   treatment:
     'not checked itself: the pools’ water chemistry and dosing; its readings are the pools’ chemistry, checked there',
   dosingPumps:
@@ -545,6 +547,10 @@ export const KIND_HEALTH_COVERAGE = {
   'operator-desk': 'not health: the operator’s desk',
   'alarm-printer': 'not health: it prints what the annunciator shows',
   'water-test-kit': 'not health: set decoration for now',
+  'pool-temperature-controller':
+    'pools: pool-water temperature feedback and heat setpoint',
+  'temperature-sensor':
+    'pools: outlet temperature feedback from the heat exchanger',
   'mimic-pool': 'not health: a display of the pools',
   'mimic-heating': 'not health: a display of the heating',
   annunciator: 'not health: a display; its indications are classified below',

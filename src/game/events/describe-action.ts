@@ -264,6 +264,25 @@ function said(
         subject: action.pool,
         text: `thermostat set to ${after.pools[action.pool].setpoint} °C`,
       };
+    case 'pool/temperature-control': {
+      const c = after.poolTemperatureControls[action.pool]!;
+      return {
+        subject: action.pool,
+        text:
+          action.act === 'mode'
+            ? `water temperature controller ${action.mode.toUpperCase()}`
+            : action.act === 'manual-output'
+              ? `water heat valve demand ${Math.round(c.manualOutput * 100)}%`
+              : action.act === 'flow-isolator' ||
+                  action.act === 'return-isolator'
+                ? `${action.act === 'flow-isolator' ? 'flow' : 'return'} heating isolator ${openShut(action.open)}`
+                : action.act === 'valve-stuck'
+                  ? `heating control valve ${action.stuck ? 'stuck' : 'released'}`
+                  : action.act === 'sensor-fault'
+                    ? `temperature probe fault ${action.fault}`
+                    : 'temperature control updated',
+      };
+    }
     case 'hand/dose': {
       const info = handChemical(action.chemical);
       if (!info)

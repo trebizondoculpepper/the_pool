@@ -153,13 +153,15 @@ export const PLACED_KINDS = {
     class: 'plant',
     purpose:
       'Measures pool-water temperature and modulates heat-exchanger flow to meet the local setpoint.',
+    brand: 'water-margin',
   },
   'temperature-sensor': {
     type: 'Temperature sensor',
     status: 'none',
     code: 'TE',
     class: 'plant',
-    purpose: 'Measures pool-water temperature at the heat-exchanger outlet.',
+    purpose:
+      'Measures returning pool-water temperature before the heat exchanger.',
   },
   'co2-wall-port': {
     type: 'CO₂ wall port',

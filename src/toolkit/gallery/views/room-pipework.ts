@@ -17,8 +17,9 @@ import {
 import { retiredFrom } from '../logic/retired-rooms';
 import {
   BoxGeometry,
-  CatmullRomCurve3,
+  CurvePath,
   Group,
+  LineCurve3,
   Mesh,
   MeshStandardMaterial,
   TubeGeometry,
@@ -92,6 +93,7 @@ import type { PipeRun, Valve } from '../logic/room-pipes';
 import { olympicRoom } from '../logic/olympic-plumbing';
 import { layoutRoom } from '../logic/room-equipment';
 import { createPoolTemperatureProbe } from '../../components/plant/views/pool-temperature-controller';
+import { controlBus } from '../logic/control-bus';
 
 /** Each run's service, as its markings name it. */
 /** Each service's bands; a flue carries none, only its own label plate. */
@@ -374,8 +376,9 @@ export function createRoomPipework(kit: PanelKit, room: string, floorY = 0) {
         : tee,
     );
   }
-  // Remote Pt100 probe in the pool-water outlet from the exchanger, with its
-  // screened lead routed high under the services ceiling and down to its rack.
+  // Remote Pt100 probe in the pool-water return entering the exchanger. Its
+  // instrument lead rises to the room's shared control-bus ring, follows
+  // that ring, and meets the controller's existing bus drop.
   const temperaturePool =
     (retiredFrom(room) ?? room) === 'plant_pool_01'
       ? 'pool_01'
@@ -383,67 +386,137 @@ export function createRoomPipework(kit: PanelKit, room: string, floorY = 0) {
         ? 'pool_02'
         : null;
   if (temperaturePool) {
-    const outlet = runs.find((r) =>
+    const inlet = runs.find((r) =>
       temperaturePool === 'pool_01'
-        ? r.name === 'Heat exchanger to the ozone contact tank'
-        : r.name === 'hx-return',
+        ? r.name === 'Filtered main to the heat exchanger'
+        : r.name === 'hx-flow',
     );
     const controllerItem = layoutRoom(retiredFrom(room) ?? room)?.placed.find(
       (p) =>
         p.item.key ===
         `pool-temperature-controller:${temperaturePool === 'pool_01' ? 'analogue' : 'digital'}`,
     );
-    if (outlet && controllerItem) {
-      const point = outlet.points[0];
+    if (inlet && controllerItem) {
+      const point = inlet.points.at(-1)!;
       const tag = temperaturePool === 'pool_01' ? 'PL1-TE1' : 'PL2-TE1';
-      const probe = createPoolTemperatureProbe(kit, tag, outlet.od);
-      probe.position.set(point[0], floorY + point[1] + outlet.od / 2, point[2]);
+      const probe = createPoolTemperatureProbe(kit, tag, inlet.od);
+      probe.position.set(point[0], floorY + point[1] + inlet.od / 2, point[2]);
       probe.rotation.x = -Math.PI / 2;
       group.add(
         markComponent(probe, {
           tag,
-          name: 'Pool-water exchanger outlet Pt100 probe',
+          name: 'Pool-water return Pt100 probe',
           model: { node: 'temperature-probe' },
         }),
       );
       const start = new Vector3(
         point[0],
-        floorY + point[1] + outlet.od / 2,
+        floorY + point[1] + inlet.od / 2,
         point[2],
       );
-      const end = new Vector3(
-        controllerItem.x,
-        floorY + controllerItem.y,
-        controllerItem.z,
+      const bus = controlBus(retiredFrom(room) ?? room);
+      const controllerStub = bus?.stubs.find(
+        (route) => route.to === controllerItem.item.key,
       );
-      const high = Math.max(start.y, end.y) + 1.15;
-      const route = new CatmullRomCurve3([
-        start,
-        new Vector3(start.x, high, start.z),
-        new Vector3(end.x, high, end.z),
-        end,
-      ]);
-      const conduit = new Mesh(
-        new TubeGeometry(route, 48, 0.006, 6, false),
-        new MeshStandardMaterial({
-          color: '#343a3d',
-          metalness: 0.45,
-          roughness: 0.6,
-        }),
+      const ring = bus?.trunking.filter((run) =>
+        /^Control bus, (north|east|south|west) wall$/.test(run.name),
       );
-      conduit.name = `${tag} screened instrument cable in conduit`;
-      conduit.userData.live = false;
-      group.add(
-        markComponent(conduit, {
-          name: `${tag} Pt100 signal cable in conduit`,
-          model: {
-            link:
-              temperaturePool === 'pool_01'
-                ? 'Pt100 measurement to temperature controller'
-                : 'pool-temperature-measurement',
-          },
-        }),
-      );
+      if (bus && controllerStub && ring?.length) {
+        const busY = floorY + bus.y;
+        const atY = (p: readonly [number, number, number]) =>
+          new Vector3(p[0], busY, p[2]);
+        const pointOn = (
+          p: Vector3,
+          a: readonly [number, number, number],
+          b: readonly [number, number, number],
+        ) => {
+          const dx = b[0] - a[0];
+          const dz = b[2] - a[2];
+          const span = dx * dx + dz * dz;
+          const t = span
+            ? Math.max(
+                0,
+                Math.min(1, ((p.x - a[0]) * dx + (p.z - a[2]) * dz) / span),
+              )
+            : 0;
+          const point = new Vector3(a[0] + dx * t, busY, a[2] + dz * t);
+          return { point, distance: point.distanceTo(p) };
+        };
+        const ringSegments = ring.map((run) => [run.from, run.to] as const);
+        const nearest = (p: Vector3) => {
+          let result: {
+            segment: number;
+            point: Vector3;
+            distance: number;
+          } | null = null;
+          ringSegments.forEach(([a, b], segment) => {
+            const candidate = pointOn(p, a, b);
+            if (!result || candidate.distance < result.distance)
+              result = { segment, ...candidate };
+          });
+          return result!;
+        };
+        const probeAtBus = new Vector3(start.x, busY, start.z);
+        const from = nearest(probeAtBus);
+        const to = nearest(atY(controllerStub.points.at(-1)!));
+        const walkRing = (step: 1 | -1) => {
+          const points = [from.point];
+          let segment = from.segment;
+          while (segment !== to.segment) {
+            points.push(
+              atY(
+                step === 1
+                  ? ringSegments[segment][1]
+                  : ringSegments[segment][0],
+              ),
+            );
+            segment =
+              (segment + step + ringSegments.length) % ringSegments.length;
+          }
+          points.push(to.point);
+          return points;
+        };
+        const length = (points: readonly Vector3[]) =>
+          points
+            .slice(1)
+            .reduce((sum, point, i) => sum + point.distanceTo(points[i]), 0);
+        const around = [walkRing(1), walkRing(-1)].sort(
+          (a, b) => length(a) - length(b),
+        )[0];
+        const path = [start, probeAtBus, ...around].filter(
+          (p, i, points) => i === 0 || p.distanceTo(points[i - 1]) > 1e-6,
+        );
+        const route = new CurvePath<Vector3>();
+        for (let i = 1; i < path.length; i++)
+          route.add(new LineCurve3(path[i - 1], path[i]));
+        const conduit = new Mesh(
+          new TubeGeometry(
+            route,
+            Math.max(8, path.length * 8),
+            0.006,
+            6,
+            false,
+          ),
+          new MeshStandardMaterial({
+            color: '#343a3d',
+            metalness: 0.45,
+            roughness: 0.6,
+          }),
+        );
+        conduit.name = `${tag} screened instrument cable in conduit`;
+        conduit.userData.live = false;
+        group.add(
+          markComponent(conduit, {
+            name: `${tag} Pt100 signal cable in conduit`,
+            model: {
+              link:
+                temperaturePool === 'pool_01'
+                  ? 'Pt100 measurement to control bus'
+                  : 'pool-temperature-measurement-to-control-bus',
+            },
+          }),
+        );
+      }
     }
   }
   // What the room's flowmeters read, as the world now stands (the battery's model keeps its own cache).
@@ -479,6 +552,9 @@ export function createRoomPipework(kit: PanelKit, room: string, floorY = 0) {
             0) > 0.01,
         position: () =>
           store?.world.value.poolTemperatureControls[pool]?.valvePosition ?? 0,
+        commandPosition: () =>
+          store?.world.value.poolTemperatureControls[pool]?.commandedPosition ??
+          0,
         set: (open: boolean) => {
           store?.dispatch({
             type: 'pool/temperature-control',

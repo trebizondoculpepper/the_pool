@@ -9,6 +9,7 @@ import {
   matchesSearch,
 } from './look-catalogue';
 import { itemAuditLink } from './item-audit';
+import { objectDetailLink } from './object-detail';
 import type { LookEntry } from './look-catalogue';
 import { BRANCH_WORDS, branchesInUse, pagesFor } from './page-registry';
 import type { Branch, RegisteredRow } from './page-registry';
@@ -141,7 +142,7 @@ function entryNode(e: LookEntry): IndexNode {
   const auditRow = `bench.html?bench=room-audit&room=${encodeURIComponent(e.room)}#row-${encodeURIComponent(e.ref)}`;
   const links: IndexLink[] = [];
   if (e.look !== 'none' && !e.parent)
-    for (const m of ['left', 'right', 'above'] as const)
+    for (const m of ['front', 'left', 'right', 'above'] as const)
       links.push({ label: m, href: lookLink(e.room, e.ref, m) });
   links.push({
     label: 'audit row',
@@ -150,7 +151,7 @@ function entryNode(e: LookEntry): IndexNode {
   return {
     id: e.ref,
     label: `${e.ref} · ${e.title}`,
-    href: e.look !== 'none' ? lookLink(e.room, e.ref) : auditRow,
+    href: objectDetailLink(e.room, e.ref),
     meta: [e.kindWord, e.assetId, ...e.findings].filter(Boolean).join(' · '),
     links,
     fields: entryFields(e).filter((f): f is string => !!f),
@@ -208,10 +209,12 @@ function kindNode(kind: KindEntry): IndexNode {
       copies.map((c) => ({
         id: c.ref,
         label: `${c.ref}${c.name && c.name !== c.ref ? ` · ${c.name}` : ''}`,
-        href:
-          c.look !== 'none' && c.room
-            ? lookLink(c.room, c.ref)
-            : itemAuditLink(kind.key),
+        href: c.room
+          ? objectDetailLink(c.room, c.ref)
+          : itemAuditLink(kind.key),
+        ...(c.look !== 'none' && c.room
+          ? { links: [{ label: 'front', href: lookLink(c.room, c.ref) }] }
+          : {}),
         meta: [c.assetId, ...c.findings].filter(Boolean).join(' · '),
         fields: [c.ref, c.name, c.tag, c.assetId, c.room].filter(
           (f): f is string => !!f,

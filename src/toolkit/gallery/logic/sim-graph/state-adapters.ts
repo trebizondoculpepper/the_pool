@@ -108,16 +108,10 @@ export function stateAdapter(
 ): StateAdapter | undefined {
   const p = parseNodeId(n.id);
   if (!p) return undefined;
-  if (
-    p.sort === 'node' &&
-    (p.id === 'temperature-controller' || p.id === 'temperature-control-valve')
-  ) {
+  if (p.sort === 'node' && p.id === 'temperature-controller') {
     const pool = p.room === 'plant_pool_01' ? 'pool_01' : 'pool_02';
     return {
-      name:
-        p.id === 'temperature-controller'
-          ? 'pool-water temperature controller'
-          : 'LTHW temperature control valve',
+      name: 'pool-water temperature controller',
       fields: [
         {
           name: 'setpoint',
@@ -136,8 +130,8 @@ export function stateAdapter(
         {
           name: 'mode',
           path: `poolTemperatureControls.${pool}.mode`,
-          type: "'auto' | 'hand'",
-          values: ['auto', 'hand'],
+          type: "'auto' | 'off' | 'hand'",
+          values: ['auto', 'off', 'hand'],
           saved: true,
           normal: 'auto',
         },
@@ -213,7 +207,7 @@ export function stateAdapter(
   if (p.sort === 'node' && p.id === 'temperature-probe') {
     const pool = p.room === 'plant_pool_01' ? 'pool_01' : 'pool_02';
     return {
-      name: 'remote Pt100 exchanger outlet probe (reports modelled bulk pool temperature)',
+      name: 'remote pool-return Pt100 probe (reports modelled bulk pool temperature)',
       fields: [
         {
           name: 'measuredTemperature',

@@ -23,7 +23,7 @@ import type { Point3, ServiceRoute } from './room-services';
 
 /** The devices on the control bus: panels, mimics, instruments, the desk and its printer. */
 export const isControlDevice = (key: string) =>
-  /^(operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|gas-safety|combustion-panel|level-instruments|booster-set|cascade-manager|weather-station)/.test(
+  /^(operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|gas-safety|combustion-panel|level-instruments|booster-set|cascade-manager|weather-station|pool-temperature-controller)/.test(
     key,
   );
 
@@ -87,7 +87,10 @@ export function controlBus(room: string): ControlBus | null {
   // floor is below its doors (the wet hall's, half a storey down) has
   // them that much higher (the owner, 2026-10-26: the bus went across
   // the wet hall's doors).
-  const y = Math.max(LOWEST + (deckOf(room) ?? 0), wallTop + OVER);
+  // Plant-room coordinates already use the local room floor as their datum;
+  // their associated pool deck must not lift the bus through the ceiling.
+  const deckOffset = room.startsWith('plant_pool_') ? 0 : (deckOf(room) ?? 0);
+  const y = Math.max(LOWEST + deckOffset, wallTop + OVER);
   if (y > structure.ceilingZone - 0.2)
     problems.push(
       `no room for the bus between the tallest panel and the services ceiling`,
@@ -224,6 +227,8 @@ export function controlBus(room: string): ControlBus | null {
 
   // Each device to the nearest point of the bus.
   const stubs: ServiceRoute[] = [];
+  const utilityOf = (p: Placed) =>
+    p.item.key.startsWith('pool-temperature-controller') ? 'control' : 'power';
   const topOf = (p: Placed) =>
     p.item.mount === 'floor' ? p.item.h : p.y + p.item.h / 2;
   for (const p of devices) {
@@ -237,7 +242,7 @@ export function controlBus(room: string): ControlBus | null {
       const x = WET_HALL_LAYOUT.bay.minX + OFF;
       stubs.push({
         name,
-        utility: 'power',
+        utility: utilityOf(p),
         kind: 'steel-screwed',
         od: STUB_OD,
         points: [
@@ -253,7 +258,7 @@ export function controlBus(room: string): ControlBus | null {
       const z = partition.z + OFF;
       stubs.push({
         name,
-        utility: 'power',
+        utility: utilityOf(p),
         kind: 'steel-screwed',
         od: STUB_OD,
         points: [
@@ -270,7 +275,7 @@ export function controlBus(room: string): ControlBus | null {
       const s = along(side, p.x, p.z);
       stubs.push({
         name,
-        utility: 'power',
+        utility: utilityOf(p),
         kind: 'steel-screwed',
         od: STUB_OD,
         points: [
@@ -307,7 +312,7 @@ export function controlBus(room: string): ControlBus | null {
         : [fx, y, best.at[2]];
     stubs.push({
       name,
-      utility: 'power',
+      utility: utilityOf(p),
       kind: 'steel-screwed',
       od: STUB_OD,
       points: [[fx, fy, fz], up, corner, best.at],

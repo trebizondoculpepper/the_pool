@@ -69,6 +69,8 @@ import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
   humanLadderZones,
+  tankRoofAt,
+  tankRoofGuardSolids,
 } from '../../components/architectural/views/human-ladder';
 import { useOnHit } from '../../controls/input/touch-point';
 import {
@@ -694,6 +696,7 @@ export function startEquipmentRoom(
     floorAt: (x, z, previous) => {
       standing =
         humanLadderLandingAt(room, x, z, previous) ??
+        tankRoofAt(room, x, z, previous) ??
         (sized
           ? regionFloorAt(sized.room, sized.gantry, x / m, z / m, previous / m)
           : 0);
@@ -704,7 +707,9 @@ export function startEquipmentRoom(
     solids: () => [
       ...walls,
       ...(standing < 0.5 ? solids : []),
-      ...(standing >= 0.5 ? humanLadderLandingSolids(room) : []),
+      ...(standing >= 0.5
+        ? [...humanLadderLandingSolids(room), ...tankRoofGuardSolids(room)]
+        : []),
       // What the exhibits put in the way as they work (a shut door).
       ...live
         .flatMap(

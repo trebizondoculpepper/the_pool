@@ -17,7 +17,7 @@ import {
   createStencilText,
 } from '../../core/views/plant-signs';
 import { wrapOnto } from '../../core/views/wrap-label';
-import { createSectionalTank } from './balance-plant';
+import { createSectionalTank, addWalkableTankRoof } from './balance-plant';
 import { createHumanLadder } from '../../architectural/views/human-ladder';
 
 /**
@@ -149,6 +149,19 @@ export function createTank(
       const ladder = createHumanLadder('caged', tank.top + 0.05, { kit }).group;
       ladder.position.set(-nx / 2 + 0.45, 0, back + nz / 2 + 0.02);
       group.add(ladder);
+      // The roof is walkable and guarded, reached from the ladder's side.
+      addWalkableTankRoof(
+        kit,
+        group,
+        {
+          minX: -nx / 2,
+          maxX: nx / 2,
+          minZ: back - nz / 2,
+          maxZ: back + nz / 2,
+          top: tank.top,
+        },
+        'z+',
+      );
     }
     // The contents gauge: a clear tube at the face's right-hand edge, on
     // brackets, its water column at the tank's level, a scale beside it.

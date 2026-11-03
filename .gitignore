@@ -30,3 +30,6 @@ doc/marketing/tmp/
 
 # agent-inbox: generated wake hook; carries this machine's interpreter path. Never commit.
 /.codex/hooks.json
+
+# agent-inbox: generated wake hook; carries this machine's interpreter path. Never commit.
+/.opencode/plugins/agent-inbox-wake.js

@@ -369,7 +369,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 76;
+export const WORLD_VERSION = 79;
 
 const POOL_PRIMARY_ISOLATORS = {
   pool_01: {
@@ -664,13 +664,19 @@ export type WorldAction =
       type: 'pool/temperature-control';
       pool: 'pool_01' | 'pool_02';
       act: 'mode';
-      mode: 'auto' | 'hand';
+      mode: 'auto' | 'off' | 'hand';
     }
   | {
       type: 'pool/temperature-control';
       pool: 'pool_01' | 'pool_02';
       act: 'manual-output';
       output: number;
+    }
+  | {
+      type: 'pool/temperature-control';
+      pool: 'pool_01' | 'pool_02';
+      act: 'band';
+      kelvin: number;
     }
   | {
       type: 'pool/temperature-control';
@@ -987,6 +993,9 @@ export function applyAction(world: World, action: WorldAction): World {
             ...old,
             manualOutput: Math.min(1, Math.max(0, action.output)),
           };
+          break;
+        case 'band':
+          next = { ...old, band: Math.min(10, Math.max(1, action.kelvin)) };
           break;
         case 'flow-isolator':
           next = { ...old, flowIsolatorOpen: action.open };

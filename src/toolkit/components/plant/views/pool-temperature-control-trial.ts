@@ -29,6 +29,8 @@ export function createPoolTemperatureControlTrial(kit: PanelKit) {
     readout?: ReturnType<typeof createSevenSegment>;
     meter?: ReturnType<typeof createPanelMeter>;
     controller: PoolTemperatureControlState;
+    /** The step result's commanded position, for the valve's sound. */
+    command: number;
     temp: number;
     pool: 'pool_01' | 'pool_02';
     modern: boolean;
@@ -78,6 +80,7 @@ export function createPoolTemperatureControlTrial(kit: PanelKit) {
     const pool = modern ? 'pool_02' : 'pool_01';
     const state: (typeof cards)[number] = {
       controller: newPoolTemperatureControl(modern ? 28 : 30),
+      command: 0,
       temp: modern ? 27.2 : 29.1,
       pool,
       modern,
@@ -151,6 +154,7 @@ export function createPoolTemperatureControlTrial(kit: PanelKit) {
             manualOutput: open ? 1 : 0,
           };
         },
+        commandPosition: () => state.command,
         position: () => state.controller.valvePosition,
       },
       { plaque: { tag: `${tag}-CV1`, name: 'LTHW control valve' } },
@@ -233,6 +237,7 @@ export function createPoolTemperatureControlTrial(kit: PanelKit) {
           dt: delta,
         });
         c.controller = result.state;
+        c.command = result.commandedPosition;
         c.temp = stepThermal(
           { water: c.temp, air: c.modern ? 29 : 31 },
           HEAT[c.pool],

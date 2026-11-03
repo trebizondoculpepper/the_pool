@@ -48,7 +48,8 @@ export interface PoolProcessFact {
     probeRef: string;
     measuredTemperatureC: number;
     setpointC: number;
-    mode: 'auto' | 'hand';
+    bandK: number;
+    mode: 'auto' | 'off' | 'hand';
     demandFraction: number;
     commandedValvePosition: number;
     actualValvePosition: number;
@@ -196,6 +197,7 @@ export function plantProcessFacts(world: World): PlantProcessFact {
               probeRef: id === 'pool_01' ? 'PL1-TE1' : 'PL2-TE1',
               measuredTemperatureC: controlResult.measuredTemperature,
               setpointC: temperatureControl.setpoint,
+              bandK: temperatureControl.band,
               mode: temperatureControl.mode,
               demandFraction: controlResult.demand,
               commandedValvePosition: controlResult.commandedPosition,
@@ -377,7 +379,7 @@ export function plantProcessLines(
     const control = pool.temperatureControl;
     lines.push(
       control
-        ? `${pool.pool} pool heating ${control.controllerRef}: remote outlet probe ${control.probeRef} measured ${number(control.measuredTemperatureC, 2)} °C; controller setpoint ${number(control.setpointC, 1)} °C; mode ${control.mode.toUpperCase()}; demand ${number(control.demandFraction * 100, 1)}%; commanded valve ${number(control.commandedValvePosition * 100, 1)}%; actual valve ${number(control.actualValvePosition * 100, 1)}%; interlock ${control.interlock}; actuator stuck ${yesNo(control.valveStuck)}; sensor fault ${control.sensorFault}; flow isolator open ${yesNo(control.flowIsolatorOpen)}; return isolator open ${yesNo(control.returnIsolatorOpen)}.`
+        ? `${pool.pool} pool heating ${control.controllerRef}: pool-return probe ${control.probeRef} measured ${number(control.measuredTemperatureC, 2)} °C; controller setpoint ${number(control.setpointC, 1)} °C; proportional band ${number(control.bandK, 1)} K; mode ${control.mode.toUpperCase()}; demand ${number(control.demandFraction * 100, 1)}%; commanded valve ${number(control.commandedValvePosition * 100, 1)}%; actual valve ${number(control.actualValvePosition * 100, 1)}%; interlock ${control.interlock}; actuator stuck ${yesNo(control.valveStuck)}; sensor fault ${control.sensorFault}; flow isolator open ${yesNo(control.flowIsolatorOpen)}; return isolator open ${yesNo(control.returnIsolatorOpen)}.`
         : `${pool.pool} pool heating controller: unavailable (not modelled).`,
     );
     lines.push(

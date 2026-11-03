@@ -28,20 +28,20 @@ export const INSTALLED_FIXTURES: Readonly<Record<string, InstalledFixture>> = {
   'PL1-TE1': {
     assetId: 'asset-0168',
     room: 'plant_pool_01',
-    name: 'Lounge pool exchanger outlet Pt100 probe',
+    name: 'Lounge pool return Pt100 probe',
     kind: 'temperature-sensor',
     brand: 'unbranded',
     purpose:
-      'Measures pool-water temperature in the Lounge exchanger outlet and signals its local temperature controller.',
+      'Measures returning pool-water temperature before the Lounge exchanger and signals its local temperature controller.',
   },
   'PL2-TE1': {
     assetId: 'asset-0169',
     room: 'plant_pool_02',
-    name: 'Olympic pool exchanger outlet Pt100 probe',
+    name: 'Olympic pool return Pt100 probe',
     kind: 'temperature-sensor',
     brand: 'unbranded',
     purpose:
-      'Measures pool-water temperature in the Olympic exchanger outlet and signals its local temperature controller.',
+      'Measures returning pool-water temperature before the Olympic exchanger and signals its local temperature controller.',
   },
   'PL2-DP1-P1': {
     assetId: 'asset-1305',

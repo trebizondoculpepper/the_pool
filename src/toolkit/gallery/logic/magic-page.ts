@@ -4,6 +4,8 @@ import { brandById } from '../../components/core/logic/brands';
 import type { KindEntry } from './kind-catalogue';
 import { connectionsOf, controlledBy, controlsOf } from './room-audit';
 import type { AuditNetwork } from './room-audit';
+import { resolveRef } from './sim-graph/graph';
+import type { SimGraph } from './sim-graph/graph';
 
 /**
  * The magic page (mission 130): a kind with no 3D form of its own, in
@@ -31,6 +33,8 @@ export interface MagicPageInput {
   descriptors: readonly ObjectDescriptor[];
   /** A room's enhanced network (129's `auditNetwork`), if it has one. */
   network(room: string): AuditNetwork | undefined;
+  /** The executing graph, where known; newer than the room-audit network. */
+  graph?: SimGraph;
 }
 
 const none = (lines: string[], said: string) => (lines.length ? lines : [said]);
@@ -64,13 +68,42 @@ export function magicPage(kind: KindEntry, input: MagicPageInput): MagicPage {
         `${who} is part of ${c.parent}${parentName ? ` (${parentName})` : ''}, and is drawn as part of it.`,
       );
     }
+    // Prefer the executing simulation graph; the older room-audit network is
+    // still useful for callers that do not supply it.
+    const graphNodes = input.graph
+      ? c.model
+        ? resolveRef(c.room, c.model)
+            .map((target) => input.graph!.nodes.get(target.page))
+            .filter((n) => n !== undefined)
+        : [...input.graph.nodes.values()].filter(
+            (n) =>
+              n.room === c.room &&
+              !!c.tag &&
+              n.tag?.toLowerCase() === c.tag.toLowerCase(),
+          )
+      : [];
+    for (const node of graphNodes) {
+      links.push(`${who} has executing graph node ${node.id} (${node.name}).`);
+      for (const edge of input.graph!.edges.filter(
+        (e) =>
+          e.kind === 'connects' && (e.from === node.id || e.to === node.id),
+      )) {
+        const far = input.graph!.nodes.get(
+          edge.from === node.id ? edge.to : edge.from,
+        );
+        if (far)
+          links.push(
+            `${who} connects to ${far.name} (${far.id}) by ${edge.medium ?? 'unspecified medium'}; ${edge.direction === 'both' ? 'bidirectional' : 'modelled forward direction'}.`,
+          );
+      }
+    }
     // Its connections, where it is a node of its room's enhanced network.
     const net = c.room ? input.network(c.room) : undefined;
     const node = net?.nodes.find(
       (n) =>
         n.id === c.tag || n.id === c.ref || (!!c.model && n.id === c.model),
     );
-    if (net && node) {
+    if (!graphNodes.length && net && node) {
       const present = new Set<string>();
       for (const k of connectionsOf(`node:${node.id}`, net, present))
         links.push(`${who} joins ${k.name} by ${k.link} (${k.medium}).`);
@@ -109,7 +142,7 @@ export function magicPage(kind: KindEntry, input: MagicPageInput): MagicPage {
         heading: 'Its connections',
         lines: none(
           links,
-          'No copy is a node of its room’s enhanced network: the model joins it inside a larger block, or its room has no network yet.',
+          'No executing graph or room-network connection is recorded for these copies.',
         ),
       },
       {

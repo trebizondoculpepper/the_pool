@@ -35,6 +35,17 @@ describe('the Olympic plant room, plumbed and routed', () => {
     expect(drawn?.axis).toBe('y');
   });
 
+  it('routes the remote temperature measurement through the shared control bus', () => {
+    const nodes = new Map(
+      plumbed.schematic.nodes.map((node) => [node.id, node]),
+    );
+    const edges = new Set(plumbed.schematic.edges.map((edge) => edge.id));
+    expect(nodes.get('control-bus')?.kind).toBe('control-bus');
+    expect(edges).toContain('pool-temperature-measurement-to-control-bus');
+    expect(edges).toContain('control-bus-to-temperature-controller');
+    expect(edges).not.toContain('pool-temperature-measurement');
+  });
+
   it('faces the UV panel into the room and routes its power and outlet from the turned ports', () => {
     const uv = plumbed.items.find((i) => i.key === 'uv')!;
     expect(uv.facing).toBe('north');

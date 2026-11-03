@@ -8,6 +8,7 @@ import {
 import { createPartSet, potentiometer, selector } from '../../core/parts/parts';
 import { tools } from '../../core/views/fitting-tools';
 import { createPanelMeter } from '../../industrial-control/views/panel-instruments';
+import { applyAction, newWorld } from '../../../../game/world';
 import type { WorldAction } from '../../../../game/world';
 import type { PoolTemperatureControlState } from '../../../../game/plant/pool-temperature-control';
 import { roomWorld } from '../../../save/world-store';
@@ -23,11 +24,17 @@ export function createPoolTemperatureController(
   kit: PanelKit,
   pool: 'pool_01' | 'pool_02',
   period: 'analogue' | 'digital',
+  options: { standalone?: boolean } = {},
 ) {
   const tag = pool === 'pool_01' ? 'PL1-TC1' : 'PL2-TC1';
+  let sampleWorld = options.standalone ? newWorld() : null;
+  const world = () => sampleWorld ?? roomWorld().world.value;
   const state = (): PoolTemperatureControlState =>
-    roomWorld().world.value.poolTemperatureControls[pool]!;
-  const dispatch = (act: WorldAction) => roomWorld().dispatch(act);
+    world().poolTemperatureControls[pool]!;
+  const dispatch = (act: WorldAction) => {
+    if (sampleWorld) sampleWorld = applyAction(sampleWorld, act);
+    else roomWorld().dispatch(act);
+  };
   const t = tools(kit);
   const group = new Group();
   group.name = `${tag} pool water temperature controller`;
@@ -41,30 +48,53 @@ export function createPoolTemperatureController(
     brand: 'penfold',
     colour: period === 'analogue' ? 'charcoal' : 'grey',
     door: 'none',
-    feet: 'levellers',
+    feet: 'none',
   });
   enclosure.group.position.set(0, -0.24, 0.07);
   group.add(enclosure.group);
+  // Galvanised wall-mount plate and two cleats carry the cabinet from the
+  // east masonry wall under the stairs (Plant 1) or west masonry wall
+  // (Plant 2). The plate sits directly behind the cabinet back; unlike
+  // feet, these brackets do not imply a floor support.
+  const mountSteel = t.paint('#969d9e', 0.45, 0.65);
+  const backingPlate = t.box(group, mountSteel, 0.6, 0.42, 0.02, 0, 0, -0.02);
+  backingPlate.name = `${tag} wall mounting plate`;
+  for (const x of [-0.22, 0.22]) {
+    const cleat = t.box(group, mountSteel, 0.035, 0.36, 0.05, x, 0, -0.01);
+    cleat.name = `${tag} wall mounting cleat`;
+    for (const y of [-0.16, 0.16]) {
+      const fixing = t.cyl(
+        group,
+        mountSteel,
+        0.008,
+        0.004,
+        x,
+        y,
+        -0.02,
+        'z',
+        8,
+      );
+      fixing.name = `${tag} wall fixing`;
+    }
+  }
   const zone = pool === 'pool_01' ? 'lazy_pool' : 'olympic';
   const musicBinding = {
-    source: computed(() => roomWorld().world.value.music.zones[zone].source),
-    amplifier: computed(
-      () => roomWorld().world.value.music.zones[zone].amplifier,
-    ),
+    source: computed(() => world().music.zones[zone].source),
+    amplifier: computed(() => world().music.zones[zone].amplifier),
     powered: computed(() =>
-      serviceAvailable(roomWorld().world.value.plant, `plant_${pool}`, 'power'),
+      serviceAvailable(world().plant, `plant_${pool}`, 'power'),
     ),
-    skip: () =>
-      roomWorld().dispatch({ type: 'music', action: { type: 'skip', zone } }),
-    toggle: () =>
-      roomWorld().dispatch({ type: 'music', action: { type: 'toggle', zone } }),
+    skip: () => dispatch({ type: 'music', action: { type: 'skip', zone } }),
+    toggle: () => dispatch({ type: 'music', action: { type: 'toggle', zone } }),
     volume: (volume: number) =>
-      roomWorld().dispatch({
+      dispatch({
         type: 'music',
         action: { type: 'volume', zone, volume },
       }),
   };
-  const musicPlayer = parts.add(music_source(kit, musicBinding, []));
+  const musicPlayer = parts.add(
+    music_source(kit, musicBinding, [], { depth: 0.12 }),
+  );
   enclosure.mount(musicPlayer.unit, 2);
   const controller = createRackUnit(kit, {
     u: 2,
@@ -210,7 +240,7 @@ export function createPoolTemperatureController(
     group,
     parts,
     update(delta: number) {
-      const w = roomWorld().world.value;
+      const w = world();
       const s = state();
       const temp = w.pools[pool].temperature;
       if (period === 'analogue') {
@@ -228,7 +258,7 @@ export function createPoolTemperatureController(
       parts.update(delta);
     },
     status: () =>
-      `${tag}: ${roomWorld().world.value.pools[pool].temperature.toFixed(1)} °C; SP ${state().setpoint.toFixed(1)} °C; ${state().mode.toUpperCase()}; valve ${Math.round(state().valvePosition * 100)}%`,
+      `${tag}: ${world().pools[pool].temperature.toFixed(1)} °C; SP ${state().setpoint.toFixed(1)} °C; ${state().mode.toUpperCase()}; valve ${Math.round(state().valvePosition * 100)}%`,
   };
 }
 

@@ -80,6 +80,36 @@ export function roomEdges(net: RoomNet): GraphEdge[] {
     }));
 }
 
+/** A schematic fitting commanded by a controller node, distinct from its physical pipe run. */
+export function roomControlEdges(net: RoomNet): GraphEdge[] {
+  return [...net.fittings.values()].flatMap((fitting) => {
+    const source = fitting.controlledBy;
+    if (!source) return [];
+    if (!net.nodes.has(source.node))
+      throw new Error(
+        `Fitting ${net.room}/${fitting.id} has no controller node ${source.node}`,
+      );
+    return [
+      {
+        from: nodeId(net.room, 'node', source.node),
+        fromPort: source.port,
+        to: nodeId(net.room, 'fitting', fitting.id),
+        toPort: 'command',
+        kind: 'feeds' as const,
+        direction: 'forward' as const,
+        medium: 'signal' as const,
+        via:
+          'file' in net.via
+            ? {
+                file: net.via.file,
+                symbol: `${net.via.symbol} fitting "${fitting.id}" controlledBy`,
+              }
+            : net.via,
+      },
+    ];
+  });
+}
+
 /** Every room network's contribution. */
 export function schematicSources(
   rooms: readonly string[] = NETWORK_ROOMS,
@@ -92,6 +122,7 @@ export function schematicSources(
             nodes: roomNodes(net),
             edges: [
               ...roomEdges(net),
+              ...roomControlEdges(net),
               ...(room === 'plant_pool_01' || room === 'plant_pool_02'
                 ? (['temperature-controller', 'music-source'] as const).map(
                     (id) => ({

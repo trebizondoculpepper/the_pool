@@ -4,6 +4,7 @@ import { createBoilerSounder } from '../../../components/plant/views/boiler-soun
 import { computed, signal } from '@preact/signals-core';
 import { clockStopped, paused } from '../../../controls/logic/paused';
 import type { LiveExhibit, PlantExhibit } from './exhibit';
+import { createModulatingControlTrial } from '../../../components/plant/views/modulating-control-trial';
 import {
   createPartSet,
   mushroomStop,
@@ -25,6 +26,16 @@ import type {
 } from '../../../components/plant/logic/boiler-house';
 import { createCombustionPanel } from '../../../components/plant/views/combustion-panel';
 import { createPoolTemperatureControlTrial } from '../../../components/plant/views/pool-temperature-control-trial';
+import {
+  createPoolTemperatureController,
+  createPoolTemperatureProbe,
+} from '../../../components/plant/views/pool-temperature-controller';
+import { layoutPlantRoom, WALL_FACE } from '../../logic/plant-room-layout';
+import type {
+  ExhibitSize,
+  PlantRoomLayout,
+} from '../../logic/plant-room-layout';
+import { tools } from '../../../components/core/views/fitting-tools';
 import { currentPlant } from './live-plant';
 import { GAS_MIMIC, gasState } from '../../logic/pool-mimics';
 import {
@@ -259,18 +270,65 @@ export function createLiveBoilerCascade(
   };
 }
 
+/** The wall-mounted controller and a physically separate outlet probe for dev65. */
+function createPoolTemperatureControllerCabinet(
+  kit: Parameters<PlantExhibit['build']>[0],
+): LiveExhibit {
+  const t = tools(kit);
+  const controller = createPoolTemperatureController(
+    kit,
+    'pool_01',
+    'analogue',
+  );
+  const object = new Group();
+  object.name = 'Pool exchanger temperature controller cabinet exhibit';
+  const backboard = t.box(
+    object,
+    t.paint('#a8aa9f', 0.7),
+    0.84,
+    1.28,
+    0.04,
+    0,
+    0,
+    0.02,
+  );
+  backboard.name = 'Controller cabinet wall backboard';
+  controller.group.position.z = 0.03;
+  object.add(controller.group);
+
+  // A separate outlet-pipe spool carries the pocket Pt100 probe below the rack.
+  const pipe = t.paint('#aeb5b5', 0.55, 0.68);
+  t.cyl(object, pipe, 0.04, 0.72, 0.43, -0.62, 0.48, 'x', 16).name =
+    'Pool-water outlet demonstration pipe';
+  const probe = createPoolTemperatureProbe(kit, 'DEV65-TE1', 0.08);
+  probe.position.set(0.43, -0.62, 0.48);
+  probe.rotation.x = -Math.PI / 2;
+  object.add(probe);
+  const cable = t.paint('#272b2d', 0.35, 0.75);
+  t.cyl(object, cable, 0.009, 0.38, 0.43, -0.35, 0.54, 'y', 8);
+  t.cyl(object, cable, 0.009, 0.42, 0.22, -0.16, 0.54, 'x', 8);
+  t.cyl(object, cable, 0.009, 0.3, 0.01, -0.16, 0.38, 'z', 8);
+
+  return {
+    object,
+    parts: controller.parts,
+    update: controller.update,
+    status: controller.status,
+  };
+}
+
 /**
  * The room's equipment, in the order it is shown: each after a real
  * product (`doc/research/plant-products-boiler-air.md`).
  */
 export const EXHIBITS: readonly PlantExhibit[] = [
   {
-    title: 'Pool exchanger temperature control prototypes',
+    title: 'Pool exchanger temperature controller wall cabinet',
     maker: 'penfold',
     reference:
-      'Working game models inspired by West Controls 6000 analogue and CAL 3300 digital PID controllers (the 6000 model date is unverified), with outlet probes, two-port LTHW control valves and hand isolators; dev-only demo',
-    size: { w: 2.4, d: 1.2, h: 1.5, mount: 'floor' },
-    build: createPoolTemperatureControlTrial,
+      'Working 8U cabinet with a 2U controller inspired by the West Controls 6000, separate local controls and 1U music source; remote Pt100 pocket probe shown on an outlet-pipe spool',
+    size: { w: 1.2, d: 0.28, h: 1.5, mount: 'wall', y: 2.0 },
+    build: createPoolTemperatureControllerCabinet,
   },
   {
     title: 'Condensing boilers in cascade',
@@ -566,4 +624,42 @@ export const EXHIBITS: readonly PlantExhibit[] = [
       };
     },
   },
+  {
+    title: 'Pool exchanger valve and controller component trial',
+    maker: 'penfold',
+    reference:
+      'Separate older component-scale trial of the West 6000-inspired regulator, exchanger valve and hand isolators',
+    size: { w: 2.4, d: 1.2, h: 1.5, mount: 'floor' },
+    build: createPoolTemperatureControlTrial,
+  },
+  {
+    title: 'Modulating temperature control trial',
+    maker: 'water-margin',
+    reference:
+      'Mission 146: the placeholder temperature controller (SET and ACTUAL red LEDs, BAND 1–10, HAND/OFF/AUTO, valve-open bar) driving a modulating control valve and a thermal probe on a heat source whose temperature fluctuates, to watch it regulate',
+    size: { w: 1.2, d: 0.8, h: 1.6, mount: 'floor' },
+    build(kit): LiveExhibit {
+      const trial = createModulatingControlTrial(kit);
+      return {
+        object: trial.object,
+        parts: trial.parts,
+        update: trial.update,
+        status: trial.status,
+        dispose: trial.dispose,
+      };
+    },
+  },
 ];
+
+/** Keep the owner's dev65 review cabinet on the west wall at its supplied view. */
+export function layoutRoom(sizes: readonly ExhibitSize[]): PlantRoomLayout {
+  const layout = layoutPlantRoom(sizes);
+  const places = [...layout.places];
+  places[0] = {
+    x: -layout.halfX + WALL_FACE,
+    z: 1.28,
+    y: 2.0,
+    yaw: Math.PI / 2,
+  };
+  return { ...layout, places };
+}

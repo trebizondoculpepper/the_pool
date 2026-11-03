@@ -50,6 +50,8 @@ export function createActuatedButterflyValve(
     open(): boolean;
     set(open: boolean): void;
     position?(): number;
+    /** A modulating valve's commanded position, 0–1; undefined for on/off. */
+    commandPosition?(): number;
     power?(): boolean;
     air?(): boolean;
   },
@@ -308,6 +310,8 @@ export function createActuatedButterflyValve(
   let state = newActuatedValve(binding?.open() ?? true);
   if (drive === 'electric') state.air = true;
   if (binding?.position) state.position = binding.position();
+  if (binding?.commandPosition)
+    state.targetPosition = binding.commandPosition();
   const moving = signal(false);
   // Moving, the air exhausting from its cylinder; or its geared motor
   // running up, steady, and running down (`gear-motor`), a little higher
@@ -337,6 +341,9 @@ export function createActuatedButterflyValve(
         power: binding.power?.() ?? state.power,
         // An electric drive needs no air.
         air: electricDrive || (binding.air?.() ?? state.air),
+        ...(binding.commandPosition
+          ? { targetPosition: binding.commandPosition() }
+          : {}),
       };
     state = binding?.position
       ? { ...state, position: binding.position() }

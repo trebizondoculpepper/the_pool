@@ -64,6 +64,29 @@ describe('a room’s control bus', () => {
     expect(isControlDevice('weather-station')).toBe(true);
   });
 
+  it.each(['plant_pool_01', 'plant_pool_02'])(
+    'includes the local exchanger temperature controller for %s',
+    (room) => {
+      const bus = controlBus(room)!;
+      const key =
+        room === 'plant_pool_01'
+          ? 'pool-temperature-controller:analogue'
+          : 'pool-temperature-controller:digital';
+      expect(isControlDevice(key)).toBe(true);
+      expect(bus.devices).toContain(key);
+      const stub = bus.stubs.find((route) => route.to === key);
+      expect(stub).toBeDefined();
+      const endpoint = stub!.points.at(-1)!;
+      expect(
+        bus.trunking.some(
+          (run) =>
+            run.name.endsWith(' wall') &&
+            toSegment(endpoint, run.from, run.to) < 0.06,
+        ),
+      ).toBe(true);
+    },
+  );
+
   describe.each(ROOMS)('%s', (room) => {
     const bus = controlBus(room)!;
     const structure = roomStructure(room)!;
@@ -78,9 +101,7 @@ describe('a room’s control bus', () => {
     });
 
     it('takes every control device by a short conduit to the nearest point of the bus', () => {
-      for (const key of placed
-        .filter((p) => isControlDevice(p.item.key))
-        .map((p) => p.item.key)) {
+      for (const key of bus.devices) {
         const stubs = bus.stubs.filter((s) => s.to === key);
         expect(stubs, key).toHaveLength(1);
         const end = stubs[0].points.at(-1)!;
@@ -138,7 +159,12 @@ describe('a room’s control bus', () => {
           .map((p) => p.y + p.item.h / 2),
       );
       expect(bus.y).toBeCloseTo(
-        Math.max(DOOR_HEAD + OVER_LINTEL + (deckOf(room) ?? 0), wallTop + 0.15),
+        Math.max(
+          DOOR_HEAD +
+            OVER_LINTEL +
+            (room.startsWith('plant_pool_') ? 0 : (deckOf(room) ?? 0)),
+          wallTop + 0.15,
+        ),
         6,
       );
     });

@@ -22,6 +22,8 @@ export interface LookEntry {
   title: string;
   kind: string;
   kindWord: string;
+  /** The exact placed visual item key, including its variant when known. */
+  itemKey?: string;
   tag?: string;
   assetId?: string;
   /** Its model address, where it has one. */
@@ -62,6 +64,7 @@ export function lookCatalogue(
         title: copy.name,
         kind: kind.key,
         kindWord: kind.word,
+        ...(copy.itemKey ? { itemKey: copy.itemKey } : {}),
         ...(copy.tag ? { tag: copy.tag } : {}),
         ...(copy.assetId ? { assetId: copy.assetId } : {}),
         ...(copy.model ? { model: copy.model } : {}),

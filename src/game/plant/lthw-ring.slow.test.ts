@@ -30,10 +30,12 @@ describe('the LTHW ring in the world', () => {
     expect(ready.lthw.flow).toBeCloseTo(RING.setpoint, 0);
     expect(ready.lthw.firing).toBe(true);
     expect(ready.lthw.delivered).toBeCloseTo(ready.lthw.demand, 3);
-    expect(ready.lthw.supply).toBeCloseTo(
-      ready.lthw.delivered + ready.lthw.losses,
-      0,
-    );
+    // Within 2 %: the pools' control valves move in 0.1 steps (mission 148),
+    // so a load steps and the ring's water carries the difference while the
+    // boilers follow.
+    expect(
+      Math.abs(ready.lthw.supply - (ready.lthw.delivered + ready.lthw.losses)),
+    ).toBeLessThan(0.02 * ready.lthw.supply);
     for (const id of POOL_IDS)
       expect(ready.pools[id].temperature, id).toBeCloseTo(
         POOL_TARGET[id].temp,

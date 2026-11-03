@@ -119,6 +119,10 @@ const weatherStation: MagicAdapter = {
 };
 
 const EXPLICIT: Readonly<Record<string, MagicAdapter>> = {
+  // A curated adapter: the weather station's LOOK and PAGE selectors step
+  // through settings the model's plain build can't show. Every other kind
+  // with a 3D form is discovered through MODELS (`fromModel`), so a model
+  // never needs a side-channel here (the owner, 2026-11-03).
   'weather-station': weatherStation,
 };
 

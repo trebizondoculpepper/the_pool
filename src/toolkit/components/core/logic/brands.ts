@@ -91,7 +91,9 @@ export type BrandMark =
   /** A deck oven's mouth, its fire glowing in it, under a roof's chevron. */
   | 'hearth'
   /** A little cow-spotted carton, in perspective. */
-  | 'carton';
+  | 'carton'
+  /** A pair of stylized waves forming a W. */
+  | 'waves';
 
 /** Every brand's id: a part names its maker by one of these. */
 export type BrandId =
@@ -131,7 +133,8 @@ export type BrandId =
   | 'veldkamp'
   | 'calloway'
   | 'mozzetti'
-  | 'gateway';
+  | 'gateway'
+  | 'water-margin';
 
 export interface Brand {
   id: BrandId;
@@ -680,6 +683,24 @@ export const BRANDS: readonly Brand[] = [
     promise: 'A computer built for you, at a price that makes sense',
     mark: 'carton',
     colours: ['#1d1d1d', '#d9d0b8', '#1d1d1d'],
+    type: 'sans',
+  },
+  {
+    // The pool-water temperature controller maker (the owner, 2026-11-03):
+    // a Chinese instrumentation brand, named for the classic novel (水浒传,
+    // "Water Margin"), its late-2010s microprocessor-based temperature
+    // controllers after the DULCOMARIN 3 class. Its mark is a pair of
+    // stylized waves forming a W. Our own invention.
+    id: 'water-margin',
+    name: 'Water Margin',
+    wordmark: 'WATER MARGIN',
+    tagline: 'Governing the waters',
+    founded: 2011,
+    country: 'China',
+    makes: 'Pool-water temperature controllers and instrumentation',
+    promise: 'Precise, dependable pool-water regulation',
+    mark: 'waves',
+    colours: ['#1f5f8f', '#59b7c9', '#0e1a22'],
     type: 'sans',
   },
 ];

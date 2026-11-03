@@ -83,7 +83,7 @@ describe('browser plant process state', () => {
       'pool_02 balance tank: pH 8.200; total alkalinity 190.0 mg/L as CaCO₃',
     );
     expect(plantProcessLines(process, []).join('\n')).toContain(
-      'pool_02 pool heating PL2-TC1: remote outlet probe PL2-TE1',
+      'pool_02 pool heating PL2-TC1: pool-return probe PL2-TE1',
     );
   });
 

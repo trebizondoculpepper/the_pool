@@ -95,7 +95,7 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(76);
+    expect(WORLD_VERSION).toBe(79);
   });
 
   it('migrates v75 pool setpoints into AUTO temperature controllers with open isolators', () => {
@@ -125,6 +125,70 @@ describe('a save', () => {
       flowIsolatorOpen: true,
       returnIsolatorOpen: true,
     });
+  });
+
+  it('keeps existing HAND mode across v76 migration and saves the new OFF mode', () => {
+    const old = newWorld();
+    const { band: _oldBand, ...oldControl } =
+      old.poolTemperatureControls.pool_01!;
+    const poolTemperatureControls = {
+      ...old.poolTemperatureControls,
+      pool_01: { ...oldControl, mode: 'hand' },
+    };
+    const migrated = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 76,
+        savedAt: 5,
+        world: { ...old, poolTemperatureControls },
+      }),
+    );
+    expect(migrated.ok).toBe(true);
+    if (!migrated.ok) return;
+    expect(migrated.world.poolTemperatureControls.pool_01?.mode).toBe('hand');
+    expect(migrated.world.poolTemperatureControls.pool_01?.band).toBe(2);
+    const off = applyAction(migrated.world, {
+      type: 'pool/temperature-control',
+      pool: 'pool_01',
+      act: 'mode',
+      mode: 'off',
+    });
+    const wide = applyAction(off, {
+      type: 'pool/temperature-control',
+      pool: 'pool_01',
+      act: 'band',
+      kelvin: 5,
+    });
+    const reloaded = deserialiseWorld(serialiseWorld(wide, 6));
+    expect(
+      reloaded.ok && reloaded.world.poolTemperatureControls.pool_01?.mode,
+    ).toBe('off');
+    expect(
+      reloaded.ok && reloaded.world.poolTemperatureControls.pool_01?.band,
+    ).toBe(5);
+  });
+
+  it('seeds the commanded valve position from the valve on a v77 save (mission 149)', () => {
+    const old = newWorld();
+    const oldControl = old.poolTemperatureControls.pool_02!;
+    const { commandedPosition: _cmd, ...withoutCommand } = oldControl;
+    const poolTemperatureControls = {
+      ...old.poolTemperatureControls,
+      pool_02: { ...withoutCommand, valvePosition: 0.4 },
+    };
+    const migrated = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 77,
+        savedAt: 5,
+        world: { ...old, poolTemperatureControls },
+      }),
+    );
+    expect(migrated.ok).toBe(true);
+    if (!migrated.ok) return;
+    expect(
+      migrated.world.poolTemperatureControls.pool_02?.commandedPosition,
+    ).toBe(0.4);
   });
 
   it('feeds the Lounge exchanger isolators into its controller interlock', () => {

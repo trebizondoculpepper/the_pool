@@ -5,6 +5,7 @@ import { kindCatalogue } from './kind-catalogue';
 import type { KindEntry } from './kind-catalogue';
 import { magicPage, magicPageText } from './magic-page';
 import { auditNetwork } from './room-audit';
+import { simGraph } from './sim-graph/index';
 
 const input = () => ({
   inventory: plantInventory(),
@@ -45,5 +46,15 @@ describe('magicPage', () => {
     expect(text).toContain('None counted from data.');
     expect(text).toContain('Not in the kinds’ register.');
     expect(text).toContain('No descriptor gives it presets yet');
+  });
+
+  it('finds the temperature controller in the executing graph', () => {
+    const kind = kindCatalogue().find(
+      (k) => k.key === 'pool-temperature-controller',
+    )!;
+    const page = magicPage(kind, { ...input(), graph: simGraph() });
+    const text = magicPageText(page);
+    expect(text).toContain('plant_pool_02/node:temperature-controller');
+    expect(text).not.toContain('No executing graph or room-network connection');
   });
 });

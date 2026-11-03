@@ -385,7 +385,7 @@ export function heatingState(p: PlantReading): MimicState {
         flow: r(firing ? 6.8 : 5.9, 'l/s', 'PRIMARY', 1),
       },
       'pool-hx': {
-        // The pool loop's remote outlet probe and control valve, where the
+        // The pool loop's remote return probe and control valve, where the
         // pool model has them; otherwise this is the common LTHW return.
         temperature: r(
           p.temperatureControl?.measuredTemperatureC ??

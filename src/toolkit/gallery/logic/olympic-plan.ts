@@ -88,7 +88,7 @@ const SIZE = {
   // Its wall port above it and its detector beside it (mission 118).
   'co2-wall-port': CO2_WALL_PORT_SIZE,
   'co2-detector': CO2_DETECTOR_SIZE,
-  temperatureController: { w: 0.48, d: 0.16, h: 0.5 },
+  temperatureController: { w: 0.6, d: 0.2, h: 0.5 },
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
   // PL2's annunciator (mission 099), the twin of the control room's.
@@ -327,9 +327,9 @@ export function olympicPlan(): PlanItem[] {
   out.push({
     ...item(
       'temperature-controller',
-      'Pool water temperature controller',
+      'Water temperature controller',
       tc,
-      { x: 7.6, z: 5.92, facing: 'north' },
+      { x: 7.6, z: 5.9, facing: 'north' },
       'wall',
     ),
     y: WALL_HEIGHT.temperatureController,

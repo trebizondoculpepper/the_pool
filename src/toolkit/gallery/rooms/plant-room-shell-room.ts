@@ -43,6 +43,8 @@ import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
   humanLadderZones,
+  tankRoofAt,
+  tankRoofGuardSolids,
 } from '../../components/architectural/views/human-ladder';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import { createPlantRoomShell } from '../views/plant-room-shell';
@@ -355,6 +357,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
   /** The walker's floor's height, metres. */
   let standing = 0;
   let onLadderLanding = false;
+  let onRoof = false;
   // On its deck, just inside the plant room door, looking into the room.
   const inward = [-northWay.frame.out[0], -northWay.frame.out[1]] as const;
   const walk = createFirstPerson({
@@ -379,9 +382,12 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     },
     floorAt: (x, z, previous) => {
       const landing = humanLadderLandingAt(rooms, x, z, previous);
+      const roof = landing === null ? tankRoofAt(rooms, x, z, previous) : null;
       onLadderLanding = landing !== null;
+      onRoof = roof !== null;
       standing =
         landing ??
+        roof ??
         shellFloorAt(plan, x / metre, z / metre, (previous ?? 0) / metre);
       return standing * metre;
     },
@@ -392,6 +398,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       ...(aloft(plan, standing) ? wallsUp : wallsDown),
       ...(onLadderLanding || aloft(plan, standing) ? [] : equipmentWalls),
       ...(onLadderLanding ? humanLadderLandingSolids(rooms) : []),
+      ...(onRoof ? tankRoofGuardSolids(rooms) : []),
       ...stops().map(toMetre),
     ],
     use: (x, y) => usableAt(x, y)?.(),

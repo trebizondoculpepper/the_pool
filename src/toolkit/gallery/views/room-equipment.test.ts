@@ -73,6 +73,49 @@ describe.each(EQUIPPED_ROOMS)('%s, as built', (room) => {
   });
 });
 
+describe.each([
+  ['plant_pool_01', 'pool_01'],
+  ['plant_pool_02', 'pool_02'],
+] as const)('%s temperature-controller mounting', (room, pool) => {
+  it('seats the designed Water Margin controller in its wall slot', () => {
+    const built = createRoomEquipment(createPanelKit(), room);
+    built.group.updateMatrixWorld(true);
+    const controller = built.group.children.find((child) =>
+      child.name.toLowerCase().includes('temperature controller'),
+    )!;
+    const layout = layoutRoom(room)!;
+    const placed = layout.placed.find((p) =>
+      p.item.key.startsWith('pool-temperature-controller'),
+    )!;
+    const componentBounds = new Box3().setFromObject(controller);
+    expect(componentBounds.min.x).toBeGreaterThanOrEqual(
+      placed.footprint.minX - 0.01,
+    );
+    expect(componentBounds.max.x).toBeLessThanOrEqual(
+      placed.footprint.maxX + 0.01,
+    );
+    expect(componentBounds.min.z).toBeGreaterThanOrEqual(
+      placed.footprint.minZ - 0.01,
+    );
+    expect(componentBounds.max.z).toBeLessThanOrEqual(
+      placed.footprint.maxZ + 0.01,
+    );
+    // It is the designed controller, not the old rack cabinet: none of the
+    // cabinet's wall plate, cleats, leveller feet or rack units remain.
+    const tag = pool === 'pool_01' ? 'PL1-TC1' : 'PL2-TC1';
+    built.group.traverse((o) => {
+      if (!(o instanceof Mesh)) return;
+      expect(o.name).not.toContain('wall mounting plate');
+      expect(o.name).not.toContain('wall mounting cleat');
+      expect(o.name).not.toContain('leveller foot');
+      expect(o.name).not.toContain('rack unit');
+    });
+    // The designed controller's own face is there.
+    expect(built.group.getObjectByName(`${tag} fascia`)).toBeTruthy();
+    built.dispose();
+  });
+});
+
 describe('the engineer’s office’s boxed software', () => {
   const build = () => {
     const built = createRoomEquipment(createPanelKit(), 'engineers_office');

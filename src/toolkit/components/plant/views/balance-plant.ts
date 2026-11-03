@@ -1,6 +1,8 @@
 import {
+  BoxGeometry,
   Group,
   Mesh,
+  MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
   SphereGeometry,
@@ -165,6 +167,79 @@ export function createSectionalTank(
 }
 
 /**
+ * Mark a sectional tank's roof walkable (mission 151, the owner, 2026-11-03)
+ * and guard its edge: an invisible named roof-deck marker the room's
+ * `floorAt` consults (`human-ladder.ts`'s `roomRoofDecks`), and guardrails
+ * round every side but the one the caged ladder serves, named as solids for
+ * the walker on the roof (BS EN ISO 14122-3: a top rail 1.1 m up and a mid
+ * rail, posts at the corners). `open` is the ladder's side: the roof is
+ * reached from it and left by it.
+ */
+export function addWalkableTankRoof(
+  kit: PanelKit,
+  group: Object3D,
+  roof: {
+    minX: number;
+    maxX: number;
+    minZ: number;
+    maxZ: number;
+    top: number;
+  },
+  open: 'x+' | 'x-' | 'z+' | 'z-' = 'z+',
+) {
+  const t = plantTools(kit);
+  // The roof-deck marker: invisible (solids are by footprint, so it never
+  // blocks), found by name for the room's floor lookup.
+  const marker = new Mesh(
+    new BoxGeometry(roof.maxX - roof.minX, 0.01, roof.maxZ - roof.minZ),
+    new MeshBasicMaterial({ transparent: true, opacity: 0 }),
+  );
+  marker.name = 'Tank roof deck';
+  marker.position.set(
+    (roof.minX + roof.maxX) / 2,
+    roof.top,
+    (roof.minZ + roof.maxZ) / 2,
+  );
+  group.add(marker);
+  kit.materials.push(marker.material);
+  // The guardrails, on every side but the ladder's.
+  const rail = t.paint('#5a6066', 0.5, 0.3);
+  const H = 1.1;
+  const T = 0.05;
+  const sides: [number, number, number, number][] = [];
+  if (open !== 'z+') sides.push([roof.minX, roof.maxZ, roof.maxX, roof.maxZ]);
+  if (open !== 'z-') sides.push([roof.minX, roof.minZ, roof.maxX, roof.minZ]);
+  if (open !== 'x+') sides.push([roof.maxX, roof.minZ, roof.maxX, roof.maxZ]);
+  if (open !== 'x-') sides.push([roof.minX, roof.minZ, roof.minX, roof.maxZ]);
+  for (const [x0, z0, x1, z1] of sides) {
+    const horiz = x0 !== x1;
+    const len = Math.abs(horiz ? x1 - x0 : z1 - z0);
+    const cx = (x0 + x1) / 2;
+    const cz = (z0 + z1) / 2;
+    for (const h of [H, H * 0.5]) {
+      const m = t.box(
+        group,
+        rail,
+        horiz ? len : T,
+        0.05,
+        horiz ? T : len,
+        cx,
+        roof.top + h,
+        cz,
+      );
+      m.name = 'Tank roof guard';
+    }
+    for (const [px, pz] of [
+      [x0, z0],
+      [x1, z1],
+    ] as const) {
+      const post = t.box(group, rail, T, H, T, px, roof.top + H / 2, pz);
+      post.name = 'Tank roof guard';
+    }
+  }
+}
+
+/**
  * The main pool's balance tank: a 6 × 3 × 2 m sectional tank (36 m³) with
  * the overflow channels' DN250 inlets near the top, the circulation
  * pumps' DN200 suctions low on its face, overflow and drain, a hydrostatic
@@ -238,6 +313,12 @@ export function createBalanceTank(kit: PanelKit) {
   const ladder = createHumanLadder('caged', top + 0.05, { kit }).group;
   ladder.position.set(-2.55, 0, front + 0.02);
   group.add(ladder);
+  addWalkableTankRoof(
+    kit,
+    group,
+    { minX: -3, maxX: 3, minZ: -1.5, maxZ: 1.5, top },
+    'z+',
+  );
   return group;
 }
 

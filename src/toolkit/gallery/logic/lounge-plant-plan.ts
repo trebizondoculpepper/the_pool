@@ -84,5 +84,13 @@ export function loungeRoomBox(): RoomBox {
         maxZ: stair.bottom,
       },
     ],
+    // At this point the underside of the stair is 0.85 m above the
+    // controller's operating face, so the narrow approach remains walkable.
+    underStairWalkway: {
+      minX: stair.minX - 0.3,
+      maxX: stair.minX + 0.75,
+      minZ: -3.8,
+      maxZ: -3.0,
+    },
   };
 }

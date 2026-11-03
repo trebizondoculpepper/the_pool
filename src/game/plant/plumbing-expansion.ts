@@ -72,6 +72,8 @@ export interface Fitting {
   role?: string;
   /** How it is worked, where the schematic gives it. */
   operator?: GivenFitting['operator'];
+  /** Controller output that commands this fitting, when modelled. */
+  controlledBy?: GivenFitting['controlledBy'];
 }
 
 /**
@@ -91,6 +93,8 @@ export interface GivenFitting {
   role?: string;
   /** How it is worked, where the schematic says: by hand or by motor. */
   operator?: 'lever' | 'chain' | 'motor' | 'solenoid';
+  /** A directed command from a controller node's output port. */
+  controlledBy?: { node: string; port: string };
 }
 
 export interface ExpandOptions {
@@ -239,6 +243,7 @@ export function expandForPlumbing(
       given: true,
       ...(g.role ? { role: g.role } : {}),
       ...(g.operator ? { operator: g.operator } : {}),
+      ...(g.controlledBy ? { controlledBy: g.controlledBy } : {}),
     });
   }
   const givenById = new Map([...givenAt.values()].flat().map((f) => [f.id, f]));

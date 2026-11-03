@@ -25,7 +25,9 @@ import {
 import type { Placements, ScannedThing } from '../logic/item-audit';
 import { auditLink, lookLink } from '../logic/look-catalogue';
 import { magicPage } from '../logic/magic-page';
+import { objectDetailLink } from '../logic/object-detail';
 import { auditNetwork } from '../logic/room-audit';
+import { simGraph } from '../logic/sim-graph/index';
 import { loadExhibits } from './catalogue-panel';
 import { auditInFrame, el, table } from './look-audit-page';
 import { adapterFor } from './magic-adapters';
@@ -470,6 +472,7 @@ export async function runMagicPage(root: HTMLElement) {
     inventory: plantInventory(),
     descriptors: objectDescriptors(),
     network: auditNetwork,
+    graph: simGraph(),
   });
   document.title = `Magic page · ${kind.word}`;
   page.append(
@@ -487,8 +490,34 @@ export async function runMagicPage(root: HTMLElement) {
             { href: benchHref(magicRoomLink(kind.key)) },
             'Its magic room',
           )
-        : 'No 3D form of its own: written from the model and its descriptors (mission 130).',
+        : kind.copies.some((copy) => copy.look !== 'none')
+          ? 'Installed 3D copies exist; no isolated magic-room builder is registered.'
+          : 'No 3D form of its own: written from the model and its descriptors (mission 130).',
     ),
+    ...(kind.copies.some((copy) => copy.look !== 'none')
+      ? [
+          el('h2', {}, 'Installed instances'),
+          el(
+            'ul',
+            {},
+            ...kind.copies
+              .filter((copy) => copy.room)
+              .map((copy) =>
+                el(
+                  'li',
+                  {},
+                  el(
+                    'a',
+                    {
+                      href: benchHref(objectDetailLink(copy.room, copy.ref)),
+                    },
+                    `${copy.ref} · ${copy.room}`,
+                  ),
+                ),
+              ),
+          ),
+        ]
+      : []),
     ...written.sections.flatMap((s) => [
       el('h2', {}, s.heading),
       el('ul', {}, ...s.lines.map((l) => el('li', {}, l))),

@@ -65,6 +65,10 @@ if (!import.meta.env.DEV) {
   const { runSimObjectPage } =
     await import('./toolkit/gallery/views/sim-node-page');
   await runSimObjectPage(root);
+} else if (root && which === 'object-detail') {
+  const { runObjectDetailPage } =
+    await import('./toolkit/gallery/views/object-detail-page');
+  runObjectDetailPage(root);
 } else if (root) {
   const { runBenchIndex } =
     await import('./toolkit/gallery/views/bench-index-page');

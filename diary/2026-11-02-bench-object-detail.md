@@ -1,0 +1,3 @@
+# 2026-11-02 — Bench object detail
+
+The owner found PL2-TC1 by searching the bench for temperature and expected its main link to explain the instance rather than jump straight into Plant 2. Mission 145 adds that page, joining the existing look catalogue, item audit, simulation graph and selected saved world. It reports a placed visual item key, room and coordinates where known, graph links and containment, live state fields and simulation time, and declared behaviour adapters/drivers. Missing relationships remain labelled rather than inferred. The Look links stay as explicit alternatives. Mission 144's paused working-tree changes were left untouched.

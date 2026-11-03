@@ -56,7 +56,13 @@ function walkable(
       z > hd - RADIUS
     )
       return false;
-    return !obstacles.some((f) => inside(f, x, z, RADIUS));
+    return !obstacles.some((f) => {
+      const underStairClearance =
+        box.underStairWalkway &&
+        box.solid[1] === f &&
+        inside(box.underStairWalkway, x, z, RADIUS);
+      return !underStairClearance && inside(f, x, z, RADIUS);
+    });
   };
   const reached = new Uint8Array(nx * nz);
   const cellOf = (x: number, z: number) => [
@@ -350,13 +356,64 @@ describe('PL1-CP3, the lounge plant room’s annunciator (the owner, 2026-10-31)
 });
 
 describe('pool exchanger temperature controls (mission 144)', () => {
-  it('places the Olympic local controller; Lounge placement awaits under-stairs layout', () => {
-    expect(
-      layoutRoom('plant_pool_02')!.placed.some(
-        (p) => p.item.key === 'pool-temperature-controller:digital',
-      ),
-    ).toBe(true);
-  });
+  it.each([
+    [
+      'plant_pool_01',
+      6.08,
+      -0.15,
+      -Math.PI / 2,
+      'pool-temperature-controller:analogue',
+      'east',
+    ],
+    [
+      'plant_pool_02',
+      3.44,
+      7.1,
+      Math.PI,
+      'pool-temperature-controller:digital',
+      'south',
+    ],
+  ] as const)(
+    '%s controller is supported, faces the room and sits against its wall',
+    (room, x, z, yaw, key, side) => {
+      const layout = layoutRoom(room)!;
+      const placed = layout.placed.find((p) => p.item.key === key)!;
+      expect([placed.x, placed.z, placed.y, placed.yaw]).toEqual([
+        x,
+        z,
+        1.45,
+        yaw,
+      ]);
+      expect(placed.side).toBe(side);
+      if (side === 'east') {
+        // Its back plate meets the east wall it hangs on.
+        const wrapperZ = placed.item.d / 2;
+        const plate = placed.x + Math.sin(placed.yaw) * (-0.02 + wrapperZ);
+        expect(plate).toBeCloseTo(6.0, 2);
+      }
+      // The working space stands clear of the wall, in front of the face.
+      if (side === 'east') expect(placed.access.maxX).toBeLessThan(placed.x);
+      else expect(placed.access.maxZ).toBeLessThan(placed.z);
+      if (room === 'plant_pool_02') {
+        expect(placed.footprint.minZ).toBeGreaterThan(1.06);
+        // The owner placed it at the stair's foot (2026-11-03: 'the location
+        // is correct'): on the wall at 1.45 m it overhangs the stair foot's
+        // kept-clear floor, so that zone is the one exception here.
+        const stairFoot = (b: { minX: number }) => b.minX >= 3.1;
+        expect(
+          layout.box.keepClear
+            .filter((b) => !stairFoot(b))
+            .some(
+              (b) =>
+                b.minX < placed.footprint.maxX &&
+                b.maxX > placed.footprint.minX &&
+                b.minZ < placed.footprint.maxZ &&
+                b.maxZ > placed.footprint.minZ,
+            ),
+        ).toBe(false);
+      }
+    },
+  );
 });
 
 describe('the balance tanks', () => {

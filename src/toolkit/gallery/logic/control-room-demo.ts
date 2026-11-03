@@ -52,7 +52,7 @@ export interface PlantReading {
     demandFraction: number;
     commandedValvePosition: number;
     actualValvePosition: number;
-    mode: 'auto' | 'hand';
+    mode: 'auto' | 'off' | 'hand';
     interlock: 'none' | 'no-circulation' | 'primary-isolated';
   };
   /** Each boiler (B-501 to B-506) firing and locked out, as the world has them (mission 121). */

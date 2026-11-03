@@ -69,6 +69,15 @@ import {
  * building: `main.ts` never opens it, so it is never in the saved
  * position, and nothing here opens a world store, so it never touches the
  * save. All input goes through the one control scheme (`createFirstPerson`).
+ *
+ * Its purpose (the owner, 2026-11-03): to prototype the *visual appearance*
+ * of a single object — the cheap surface for seeing a component's design.
+ * Every real component with a standalone 3D form is registered in `MODELS`
+ * (`room-equipment.ts`) and reaches its magic room automatically through
+ * `adapterFor`/`fromModel`; the weather station alone keeps a curated
+ * adapter for its LOOK/PAGE selectors. Dev rooms, by contrast, are
+ * interactive integration tests of features — several machines working
+ * together — which a single-object magic room cannot show.
  */
 
 const GREY = { wall: '#9a9d9f', floor: '#7d8082', ceiling: '#b4b6b7' };

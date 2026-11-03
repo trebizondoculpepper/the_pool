@@ -462,6 +462,54 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
     }
     return { ...world, poolTemperatureControls: controls };
   },
+  // 76 → 77: the existing AUTO/HAND controller gains a saved OFF position
+  // and a working proportional-band dial. Old modes remain unchanged.
+  76: (world) => {
+    if (!isRecord(world) || !isRecord(world.poolTemperatureControls))
+      return world;
+    const controls = { ...world.poolTemperatureControls };
+    const defaults = newWorld().poolTemperatureControls;
+    for (const id of ['pool_01', 'pool_02'] as const) {
+      const control = controls[id];
+      if (isRecord(control))
+        controls[id] = { ...control, band: defaults[id]!.band };
+    }
+    return { ...world, poolTemperatureControls: controls };
+  },
+  // 77 → 78: the pool exchanger control's saved commanded valve position
+  // (mission 149) — the valve's sound follows it. Old saves seed it from the
+  // current valve position, so a part-open valve is silent at rest.
+  77: (world) => {
+    if (!isRecord(world) || !isRecord(world.poolTemperatureControls))
+      return world;
+    const controls = { ...world.poolTemperatureControls };
+    for (const id of ['pool_01', 'pool_02'] as const) {
+      const control = controls[id];
+      if (isRecord(control) && typeof control.valvePosition === 'number')
+        controls[id] = { ...control, commandedPosition: control.valvePosition };
+    }
+    return { ...world, poolTemperatureControls: controls };
+  },
+  // 78 → 79: the pool exchanger controllers gain integral (reset) action
+  // (PI control). Old saves seed it from the valve's position, so the valve
+  // holds where it is instead of closing and starting over.
+  78: (world) => {
+    if (!isRecord(world) || !isRecord(world.poolTemperatureControls))
+      return world;
+    const controls = { ...world.poolTemperatureControls };
+    for (const id of ['pool_01', 'pool_02'] as const) {
+      const control = controls[id];
+      if (isRecord(control))
+        controls[id] = {
+          ...control,
+          integral:
+            typeof control.valvePosition === 'number'
+              ? control.valvePosition
+              : 0,
+        };
+    }
+    return { ...world, poolTemperatureControls: controls };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

@@ -50,11 +50,6 @@ const nodes: SchematicNode[] = [
     ),
     code: 'HX1',
   },
-  machine(
-    'temperature-control-valve',
-    'regulating-valve',
-    'Lounge pool exchanger LTHW temperature control valve',
-  ),
   {
     ...machine(
       'temperature-controller',
@@ -67,10 +62,15 @@ const nodes: SchematicNode[] = [
     ...machine(
       'temperature-probe',
       'temperature-sensor',
-      'Lounge pool exchanger outlet Pt100',
+      'Lounge pool return Pt100',
     ),
     code: 'TE1',
   },
+  machine(
+    'control-bus',
+    'control-bus',
+    'Lounge plant room control and instrument bus',
+  ),
   {
     ...machine(
       'instrument-rack',
@@ -263,22 +263,28 @@ const links: PlumbEdge[] = [
     'water',
   ),
   link(
-    'Pool-water temperature to Pt100',
-    ['pool', 'temperature'],
+    'Pool return temperature to Pt100',
+    ['exchanger', 'pool-in'],
     ['temperature-probe', 'process-value'],
     'heat',
   ),
   link(
-    'Pt100 measurement to temperature controller',
+    'Pt100 measurement to control bus',
     ['temperature-probe', 'signal'],
+    ['control-bus', 'instrument'],
+    'control',
+  ),
+  link(
+    'Control bus to temperature controller',
+    ['control-bus', 'temperature-controller'],
     ['temperature-controller', 'measurement'],
     'control',
   ),
   link(
-    'Temperature controller output to LTHW control valve',
-    ['temperature-controller', 'output'],
-    ['temperature-control-valve', 'command'],
-    'control',
+    'Lounge rack to temperature controller supply',
+    ['instrument-rack', 'controller-supply'],
+    ['temperature-controller', 'supply'],
+    'power',
   ),
   link(
     'Pool rack controller supply',
@@ -471,6 +477,7 @@ export const LOUNGE_SCHEMATIC: RoomSchematic = {
       normally: 'closed',
       role: 'HX LTHW temperature control valve',
       operator: 'motor',
+      controlledBy: { node: 'temperature-controller', port: 'output' },
     },
     {
       id: 'plant_pool_01.exchanger.primary-return.isolating',

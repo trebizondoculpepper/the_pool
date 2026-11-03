@@ -166,6 +166,8 @@ export interface RoomBox {
   keepClear: Footprint[];
   /** Floor no one walks on: under a landing, the stair, the ramp. */
   solid: Footprint[];
+  /** Walkable clearance under the stairs where measured 3D headroom allows access. */
+  underStairWalkway?: Footprint;
   /** The depth of the pipe zone along each wall that has one. */
   pipes: Partial<Record<Side, number>>;
   /** Where someone comes in, on the floor. */
@@ -700,9 +702,9 @@ function poolPlant(
     floor('heat-exchanger', `${name} plate heat exchanger`, 1.5, 0.7, 1.2),
     wall(
       'pool-temperature-controller:analogue',
-      `${name} pool temperature controller`,
-      0.42,
-      0.08,
+      `${name} temperature controller`,
+      0.6,
+      0.2,
       0.5,
       1.45,
       { walls: ['east'] },
@@ -1759,24 +1761,20 @@ export function layoutRoomLive(room: string) {
             : r.items,
       );
   if (olympicTemperatureController) {
-    // This instrument is fixed to the north face of the stair stringer,
-    // above the plant floor, as the owner requested. Its shallow body sits
-    // wholly north of the stair's floor footprint; the operator stands in
-    // the clear aisle immediately in front of it.
+    // On the south wall by the stair's foot, where the owner stood to read it
+    // (the owner, 2026-11-03: x 3.44, moved from 2.82), flush to the wall and
+    // facing north into the room (yaw pi: a wall item faces +z when unturned).
+    // Its rear plate meets the wall and the operator stands on the plant floor
+    // in front of its face.
     const item = olympicTemperatureController;
     layout.placed.push({
       item,
-      x: 7.6,
-      z: 6,
+      x: 3.44,
+      z: 7.1,
       y: item.y ?? 1.45,
       yaw: Math.PI,
-      footprint: {
-        minX: 7.6 - item.w / 2,
-        maxX: 7.6 + item.w / 2,
-        minZ: 6 - item.d,
-        maxZ: 6,
-      },
-      access: { minX: 7.2, maxX: 8, minZ: 5.1, maxZ: 6 - item.d },
+      footprint: { minX: 3.14, maxX: 3.74, minZ: 6.6, maxZ: 7.19 },
+      access: { minX: 3.14, maxX: 3.74, minZ: 6.4, maxZ: 6.9 },
       side: 'south',
     });
   }
@@ -2186,17 +2184,20 @@ const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
     const s = TANK_SURROUND;
     const out: Placed[] = [];
     const temperatureController = at('pool temperature controller');
-    // Mounted to the west face of the stair stringer, clear of the treads;
-    // its front and working space face west into the plant room.
+    // Wall-mounted on the east wall (the owner, 2026-11-03), moved down
+    // the wall from under the stair flight to a clear stretch at the
+    // room's middle, so it is seen facing west from the plant room. The
+    // backing plate meets x=6; the face and working space point west into
+    // the plant room and the owner's view.
     out.push({
       item: temperatureController,
-      x: 4.95,
-      z: -3.4,
+      x: 6.08,
+      z: -0.15,
       y: 1.45,
       yaw: -Math.PI / 2,
-      footprint: { minX: 4.91, maxX: 4.99, minZ: -3.61, maxZ: -3.19 },
-      access: { minX: 4.11, maxX: 4.91, minZ: -3.8, maxZ: -3.0 },
-      side: 'island',
+      footprint: { minX: 5.81, maxX: 6.01, minZ: -0.45, maxZ: 0.15 },
+      access: { minX: 4.91, maxX: 5.81, minZ: -0.55, maxZ: 0.05 },
+      side: 'east',
     });
     const tank = at('balance tank');
     const tx0 = -h + s;

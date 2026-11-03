@@ -187,7 +187,13 @@ const SCHEMATIC_NODES: Partial<
   ...Object.fromEntries(
     Object.values(SCHEMATICS).map((s) => [s.room, s.nodes]),
   ),
-  plant_pool_02: OLYMPIC_ANNEX.nodes,
+  plant_pool_02: [
+    ...olympicPlumbing().schematic.nodes.map((n) => ({
+      ...n,
+      name: 'name' in n ? String(n.name) : n.id,
+    })),
+    ...OLYMPIC_ANNEX.nodes,
+  ],
 };
 
 /** The one node of a kind in a room's schematic, if it has exactly one. */
@@ -232,8 +238,10 @@ export function runBinding(
   // A service route to a machine: the link that reaches it, in its utility.
   if (run.to && run.utility) {
     const target =
-      (SCHEMATIC_NODES[room] ?? []).find((n) => run.name.startsWith(n.name))
-        ?.id ?? nodeOfKind(room, run.to.split(':')[0]);
+      [...(SCHEMATIC_NODES[room] ?? [])]
+        .filter((n) => run.name.startsWith(n.name))
+        .sort((a, b) => b.name.length - a.name.length)[0]?.id ??
+      nodeOfKind(room, run.to.split(':')[0]);
     const medium =
       run.utility === 'control'
         ? 'control'

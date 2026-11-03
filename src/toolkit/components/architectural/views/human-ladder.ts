@@ -17,6 +17,8 @@ import {
   type LadderPoint,
 } from '../logic/human-ladder';
 import { createPoolLadder } from '../../../gallery/views/pool-ladder';
+import { deckAt } from '../../../gallery/logic/walkable-deck';
+import type { WalkableDeck } from '../../../gallery/logic/walkable-deck';
 import { createTankLadder } from '../../plant/views/tank-ladder';
 import { createCagedLadder } from '../../plant/views/railings';
 
@@ -227,5 +229,53 @@ export function humanLadderLandingSolids(root: Object3D): Footprint[] {
       });
     }
   }
+  return solids;
+}
+
+/**
+ * The walkable roofs of tanks with caged ladders (mission 151): each a deck
+ * with a height, in the room's scene units, found by its named marker.
+ */
+export function roomRoofDecks(root: Object3D): WalkableDeck[] {
+  root.updateWorldMatrix(true, true);
+  const decks: WalkableDeck[] = [];
+  root.traverse((o) => {
+    if (!o.name.startsWith('Tank roof deck')) return;
+    const box = new Box3().setFromObject(o);
+    decks.push({
+      minX: box.min.x,
+      maxX: box.max.x,
+      minZ: box.min.z,
+      maxZ: box.max.z,
+      top: box.max.y,
+    });
+  });
+  return decks;
+}
+
+/** The floor's height on a tank roof, if the walker is over one and already up at it. */
+export function tankRoofAt(
+  root: Object3D,
+  x: number,
+  z: number,
+  previousY: number,
+): number | null {
+  return deckAt(roomRoofDecks(root), x, z, previousY);
+}
+
+/** Guardrail footprints on tank roofs, in the room's scene units. */
+export function tankRoofGuardSolids(root: Object3D): Footprint[] {
+  root.updateWorldMatrix(true, true);
+  const solids: Footprint[] = [];
+  root.traverse((o) => {
+    if (!o.name.startsWith('Tank roof guard')) return;
+    const box = new Box3().setFromObject(o);
+    solids.push({
+      minX: box.min.x,
+      maxX: box.max.x,
+      minZ: box.min.z,
+      maxZ: box.max.z,
+    });
+  });
   return solids;
 }

@@ -59,6 +59,23 @@ const ROOMS: RoomGraph[] = [
 const kindOf = (g: RoomGraph, id: string) =>
   g.nodes.find((n) => n.id === id)?.kind;
 
+describe('the Lounge temperature measurement route', () => {
+  it('connects its remote probe and controller through the modeled control bus', () => {
+    expect(
+      LOUNGE_SCHEMATIC.nodes.find((node) => node.id === 'control-bus')?.kind,
+    ).toBe('control-bus');
+    expect(LOUNGE_SCHEMATIC.links.map((link) => link.id)).toContain(
+      'Pt100 measurement to control bus',
+    );
+    expect(LOUNGE_SCHEMATIC.links.map((link) => link.id)).toContain(
+      'Control bus to temperature controller',
+    );
+    expect(LOUNGE_SCHEMATIC.links.map((link) => link.id)).not.toContain(
+      'Pt100 measurement to temperature controller',
+    );
+  });
+});
+
 /** The nodes upstream of `from` through water links, as far as the balance tank (where the circuit begins). */
 function upstream(g: RoomGraph, from: string): Set<string> {
   const seen = new Set<string>();

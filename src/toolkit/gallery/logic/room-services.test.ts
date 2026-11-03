@@ -72,10 +72,12 @@ describe('current plant-room service connections', () => {
   it('leaves the lounge’s plant room to its port-to-port routing', () => {
     // Its pipework, as the Olympic's, is `room-pipes.ts`'s; every port's
     // connection is checked in `port-connections.test.ts`.
-    // Only the room's supply, in and out of its switch-fuse, is routed here.
+    // The controller's local drop rises to the room control bus; the rest
+    // of the plant still uses its authored port-to-port routes.
     expect(roomServiceRoutes('plant_pool_01').map((r) => r.to)).toEqual([
       'feeder',
       'room',
+      'pool-temperature-controller:analogue',
     ]);
   });
 

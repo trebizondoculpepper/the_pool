@@ -15,6 +15,8 @@ export interface ActuatedValveState {
   position: number;
   /** The panel's command: open. */
   command: boolean;
+  /** A modulating valve's commanded position, 0–1; undefined for an on/off valve. */
+  targetPosition?: number;
   /** Its supplies: the solenoid's power and the actuator's air. */
   power: boolean;
   air: boolean;
@@ -39,9 +41,15 @@ export function newActuatedValve(open = true): ActuatedValveState {
 /** Whether its solenoid is energised (its coil's lamp lit). */
 export const energised = (s: ActuatedValveState) => s.command && s.power;
 
-/** Where its springs and its air would put it: open only with air, and the solenoid energised or overridden. */
+/** Where its springs and its air would put it: open only with air, and the solenoid energised or overridden. A modulating valve instead strokes to its commanded position (an on/off valve's `targetPosition` is undefined, so its behaviour is unchanged). */
 export const target = (s: ActuatedValveState) =>
-  s.air && (energised(s) || s.override) ? 1 : 0;
+  s.targetPosition === undefined
+    ? s.air && (energised(s) || s.override)
+      ? 1
+      : 0
+    : s.air
+      ? Math.min(1, Math.max(0, s.targetPosition))
+      : 0;
 
 export function stepActuatedValve(
   s: ActuatedValveState,

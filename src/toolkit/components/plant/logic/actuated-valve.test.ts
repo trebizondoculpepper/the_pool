@@ -5,6 +5,7 @@ import {
   newActuatedValve,
   stepActuatedValve,
   strokeTime,
+  target,
 } from './actuated-valve';
 import type { ActuatedValveState } from './actuated-valve';
 
@@ -43,5 +44,45 @@ describe('a solenoid-operated valve', () => {
 
   it('strokes a big valve slower than a small one', () => {
     expect(strokeTime(0.355)).toBeGreaterThan(strokeTime(0.054));
+  });
+});
+
+describe('a modulating valve', () => {
+  const settled = (s: ActuatedValveState) =>
+    Math.abs(s.position - target(s)) <= 1e-6;
+
+  it('a part-open valve with its commanded position is settled, not perpetually travelling', () => {
+    const s: ActuatedValveState = {
+      ...newActuatedValve(false),
+      position: 0.3,
+      targetPosition: 0.3,
+    };
+    expect(target(s)).toBe(0.3);
+    expect(settled(s)).toBe(true);
+  });
+
+  it('moves only on a command step, then settles', () => {
+    const start: ActuatedValveState = {
+      ...newActuatedValve(false),
+      position: 0.3,
+      targetPosition: 0.3,
+    };
+    const stepped: ActuatedValveState = {
+      ...start,
+      targetPosition: 0.4,
+    };
+    // A moment into the stroke it is travelling…
+    const mid = stepActuatedValve(stepped, 0.1, 6);
+    expect(settled(mid)).toBe(false);
+    // …then it reaches the commanded position and holds there.
+    const out = run(stepped, 7, 6);
+    expect(out.position).toBeCloseTo(0.4, 6);
+    expect(settled(out)).toBe(true);
+  });
+
+  it('an on/off valve is unchanged (no targetPosition)', () => {
+    const s = { ...newActuatedValve(false), command: true };
+    expect(target(s)).toBe(1);
+    expect(settled(s)).toBe(false);
   });
 });

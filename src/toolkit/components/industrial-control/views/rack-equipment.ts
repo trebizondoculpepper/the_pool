@@ -653,7 +653,7 @@ export interface CabinetOptions {
    * What it stands on: a 100 mm plinth (an industrial enclosure), castors
    * or levelling feet within its base frame (a server cabinet).
    */
-  feet?: 'plinth' | 'castors' | 'levellers';
+  feet?: 'plinth' | 'castors' | 'levellers' | 'none';
   /** The door posed open. */
   doorOpen?: boolean;
   /**
@@ -755,7 +755,7 @@ export function createRackCabinet(
         PLINTH / 2,
         0.002,
       );
-  } else
+  } else if (feet !== 'none')
     for (const sx of [-1, 1])
       for (const sz of [0.06, depth - 0.06]) {
         if (feet === 'castors')

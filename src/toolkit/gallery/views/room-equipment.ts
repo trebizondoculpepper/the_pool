@@ -1,5 +1,6 @@
 import { createBackwashPitWater } from '../../components/plant/views/backwash-pit-water';
 import { createCo2DosingPanel } from './co2-dosing-panel';
+import { createWatershedControllerVisual } from '../../components/plant/views/watershed-controller';
 import {
   linePressure,
   masterOpen,
@@ -53,7 +54,10 @@ import { createEngravedPlate } from '../../components/core/views/plant-signs';
 import { panelMakerMark } from '../../components/core/views/panel-maker-mark';
 import { createMachineStand } from '../../components/plant/views/machine-stand';
 import { INSTALLED_ASSET_IDS } from '../../../game/plant/installed-asset-ids';
-import { markComponent } from '../../components/core/views/component-identity';
+import {
+  componentOf,
+  markComponent,
+} from '../../components/core/views/component-identity';
 import { schematicNodeFor } from '../../../game/plant/model-valves';
 import {
   bedGlass,
@@ -150,6 +154,8 @@ import {
 } from '../../../game/plant/sewer-monitor';
 import { createCentralBattery } from '../../components/plant/views/electrical-switchgear';
 import { batteryMains } from '../../../game/world';
+import { newWorld } from '../../../game/world';
+import type { WorldAction } from '../../../game/world';
 import type { World } from '../../../game/world';
 import {
   LIGHTING_BOARD_WAYS,
@@ -252,7 +258,7 @@ import type {
 } from '../../components/plant/views/dosing-equipment';
 import { createUvUnit } from '../../components/plant/views/pumps-plant';
 import { createTwinHeadPump } from '../../components/plant/views/boiler-plant';
-import { createPoolTemperatureController } from '../../components/plant/views/pool-temperature-controller';
+import { createTemperatureControllerPlaceholder } from '../../components/plant/views/temperature-controller-placeholder';
 import { pumpSound } from '../../components/plant/views/pump-sound';
 import { HEATING_CIRCULATOR } from '../../components/plant/logic/pump-sound';
 import { partAudio } from '../../components/core/audio/part-audio';
@@ -328,6 +334,29 @@ export const MODELS: Record<string, PlantExhibit> = {
   'fire-repeater': byTitle(CONTROL, 'Fire alarm repeater'),
   'weather-station': byTitle(CONTROL, 'Weather station console'),
   cctv: byTitle(CONTROL, 'CCTV monitor'),
+  // The controllers: every model with a standalone 3D form lives in the
+  // registry, so the magic room finds it through `fromModel` — no
+  // side-channeling bare models into the world (the owner, 2026-11-03).
+  'watershed-pool-temperature-controller': {
+    title: 'Pool temperature controller',
+    reference:
+      'A late-2010s microprocessor-based pool temperature regulator (Water Margin, a Chinese instrumentation brand), after the DULCOMARIN 3 class (430 × 290 × 150 mm)',
+    size: { w: 0.43, d: 0.15, h: 0.29, mount: 'wall', y: 1.4 },
+    maker: 'water-margin',
+    build(kit) {
+      return { object: createWatershedControllerVisual(kit, 'pool_01') };
+    },
+  },
+  'temperature-controller-placeholder': {
+    title: 'Temperature controller (placeholder)',
+    reference:
+      'Mission 146 placeholder: SET and ACTUAL red 7-segment readouts, SET POINT (25–35 °C in 0.5), BAND 1–10 K, HAND/OFF/AUTO, a titled 10-LED valve-open bar, the Water Margin logo top left and Chinese/English lettering bottom right, in the 430 × 290 × 150 mm body',
+    size: { w: 0.43, d: 0.15, h: 0.29, mount: 'wall', y: 1.4 },
+    build(kit) {
+      const c = createTemperatureControllerPlaceholder(kit);
+      return { object: c.group, parts: c.parts, update: c.update };
+    },
+  },
 };
 
 /** Each location annunciator's exhibit, by its key's argument. */
@@ -366,15 +395,61 @@ function modelFor(
   // A pool plant room's pumps and their panel: its own pool's, from the
   // world (`live-plant.ts`).
   const pool = /^plant_(pool_0[1-4])$/.exec(room)?.[1] as PoolId | undefined;
+  // The pool temperature controller is the designed Water Margin controller
+  // (mission 146; the owner, 2026-11-03 — no longer provisional): world-bound
+  // here in the room, shown on its own fascia, driving the pool. The old rack
+  // cabinet is gone.
   if (
     (pool === 'pool_01' || pool === 'pool_02') &&
     kind === 'pool-temperature-controller'
   ) {
-    const controller = createPoolTemperatureController(
-      kit,
-      pool,
-      arg === 'digital' ? 'digital' : 'analogue',
-    );
+    const tag = pool === 'pool_01' ? 'PL1-TC1' : 'PL2-TC1';
+    let fallback: World | undefined;
+    const world = () => {
+      try {
+        return roomWorld().world.value;
+      } catch {
+        // No world store open (a bench build, a test): use a fresh world so
+        // the controller still builds and reads sensible defaults.
+        fallback ??= newWorld();
+        return fallback;
+      }
+    };
+    const dispatch = (act: WorldAction) => roomWorld().dispatch(act);
+    const controller = createTemperatureControllerPlaceholder(kit, {
+      tag,
+      model() {
+        const w = world();
+        const s = w.poolTemperatureControls[pool]!;
+        return {
+          measured: w.pools[pool].temperature,
+          setpoint: s.setpoint,
+          band: s.band,
+          output: s.valvePosition,
+          mode: s.mode,
+        };
+      },
+      change(e) {
+        if (e.setpoint !== undefined)
+          dispatch({ type: 'pool/setpoint', pool, celsius: e.setpoint });
+        // HAND, OFF and AUTO are all the world's (mission 148): the knob
+        // reads its position back from it, so a mode left local snapped back.
+        if (e.mode !== undefined)
+          dispatch({
+            type: 'pool/temperature-control',
+            pool,
+            act: 'mode',
+            mode: e.mode,
+          });
+        if (e.band !== undefined)
+          dispatch({
+            type: 'pool/temperature-control',
+            pool,
+            act: 'band',
+            kelvin: e.band,
+          });
+      },
+    });
     const object = new Group();
     object.add(controller.group);
     controller.group.position.z = item.d / 2;
@@ -387,6 +462,7 @@ function modelFor(
       parts: controller.parts,
       update: controller.update,
       status: controller.status,
+      dispose: controller.dispose,
     };
   }
   if ((pool === 'pool_01' || pool === 'pool_02') && kind === 'co2-panel') {
@@ -1771,11 +1847,16 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
         p.item.label,
         p.item.key.split(':')[0],
       );
+      const builtModel = componentOf(object)?.model;
       markComponent(object, {
         tag: installed.tag,
         ...(decorative ? { decorative: true } : {}),
         ...(architectural ? { name: p.item.label, architectural: true } : {}),
-        ...(node ? { model: { node } } : {}),
+        ...(node
+          ? { model: { node } }
+          : builtModel
+            ? { model: builtModel }
+            : {}),
         // Its own live state, where its machine models it (prompt 068).
         ...(isLive(built) && built.status ? { status: built.status } : {}),
       });
@@ -1870,7 +1951,10 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
   const bus = controlBus(room);
   if (bus) {
     const soffit = roomStructure(room)?.soffit ?? 7;
-    const node = schematicNodeFor(room, 'Control bus', 'control-bus');
+    const node =
+      room === 'plant_pool_02'
+        ? 'control-bus' // Olympic plumbing declares this outside SCHEMATICS.
+        : schematicNodeFor(room, 'Control bus', 'control-bus');
     pipework.group.add(
       markComponent(createContainment(kit, bus.trunking, [], soffit, floorY), {
         name: 'Control bus',
