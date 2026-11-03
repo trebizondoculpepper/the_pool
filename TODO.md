@@ -537,7 +537,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
   - [ ] Rooms without the look hook (the pool halls, corridors, museum halls and the other gallery rooms) answer "no lookable objects yet": add `look: { settled }` to their handles as 127 marks them.
   - [ ] The CM6 display is not a named part yet, so `detail` reaches its keys but not its screen (127's named parts).
 - [x] **The universal catalogue** ([126](doc/prompts/126-object-index.md); the owner, 2026-11-02, rewritten that day implemented the same day, fc56dd88): the dev panel's catalogue in two categories, Rooms (each opening into its named components, each a look link) and Game objects (every kind, its copies and parts, usage counts, naming findings, filters used / used outside dev rooms / badly named); pure `lookCatalogue` and `kindCatalogue` shared with 127 and 128.
-  - [ ] The bill of parts (`?manual`) gives each row with a catalogue entry its look link (left from 126: `plant-manual.ts` is shared).
+  - [x] The bill of parts (`?manual`) gives each row with a catalogue entry its look link (done 2026-11-02, `7f181d16`; `plant-manual.ts` uses the shared catalogue).
   - [ ] Rename the tags outside the room-code scheme the catalogue flags: the boilers B-501 to B-506 and the circulation pumps P-101A/B, P-201A/B and the like (tag not under its room's code), through the register and the model, never by hand.
   - [ ] Give the dev rooms' exhibits that no kind claims (about 450, flagged "no kind") a kind or a placed model, or mark them as dev-only: with 127's per-room metadata modules.
   - [ ] Record makers in the kinds' register (74 engineering kinds have none in data, "no maker recorded"), from their models' badges.
