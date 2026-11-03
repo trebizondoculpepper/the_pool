@@ -4,8 +4,10 @@ The owner, 2026-11-03, on the pool temperature controller's item audit showing n
 
 ## What there is now (checked 2026-11-03)
 
-What one kind of object is, and how to build it, is spread over several registries, keyed differently, each written by hand:
+There is no single object register (investigated 2026-11-03). The closest is **`EQUIPMENT_KINDS`** (`src/game/plant/equipment-kinds.ts`, prompt 060): one finite, pure list of every kind (`PLACED_KINDS` and `OTHER_KINDS`), typed `KindId`, "so no kind can be added without its wording". Each `EquipmentKind` holds its tag code, class (plant, non-plant, decorative), its word in descriptions, how its live status is put (`StatusPolicy`), its purpose and its brand: identity only, with no builder, mounting, size or world binding. Everything else about a kind is spread over several registries, keyed differently, each written by hand:
 
+- **Installed instances:** `installed-asset-ids.ts`, keyed `room|key|label`: asset id and tag, for placed equipment.
+- **Behaviour:** `src/game/descriptors/registry.ts` (mission 131), keyed by room (`DESCRIBED_ROOMS`), so far only the Jacuzzi plant room and the control room's mimics; lookups by ref and control id.
 - **Dev rooms' exhibits** (`rooms/plant/*.ts`, `EXHIBITS`): a title, maker, reference, `size: { w, d, h, mount: 'floor' | 'wall', y }` and a `build(kit)`: already the minimal placement knowledge the owner asks for, but only for exhibits.
 - **`MODELS`** (`src/toolkit/gallery/views/room-equipment.ts`, about line 280): the plant rooms' machines, by their key in `logic/room-equipment.ts`, each pointing at an exhibit by its title (`byTitle(PUMPS, …)`). Its keys need not match the kind (`watershed-pool-temperature-controller` versus `pool-temperature-controller`).
 - **Special cases in the room builder** (`room-equipment.ts`, for example the pool temperature controller about line 401): kinds built inline, bound to the live world, reachable from nowhere else.
@@ -17,7 +19,12 @@ So a new kind must be added in several places, and each consumer (a plant room, 
 
 ## What to build
 
-**One registry of object kinds,** pure where it can be (`logic/`), keyed by the kind's one id (the kind catalogue's), each entry giving:
+**Don't start a new register: make `EQUIPMENT_KINDS` the spine.** Its `KindId` becomes the one key for a kind everywhere. Two tables hang off it:
+
+- **The pure side** (`src/game/plant/equipment-kinds.ts` or a module beside it): each `EquipmentKind` gains its mounting, footprint and attachment, its world binding (what it reads, which world actions its controls drive), and its descriptor by kind (131's registry re-keyed from rooms to kinds, with the rooms' instances found through the register).
+- **The view side:** one builder table typed `Record<KindId, Builder>` (or `Partial` only for kinds declared to have no 3D form, such as pure model blocks), so a kind without a builder is a compile error, not a silent "no 3D form". The magic room, CAD views, dev rooms and plant rooms all build from it.
+
+Together they form the registry of object kinds, each entry giving:
 
 1. **Identity:** the kind's id, name, class (`object-class.ts`), maker and product (`brands.ts`), what it is modelled after; the catalogue reads it.
 2. **How it fits the world, minimally:** its mounting (`floor`, `wall`, `ceiling`, `desk`, `hanging`, `in-line` for valves and fittings, `on-another` for a part on a panel), its footprint and height, and where it attaches (a wall's height, a desk's top); from which any host can place it. Its front is its own +z, as the look links and inspection already assume.
