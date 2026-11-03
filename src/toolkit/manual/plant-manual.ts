@@ -2,6 +2,7 @@ import type { Block } from '../../game/sim/blocks';
 import type { ServiceRoom } from '../../game/plant/services';
 import { plantInventory } from '../../game/plant/equipment-catalogue';
 import { brandById } from '../components/core/logic/brands';
+import { lookCatalogue, lookLink } from '../gallery/logic/look-catalogue';
 
 /** The operator's live bill of parts, generated from the saved model tree. */
 export function renderPlantManual(
@@ -10,6 +11,19 @@ export function renderPlantManual(
   feederStates?: Readonly<Record<ServiceRoom, boolean>>,
 ): HTMLElement {
   const parts = plantInventory(root, valveStates, feederStates);
+  const lookEntries = lookCatalogue().filter(
+    (entry) => entry.room && entry.look !== 'none',
+  );
+  const byTag = new Map(
+    lookEntries.flatMap((entry) =>
+      entry.tag ? [[entry.tag, entry] as const] : [],
+    ),
+  );
+  const byAssetId = new Map(
+    lookEntries.flatMap((entry) =>
+      entry.assetId ? [[entry.assetId, entry] as const] : [],
+    ),
+  );
   const shell = document.createElement('div');
   shell.className = 'directory-shell plant-manual';
   const header = document.createElement('header');
@@ -52,6 +66,9 @@ export function renderPlantManual(
   for (const part of parts) {
     const row = document.createElement('tr');
     row.id = `part-${part.id}`;
+    const look =
+      (part.assetId ? byAssetId.get(part.assetId) : undefined) ??
+      byTag.get(part.id);
     const fields = [
       part.id,
       `${'　'.repeat(part.depth)}${part.name}`,
@@ -79,9 +96,16 @@ export function renderPlantManual(
           ? 'Saved control; circuit pending'
           : 'Placed equipment',
     ];
-    for (const value of fields) {
+    for (const [index, value] of fields.entries()) {
       const cell = document.createElement('td');
       cell.textContent = value;
+      if (index === 0 && look) {
+        const link = document.createElement('a');
+        link.href = lookLink(look.room, look.ref);
+        link.textContent = ' · Look';
+        link.setAttribute('aria-label', `Look at ${part.name} in ${look.room}`);
+        cell.append(link);
+      }
       row.append(cell);
     }
     body.append(row);
