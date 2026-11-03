@@ -234,7 +234,9 @@ export function humanLadderLandingSolids(root: Object3D): Footprint[] {
 
 /**
  * The walkable roofs of tanks with caged ladders (mission 151): each a deck
- * with a height, in the room's scene units, found by its named marker.
+ * with a height, in the room's scene units, found by its named marker. The
+ * footprint is widened slightly so the walker entering from the ladder's
+ * landing always lands on it.
  */
 export function roomRoofDecks(root: Object3D): WalkableDeck[] {
   root.updateWorldMatrix(true, true);
@@ -242,11 +244,12 @@ export function roomRoofDecks(root: Object3D): WalkableDeck[] {
   root.traverse((o) => {
     if (!o.name.startsWith('Tank roof deck')) return;
     const box = new Box3().setFromObject(o);
+    const pad = 0.05;
     decks.push({
-      minX: box.min.x,
-      maxX: box.max.x,
-      minZ: box.min.z,
-      maxZ: box.max.z,
+      minX: box.min.x - pad,
+      maxX: box.max.x + pad,
+      minZ: box.min.z - pad,
+      maxZ: box.max.z + pad,
       top: box.max.y,
     });
   });

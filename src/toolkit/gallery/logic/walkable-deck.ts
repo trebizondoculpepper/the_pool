@@ -14,7 +14,7 @@ export interface WalkableDeck {
   top: number;
 }
 
-/** Within `decks` at (x, z): the deck's height if the walker is already up at it. */
+/** Within `decks` at (x, z): the deck's height if the walker is already up at it (at or within half a metre below its top, so a step down from the landing onto the roof still stands). */
 export function deckAt(
   decks: readonly WalkableDeck[],
   x: number,

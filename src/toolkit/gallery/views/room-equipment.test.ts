@@ -17,6 +17,10 @@ import {
   createRoomEquipment,
 } from './room-equipment';
 import { bindRoomPower } from './room-power';
+import {
+  roomRoofDecks,
+  tankRoofAt,
+} from '../../components/architectural/views/human-ladder';
 
 beforeEach(() => {
   vi.stubGlobal('document', {
@@ -262,3 +266,36 @@ describe('the rooms’ machines and their models', () => {
     expect(misfits).toEqual([]);
   });
 });
+
+describe.each(['plant_pool_01'] as const)(
+  'a walker on %s balance tank roof does not fall in (mission 151)',
+  (room) => {
+    it('has a walkable roof deck that holds the walker up over it', () => {
+      const built = createRoomEquipment(createPanelKit(), room);
+      built.group.updateMatrixWorld(true);
+      const deck = roomRoofDecks(built.group)[0];
+      expect(deck).toBeTruthy();
+      if (!deck) return;
+      // A walker already at roof height over the middle of the tank stands on
+      // the roof (floorAt returns its height) rather than falling through.
+      expect(
+        tankRoofAt(
+          built.group,
+          (deck.minX + deck.maxX) / 2,
+          (deck.minZ + deck.maxZ) / 2,
+          deck.top,
+        ),
+      ).toBe(deck.top);
+      // …and is not lifted off the plant floor up to it from the ground.
+      expect(
+        tankRoofAt(
+          built.group,
+          (deck.minX + deck.maxX) / 2,
+          (deck.minZ + deck.maxZ) / 2,
+          0,
+        ),
+      ).toBeNull();
+      built.dispose();
+    });
+  },
+);
