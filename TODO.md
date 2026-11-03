@@ -303,6 +303,8 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ### Plant features
 
+- [ ] **The Olympic's tank hall tidied** ([153](doc/prompts/153-tank-hall-tidy.md); the owner, 2026-11-03; brief only, not started, for a new agent): PL2-T1-LT1's level signal cable (a hand-drawn flex hose) re-plumbed straight up to the ceiling and along the control bus to its panel, model first (its link's medium `power` corrected to `control`); `tank_hall` raised from 3.2 m to the plant rooms' height (asking the owner if the pool above prevents it); its blockwork soffit replaced by the services ceiling.
+
 - [ ] **The balance tanks' roof hatches open** ([152](doc/prompts/152-tank-roof-hatch.md); the owner, 2026-11-03; brief only, not started, after 151): the hatch is two static boxes (`balance-plant.ts`); make it a working fitting in the model and the world (shut and locked by default), unlocked, opened and closed through the controls, showing the tank's water at its real level inside, generic for every tank with a roof hatch.
 
 - [x] **Bug: climbing P1's balance tank ladder drops the walker into the tank** ([151](doc/prompts/151-balance-tank-roof-access.md); the owner, 2026-11-03; done 2026-11-03): the tank roof is now a walkable deck at its height and its edge is guarded, so the walker who climbs the ladder can step onto the roof and back. The pure `walkable-deck` lookup (`deckAt`) feeds the plant rooms' `floorAt`, the guardrails are solid while the walker is up there (BS EN ISO 14122-3), and it works generically for every caged-ladder tank (`blockout.ts`, `balance-plant.ts`). The roof hatch itself is static for now — whether it opens is a follow-up (working-components rule).
