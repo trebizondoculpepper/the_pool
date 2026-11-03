@@ -19,5 +19,3 @@ Pretty much everything in the game is a working part of the simulation. Filters 
 I'd be very happy to give you a short demonstration, online or in person, and to talk about whether there might be some mutual interest.
 
 Kind regards,
-
-Sal Fadhley
