@@ -80,6 +80,26 @@ let noise: AudioBuffer | null = null;
 let muted = false;
 /** The player's master volume, 0 to 1 (their settings). */
 let volume = 1;
+/**
+ * Silent: the master at 0, or muted. Then the audio context is suspended,
+ * not just turned down (the owner, 2026-11-03: it saves the CPU), and the
+ * listener's per-frame updates are skipped; turning it up resumes it.
+ */
+const silent = () => muted || volume <= 0;
+let suspendTimer: ReturnType<typeof setTimeout> | undefined;
+/** Suspend or resume the context to match the volume, after the gain's fade. */
+const applySilence = () => {
+  if (!context) return;
+  if (suspendTimer !== undefined) clearTimeout(suspendTimer);
+  suspendTimer = undefined;
+  if (silent()) {
+    const ctx = context;
+    suspendTimer = setTimeout(() => {
+      suspendTimer = undefined;
+      if (silent() && ctx.state === 'running') void ctx.suspend();
+    }, 200);
+  } else if (context.state !== 'running') void context.resume();
+};
 /** Metres to scene units, from the room that listens. */
 let metre = 1;
 const buffers = new Map<string, Promise<AudioBuffer>>();
@@ -121,11 +141,12 @@ const start = (eager = false) => {
   // page sound without one (a site played often) lets it run at once.
   if (!eager && activation && !activation.isActive) return;
   if (context) {
-    if (context.state !== 'running') void context.resume();
+    if (context.state !== 'running' && !silent()) void context.resume();
     return;
   }
   context = new AudioContext();
-  if (context.state !== 'running') void context.resume();
+  if (silent()) void context.suspend();
+  else if (context.state !== 'running') void context.resume();
   master = context.createGain();
   master.gain.value = muted ? 0 : volume;
   master.connect(context.destination);
@@ -394,7 +415,8 @@ export const partAudio = {
     awaitGesture();
     metre = metreInScene;
     listenedScene = scene ?? null;
-    if (!context) return;
+    // Silent: nothing to place, so no per-frame work (it resumes on volume).
+    if (!context || silent()) return;
     for (const held of holds.values()) held.update();
     camera.getWorldPosition(position).divideScalar(metre);
     camera.getWorldDirection(facing);
@@ -423,13 +445,17 @@ export const partAudio = {
         context.currentTime,
         0.03,
       );
+    applySilence();
   },
-  /** The master volume, 0 to 1. */
+  /** The master volume, 0 to 1; at 0 the audio is suspended, not just quiet. */
   setVolume(value: number) {
     volume = Math.max(0, Math.min(1, value));
     if (context && master && !muted)
       master.gain.setTargetAtTime(volume, context.currentTime, 0.03);
+    applySilence();
   },
+  /** Whether the audio is off for the volume (0, or muted): suspended, saving the CPU. */
+  silent,
   muted: () => muted,
   /**
    * Hush the game's sounds, or let them be heard: everything but the

@@ -57,6 +57,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- Master volume at 0 (or muted) now switches the game's audio off rather than turning it down: the audio engine is suspended and its per-frame updates stop, saving the CPU; turning the volume up resumes it.
 - Every bridge screen shows exactly one LCARS page at a time, chosen by its state: black when unpowered or off, the boot page while booting, its selected page when running; the viewscreen's draw-over BLANK page is gone (mission 124).
 - The CAD views (mission 133) show every screen and sign in full at any angle, as diagrams of what it shows: no reach, angle fade, flattening or LCD wash in their renderer (`showInFull`), the game unchanged; their cache's drawing version is bumped so older views are redrawn.
 - The magic room (mission 130) is drawn as a CAD sheet (the owner, 2026-11-02): floor, walls and ceiling ruled in 1 m squares with 10 cm subdivisions on whole world metres, a wall item's stub as centimetre graph paper, flat shadowless lighting, an origin marker on the floor and an X/Y/Z axis triad in the corner that turns with the camera.
