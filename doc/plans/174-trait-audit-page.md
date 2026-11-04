@@ -138,6 +138,19 @@ Before the page work, with mission 170's owner's agreement (they hold the regist
 
 (`walkable` implies `supportable`; `water-fed` comes from its ports; check `check` passes and the facet rules: one form, exactly one support, exactly one handling.) Commit that change on its own, crediting 170. If another kind already shares these, its page shows it ("what else is box-like").
 
+## Configuration: some traits need it, others don't (the owner, 2026-11-04)
+
+The owner: "some traits require configuration, others don't." In the code a primitive's configuration is its `meta` (`Primitive.meta`, a `MetaSpec` each: `type` number, enum or text; `values` for an enum; an optional `default`; `words`). On 2026-11-04 the configurable primitives are `cylindrical` (`axis`), `floor-standing` (`origin`, `base`), `wall-mounted` (`origin`), `ceiling-mounted` (`origin`), `in-line` (`runAxis`) and `sittable` (`seatHeight`, `look`); the rest (box-like, walkable, container, fixed, operable and so on) take none. A composite may set values for what it contains (`CompositeTrait.meta`), and a kind may set its own (`set <kind> origin=centre …`); `resolveMeta(traits, own, composites)` returns each key's value and where it came from, with problems (two composites at one depth disagreeing).
+
+So the pages must show configuration as a first-class part of a trait:
+
+- **The trait page:** a "Configuration" section: "none" for a trait that takes none; otherwise each key with its type, allowed values, default, words, and **required** when it has no default (the kind must set it), or **optional** with its default. A composite shows the values it sets, and the configuration its expansion brings.
+- **The trait index:** a mark on each configurable trait (for example "⚙ origin, base"), so the owner sees at a glance which traits need configuring.
+- **The item audit's "Its traits":** for each configurable trait the kind has, its resolved values (`resolveMeta`) and where each came from: the kind itself, a composite (named), or the default; a **required value missing** is a finding in red (the kind is not fully classified), with the command to set it (`npm run -s audit -- set <kind> <key>=<value>`); disagreeing composites shown as the problem `resolveMeta` reports.
+- **The trait index module:** `traitDetail` gains `configuration: { key, spec, required }[]` and `traitsOfKind` gains `config: { key, value?, from: 'kind' | 'default' | string /* composite */, required, missing }[]` per trait, both from `metaSpecs` and `resolveMeta`, so the CLI's `trait show` / `show <kind>` (and their `--json`) print the same.
+- **Tests:** a trait with no configuration; one with an optional key (default used); one whose required key is missing on a kind (a finding); a value from a composite; a value set on the kind overriding a default.
+- **The worked example:** the balance tank's `floor-standing` shows `origin` and `base` with their values and sources.
+
 ## Stages
 
 1. `trait-index.ts` with tests; `audit-edit.ts` moved onto it (output unchanged, but `--json`); `npm run -s audit -- check` still passes.
