@@ -423,7 +423,7 @@ export function poolPlantPipework(room: string): {
     // (the owner, 2026-11-04): the horizontal leg clears a walker's head, so
     // the walkway under it stays open. It runs above the tank and the light
     // fittings (the owner, 2026-11-04: raised to clear them).
-    const above = Math.max(L.toPool, p.at[1] + 0.35) + 0.7;
+    const above = Math.max(L.toPool, p.at[1] + 0.35) + 0.95;
     run({
       name:
         name === 'overflow'
