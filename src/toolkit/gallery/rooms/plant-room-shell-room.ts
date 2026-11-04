@@ -399,10 +399,15 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
         roof === null
           ? undefined
           : surfaceUnder(surfaces, x, z, roof, 0.01 * metre);
+      // `standing` is in metres; the landing and the roof are found in the
+      // scene's units, so they are brought back to metres here (a room's
+      // scene unit is not always a metre: the pool plant rooms' is ~9).
       standing =
-        landing ??
-        roof ??
-        shellFloorAt(plan, x / metre, z / metre, (previous ?? 0) / metre);
+        landing !== null
+          ? landing / metre
+          : roof !== null
+            ? roof / metre
+            : shellFloorAt(plan, x / metre, z / metre, (previous ?? 0) / metre);
       return standing * metre;
     },
     ladders: () => humanLadderZones(rooms),
@@ -415,7 +420,9 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       ...(onLadderLanding || aloft(plan, standing) ? [] : equipmentWalls),
       ...(onLadderLanding ? humanLadderLandingSolids(rooms) : []),
       // Its edges stop the walker where the drop is over 1 m (the owner's rule).
-      ...(onSurface ? edgeSolids(onSurface, 0, 1 * metre, 0.05 * metre) : []),
+      ...(onSurface
+        ? edgeSolids(onSurface, plan.floor * metre, 1 * metre, 0.05 * metre)
+        : []),
       ...stops().map(toMetre),
     ],
     use: (x, y) => usableAt(x, y)?.(),
