@@ -421,8 +421,9 @@ export function poolPlantPipework(room: string): {
     const p = port(tank, name);
     // Into the room above the tank, then straight down into its roof port
     // (the owner, 2026-11-04): the horizontal leg clears a walker's head, so
-    // the walkway under it stays open.
-    const above = Math.max(L.toPool, p.at[1] + 0.35);
+    // the walkway under it stays open. It enters the wall another 0.4 m
+    // higher still (the owner, 2026-11-04: "about 40cm higher").
+    const above = Math.max(L.toPool, p.at[1] + 0.35) + 0.4;
     run({
       name:
         name === 'overflow'
