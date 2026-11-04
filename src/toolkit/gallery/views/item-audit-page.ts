@@ -116,11 +116,16 @@ function builtParts(adapter: MagicAdapter) {
 function copyRow(c: CatalogueCopy) {
   const lookable = c.look !== 'none' && !!c.room;
   return [
-    lookable ? el('a', { href: `./${lookLink(c.room, c.ref)}` }, c.ref) : c.ref,
+    // Each placement opens its object's detail page (145), which links on to its look views.
+    c.room
+      ? el('a', { href: benchHref(objectDetailLink(c.room, c.ref)) }, c.ref)
+      : c.ref,
     c.name,
     c.tag ?? '',
     c.assetId ?? '',
-    c.look,
+    lookable
+      ? el('a', { href: `./${lookLink(c.room, c.ref)}` }, `${c.look} · look`)
+      : c.look,
     c.room ? el('a', { href: roomAuditRow(c.room, c.ref) }, 'audit row') : '',
     c.findings.join(', '),
   ];
@@ -152,7 +157,7 @@ function placementsSection(page: HTMLElement, p: Placements) {
       ),
       table(
         [
-          'Ref (look link)',
+          'Ref (details)',
           'Name',
           'Tag',
           'Asset id',
@@ -201,9 +206,13 @@ function uncountedSection(
             `${roomName(room)} ×${found.length} (scanned, not counted from data)`,
           ),
           table(
-            ['Ref (look link)', 'Name', 'Tag', 'Asset id', 'Room audit'],
+            ['Ref (details)', 'Name', 'Tag', 'Asset id', 'Room audit'],
             found.map((t) => [
-              el('a', { href: `./${lookLink(room, t.ref)}` }, t.ref),
+              el(
+                'a',
+                { href: benchHref(objectDetailLink(room, t.ref)) },
+                t.ref,
+              ),
               t.name ?? '',
               t.tag ?? '',
               t.assetId ?? '',
