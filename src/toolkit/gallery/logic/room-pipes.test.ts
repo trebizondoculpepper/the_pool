@@ -94,6 +94,19 @@ describe.each([['plant_pool_01', 'medium']] as const)(
       expect([end[0], end[2]]).toEqual([above[0], above[2]]);
       expect(drain.valves![0].at[1]).toBeGreaterThan(end[1]);
     });
+    it('connects the balance tank make-up to the south-wall supply', () => {
+      const makeUp = runs.find(
+        (r) => r.name === 'Make-up water to the balance tank',
+      )!;
+      const tank = layout.placed.find((p) =>
+        p.item.label.endsWith('balance tank'),
+      )!;
+      const inlet = placedPort(tank, 'makeUp').at;
+      expect(makeUp.points.at(-1)).toEqual(inlet);
+      expect(makeUp.through).toHaveLength(1);
+      expect(makeUp.through[0].at[2]).toBeGreaterThan(layout.box.d / 2);
+      expect(makeUp.through[0].kind).toBe('sleeve');
+    });
     it('runs square', () => {
       for (const r of runs)
         for (const [i, { a, b }] of lengths(r).entries()) {

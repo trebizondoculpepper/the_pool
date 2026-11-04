@@ -1054,12 +1054,18 @@ export function poolPlantPipework(room: string): {
     });
   }
   const makeUp = port(tank, 'makeUp');
+  const makeUpHigh = INTO_CEILING - makeUp.od / 2 - 0.01;
   run({
     name: 'Make-up water to the balance tank',
     kind: 'copper',
     od: makeUp.od,
-    // Down out of the ceiling, straight into the tank's roof.
-    points: [[makeUp.at[0], INTO_CEILING, makeUp.at[2]], makeUp.at],
+    // The boosted make-up branch enters from the corridor through the south
+    // wall, then runs high across the room and drops into the tank's roof.
+    points: [
+      [makeUp.at[0], makeUpHigh, hz],
+      [makeUp.at[0], makeUpHigh, makeUp.at[2]],
+      makeUp.at,
+    ],
     joins: [tank.item.label],
     service: 'make-up',
     label: 'MAKE-UP',
