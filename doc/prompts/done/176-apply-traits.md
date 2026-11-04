@@ -1,5 +1,7 @@
 # 176: Audit pass 2, phase 2: apply the approved traits, then enforce them
 
+**Complete (2026-11-04).** Every registered kind has traits and a support from the approved vocabulary; `npm run -s audit -- check` passes and `unclassified` is empty; enforcement is on. Evidence: stage 1 composites `46c55011`; classification of 107 kinds `46991f1d`; support-rule exemption and enforcement `3e02c204`; `operable` redefinition with `openable`/`slidable`/`safety-gear` `aa25a909`; named composites `desk`/`mimic`/`safety-shower` and PPE cabinet `8dd97e4c`. The owner's rulings are recorded in `doc/plans/176-completion-rulings.md`. Follow-ups (their own missions, not this acceptance): the panel-inherits-components rule to the remaining control panels, and the behaviour of `openable`/`slidable` things (missions 177–201 series, later).
+
 The owner, 2026-11-04. Brief only; not started until the owner says. Phase 2 of pass 2; phase 1 is mission 170, whose approved trait list (`doc/plans/170-trait-vocabulary.md`) this mission starts from. Uses the audit command (`npm run -s audit -- help`; missions 168, 172, 173) and the trait pages (174).
 
 ## What
