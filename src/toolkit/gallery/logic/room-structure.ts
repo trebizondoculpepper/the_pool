@@ -6,6 +6,7 @@ import { POOL_HALLS } from './pool-halls';
 import { MAIN_CORRIDOR } from './main-corridor';
 import { SHELL_ROOMS, WET_HALL } from './shell-rooms';
 import { DECK_SOFFIT, olympicRoomPlan } from './olympic-plan';
+import { HALL, TANK, TANK_BUS } from './balance-tank-hall';
 
 /**
  * A room's structure, from one place, for everything that runs pipe,
@@ -82,6 +83,7 @@ function heights(room: string): { soffit: number; services: boolean } | null {
     return { soffit: plan.roof - plan.floor, services: true };
   }
   if (room === 'wet_hall') return { soffit: WET_HALL_SOFFIT, services: true };
+  if (room === 'tank_hall') return { soffit: HALL.height, services: true };
   if (room in SHELL_ROOMS) {
     const spec = SHELL_ROOMS[room as keyof typeof SHELL_ROOMS];
     return { soffit: spec.height, services: spec.ceiling === 'services' };
@@ -140,8 +142,25 @@ export function roomStructure(
   { supplyWall }: { supplyWall?: Side } = {},
 ): RoomStructure | null {
   const h = heights(room);
+  if (!h) return null;
+  if (room === 'tank_hall')
+    return {
+      room,
+      w: TANK.maxX - TANK.minX,
+      d: TANK.maxZ - TANK.minZ,
+      soffit: h.soffit,
+      ceilingZone: TANK_BUS.ceilingY,
+      walls: {
+        west: TANK.minX,
+        east: TANK.maxX,
+        north: TANK.minZ,
+        south: TANK.maxZ,
+      },
+      supplyWall: supplyWall ?? 'west',
+      obstacles: [],
+    };
   const layout = layoutRoom(room);
-  if (!h || !layout) return null;
+  if (!layout) return null;
   const { w, d, keepClear, solid } = layout.box;
   const machines = layout.placed.map((p) =>
     p.item.mount === 'floor'

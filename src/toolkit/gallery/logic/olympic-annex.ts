@@ -106,7 +106,7 @@ export const OLYMPIC_ANNEX = {
       'tank.level-signal',
       ['tank-level-transmitter', 'signal'],
       ['tankPanel', 'level'],
-      'power',
+      'control',
     ),
     link(
       'pumps.dischargeA',

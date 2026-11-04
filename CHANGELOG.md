@@ -57,6 +57,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- Mission 153: The Olympic pool's balance tank hall (`tank_hall`) is now 7 m tall to match the other plant rooms in the complex, and its breeze-block soffit is replaced by the procedural services ceiling (`createServiceCeiling`) while keeping its blockwork walls.
 - Master volume at 0 (or muted) now switches the game's audio off rather than turning it down: the audio engine is suspended and its per-frame updates stop, saving the CPU; turning the volume up resumes it.
 - Every bridge screen shows exactly one LCARS page at a time, chosen by its state: black when unpowered or off, the boot page while booting, its selected page when running; the viewscreen's draw-over BLANK page is gone (mission 124).
 - The CAD views (mission 133) show every screen and sign in full at any angle, as diagrams of what it shows: no reach, angle fade, flattening or LCD wash in their renderer (`showInFull`), the game unchanged; their cache's drawing version is bumped so older views are redrawn.
@@ -77,6 +78,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Mission 153: In the Olympic pool's balance tank hall (`tank_hall`), the level transmitter PL2-T1-LT1's cable (`tank.level-signal`, corrected from `power` to `control` in `olympic-annex.ts`) is now routed in rigid screwed steel conduit from its cable gland straight up to the room's control bus (`controlBus('tank_hall')`), replacing the hand-drawn flex hose and overhead saddles.
 - Mission 148: PL1-TC1 and PL2-TC1 now command the single in-line LTHW control-valve fitting in each exchanger branch; their Pt100 probes model and show pool return temperature before the exchanger. The control-bus leads bind to their model links, duplicate valve nodes and repeated "pool pool" labels are gone. HAND/OFF/AUTO has a saved OFF position that drives the valve shut, BAND changes the saved 1–10 K proportional band, and valve commands move in 0.1 steps.
 - PL1-TC1 and PL2-TC1 are wall-mounted in the owner's chosen plant-room positions, facing the operator; their Pt100 leads rise to the room control bus.
 - The loading bay's sky and yard now show through its lorry openings when looked at from the main corridor through the bay's doors, not only once the walker has crossed the threshold; the chemical stores' side doorways still show no sky.

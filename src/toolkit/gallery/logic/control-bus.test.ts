@@ -181,4 +181,28 @@ describe('a room’s control bus', () => {
     expect(stub.points[0][0]).toBeCloseTo(stub.points[1][0], 9);
     expect(stub.points[0][2]).toBeCloseTo(along.from[2], 9);
   });
+
+  it('wires the Olympic tank hall’s level transmitter straight up to its control bus', () => {
+    expect(isControlDevice('level-transmitter')).toBe(true);
+    const bus = controlBus('tank_hall')!;
+    const structure = roomStructure('tank_hall')!;
+    expect(bus.problems).toEqual([]);
+    expect(bus.devices).toEqual(['level-transmitter']);
+    expect(bus.y).toBeCloseTo(DOOR_HEAD + OVER_LINTEL, 6);
+    expect(bus.y).toBeLessThan(structure.ceilingZone);
+    const wallRuns = bus.trunking.filter((t) => t.name.endsWith(' wall'));
+    expect(wallRuns).toHaveLength(4);
+    const risers = bus.trunking.filter((t) => t.name.includes('riser'));
+    expect(risers).toHaveLength(1);
+    expect(Math.max(risers[0].from[1], risers[0].to[1])).toBeCloseTo(
+      structure.ceilingZone,
+      6,
+    );
+    expect(bus.stubs).toHaveLength(1);
+    const stub = bus.stubs[0];
+    expect(stub.to).toBe('level-transmitter');
+    const end = stub.points.at(-1)!;
+    const southRun = wallRuns.find((t) => t.name.endsWith('south wall'))!;
+    expect(toSegment(end, southRun.from, southRun.to)).toBeLessThan(0.06);
+  });
 });

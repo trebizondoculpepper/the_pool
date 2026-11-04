@@ -3,7 +3,7 @@ import { BALANCE_TANK } from '../../../game/plant/balance-tank';
 import type { Vec3 } from '../../components/core/logic/pipe-route';
 import type { PlantRoomLayout } from './plant-room-layout';
 import { WALL_THICKNESS } from './dev-room-links';
-import { EQUIPMENT_OPENING } from './plant-rooms';
+import { EQUIPMENT_OPENING, PLANT_ROOM } from './plant-rooms';
 
 /**
  * The Olympic pool's balance tank hall (Dev28, `doc/prompts/done/032-balance-tank-hall.md`):
@@ -28,11 +28,11 @@ export const DOORWAY = {
   // The doors' 2.4 m leaves under their 60 mm frame (`equipment-doors.ts`).
   height: 2.46,
 } as const;
-/** The hall: its walls on these bounds, its soffit under the pool's surround. */
+/** The hall: its walls on these bounds, its ceiling at the complex's 7 m plant height. */
 export const HALL = {
   halfX: (BAY + PARTITION + T.length) / 2 + WALL_THICKNESS / 2,
   halfZ: T.width / 2 + WALL_THICKNESS / 2,
-  height: 3.2,
+  height: 2 * PLANT_ROOM.storey,
 } as const;
 /** The room's inside faces. */
 const IN = {
@@ -183,17 +183,24 @@ export function hallDrainRun(): PipeRun {
   };
 }
 
-/** Two-wire level signal: out of the side gland, up, south, then west through the partition towards the pool controls. */
+/** The tank hall's control bus height (over the equipment doors' lintel), ceiling containment height, and wall stand-off (`control-bus.ts`). */
+export const TANK_BUS = {
+  y: PLANT_ROOM.equipment.h + 0.1 + 0.35,
+  ceilingY: 2 * PLANT_ROOM.storey - 0.55,
+  off: 0.03,
+} as const;
+
+/** Two-wire level signal: from the transmitter's cable gland, straight up to the control bus's height, and square into the south wall's bus. */
 export function hallLevelCable(): Vec3[] {
   const tx = SPOTS.transmitter;
-  const high = HALL.height - 0.25;
-  const south = TANK.maxZ - 0.15;
+  const gx = tx.x + 0.11;
+  const rx = tx.x + 0.16;
+  const gy = tx.y + 0.2;
   return [
-    [tx.x + 0.11, tx.y + 0.2, tx.z],
-    [tx.x + 0.18, tx.y + 0.2, tx.z],
-    [tx.x + 0.18, high, tx.z],
-    [tx.x + 0.18, high, south],
-    [TANK.minX - PARTITION - 0.05, high, south],
+    [gx, gy, tx.z],
+    [rx, gy, tx.z],
+    [rx, TANK_BUS.y, tx.z],
+    [rx, TANK_BUS.y, TANK.maxZ - TANK_BUS.off],
   ];
 }
 

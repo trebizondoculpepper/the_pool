@@ -303,7 +303,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ### Plant features
 
-- [ ] **The Olympic's tank hall tidied** ([153](doc/prompts/153-tank-hall-tidy.md); the owner, 2026-11-03; brief only, not started, for a new agent): PL2-T1-LT1's level signal cable (a hand-drawn flex hose) re-plumbed straight up to the ceiling and along the control bus to its panel, model first (its link's medium `power` corrected to `control`); `tank_hall` raised from 3.2 m to the plant rooms' height (asking the owner if the pool above prevents it); its blockwork soffit replaced by the services ceiling.
+- [x] **The Olympic's tank hall tidied** ([153](doc/prompts/153-tank-hall-tidy.md), [plan](doc/plans/153-tank-hall-tidy.md); the owner, 2026-11-03; done 2026-11-03): PL2-T1-LT1's level signal cable (`tank.level-signal`, corrected from `power` to `control`) is now routed in rigid screwed steel conduit straight up from its gland to `tank_hall`'s control bus (`controlBus('tank_hall')`); `HALL.height` is raised from 3.2 m to 7 m (`2 * PLANT_ROOM.storey`, clear of the pool hall to the east of `plant_pool_02`); and its blockwork soffit is replaced by `createServiceCeiling`.
 
 - [ ] **The balance tanks' roof hatches open** ([152](doc/prompts/152-tank-roof-hatch.md); the owner, 2026-11-03; brief only, not started, after 151): the hatch is two static boxes (`balance-plant.ts`); make it a working fitting in the model and the world (shut and locked by default), unlocked, opened and closed through the controls, showing the tank's water at its real level inside, generic for every tank with a roof hatch.
 

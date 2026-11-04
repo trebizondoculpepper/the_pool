@@ -39,6 +39,7 @@ import {
   createBreezeBlockTextures,
   mapBlockwork,
 } from '../../../scene/breeze-block-texture';
+import { createServiceCeiling } from '../../components/site-dressing/views/service-ceiling';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { registerJoint } from '../logic/door-joins';
 import { enterDevRoom } from '../logic/dev-room-links';
@@ -127,13 +128,17 @@ export function startTankHall(canvas: HTMLCanvasElement) {
   wall(L + 2 * t, h, t, (west + TANK.maxX) / 2, h / 2, TANK.minZ - t / 2);
   wall(L + 2 * t, h, t, (west + TANK.maxX) / 2, h / 2, TANK.maxZ + t / 2);
   wall(t, h, TANK.maxZ - TANK.minZ, TANK.maxX + t / 2, h / 2, 0);
-  wall(
-    L + 2 * t,
-    0.3,
-    TANK.maxZ - TANK.minZ + 2 * t,
-    (west + TANK.maxX) / 2,
-    h + 0.15,
-    0,
+  room.add(
+    createServiceCeiling(
+      {
+        minX: TANK.minX,
+        maxX: TANK.maxX,
+        minZ: TANK.minZ,
+        maxZ: TANK.maxZ,
+        deckY: h,
+      },
+      { seed: 28, density: 0.85 },
+    ).group,
   );
 
   // Walking: the gantry at y = 0; the open water, the walls and the doorway's leaves stop the walker.
@@ -297,6 +302,7 @@ export function startTankHall(canvas: HTMLCanvasElement) {
       renderer.dispose();
     },
     {
+      look: { settled: Promise.resolve() },
       resume() {
         leaving = false;
       },

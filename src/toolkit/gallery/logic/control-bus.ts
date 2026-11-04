@@ -5,6 +5,7 @@ import type { Placed, Side } from './room-equipment';
 import { deckOf, roomStructure } from './room-structure';
 import { PLANT_ROOM } from './plant-rooms';
 import { WET_HALL_LAYOUT, wetHallPartition } from './shell-rooms';
+import { DOORWAY, hallLevelCable } from './balance-tank-hall';
 import type { Containment } from './cable-containment';
 import type { Point3, ServiceRoute } from './room-services';
 
@@ -23,7 +24,7 @@ import type { Point3, ServiceRoute } from './room-services';
 
 /** The devices on the control bus: panels, mimics, instruments, the desk and its printer. */
 export const isControlDevice = (key: string) =>
-  /^(operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|gas-safety|combustion-panel|level-instruments|booster-set|cascade-manager|weather-station|pool-temperature-controller)/.test(
+  /^(operator-desk|alarm-printer|mimic-|annunciator|chart-recorders|readout-board|bms-outstation|fire-repeater|cctv|gas-safety|combustion-panel|level-instruments|booster-set|cascade-manager|weather-station|pool-temperature-controller|level-transmitter)/.test(
     key,
   );
 
@@ -64,9 +65,60 @@ export interface ControlBus {
 const SIDES: readonly Side[] = ['north', 'east', 'south', 'west'];
 
 export function controlBus(room: string): ControlBus | null {
-  const layout = layoutRoom(room);
   const structure = roomStructure(room);
-  if (!layout || !structure) return null;
+  if (!structure) return null;
+  if (room === 'tank_hall') {
+    const { west, east, north, south } = structure.walls;
+    const y = LOWEST;
+    const corners: readonly Point3[] = [
+      [west + OFF, y, north + OFF],
+      [east - OFF, y, north + OFF],
+      [east - OFF, y, south - OFF],
+      [west + OFF, y, south - OFF],
+    ];
+    const riserZ = DOORWAY.z - DOORWAY.width / 2 - 0.3;
+    const trunking: Containment[] = [
+      ...SIDES.map((side, i) => ({
+        name: `Control bus, ${side} wall`,
+        kind: 'trunking' as const,
+        from: corners[i],
+        to: corners[(i + 1) % 4],
+        width: BUS.width,
+        depth: BUS.depth,
+      })),
+      {
+        name: 'Control bus, riser to ceiling',
+        kind: 'trunking',
+        from: [west + OFF, y, riserZ],
+        to: [west + OFF, structure.ceilingZone, riserZ],
+        width: BUS.width,
+        depth: BUS.depth,
+      },
+    ];
+    return {
+      trunking,
+      stubs: [
+        {
+          name: 'Level transmitter control',
+          utility: 'control',
+          kind: 'steel-screwed',
+          od: STUB_OD,
+          points: hallLevelCable(),
+          to: 'level-transmitter',
+        },
+      ],
+      y,
+      devices: ['level-transmitter'],
+      problems:
+        y > structure.ceilingZone - 0.2
+          ? [
+              'no room for the bus between the tallest panel and the services ceiling',
+            ]
+          : [],
+    };
+  }
+  const layout = layoutRoom(room);
+  if (!layout) return null;
   const { box, placed } = layout;
   const hw = box.w / 2;
   const hd = box.d / 2;

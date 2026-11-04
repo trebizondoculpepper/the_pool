@@ -1,6 +1,5 @@
 import { tankDrain } from '../../../components/plant/parts/tank-drain';
 import { markComponent } from '../../../components/core/views/component-identity';
-import { createFlexHose } from '../../../components/core/views/pipe-route';
 import { createPipeBellmouth } from '../../../components/plant/views/pipe-bellmouth';
 import { ladderGate } from '../../../components/architectural/parts/ladder-gate';
 import { createDoorPresence } from '../../../components/architectural/logic/door-proximity';
@@ -75,6 +74,8 @@ import type { RoomFinish } from '../plant-room';
 import type { Footprint } from '../../../controls/logic/walk-collision';
 import { doorwayStops, overlaps } from '../../logic/doorway';
 import { equipmentDoors } from '../../../components/architectural/parts/equipment-doors';
+import { controlBus } from '../../logic/control-bus';
+import { createContainment } from '../../views/cable-containment';
 
 /** What this room is for, printed on its title card. */
 export const PURPOSE =
@@ -418,41 +419,21 @@ export function buildHall(
     status: () => `${state.level.toFixed(2)} m`,
   });
   object.add(transmitter.group);
-  const signalCable = createFlexHose(
-    hallLevelCable(),
-    t.paint('#252a2c', 0.65),
-    0.012,
+  const bus = controlBus('tank_hall')!;
+  object.add(
+    markComponent(createContainment(kit, bus.trunking, [], HALL.height, 0), {
+      name: 'Control bus',
+      model: { node: 'control-bus' },
+    }),
   );
-  signalCable.name = 'Level transmitter signal cable — south to pool controls';
+  const stub = bus.stubs[0];
+  const signalCable = createPipe('steel-screwed', stub.od, hallLevelCable());
+  signalCable.name = 'Level transmitter signal cable — south to control bus';
   markComponent(signalCable, {
     name: signalCable.name,
     model: { link: 'tank.level-signal' },
   });
   object.add(signalCable);
-  // Two overhead saddles suspend the cable below the soffit on its way to the doorway.
-  const cableHigh = HALL.height - 0.25;
-  for (const x of [tx.x + 0.18, (tx.x + TANK.minX) / 2]) {
-    t.box(
-      object,
-      steel,
-      0.025,
-      0.25,
-      0.025,
-      x,
-      cableHigh + 0.125,
-      TANK.maxZ - 0.15,
-    );
-    t.box(
-      object,
-      steel,
-      0.06,
-      0.015,
-      0.045,
-      x,
-      cableHigh - 0.008,
-      TANK.maxZ - 0.15,
-    );
-  }
 
   // The float switches on their bracket off the north rail.
   const fl = SPOTS.floats;

@@ -7,11 +7,13 @@ import {
   SPOTS,
   START,
   TANK,
+  TANK_BUS,
   hallPipes,
   hallLevelCable,
   hallDrainRun,
   heightOf,
 } from './balance-tank-hall';
+import { OLYMPIC_ANNEX } from './olympic-annex';
 
 describe('the balance tank hall', () => {
   it('is the Olympic tank: 9 × 6 m inside, 216 m³ to its weir, its walls the hall’s', () => {
@@ -71,17 +73,41 @@ describe('the balance tank hall', () => {
   });
 });
 
-it('takes the level cable from its gland up, south and west through the partition', () => {
+it('sets the hall ceiling to the complex’s 7 m plant height', () => {
+  expect(HALL.height).toBe(7);
+});
+
+it('takes the level cable from its gland straight up to the control bus height and square into the south wall bus, on a control link', () => {
   const p = hallLevelCable();
   expect(p[0]).toEqual([
     SPOTS.transmitter.x + 0.11,
     SPOTS.transmitter.y + 0.2,
     SPOTS.transmitter.z,
   ]);
-  expect(p[2][1]).toBeGreaterThan(p[0][1]);
-  expect(p[3][2]).toBeGreaterThan(p[2][2]);
-  expect(p.at(-1)![0]).toBeLessThan(TANK.minX - PARTITION);
+  expect(p[1]).toEqual([
+    SPOTS.transmitter.x + 0.16,
+    SPOTS.transmitter.y + 0.2,
+    SPOTS.transmitter.z,
+  ]);
+  expect(p[2]).toEqual([
+    SPOTS.transmitter.x + 0.16,
+    TANK_BUS.y,
+    SPOTS.transmitter.z,
+  ]);
+  expect(p[3]).toEqual([
+    SPOTS.transmitter.x + 0.16,
+    TANK_BUS.y,
+    TANK.maxZ - TANK_BUS.off,
+  ]);
+  for (let i = 1; i < p.length; i++) {
+    const a = p[i - 1],
+      b = p[i];
+    const axes = [a[0] !== b[0], a[1] !== b[1], a[2] !== b[2]].filter(Boolean);
+    expect(axes).toHaveLength(1);
+  }
   for (const point of p) expect(point[1]).toBeLessThan(HALL.height);
+  const link = OLYMPIC_ANNEX.links.find((l) => l.id === 'tank.level-signal');
+  expect(link?.medium).toBe('control');
 });
 it('takes the floor drain out through the east wall below its sump, with its penstock on the run', () => {
   const run = hallDrainRun();
