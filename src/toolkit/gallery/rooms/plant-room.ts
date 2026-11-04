@@ -1,4 +1,12 @@
 import {
+  edgeSolids,
+  surfaceAt,
+  surfaceSupports,
+  surfaceUnder,
+} from '../logic/derived-surface';
+import type { DerivedSurface } from '../logic/derived-surface';
+import { roomSurfaces } from '../views/derived-surfaces';
+import {
   createBreezeBlockTextures,
   mapBlockwork,
 } from '../../../scene/breeze-block-texture';
@@ -69,8 +77,6 @@ import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
   humanLadderZones,
-  tankRoofAt,
-  tankRoofGuardSolids,
 } from '../../components/architectural/views/human-ladder';
 import { useOnHit } from '../../controls/input/touch-point';
 import {
@@ -276,6 +282,8 @@ export function startEquipmentRoom(
   let sized: SizedPlantRoomLayout | null = null;
   /** The walker's floor height, metres: on the floor, the stair or the gantry. */
   let standing = 0;
+  // The walkable surface the walker stands on, if any (mission 175).
+  let onSurface: DerivedSurface | undefined;
   let portals: ReturnType<typeof createPortals> | null = null;
   let disposed = false;
   /** The exhibits that work: updated each frame, their parts clickable. */
@@ -694,21 +702,35 @@ export function startEquipmentRoom(
     }),
     start: { x: 0, z: 0 },
     floorAt: (x, z, previous) => {
+      const surfaces = roomSurfaces(room, m);
+      const landing = humanLadderLandingAt(room, x, z, previous);
+      const roof =
+        landing === null ? surfaceAt(surfaces, x, z, previous, 0.5 * m) : null;
+      onSurface =
+        roof === null
+          ? undefined
+          : surfaceUnder(surfaces, x, z, roof, 0.01 * m);
       standing =
-        humanLadderLandingAt(room, x, z, previous) ??
-        tankRoofAt(room, x, z, previous) ??
+        landing ??
+        roof ??
         (sized
           ? regionFloorAt(sized.room, sized.gantry, x / m, z / m, previous / m)
           : 0);
       return standing * m;
     },
     ladders: () => humanLadderZones(room),
+    // What a dropped thing rests on: every supportable object's derived top (mission 181).
+    supports: () => surfaceSupports(roomSurfaces(room, m)),
     // Up the stair or on the gantry, its rails; on the floor, the machines too.
     solids: () => [
       ...walls,
       ...(standing < 0.5 ? solids : []),
       ...(standing >= 0.5
-        ? [...humanLadderLandingSolids(room), ...tankRoofGuardSolids(room)]
+        ? [
+            ...humanLadderLandingSolids(room),
+            // A walkable top's edges, where the drop is over 1 m (mission 175).
+            ...(onSurface ? edgeSolids(onSurface, 0, 1 * m, 0.05 * m) : []),
+          ]
         : []),
       // What the exhibits put in the way as they work (a shut door).
       ...live

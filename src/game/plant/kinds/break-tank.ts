@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'level',
   purpose: 'Separates the incoming main from pool make-up water.',
+  traits: ['tank-like', 'walkable'],
 });

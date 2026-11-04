@@ -94,6 +94,22 @@ export const PRIMITIVES = {
     facet: 'surface',
     words: 'objects can be put on its top',
     needs: 'form',
+    // How its top is found (mission 175; the owner, 2026-11-04): by casting
+    // rays down on its body (the default), or a fixed plane where that is too
+    // costly or misleading. Walkable inherits these through supportable.
+    meta: {
+      surface: {
+        type: 'enum',
+        values: ['raycast', 'plane'],
+        default: 'raycast',
+        words:
+          'how its top is found: raycast (rays cast down on its body) or plane (a fixed height, surfaceY)',
+      },
+      surfaceY: {
+        type: 'number',
+        words: 'with surface=plane: its top’s height in its own frame, metres',
+      },
+    },
   },
   walkable: {
     facet: 'surface',

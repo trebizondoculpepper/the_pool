@@ -1,3 +1,4 @@
+import { markEquipmentKind } from './derived-surfaces';
 import { createBackwashPitWater } from '../../components/plant/views/backwash-pit-water';
 import { createCo2DosingPanel } from './co2-dosing-panel';
 import { createWatershedControllerVisual } from '../../components/plant/views/watershed-controller';
@@ -1829,6 +1830,8 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
       object.add(frame);
     }
     object.name ||= p.item.label;
+    // Its kind, so its traits (a walkable roof, a supportable top) are read from the scene (mission 175).
+    markEquipmentKind(object, p.item.key.split(':')[0]);
     // Furniture, or what the owner ruled so: set decoration (prompt 064).
     const decorative = decorativeKind(p.item.key);
     if (decorative) markComponent(object, { decorative: true });

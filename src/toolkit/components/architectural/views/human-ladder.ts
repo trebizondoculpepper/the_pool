@@ -17,9 +17,7 @@ import {
   type LadderPoint,
 } from '../logic/human-ladder';
 import { createPoolLadder } from '../../../gallery/views/pool-ladder';
-import { deckAt } from '../../../gallery/logic/walkable-deck';
-import type { WalkableDeck } from '../../../gallery/logic/walkable-deck';
-import { METRE } from '../../core/logic/units';
+import { markNonBody } from '../../core/views/non-body';
 import { createTankLadder } from '../../plant/views/tank-ladder';
 import { createCagedLadder } from '../../plant/views/railings';
 
@@ -140,6 +138,8 @@ export function createHumanLadder(
     bottomEnabled: options.bottomEnabled ?? (() => true),
   };
   records.set(group, record);
+  // Not a body: a tank's roof is found under its ladder's cage, never on it (mission 175).
+  markNonBody(group);
   return {
     group,
     zone: () => zoneOf(group, layout),
@@ -234,60 +234,5 @@ export function humanLadderLandingSolids(root: Object3D): Footprint[] {
       });
     }
   }
-  return solids;
-}
-
-/**
- * The walkable roofs of tanks with caged ladders (mission 151): each a deck
- * with a height, in the room's scene units, found by its named marker. The
- * footprint is widened slightly so the walker entering from the ladder's
- * landing always lands on it.
- */
-export function roomRoofDecks(root: Object3D): WalkableDeck[] {
-  root.updateWorldMatrix(true, true);
-  const decks: WalkableDeck[] = [];
-  root.traverse((o) => {
-    if (!o.name.startsWith('Tank roof deck')) return;
-    const box = new Box3().setFromObject(o);
-    // Pad the lookup by 0.4 plan-metres on every side so the walker stepping
-    // off the ladder's topExit lands on the roof, not in a gap (mission
-    // 151). The height gate in `deckAt` blocks stepping up from the floor,
-    // so the wider footprint is safe.
-    const pad = 0.4 * METRE;
-    decks.push({
-      minX: box.min.x - pad,
-      maxX: box.max.x + pad,
-      minZ: box.min.z - pad,
-      maxZ: box.max.z + pad,
-      top: box.max.y,
-    });
-  });
-  return decks;
-}
-
-/** The floor's height on a tank roof, if the walker is over one and already up at it. */
-export function tankRoofAt(
-  root: Object3D,
-  x: number,
-  z: number,
-  previousY: number,
-): number | null {
-  return deckAt(roomRoofDecks(root), x, z, previousY);
-}
-
-/** Guardrail footprints on tank roofs, in the room's scene units. */
-export function tankRoofGuardSolids(root: Object3D): Footprint[] {
-  root.updateWorldMatrix(true, true);
-  const solids: Footprint[] = [];
-  root.traverse((o) => {
-    if (!o.name.startsWith('Tank roof guard')) return;
-    const box = new Box3().setFromObject(o);
-    solids.push({
-      minX: box.min.x,
-      maxX: box.max.x,
-      minZ: box.min.z,
-      maxZ: box.max.z,
-    });
-  });
   return solids;
 }

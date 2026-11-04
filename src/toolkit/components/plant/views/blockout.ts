@@ -17,7 +17,7 @@ import {
   createStencilText,
 } from '../../core/views/plant-signs';
 import { wrapOnto } from '../../core/views/wrap-label';
-import { createSectionalTank, addWalkableTankRoof } from './balance-plant';
+import { createSectionalTank, addTankRoofGuards } from './balance-plant';
 import { createHumanLadder } from '../../architectural/views/human-ladder';
 
 /**
@@ -152,8 +152,8 @@ export function createTank(
       }).group;
       ladder.position.set(-nx / 2 + 0.45, 0, back + nz / 2 + 0.02);
       group.add(ladder);
-      // The roof is walkable and guarded, reached from the ladder's side.
-      addWalkableTankRoof(
+      // The roof is guarded, reached from the ladder's side; walkable by the kind's trait (mission 175).
+      addTankRoofGuards(
         kit,
         group,
         {

@@ -40,11 +40,17 @@ import {
   WALKER_RADIUS_METRES,
 } from '../../controls/input/first-person';
 import {
+  edgeSolids,
+  surfaceAt,
+  surfaceSupports,
+  surfaceUnder,
+} from '../logic/derived-surface';
+import type { DerivedSurface } from '../logic/derived-surface';
+import { roomSurfaces } from '../views/derived-surfaces';
+import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
   humanLadderZones,
-  tankRoofAt,
-  tankRoofGuardSolids,
 } from '../../components/architectural/views/human-ladder';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import { createPlantRoomShell } from '../views/plant-room-shell';
@@ -357,7 +363,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
   /** The walker's floor's height, metres. */
   let standing = 0;
   let onLadderLanding = false;
-  let onRoof = false;
+  let onSurface: DerivedSurface | undefined;
   // On its deck, just inside the plant room door, looking into the room.
   const inward = [-northWay.frame.out[0], -northWay.frame.out[1]] as const;
   const walk = createFirstPerson({
@@ -382,9 +388,17 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     },
     floorAt: (x, z, previous) => {
       const landing = humanLadderLandingAt(rooms, x, z, previous);
-      const roof = landing === null ? tankRoofAt(rooms, x, z, previous) : null;
+      // A walkable object's top, derived from its geometry (mission 175).
+      const surfaces = roomSurfaces(rooms, metre);
+      const roof =
+        landing === null
+          ? surfaceAt(surfaces, x, z, previous ?? 0, 0.5 * metre)
+          : null;
       onLadderLanding = landing !== null;
-      onRoof = roof !== null;
+      onSurface =
+        roof === null
+          ? undefined
+          : surfaceUnder(surfaces, x, z, roof, 0.01 * metre);
       standing =
         landing ??
         roof ??
@@ -392,13 +406,16 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       return standing * metre;
     },
     ladders: () => humanLadderZones(rooms),
+    // What a dropped thing rests on: every supportable object's derived top (mission 181).
+    supports: () => surfaceSupports(roomSurfaces(rooms, metre)),
     // Each doorway: its leaf while shut, but never where the walker
     // stands; a stop just beyond until the room there is seen.
     solids: () => [
       ...(aloft(plan, standing) ? wallsUp : wallsDown),
       ...(onLadderLanding || aloft(plan, standing) ? [] : equipmentWalls),
       ...(onLadderLanding ? humanLadderLandingSolids(rooms) : []),
-      ...(onRoof ? tankRoofGuardSolids(rooms) : []),
+      // Its edges stop the walker where the drop is over 1 m (the owner's rule).
+      ...(onSurface ? edgeSolids(onSurface, 0, 1 * metre, 0.05 * metre) : []),
       ...stops().map(toMetre),
     ],
     use: (x, y) => usableAt(x, y)?.(),

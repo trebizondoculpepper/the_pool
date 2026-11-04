@@ -31,7 +31,9 @@ export type MetaKey =
   | 'look'
   | 'origin'
   | 'runAxis'
-  | 'seatHeight';
+  | 'seatHeight'
+  | 'surface'
+  | 'surfaceY';
 
 export interface KindConfig {
   group: 'placed' | 'other';

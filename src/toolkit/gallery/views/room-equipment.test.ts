@@ -17,10 +17,9 @@ import {
   createRoomEquipment,
 } from './room-equipment';
 import { bindRoomPower } from './room-power';
-import {
-  roomRoofDecks,
-  tankRoofAt,
-} from '../../components/architectural/views/human-ladder';
+import { humanLadderZones } from '../../components/architectural/views/human-ladder';
+import { roomSurfaces } from './derived-surfaces';
+import { edgeSolids, surfaceAt } from '../logic/derived-surface';
 
 beforeEach(() => {
   vi.stubGlobal('document', {
@@ -267,34 +266,44 @@ describe('the rooms’ machines and their models', () => {
   });
 });
 
-describe.each(['plant_pool_01'] as const)(
-  'a walker on %s balance tank roof does not fall in (mission 151)',
+describe.each(['plant_pool_01', 'wet_hall'] as const)(
+  'a walker on the laddered tank roof in %s does not fall in (missions 151, 175)',
   (room) => {
-    it('has a walkable roof deck that holds the walker up over it', () => {
+    it('finds the roof from the tank’s geometry and holds the walker up over all of it', () => {
       const built = createRoomEquipment(createPanelKit(), room);
       built.group.updateMatrixWorld(true);
-      const deck = roomRoofDecks(built.group)[0];
-      expect(deck).toBeTruthy();
-      if (!deck) return;
-      // A walker already at roof height over the middle of the tank stands on
-      // the roof (floorAt returns its height) rather than falling through.
+      const walkable = roomSurfaces(built.group, 1).filter((s) => s.walkable);
+      expect(walkable.length).toBeGreaterThan(0);
+      const roof = walkable[0];
+      expect(roof.confidence).toBe('good');
+      // The plane is the roof, not the ladder's cage above it.
+      expect(roof.top).toBeGreaterThan(1.5);
+      expect(roof.top).toBeLessThan(3);
+      // Everywhere over the roof, a walker already up there stands on it…
+      for (let i = 0; i <= 10; i++)
+        for (let j = 0; j <= 10; j++) {
+          const x = roof.minX + ((roof.maxX - roof.minX) * i) / 10;
+          const z = roof.minZ + ((roof.maxZ - roof.minZ) * j) / 10;
+          expect(surfaceAt(walkable, x, z, roof.top, 0.5)).toBe(roof.top);
+          // …and nobody is lifted up to it from the floor.
+          expect(surfaceAt(walkable, x, z, 0, 0.5)).toBeNull();
+        }
+      // The ladder's top exit is on the roof, so stepping off the ladder lands on it.
+      const ladder = humanLadderZones(built.group).find(
+        (z) => Math.abs(z.top - roof.top) < 0.3,
+      );
+      expect(ladder).toBeTruthy();
       expect(
-        tankRoofAt(
-          built.group,
-          (deck.minX + deck.maxX) / 2,
-          (deck.minZ + deck.maxZ) / 2,
-          deck.top,
+        surfaceAt(
+          walkable,
+          ladder!.topExit.x,
+          ladder!.topExit.z,
+          ladder!.top,
+          0.5,
         ),
-      ).toBe(deck.top);
-      // …and is not lifted off the plant floor up to it from the ground.
-      expect(
-        tankRoofAt(
-          built.group,
-          (deck.minX + deck.maxX) / 2,
-          (deck.minZ + deck.maxZ) / 2,
-          0,
-        ),
-      ).toBeNull();
+      ).toBe(roof.top);
+      // Its edges stop the walker: the drop to the floor is over 1 m.
+      expect(edgeSolids(roof, 0, 1, 0.05)).toHaveLength(4);
       built.dispose();
     });
   },

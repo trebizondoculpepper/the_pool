@@ -1,3 +1,4 @@
+import { markNonBody } from '../../core/views/non-body';
 import {
   CanvasTexture,
   Group,
@@ -86,6 +87,8 @@ export function createGuardRail(kit: PanelKit, options: GuardRailOptions) {
     t.rod(group, tube, [-half, y, 0], [half, y, 0], TUBE, 14);
   if (toeBoard)
     t.box(group, tube, length, 0.15, 0.006, 0, 0.085, -TUBE - 0.004);
+  // A guard is not the body it guards (mission 175).
+  markNonBody(group);
   return group;
 }
 

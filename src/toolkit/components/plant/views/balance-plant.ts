@@ -1,8 +1,6 @@
 import {
-  BoxGeometry,
   Group,
   Mesh,
-  MeshBasicMaterial,
   MeshStandardMaterial,
   PlaneGeometry,
   SphereGeometry,
@@ -168,15 +166,14 @@ export function createSectionalTank(
 }
 
 /**
- * Mark a sectional tank's roof walkable (mission 151, the owner, 2026-11-03)
- * and guard its edge: an invisible named roof-deck marker the room's
- * `floorAt` consults (`human-ladder.ts`'s `roomRoofDecks`), and guardrails
- * round every side but the one the caged ladder serves, named as solids for
- * the walker on the roof (BS EN ISO 14122-3: a top rail 1.1 m up and a mid
- * rail, posts at the corners). `open` is the ladder's side: the roof is
- * reached from it and left by it.
+ * Guard a sectional tank's roof (mission 151, the owner, 2026-11-03):
+ * guardrails round every side but the one the caged ladder serves (BS EN
+ * ISO 14122-3: a top rail 1.1 m up and a mid rail, posts at the corners).
+ * Whether the roof is walkable is the kind's trait (`walkable`), and where
+ * it is is derived from the tank's geometry (mission 175); there is no
+ * marker. `open` is the ladder's side.
  */
-export function addWalkableTankRoof(
+export function addTankRoofGuards(
   kit: PanelKit,
   group: Object3D,
   roof: {
@@ -188,21 +185,6 @@ export function addWalkableTankRoof(
   },
   open: 'x+' | 'x-' | 'z+' | 'z-' = 'z+',
 ) {
-  // The roof-deck marker: invisible (solids are by footprint, so it never
-  // blocks), found by name for the room's floor lookup. It sits exactly on
-  // the roof; the lookup pads it by plan-metres (mission 151).
-  const marker = new Mesh(
-    new BoxGeometry(roof.maxX - roof.minX, 0.01, roof.maxZ - roof.minZ),
-    new MeshBasicMaterial({ transparent: true, opacity: 0 }),
-  );
-  marker.name = 'Tank roof deck';
-  marker.position.set(
-    (roof.minX + roof.maxX) / 2,
-    roof.top,
-    (roof.minZ + roof.maxZ) / 2,
-  );
-  group.add(marker);
-  kit.materials.push(marker.material);
   // The guardrails, on every side but the ladder's, built with the same
   // `createGuardRail` as the gantry and the stairs (mission 151; the owner,
   // 2026-11-03): a rail lies along x from −len/2, so each side is placed and
@@ -315,7 +297,7 @@ export function createBalanceTank(kit: PanelKit) {
   }).group;
   ladder.position.set(-2.55, 0, front + 0.02);
   group.add(ladder);
-  addWalkableTankRoof(
+  addTankRoofGuards(
     kit,
     group,
     { minX: -3, maxX: 3, minZ: -1.5, maxZ: 1.5, top },
