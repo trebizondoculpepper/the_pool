@@ -119,16 +119,27 @@ export function objectSurface(
   });
 }
 
-const cache = new WeakMap<Object3D, DerivedSurface[]>();
+const cache = new WeakMap<
+  Object3D,
+  { signature: string; surfaces: DerivedSurface[] }
+>();
+
+/**
+ * What the room holds, cheaply (asked every frame): its top-level groups, so
+ * a cache knows when machines have been added to it since.
+ */
+const signatureOf = (root: Object3D): string => String(root.children.length);
 
 /**
  * A room's surfaces: every placed object with a supportable trait, derived
- * once when first asked (the room's objects stand still; a moved object
- * clears it with `forgetSurfaces`).
+ * when first asked and again whenever the room's contents change (a room
+ * may make its walker before its machines are added: an answer cached
+ * then would be empty for ever).
  */
 export function roomSurfaces(root: Object3D, metre: number): DerivedSurface[] {
+  const signature = signatureOf(root);
   const known = cache.get(root);
-  if (known) return known;
+  if (known && known.signature === signature) return known.surfaces;
   const surfaces: DerivedSurface[] = [];
   root.traverse((o) => {
     const kind = o.userData.equipmentKind as string | undefined;
@@ -138,7 +149,7 @@ export function roomSurfaces(root: Object3D, metre: number): DerivedSurface[] {
     const s = objectSurface(o, metre, traits);
     if (s) surfaces.push(s);
   });
-  cache.set(root, surfaces);
+  cache.set(root, { signature, surfaces });
   return surfaces;
 }
 

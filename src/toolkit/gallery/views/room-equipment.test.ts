@@ -266,6 +266,18 @@ describe('the rooms’ machines and their models', () => {
   });
 });
 
+it('derives a room’s surfaces afresh once its machines are added (the walker is made first)', () => {
+  const root = new Group();
+  // The room asks before its machines are there: nothing yet…
+  expect(roomSurfaces(root, 1)).toEqual([]);
+  const built = createRoomEquipment(createPanelKit(), 'plant_pool_01');
+  root.add(built.group);
+  root.updateMatrixWorld(true);
+  // …and the tank's roof once they are, not the stale empty answer.
+  expect(roomSurfaces(root, 1).some((s) => s.walkable)).toBe(true);
+  built.dispose();
+});
+
 describe.each(['plant_pool_01', 'wet_hall'] as const)(
   'a walker on the laddered tank roof in %s does not fall in (missions 151, 175)',
   (room) => {
