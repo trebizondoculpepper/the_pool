@@ -16,7 +16,7 @@ No room has different capabilities unless the owner explicitly says so. Developm
 
 There is one kind of room. Every room, including the development rooms and the magic rooms (130), has the same capabilities unless the owner explicitly says otherwise, and any such exception is written in the room's definition with the owner's ruling.
 
-A survey (2026-11-04, read-only) found why they differ today: `createFirstPerson` (`src/toolkit/controls/input/first-person.ts`) shares keys and motion, but each of 41 room builders supplies its own `use` callback with its own raycast and list. Eight builders ignore clicks (`use: () => {}`: shared-plant-layout, plant-fit, ceiling-lab, white-corridor, dry-stair, pipes-n-dreams, arched-rooms, donut-pool); the pool halls (`pool-hall-room.ts`) handle only a fixed list; the hover cue (`markUsable`/`usableOf`, `use-marking.ts`) is wired apart from the click, so a part can show a cue and do nothing. Seating works only in `shell-room` builds, inspect naming in five builders, pick-up (`objects`) in about half.
+A survey (2026-11-04, read-only) found why they differ today: `createFirstPerson` (`src/toolkit/controls/input/first-person.ts:341`) shares keys and motion, but 42 direct calls in 41 starter files supply their own `use` callback; `lift-rooms.ts` has two calls. Eight starters ignore clicks (`use: () => {}`: `src/rendering/shared-plant-layout.ts:438`, `plant-fit-room.ts:334`, and six gallery starters); the pool halls (`pool-hall-room.ts:343-453`) handle only a fixed list; the hover cue (`markUsable`/`usableOf`, `use-marking.ts:36-53`) is wired apart from the click, so a part can show a cue and do nothing. Seating is declared by four view call sites but dispatched only in `shell-room.ts:546-550`; inspection is passed at seven controller sites, and `objects` at 20.
 
 Every room therefore gets, from one room factory that `main.ts` calls when opening any room:
 
@@ -25,7 +25,7 @@ Every room therefore gets, from one room factory that `main.ts` calls when openi
 - **seating, pick-up, ladders and raised floors, the torch,** wherever the room holds the things they act on;
 - later, the shared frame pipeline (154), which takes this factory as its foundation.
 
-The 41 near-identical `createFirstPerson({...})` blocks become one call.
+The 42 `createFirstPerson({...})` blocks become calls through one factory.
 
 ## Behaviour belongs to the object, not the room (the owner, 2026-11-04)
 
@@ -66,10 +66,30 @@ Each mission is pushed, then reviewed by the designer (the coordinating agent) b
 1. **Registry flags (no behaviour change).** Add to each kind in the object registry (mission 147's `EQUIPMENT_KINDS`, `src/game/plant/equipment-kinds.ts`, and `src/game/descriptors/`): interaction class (decorative, usable, inspect-only), portable, inventory (reserved), solid (default true) and its shape (default: bounding box), surface (derived from solidity), seat (height, default look direction). Pure, typed, tested; every flag defaulted so nothing changes yet.
 2. **The inventory, for the owner's sign-off.** A generated report (a script or a `?dev` page, recorded in `doc/agent-tooling.md`) listing (a) every kind with its proposed flags, and (b) every object in any room that has behaviour, a use, a cue, a seat, pick-up or collision today but is not registered, with what it does and which room builder wires it. The owner rules on the list; the agreed flags are written into the registry, and the unregistered behaving objects are registered or ruled decorative. Machinery and a report only, no whole-game playthroughs.
 
+## Findings
+
+- `src/game/plant/equipment-kinds.ts:12-56,850-860` has classification (`plant`, `non-plant`, `decorative`) and status policy, but none of the proposed interaction, carrying, shape, surface or seat fields. `ObjectDescriptor` in `src/game/descriptors/descriptor.ts:93-113` stores a string kind and a separate class; `classOf` falls back for unknown kinds, so descriptors alone do not enforce registration. The descriptor registry is `src/game/descriptors/registry.ts:12-57`.
+- Behaviour is attached to scene objects independently: `userData.usable` (`use-marking.ts:36`), `userData.portable` (`object-handling.ts:249-254`), `userData.placementTarget`/`placementSurface` (`object-handling.ts:328-341`), and `userData.seat` (`seating.ts:12-23`). The report must join these scene marks, descriptors, and all 42 starter sites; enumerating `EQUIPMENT_KINDS` alone misses chairs and trial equipment.
+- Existing checks to extend: `src/game/descriptors/descriptors.test.ts`, `src/toolkit/controls/input/{use-marking,object-handling}.test.ts`, and the room/inspection audits in `src/toolkit/gallery/views/inspection-coverage.slow.test.ts`. No `equipment-kinds.test.ts` exists yet.
+
+## Approach
+
+1. Add a pure, typed affordance record and resolver to `equipment-kinds.ts`, keeping current `class` separate from the new interaction class. Default every new field explicitly and test default and override resolution without changing scene behaviour; this is stage 1 for 159.
+2. Build a read-only inventory over kinds, descriptors and room starters, with stable room/kind/object refs and source of each observed cue, action, portable mark, seat and collision. Include unregistered behaving objects and a count of unresolved cases; document its command in `doc/agent-tooling.md` when implemented.
+3. Put proposed values and discrepancies in `doc/plans/158-one-kind-of-room.md` for the owner's ruling. Apply the approved flags and register or explicitly rule on each behaving object in a follow-up push; do not infer owner decisions from today's inconsistent room wiring.
+
+## Risks
+
+- The existing `class` means plant status, while the new interaction class means behaviour; conflating them would make decorative and architectural descriptors ambiguous. Scene-only furniture and magic adapters (`src/toolkit/gallery/views/magic-adapters.ts:164`) require a registration path before later missions can enforce the gateway.
+
+## Open questions for the owner
+
+- Which proposed kind flags and unregistered behaving objects in the generated inventory are approved? This is the sign-off already required by this mission, not a new decision about the series.
+
 ## Acceptance
 
-- The flags exist on every kind, typed and defaulted, with tests; nothing changes for the player.
-- The inventory report runs, is documented in `doc/agent-tooling.md`, and its list has been signed off by the owner; the agreed flags are in the registry.
+- A pure test enumerates every `KindId` and verifies the typed defaults and approved overrides; the stage-1 patch changes no controller behaviour.
+- The documented report emits every kind and every unregistered object with cue, action, seat, portability or collision, grouped by starter and source; its unresolved count is zero after the owner's recorded sign-off and the agreed flags are in the registry.
 
 ## Coordination
 
