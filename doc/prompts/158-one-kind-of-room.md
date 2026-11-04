@@ -1,4 +1,4 @@
-# 158: One kind of room: the registry flags and the inventory
+# 158: One kind of room: the registry flags and the registry census
 
 The owner, 2026-11-04. **The first of the one-kind-of-room missions (158–165), the most urgent work in the set, above the graphical ones (154–157), because it affects gameplay.** This brief also holds the decisions the whole series shares; 159–165 refer to it. Brief only; not started until the owner says. Read `CLAUDE.md`, `src/toolkit/controls/CLAUDE.md`, mission 147 (one object registry) and 130 (magic rooms).
 
