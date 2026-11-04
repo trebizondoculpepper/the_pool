@@ -12,6 +12,8 @@ import type { ItemSize } from '../logic/magic-room-layout';
 import { isLive } from '../rooms/plant/exhibit';
 import type { PlantExhibit } from '../rooms/plant/exhibit';
 import { MODELS, buildRoomItem } from './room-equipment';
+import { KIND_BUILDERS } from './magic-builders';
+import type { KindBuilder } from './magic-builders';
 import { placedRoomItems } from '../logic/room-usage';
 import { isDevRoom } from '../logic/kind-catalogue';
 import type { Item } from '../logic/room-equipment';
@@ -68,7 +70,7 @@ export interface MagicAdapter {
   /** Dev rooms holding it working that the catalogue does not count from data. */
   devRooms: readonly { room: string; words: string }[];
   /** Where its adapter comes from. */
-  source: 'explicit' | 'model' | 'layout';
+  source: 'explicit' | 'model' | 'layout' | 'builder';
   build(kit: PanelKit): MagicItem;
   /**
    * Its hand-made low-poly version, where it has one (mission 135); without
@@ -233,5 +235,32 @@ export function adapterFor(kind: string): MagicAdapter | undefined {
   if (Object.hasOwn(EXPLICIT, kind)) return EXPLICIT[kind];
   if (Object.hasOwn(MODELS, kind)) return fromModel(kind, MODELS[kind]);
   const placed = layoutItemOf(kind);
-  return placed ? fromLayoutItem(kind, placed.item, placed.room) : undefined;
+  if (placed) return fromLayoutItem(kind, placed.item, placed.room);
+  return Object.hasOwn(KIND_BUILDERS, kind)
+    ? fromBuilder(kind, KIND_BUILDERS[kind])
+    : undefined;
+}
+
+/** An adapter from a standalone builder (`magic-builders.ts`). */
+function fromBuilder(kind: string, b: KindBuilder): MagicAdapter {
+  return {
+    kind,
+    title: b.title,
+    size: b.size,
+    looks: [],
+    pages: [],
+    devRooms: [],
+    source: 'builder',
+    build(kit) {
+      useScratchWorld();
+      const built = b.build(kit);
+      return {
+        ...built,
+        update(delta: number) {
+          built.parts?.update(delta);
+          built.update?.(delta);
+        },
+      };
+    },
+  };
 }
