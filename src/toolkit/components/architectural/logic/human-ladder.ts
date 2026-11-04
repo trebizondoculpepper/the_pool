@@ -33,7 +33,15 @@ export function humanLadderLayout(
   const off = options.standOff ?? (kind === 'pool' ? 0.16 : 0.18);
   const bottom = kind === 'pool' || kind === 'tank-access' ? -height : 0;
   const top = kind === 'pool' || kind === 'tank-access' ? 0 : height;
-  const rung: LadderPoint = kind === 'pool' ? [off, 0, 0] : [0, 0, off];
+  // The climber's line: on a caged ladder, through the middle of its cage
+  // (hoops 0.7 m deep from rungs 0.2 m out, `createCagedLadder`), not
+  // against the rungs, where the eye would be too close to the ladder.
+  const rung: LadderPoint =
+    kind === 'pool'
+      ? [off, 0, 0]
+      : kind === 'caged'
+        ? [0, 0, 0.5]
+        : [0, 0, off];
   return {
     kind,
     bottom,
