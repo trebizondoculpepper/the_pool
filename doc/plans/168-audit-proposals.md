@@ -48,7 +48,7 @@ All through `npm run -s audit --`, Node only, each one change, written at once:
 | `bind <room> <thing> <kind>`                                                             | adds the thing to that kind's file's `bindings`                                                     |
 | `room <room>`, `kind <kind>`, `index`, `rooms --by-size`                                 | read, as now (167)                                                                                  |
 
-Every change touches one file and prints what it changed (the field's old and new value). Nothing else writes the kinds' files, and agents never edit them by hand.
+Every change touches one kind's file (and the index, for register and unregister) and prints what it changed (the field's old and new value). Nothing else writes the kinds' files, and agents never edit them by hand.
 
 ## Stage C: source evidence and honest defaults
 
