@@ -67,6 +67,10 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
   - [ ] [164: Seats everywhere](doc/prompts/164-seats-everywhere.md) (low; needs 158, 159)
   - [ ] [165: Enforcement](doc/prompts/165-one-kind-of-room-enforcement.md) (after 160–164)
   - [ ] [166: A retired flag for objects and rooms](doc/prompts/166-retired-flag.md) (the owner, 2026-11-04): obsolete kinds and rooms marked retired, with reason and date, and excluded from every audit. Brief only.
+- [ ] **The registry audit, in two passes** (the owner, 2026-11-04): briefs written, not started.
+  - [ ] [168: Audit proposals](doc/prompts/168-audit-proposals.md): `npm run audit -- propose-…` validates and records proposals; the owner approves Yes/No on a review page; source evidence from Node. Tooling first.
+  - [ ] [169: Pass 1, everything is a registered kind](doc/prompts/169-registration-pass.md): room by room, smallest first. Needs 168.
+  - [ ] [170: Pass 2, traits and mounting](doc/prompts/170-traits-pass.md): kind by kind; flags follow from traits. Needs 168, 169.
   - [ ] [167: Data-first, machine-readable audits](doc/prompts/167-machine-readable-audits.md) (the owner, 2026-11-04): fast JSON for one room or kind, shared with the existing web pages, explicit coverage and provenance, and an optional one-room scene verification. Brief written for another agent; supports 158's room-by-room census.
     - [x] Stage 1 (2026-11-04, ahnaa_dmitrieva): the pure audit model (3826917d), the audit/*.json exports (Vite plugin, dev and build), data-first room and item audit pages with Verify this room, the ?dev room menu's status and JSON link, doc/agent-tooling.md. Next: verification adds observed-vs-data discrepancies; more manifests; cold/warm timings recorded.
 - [ ] **Constant frame rate** ([research](doc/research/constant-frame-rate.md), the owner, 2026-11-04), split into four missions; briefs written, not started. Supersedes the remaining work of the presets item below.
