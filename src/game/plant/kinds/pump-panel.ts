@@ -1,0 +1,10 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'placed',
+  type: 'Control panel',
+  code: 'CP',
+  class: 'plant',
+  status: 'none',
+  purpose: 'Controls and indicates the local circulation plant.',
+});

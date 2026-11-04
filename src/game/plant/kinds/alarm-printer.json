@@ -1,8 +1,0 @@
-{
-  "group": "placed",
-  "type": "Alarm printer",
-  "code": "CP",
-  "class": "plant",
-  "status": "none",
-  "purpose": "Prints plant alarm records."
-}

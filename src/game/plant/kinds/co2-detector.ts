@@ -1,0 +1,12 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'placed',
+  type: 'CO₂ gas detector',
+  code: 'GD',
+  class: 'plant',
+  status: 'none',
+  purpose:
+    'Watches the room’s air for CO₂ and shuts the dosing, or the whole supply, on its alarms.',
+  brand: 'warden',
+});

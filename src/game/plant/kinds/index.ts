@@ -120,7 +120,7 @@ export const KIND_IDS = [...PLACED_KIND_IDS, ...OTHER_KIND_IDS] as const;
 
 /** The kind files themselves, gathered here so this file changes when they come or go. */
 export const KIND_FILES: Record<string, unknown> = import.meta.glob(
-  './*.json',
+  ['./*.ts', '!./index.ts'],
   {
     eager: true,
     import: 'default',

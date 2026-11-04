@@ -1,0 +1,12 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'other',
+  type: 'Level transmitter',
+  code: 'LT',
+  class: 'plant',
+  status: 'none',
+  purpose:
+    'Measures water depth and sends its level signal to the tank control panel.',
+  brand: 'trager-feinstein',
+});

@@ -1,6 +1,6 @@
 /**
  * The audit's editing commands (mission 168; the owner, 2026-11-04): each
- * registered kind is one JSON file in `src/game/plant/kinds/`, listed by
+ * registered kind is one typed TypeScript file in `src/game/plant/kinds/`, listed by
  * `kinds/index.ts`, and these commands are the only way they change. No
  * proposals: a change is written at once, git is the review, CI the
  * validation; each command also refuses an obviously bad value before it
@@ -28,6 +28,7 @@ import {
 } from 'node:fs';
 import { join, relative } from 'node:path';
 import { runnerImport } from 'vite-plus';
+import { readConfigDir, writeConfig } from './config-io.ts';
 
 type Files = typeof import('../src/game/plant/kind-files.ts');
 type Traits = typeof import('../src/game/plant/traits.ts');
@@ -118,39 +119,15 @@ export async function runEdit(args: readonly string[]) {
     ? join(process.cwd(), opts['trait-dir'])
     : join(root, 'src/game/plant/traits');
   const traitIndexPath = join(traitDir, 'index.ts');
-  const readTraits = (): Record<string, CompositeTrait> => {
-    if (!existsSync(traitDir)) return {};
-    return Object.fromEntries(
-      readdirSync(traitDir)
-        .filter((n) => n.endsWith('.json'))
-        .sort()
-        .map((n) => [
-          n.replace(/\.json$/, ''),
-          JSON.parse(readFileSync(join(traitDir, n), 'utf8')) as CompositeTrait,
-        ]),
-    );
-  };
-  const composites = readTraits();
+  const composites = await readConfigDir<CompositeTrait>(traitDir);
 
-  const readAll = (): Record<string, KindFile> => {
-    if (!existsSync(dir)) return {};
-    return Object.fromEntries(
-      readdirSync(dir)
-        .filter((n) => n.endsWith('.json'))
-        .sort()
-        .map((n) => [
-          n.replace(/\.json$/, ''),
-          JSON.parse(readFileSync(join(dir, n), 'utf8')) as KindFile,
-        ]),
-    );
-  };
   const readIndex = () =>
     existsSync(indexPath)
       ? F.indexGroups(readFileSync(indexPath, 'utf8'))
       : { placed: [], other: [] };
 
   /** Validate the registry as it would be, then write what changed and format it. */
-  const commit = (
+  const commit = async (
     files: Record<string, KindFile>,
     changed: { kind: string; file?: KindFile }[],
     indexChanged: boolean,
@@ -188,9 +165,13 @@ export async function runEdit(args: readonly string[]) {
     mkdirSync(dir, { recursive: true });
     const written: string[] = [];
     for (const c of changed) {
-      const path = join(dir, `${c.kind}.json`);
+      const path = join(dir, `${c.kind}.ts`);
       if (c.file) {
-        writeAtomic(path, F.kindFileText(c.file));
+        await writeConfig(
+          path,
+          F.orderedKind(c.file),
+          F.kindFileSource(c.file),
+        );
         written.push(path);
       } else rmSync(path);
     }
@@ -209,7 +190,7 @@ export async function runEdit(args: readonly string[]) {
       }
   };
 
-  const files = readAll();
+  const files = await readConfigDir<KindFile>(dir);
   const need = (kind: string | undefined) => {
     if (!kind) fail(`usage: ${command} <kind> …`);
     if (!files[kind])
@@ -288,7 +269,7 @@ export async function runEdit(args: readonly string[]) {
       );
       console.log(
         file
-          ? `${kind} (${relative(root, join(dir, `${kind}.json`))}):\n${F.kindFileText(file).trimEnd()}`
+          ? `${kind} (${relative(root, join(dir, `${kind}.ts`))}):\n${F.kindFileText(file).trimEnd()}`
           : `${kind}: no kind file yet (${audit.registered ? 'in the hard-coded registry until mission 171' : 'not registered'})`,
       );
       console.log(
@@ -342,7 +323,7 @@ export async function runEdit(args: readonly string[]) {
         purpose: opts.purpose,
       };
       const next = { ...files, [kind]: file };
-      commit(next, [{ kind, file }], true);
+      await commit(next, [{ kind, file }], true);
       console.log(
         `registered ${kind}: ${file.type}, code ${file.code}, ${file.class}`,
       );
@@ -362,7 +343,7 @@ export async function runEdit(args: readonly string[]) {
       if (placed) fail(`refused: ${kind} is placed ${placed} times`);
       const next = { ...files };
       delete next[kind];
-      commit(next, [{ kind }], true);
+      await commit(next, [{ kind }], true);
       console.log(`unregistered ${kind}`);
       break;
     }
@@ -398,7 +379,7 @@ export async function runEdit(args: readonly string[]) {
           `${kind}.${label}: ${before ?? '(unset)'} → ${JSON.stringify(shown(file))}`,
         );
       }
-      commit({ ...files, [kind]: file }, [{ kind, file }], false);
+      await commit({ ...files, [kind]: file }, [{ kind, file }], false);
       for (const l of lines) console.log(l);
       break;
     }
@@ -428,7 +409,7 @@ export async function runEdit(args: readonly string[]) {
           fail(`refused: ${kind}.${field} is not set`);
         delete file[field];
       }
-      commit(
+      await commit(
         { ...files, [kind]: file as unknown as KindFile },
         [{ kind, file: file as unknown as KindFile }],
         false,
@@ -454,7 +435,7 @@ export async function runEdit(args: readonly string[]) {
           `${a.room}/${a.thing}` < `${b.room}/${b.thing}` ? -1 : 1,
         ),
       };
-      commit({ ...files, [kind]: next }, [{ kind, file: next }], false);
+      await commit({ ...files, [kind]: next }, [{ kind, file: next }], false);
       console.log(`bound ${room}/${thing} to ${kind}`);
       break;
     }
@@ -484,7 +465,7 @@ export async function runEdit(args: readonly string[]) {
       const [sub, name] = rest;
       if (!sub || !name)
         fail('usage: trait show|define|edit|rename|remove <name> …');
-      const writeTraits = (
+      const writeTraits = async (
         next: Record<string, CompositeTrait>,
         changedNames: string[],
         renamed?: [string, string],
@@ -523,9 +504,13 @@ export async function runEdit(args: readonly string[]) {
         mkdirSync(traitDir, { recursive: true });
         const written: string[] = [];
         for (const n of changedNames) {
-          const path = join(traitDir, `${n}.json`);
+          const path = join(traitDir, `${n}.ts`);
           if (next[n]) {
-            writeAtomic(path, T.compositeText(next[n]));
+            await writeConfig(
+              path,
+              T.orderedComposite(next[n]),
+              T.compositeSource(next[n]),
+            );
             written.push(path);
           } else if (existsSync(path)) rmSync(path);
         }
@@ -534,8 +519,8 @@ export async function runEdit(args: readonly string[]) {
         if (renamed)
           for (const [k, f] of Object.entries(kinds2))
             if (f !== files[k]) {
-              const path = join(dir, `${k}.json`);
-              writeAtomic(path, F.kindFileText(f));
+              const path = join(dir, `${k}.ts`);
+              await writeConfig(path, F.orderedKind(f), F.kindFileSource(f));
               written.push(path);
             }
         try {
@@ -604,7 +589,7 @@ export async function runEdit(args: readonly string[]) {
               .filter(Boolean),
             ...(opts.set ? { meta: metaOpts() } : {}),
           };
-          writeTraits({ ...composites, [name]: c }, [name]);
+          await writeTraits({ ...composites, [name]: c }, [name]);
           if (!opts['dry-run'])
             console.log(`defined ${name} = ${c.extends.join(' + ')}`);
           break;
@@ -630,7 +615,7 @@ export async function runEdit(args: readonly string[]) {
           console.log(
             `affects kinds: ${u.kinds.join(', ') || 'none'}; composites: ${u.composites.join(', ') || 'none'}`,
           );
-          writeTraits({ ...composites, [name]: next }, [name]);
+          await writeTraits({ ...composites, [name]: next }, [name]);
           if (!opts['dry-run'])
             console.log(`edited ${name} = ${next.extends.join(' + ')}`);
           break;
@@ -650,7 +635,7 @@ export async function runEdit(args: readonly string[]) {
           const touched = Object.keys(next).filter(
             (n) => n === to || next[n].extends.includes(to),
           );
-          writeTraits(next, [name, ...touched], [name, to]);
+          await writeTraits(next, [name, ...touched], [name, to]);
           if (!opts['dry-run']) console.log(`renamed ${name} to ${to}`);
           break;
         }
@@ -705,14 +690,22 @@ export async function runEdit(args: readonly string[]) {
           const written: string[] = [];
           for (const [k, f] of Object.entries(kindsNext))
             if (f !== files[k]) {
-              writeAtomic(join(dir, `${k}.json`), F.kindFileText(f));
-              written.push(join(dir, `${k}.json`));
+              await writeConfig(
+                join(dir, `${k}.ts`),
+                F.orderedKind(f),
+                F.kindFileSource(f),
+              );
+              written.push(join(dir, `${k}.ts`));
             }
           for (const n of u.composites) {
-            writeAtomic(join(traitDir, `${n}.json`), T.compositeText(next[n]));
-            written.push(join(traitDir, `${n}.json`));
+            await writeConfig(
+              join(traitDir, `${n}.ts`),
+              T.orderedComposite(next[n]),
+              T.compositeSource(next[n]),
+            );
+            written.push(join(traitDir, `${n}.ts`));
           }
-          rmSync(join(traitDir, `${name}.json`));
+          rmSync(join(traitDir, `${name}.ts`));
           writeAtomic(traitIndexPath, T.traitIndexText(Object.keys(next)));
           written.push(traitIndexPath);
           try {

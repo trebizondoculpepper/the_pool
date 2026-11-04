@@ -2,8 +2,9 @@
  * Mission 171's one-off migration: every kind in the hard-coded registry
  * (`PLACED_KINDS` and `OTHER_KINDS` in `src/game/plant/equipment-kinds.ts`)
  * written as its own file, `src/game/plant/kinds/<kind>.json`, with the
- * index, by mission 168's writers, then formatted. Kept for the record;
- * once the registry reads the files it has nothing left to migrate.
+ * index, by mission 168's writers, then formatted. Kept for the record
+ * only: superseded by mission 173 (kinds are TypeScript now,
+ * `scripts/kinds-json-to-ts.ts`); do not run it.
  *
  *   node scripts/registry-to-files.ts
  */

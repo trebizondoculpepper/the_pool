@@ -1,0 +1,12 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'placed',
+  type: 'CO₂ wall port',
+  code: 'WP',
+  class: 'plant',
+  status: 'none',
+  purpose:
+    'Brings the low-pressure CO₂ line through the wall, with its isolating valve and gauge.',
+  brand: 'arncliffe',
+});

@@ -1,0 +1,11 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'placed',
+  type: 'Flow monitor and chart recorder',
+  code: 'FQR',
+  class: 'plant',
+  status: 'none',
+  purpose:
+    'Measures and records the flow to the foul sewer against the discharge consent.',
+});

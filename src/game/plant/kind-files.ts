@@ -19,8 +19,8 @@ import type {
 } from './equipment-kinds';
 
 /**
- * The object registry as one JSON file per kind (mission 168; the owner,
- * 2026-11-04): `src/game/plant/kinds/<kind>.json`, listed by the index
+ * The object registry as one file per kind (mission 168, typed TypeScript
+ * since 173; the owner, 2026-11-04): `src/game/plant/kinds/<kind>.ts`, listed by the index
  * `kinds/index.ts`. Registering a kind is adding its file, unregistering
  * removing it, and its traits, metadata and the rest are edits to that one
  * file, made only by `npm run audit -- register | set | unset |
@@ -217,10 +217,30 @@ export function validateRegistry(
  * so the stored form is the formatter's and the pre-commit hook leaves it be.
  */
 export function kindFileText(f: KindFile): string {
+  return `${JSON.stringify(orderedKind(f), null, 2)}\n`;
+}
+
+/** A kind's fields in the one order, unset ones left out. */
+export function orderedKind(f: KindFile): Record<string, unknown> {
   const ordered: Record<string, unknown> = {};
   for (const key of FIELD_ORDER)
     if (f[key] !== undefined) ordered[key] = f[key];
-  return `${JSON.stringify(ordered, null, 2)}\n`;
+  return ordered;
+}
+
+/**
+ * A new kind file's TypeScript source (mission 173): `export default
+ * defineKind({ … })`, its fields in the one order. The command formats it
+ * after writing. Existing files are edited in place through magicast, so
+ * their comments survive.
+ */
+export function kindFileSource(f: KindFile): string {
+  return [
+    "import { defineKind } from '../define-kind';",
+    '',
+    `export default defineKind(${JSON.stringify(orderedKind(f), null, 2)});`,
+    '',
+  ].join('\n');
 }
 
 /** The index's text: the placed kinds and the others, each sorted, one per line. */
@@ -249,7 +269,7 @@ export function indexText(
     'export const KIND_IDS = [...PLACED_KIND_IDS, ...OTHER_KIND_IDS] as const;',
     '',
     '/** The kind files themselves, gathered here so this file changes when they come or go. */',
-    "export const KIND_FILES: Record<string, unknown> = import.meta.glob('./*.json', {",
+    "export const KIND_FILES: Record<string, unknown> = import.meta.glob(['./*.ts', '!./index.ts'], {",
     '  eager: true,',
     "  import: 'default',",
     '});',
@@ -364,7 +384,7 @@ export function kindFiles(): Record<string, KindFile> {
     Object.entries(KIND_FILES as Record<string, KindFile>)
       .map(
         ([path, f]) =>
-          [path.replace(/^.*\//, '').replace(/\.json$/, ''), f] as const,
+          [path.replace(/^.*\//, '').replace(/\.(json|ts)$/, ''), f] as const,
       )
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );

@@ -7,7 +7,7 @@
 export const TRAIT_IDS = [] as const;
 
 export const TRAIT_FILES: Record<string, unknown> = import.meta.glob(
-  './*.json',
+  ['./*.ts', '!./index.ts'],
   {
     eager: true,
     import: 'default',

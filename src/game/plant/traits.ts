@@ -2,7 +2,7 @@
  * The traits (mission 172; the owner, 2026-11-04): what a registered kind
  * is, as a small vocabulary of **primitive** traits that code gives
  * meaning to, grouped by facet, and **composite** traits, which are data
- * (`src/game/plant/traits/<trait>.json`) bundling primitives and other
+ * (`src/game/plant/traits/<trait>.ts`, mission 173) bundling primitives and other
  * composites. A kind's traits are addition only: the union of what it
  * names and what those expand to. Each primitive declares the metadata it
  * implies, with defaults, so most kinds need none. Service traits are
@@ -476,14 +476,24 @@ export function compositeProblems(
   return problems;
 }
 
-/** A composite's file text: its fields in one order. */
-export function compositeText(c: CompositeTrait): string {
+/** A composite's fields in one order. */
+export function orderedComposite(c: CompositeTrait): Record<string, unknown> {
   const ordered: Record<string, unknown> = {
     description: c.description,
     extends: [...c.extends],
   };
   if (c.meta && Object.keys(c.meta).length) ordered.meta = c.meta;
-  return `${JSON.stringify(ordered, null, 2)}\n`;
+  return ordered;
+}
+
+/** A new composite's TypeScript source (mission 173): `export default defineTrait({ … })`. */
+export function compositeSource(c: CompositeTrait): string {
+  return [
+    "import { defineTrait } from '../define-kind';",
+    '',
+    `export default defineTrait(${JSON.stringify(orderedComposite(c), null, 2)});`,
+    '',
+  ].join('\n');
 }
 
 /** The composites' index text: every composite, sorted, and the files gathered. */
@@ -499,7 +509,7 @@ export function traitIndexText(names: readonly string[]): string {
     ...[...new Set(names)].sort().map((n) => `  '${n}',`),
     '] as const;',
     '',
-    "export const TRAIT_FILES: Record<string, unknown> = import.meta.glob('./*.json', {",
+    "export const TRAIT_FILES: Record<string, unknown> = import.meta.glob(['./*.ts', '!./index.ts'], {",
     '  eager: true,',
     "  import: 'default',",
     '});',
@@ -531,7 +541,7 @@ export function compositeTraits(): Record<string, CompositeTrait> {
     Object.entries(TRAIT_FILES as Record<string, CompositeTrait>)
       .map(
         ([path, c]) =>
-          [path.replace(/^.*\//, '').replace(/\.json$/, ''), c] as const,
+          [path.replace(/^.*\//, '').replace(/\.(json|ts)$/, ''), c] as const,
       )
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
   );

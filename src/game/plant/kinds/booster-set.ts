@@ -1,0 +1,11 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'placed',
+  type: 'Booster set',
+  code: 'P',
+  class: 'plant',
+  status: 'booster',
+  purpose: 'Pressurises make-up water with duty and standby pumps.',
+  brand: 'grundflow',
+});

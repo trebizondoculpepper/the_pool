@@ -1,0 +1,11 @@
+import { defineKind } from '../define-kind';
+
+export default defineKind({
+  group: 'placed',
+  type: 'Ozone-in-air monitor',
+  code: 'GD',
+  class: 'plant',
+  status: 'gas',
+  purpose: 'Monitors room air for ozone and raises a warning and alarm.',
+  brand: 'warden',
+});

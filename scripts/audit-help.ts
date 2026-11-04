@@ -38,8 +38,10 @@ export function helpText(T: Traits): string {
 WHAT IT IS
   The audit reads the game's configuration (object registry, room catalogue,
   descriptors, manifests) and edits the object registry. Every object in the
-  game is a registered kind; each kind is one JSON file,
-  src/game/plant/kinds/<kind>.json, listed by src/game/plant/kinds/index.ts.
+  game is a registered kind; each kind is one typed TypeScript file,
+  src/game/plant/kinds/<kind>.ts (export default defineKind({ … })), listed by
+  src/game/plant/kinds/index.ts; the compiler checks every one. The command
+  edits them as TypeScript (magicast, comments kept) and formats them.
   Change kinds ONLY with this command, never by editing those files by hand.
   Edits are written at once: git is the review (roll back a bad change) and
   CI the validation. Obviously bad values are refused before writing.
@@ -88,7 +90,7 @@ READING
 EDITING THE REGISTRY
   register <kind> --type "Word" --class plant|non-plant|decorative --purpose "Sentence."
            [--code XY] [--group placed|other] [--status none]
-      Creates kinds/<kind>.json and adds it to the index. <kind> is lower-case
+      Creates kinds/<kind>.ts and adds it to the index. <kind> is lower-case
       words joined by hyphens (office-chair). --type is its word in a
       description ("Office chair"); --purpose what such a thing is for;
       --code its tag letters (default: the type's initials; codes are shared
@@ -114,7 +116,7 @@ EDITING THE REGISTRY
       Removes an optional field (template, brand, traits, meta, sources,
       affordances), or one metadata value, back to its inherited or default.
 
-EDITING TRAITS (composites are data: src/game/plant/traits/<trait>.json)
+EDITING TRAITS (composites: src/game/plant/traits/<trait>.ts, defineTrait)
   trait define <name> --extends a,b --description "…" [--set key=value,…]
       A composite trait bundling primitives and other composites, with
       optional metadata defaults. Refused: an unknown parent, a cycle, a name
