@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Every kind a room layout places now has a magic room and CAD views with no work of its own: the magic room falls back to the rooms' own item builder (`buildRoomItem`) at the layout item's size and mount, in a throwaway world, covering 38 more kinds (the balance, break and backwash tanks, desks, cupboards, mimics, dosing and chemical equipment among them); 17 kinds drawn outside the layouts (valves, pipework, pumps, switch-fuses) are listed as known gaps in a test.
 - Audit data and JSON (mission 167): every room and kind's audit as machine-readable JSON (audit/index.json, audit/room/<id>.json, audit/kind/<kind>.json) on the dev server and the static build, from one pure audit model with evidence and coverage states; the room and item audit pages open from data with no scene, building the room only on Verify this room.
 - Mission 158's typed registry affordances and resolver for every equipment kind: interaction, portability, solidity, bounding shape, supporting surface and seat metadata, with no change to room controls yet.
 

@@ -1,4 +1,5 @@
 import { describe, expect, test } from 'vite-plus/test';
+import { isKindId } from '../../../../game/plant/equipment-kinds';
 import { kindCatalogue } from '../kind-catalogue';
 import {
   AUDIT_SCHEMA_VERSION,
@@ -16,18 +17,23 @@ const input = { kinds };
 describe('the engineers office, from data alone (mission 167 fixture)', () => {
   const office = roomAudit('engineers_office', input);
 
-  test('lists its six catalogue copies, five registered and the noticeboard not', () => {
-    expect(office.objects.map((o) => [o.ref, o.kind, o.registered])).toEqual([
-      ['EO-CP1', 'scenario-simulator', true],
-      ['EO-SF1', 'switch-fuse', true],
-      ['engineer-s-desk', 'desk', true],
-      ['parts-stores-cupboard', 'storage-cupboard', true],
-      ['staff-noticeboard', 'sign', false],
-      ['test-equipment-cupboard', 'storage-cupboard', true],
+  test('lists its six catalogue copies, each registered as the registry says', () => {
+    expect(office.objects.map((o) => [o.ref, o.kind])).toEqual([
+      ['EO-CP1', 'scenario-simulator'],
+      ['EO-SF1', 'switch-fuse'],
+      ['engineer-s-desk', 'desk'],
+      ['parts-stores-cupboard', 'storage-cupboard'],
+      ['staff-noticeboard', 'sign'],
+      ['test-equipment-cupboard', 'storage-cupboard'],
     ]);
-    expect(office.findings.map((f) => f.id)).toContain(
-      'room:engineers_office:unregistered:staff-noticeboard',
-    );
+    for (const o of office.objects) {
+      expect(o.registered).toBe(isKindId(o.kind));
+      expect(
+        office.findings.some(
+          (f) => f.id === `room:engineers_office:unregistered:${o.ref}`,
+        ),
+      ).toBe(!o.registered);
+    }
   });
 
   test('keeps the eleven software boxes as named manifest evidence, not decoration', () => {
@@ -137,10 +143,25 @@ describe('the rules', () => {
     const rulings = [
       { subject: 'engineers_office', date: '2026-11-04', decision: 'test' },
     ];
-    // The noticeboard is unregistered, so even a ruling does not sign it off.
-    expect(roomAudit('engineers_office', { kinds, rulings }).signOff).toBe(
-      'proposed',
-    );
+    // An unmatched manifest entry is unresolved, so even a ruling does not sign it off.
+    const manifests: Record<string, () => RoomManifest> = {
+      engineers_office: () => ({
+        room: 'engineers_office',
+        entries: [
+          {
+            ref: 'stray',
+            title: 'Stray',
+            owner: 'nothing-here',
+            shows: ['portable'],
+            behaviour: 'carried',
+            source: 'x.ts:1',
+          },
+        ],
+      }),
+    };
+    expect(
+      roomAudit('engineers_office', { kinds, rulings, manifests }).signOff,
+    ).toBe('proposed');
   });
 
   test('a kind lists its placements by room, with links', () => {
@@ -161,7 +182,7 @@ describe('the rules', () => {
     expect(
       index.rooms.find((r) => r.id === 'engineers_office')?.links.json,
     ).toBe('audit/room/engineers_office.json');
-    expect(index.kinds.find((k) => k.id === 'sign')?.registered).toBe(false);
+    for (const k of index.kinds) expect(k.registered).toBe(isKindId(k.id));
     expect(index.kinds.find((k) => k.id === 'desk')?.links.html).toBe(
       'bench.html?bench=item-audit&kind=desk',
     );

@@ -327,7 +327,7 @@ export async function runItemAuditPage(root: HTMLElement) {
         [
           '3D form',
           adapter
-            ? `yes: a magic room (${adapter.source === 'explicit' ? 'its own adapter' : 'from its model exhibit'}), ${adapter.size.w} × ${adapter.size.d} × ${adapter.size.h} m, ${adapter.size.mount}`
+            ? `yes: a magic room (${adapter.source === 'explicit' ? 'its own adapter' : adapter.source === 'model' ? 'from its model exhibit' : 'built by the rooms’ own item builder'}), ${adapter.size.w} × ${adapter.size.d} × ${adapter.size.h} m, ${adapter.size.mount}`
             : 'none the magic room can build: a magic page',
         ],
       ],

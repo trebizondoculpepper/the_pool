@@ -11,7 +11,12 @@ import type { WeatherReading } from '../../../game/weather';
 import type { ItemSize } from '../logic/magic-room-layout';
 import { isLive } from '../rooms/plant/exhibit';
 import type { PlantExhibit } from '../rooms/plant/exhibit';
-import { MODELS } from './room-equipment';
+import { MODELS, buildRoomItem } from './room-equipment';
+import { placedRoomItems } from '../logic/room-usage';
+import { isDevRoom } from '../logic/kind-catalogue';
+import type { Item } from '../logic/room-equipment';
+import { newWorld } from '../../../game/world';
+import { createScenarioStore, setRoomWorld } from '../../save/world-store';
 
 /**
  * The magic room's factory adapters (mission 130): for each kind with a 3D
@@ -19,7 +24,11 @@ import { MODELS } from './room-equipment';
  * size and mounting, its curated looks and display pages, a setter for
  * each, and the dev rooms that hold it working. Explicit adapters first;
  * any other kind with a model exhibit (`MODELS`) is built from that, with
- * no looks curated yet. A kind with neither has no 3D form: a magic page.
+ * no looks curated yet; any other kind a room layout places is built by
+ * the very item builder the rooms use (`buildRoomItem`), at the layout
+ * item's size and mount, so every kind the game draws has a magic room and
+ * CAD views with no work of its own (the owner, 2026-11-04). A kind with
+ * none of these has no 3D form: a magic page.
  * The item is never bound to the world: what it shows is a stand-in.
  */
 
@@ -59,7 +68,7 @@ export interface MagicAdapter {
   /** Dev rooms holding it working that the catalogue does not count from data. */
   devRooms: readonly { room: string; words: string }[];
   /** Where its adapter comes from. */
-  source: 'explicit' | 'model';
+  source: 'explicit' | 'model' | 'layout';
   build(kit: PanelKit): MagicItem;
   /**
    * Its hand-made low-poly version, where it has one (mission 135); without
@@ -160,10 +169,69 @@ function fromModel(kind: string, exhibit: PlantExhibit): MagicAdapter {
   };
 }
 
+/**
+ * The magic room's own world: a fresh one in memory, never loaded or
+ * saved, so a machine built bound to the room's world reads stand-in
+ * values and nothing it does reaches the player's save (mission 130).
+ */
+let scratchWorld = false;
+const useScratchWorld = () => {
+  if (scratchWorld) return;
+  scratchWorld = true;
+  setRoomWorld(createScenarioStore(newWorld()));
+};
+
+/** A kind's first placed layout item, preferring rooms outside development. */
+function layoutItemOf(kind: string): { item: Item; room: string } | undefined {
+  let found: { item: Item; room: string } | undefined;
+  for (const { room, items } of placedRoomItems())
+    for (const item of items) {
+      if (item.key.split(':')[0] !== kind) continue;
+      if (!isDevRoom(room)) return { item, room };
+      found ??= { item, room };
+    }
+  return found;
+}
+
+/** An adapter from the rooms' own item builder: the machine as a room draws it. */
+function fromLayoutItem(kind: string, item: Item, room: string): MagicAdapter {
+  return {
+    kind,
+    title: item.label,
+    size: {
+      w: item.w,
+      d: item.d,
+      h: item.h,
+      mount: item.mount,
+      ...(item.y !== undefined ? { y: item.y } : {}),
+    },
+    looks: [],
+    pages: [],
+    devRooms: [],
+    source: 'layout',
+    build(kit) {
+      useScratchWorld();
+      const built = buildRoomItem(kit, item, room);
+      if (!built)
+        throw new Error(`The rooms' builder draws nothing for ${item.key}`);
+      if (!isLive(built)) return { object: built };
+      return {
+        object: built.object,
+        ...(built.parts ? { parts: built.parts } : {}),
+        update(delta: number) {
+          built.parts?.update(delta);
+          built.update?.(delta);
+        },
+        ...(built.dispose ? { dispose: built.dispose } : {}),
+      };
+    },
+  };
+}
+
 /** The kind's adapter, if it has a 3D form the magic room can build. */
 export function adapterFor(kind: string): MagicAdapter | undefined {
   if (Object.hasOwn(EXPLICIT, kind)) return EXPLICIT[kind];
-  return Object.hasOwn(MODELS, kind)
-    ? fromModel(kind, MODELS[kind])
-    : undefined;
+  if (Object.hasOwn(MODELS, kind)) return fromModel(kind, MODELS[kind]);
+  const placed = layoutItemOf(kind);
+  return placed ? fromLayoutItem(kind, placed.item, placed.room) : undefined;
 }
