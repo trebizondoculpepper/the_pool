@@ -38,14 +38,15 @@ The owner (2026-11-04): each registered kind is **one JSON file in one directory
 
 All through `npm run -s audit --`, Node only, each one change, written at once:
 
-| Command                                                                                  | Does                                                                                           |
-| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| `show <kind>`                                                                            | prints the kind's document, its placements and its source evidence                             |
-| `register <kind> --type "…" --class … --purpose "…" [--code XY] [--group placed\|other]` | adds a new kind's document (code derived from the type if omitted)                             |
-| `set <kind> <field>=<value> …`                                                           | changes fields: `traits=box-like,operable`, `mount=floor:-y`, `type=…`, `class=…`, `purpose=…` |
-| `unset <kind> <field>`                                                                   | removes an optional field                                                                      |
-| `bind <room> <thing> <kind>`                                                             | ties a thing with no identity of its own to its kind                                           |
-| `room <room>`, `kind <kind>`, `index`, `rooms --by-size`                                 | read, as now (167)                                                                             |
+| Command                                                                                  | Does                                                                                                |
+| ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| `show <kind>`                                                                            | prints the kind's document, its placements and its source evidence                                  |
+| `register <kind> --type "…" --class … --purpose "…" [--code XY] [--group placed\|other]` | creates `kinds/<kind>.json` and adds it to the index (code derived from the type if omitted)        |
+| `unregister <kind>`                                                                      | removes `kinds/<kind>.json` and its index line (refused while the kind is placed or bound)          |
+| `set <kind> <field>=<value> …`                                                           | edits that one file: `traits=box-like,operable`, `mount=floor:-y`, `type=…`, `class=…`, `purpose=…` |
+| `unset <kind> <field>`                                                                   | removes an optional field                                                                           |
+| `bind <room> <thing> <kind>`                                                             | adds the thing to that kind's file's `bindings`                                                     |
+| `room <room>`, `kind <kind>`, `index`, `rooms --by-size`                                 | read, as now (167)                                                                                  |
 
 Every change touches one file and prints what it changed (the field's old and new value). Nothing else writes the kinds' files, and agents never edit them by hand.
 
