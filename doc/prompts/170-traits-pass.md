@@ -1,6 +1,6 @@
 # 170: Audit pass 2: each kind's traits and mounting
 
-The owner, 2026-11-04. Brief only; not started until the owner says. Uses mission 168's tools; follows 169 (a kind must be registered first). Supersedes the hand-set affordance flags of 158 stage 1 as the way kinds are classified: flags follow from traits.
+The owner, 2026-11-04. Brief only; not started until the owner says. Uses missions 168 and 172's tools (**the trait vocabulary, composites and metadata are now 172's: read `doc/plans/172-trait-hierarchy.md` and `npm run -s audit -- help`; where this brief's table, names (`chair-like`, `portable`) or `mount` differ, 172 wins**); follows 169 (a kind must be registered first). Supersedes the hand-set affordance flags of 158 stage 1 as the way kinds are classified: flags follow from traits.
 
 ## Kind by kind, not room by room
 
@@ -29,7 +29,7 @@ How the kind relates to the physical world: **floor-standing**, **wall-mounted**
 
 ## How
 
-`npm run -s audit -- propose-traits <kind> box-like,operable mount=floor:-y --reason "…"`, validated against the vocabulary and the consistency rules; the owner approves on the review page. Simple, common kinds first.
+Define a few composites (`npm run -s audit -- trait define …`), then give each kind one or two (`npm run -s audit -- set <kind> traits=…`), with metadata only where it differs from the defaults; `check` and `unclassified` show what is left. No proposals: git is the review. Simple, common kinds first.
 
 ## Acceptance
 

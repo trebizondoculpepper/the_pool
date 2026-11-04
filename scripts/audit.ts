@@ -23,18 +23,22 @@ import { helpText } from './audit-help.ts';
 const first = process.argv[2];
 if (!first || first === 'help' || first === '--help' || first === '-h') {
   const root0 = new URL('..', import.meta.url).pathname;
-  const { module: files } = await runnerImport<
-    typeof import('../src/game/plant/kind-files.ts')
-  >(`${root0}src/game/plant/kind-files.ts`, {
+  const { module: traits } = await runnerImport<
+    typeof import('../src/game/plant/traits.ts')
+  >(`${root0}src/game/plant/traits.ts`, {
     root: root0,
     configFile: false,
     logLevel: 'error',
   });
-  process.stdout.write(helpText(files.TRAIT_WORDS));
+  process.stdout.write(helpText(traits));
   process.exit(0);
 }
 
-if ((EDIT_COMMANDS as readonly string[]).includes(process.argv[2] ?? '')) {
+if (
+  (EDIT_COMMANDS as readonly string[]).includes(process.argv[2] ?? '') ||
+  (process.argv[2] === 'kinds' &&
+    (process.argv.includes('--with') || process.argv.includes('--without')))
+) {
   await runEdit(process.argv.slice(2));
   process.exit(0);
 }

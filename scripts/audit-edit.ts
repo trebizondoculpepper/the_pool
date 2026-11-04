@@ -30,6 +30,9 @@ import { join, relative } from 'node:path';
 import { runnerImport } from 'vite-plus';
 
 type Files = typeof import('../src/game/plant/kind-files.ts');
+type Traits = typeof import('../src/game/plant/traits.ts');
+type CompositeTrait = import('../src/game/plant/traits.ts').CompositeTrait;
+type Graph = typeof import('../src/toolkit/gallery/logic/sim-graph/index.ts');
 type Model =
   typeof import('../src/toolkit/gallery/logic/audit-export/audit-export.ts');
 type Scan =
@@ -37,6 +40,11 @@ type Scan =
 type KindFile = import('../src/game/plant/kind-files.ts').KindFile;
 
 export const EDIT_COMMANDS = [
+  'traits',
+  'trait',
+  'unclassified',
+  'check',
+  'find',
   'show',
   'register',
   'unregister',
@@ -105,6 +113,24 @@ export async function runEdit(args: readonly string[]) {
     ? join(process.cwd(), opts.dir)
     : join(root, F.KIND_FILE_DIR);
   const indexPath = join(dir, 'index.ts');
+  const T = await load<Traits>('src/game/plant/traits.ts');
+  const traitDir = opts['trait-dir']
+    ? join(process.cwd(), opts['trait-dir'])
+    : join(root, 'src/game/plant/traits');
+  const traitIndexPath = join(traitDir, 'index.ts');
+  const readTraits = (): Record<string, CompositeTrait> => {
+    if (!existsSync(traitDir)) return {};
+    return Object.fromEntries(
+      readdirSync(traitDir)
+        .filter((n) => n.endsWith('.json'))
+        .sort()
+        .map((n) => [
+          n.replace(/\.json$/, ''),
+          JSON.parse(readFileSync(join(traitDir, n), 'utf8')) as CompositeTrait,
+        ]),
+    );
+  };
+  const composites = readTraits();
 
   const readAll = (): Record<string, KindFile> => {
     if (!existsSync(dir)) return {};
@@ -146,7 +172,7 @@ export async function runEdit(args: readonly string[]) {
             .sort(),
         }
       : readIndex();
-    const problems = F.validateRegistry(files, index);
+    const problems = F.validateRegistry(files, index, composites);
     const mine = problems.filter((p) =>
       changed.some((c) => c.kind === p.kind || p.kind === '(index)'),
     );
@@ -181,10 +207,6 @@ export async function runEdit(args: readonly string[]) {
       } catch {
         // Formatting is a nicety: the pre-commit hook formats in any case.
       }
-    for (const c of changed)
-      if (c.file?.traits)
-        for (const o of F.traitProblems(c.kind, c.file.traits).odd)
-          console.log(`note: ${o.kind} ${o.message}`);
   };
 
   const files = readAll();
@@ -195,6 +217,51 @@ export async function runEdit(args: readonly string[]) {
         `no kind file for '${kind}' in ${relative(root, dir)}; registered kinds: ${Object.keys(files).join(', ') || '(none yet; mission 171 migrates the registry)'}`,
       );
     return files[kind];
+  };
+
+  /** Who uses a trait: kinds naming it or getting it through a composite, and composites extending it. */
+  const traitUsers = (t: string, direct = false) => ({
+    kinds: Object.keys(files).filter((k) => {
+      const ts = files[k].traits ?? [];
+      if (ts.includes(t)) return true;
+      if (direct) return false;
+      return ts.some(
+        (x) =>
+          x !== t &&
+          T.expand([x], composites).primitives.length &&
+          reaches(x, t),
+      );
+    }),
+    composites: Object.keys(composites).filter((n) =>
+      direct ? composites[n].extends.includes(t) : n !== t && reaches(n, t),
+    ),
+  });
+  /** Whether trait `a` includes trait `b` through the composites. */
+  const reaches = (a: string, b: string, seen = new Set<string>()): boolean => {
+    if (a === b) return true;
+    if (seen.has(a)) return false;
+    seen.add(a);
+    if (T.isPrimitive(a))
+      return (
+        (T.PRIMITIVES[a] as { implies?: readonly string[] }).implies ?? []
+      ).some((i) => reaches(i, b, seen));
+    return (composites[a]?.extends ?? []).some((e) => reaches(e, b, seen));
+  };
+  /** Each kind's service traits, derived from its model ports in the simulation graph (mission 172). */
+  const derivedServices = async (): Promise<Map<string, string[]>> => {
+    const G = await load<Graph>('src/toolkit/gallery/logic/sim-graph/index.ts');
+    const graph = G.simGraph();
+    const media = new Map<string, Set<string>>();
+    const kindOf = new Map(
+      [...graph.nodes.values()].map((n) => [n.id, n.kind] as const),
+    );
+    for (const e of graph.edges) {
+      if (!e.medium || e.kind === 'raises') continue;
+      const k = kindOf.get(e.to);
+      if (!k) continue;
+      media.set(k, new Set([...(media.get(k) ?? []), e.medium]));
+    }
+    return new Map([...media].map(([k, m]) => [k, T.serviceTraits(m)]));
   };
 
   switch (command) {
@@ -232,6 +299,26 @@ export async function runEdit(args: readonly string[]) {
       );
       for (const h of hits)
         console.log(`  ${h.kind.padEnd(7)} ${h.at}  ${h.what}`);
+      // Its traits (mission 172): named, expanded, metadata and where it came from, derived services.
+      const traits = file?.traits ?? [];
+      const e = T.expand(traits, composites);
+      const m = T.resolveMeta(traits, file?.meta ?? {}, composites);
+      const services = (await derivedServices()).get(kind) ?? [];
+      console.log(`traits: ${traits.join(', ') || '(unclassified)'}`);
+      if (traits.length) {
+        console.log(`  expands to: ${e.primitives.join(', ')}`);
+        for (const [k, v] of Object.entries(m.values))
+          console.log(`  ${k} = ${v} (${m.from[k]})`);
+        for (const q of [
+          ...e.problems,
+          ...T.primitiveProblems(kind, e.primitives, true),
+          ...m.problems,
+        ])
+          console.log(`  problem: ${q.message}`);
+      }
+      console.log(
+        `services (derived from its model ports): ${services.join(', ') || 'none found'}`,
+      );
       break;
     }
     case 'register': {
@@ -288,15 +375,27 @@ export async function runEdit(args: readonly string[]) {
         const eq = pair.indexOf('=');
         if (eq < 1) fail(`refused: '${pair}' is not field=value`);
         const field = pair.slice(0, eq);
-        const before = JSON.stringify(
-          (file as unknown as Record<string, unknown>)[field],
+        // What the field shows: traits+ and traits- show the traits; metadata its meta value.
+        const shown = (f: KindFile) => {
+          const r = f as unknown as Record<string, unknown>;
+          if (field === 'traits+' || field === 'traits-') return r.traits;
+          return field in r ? r[field] : f.meta?.[field];
+        };
+        const label =
+          field === 'traits+' || field === 'traits-' ? 'traits' : field;
+        const before = JSON.stringify(shown(file));
+        const next = F.setField(
+          kind,
+          file,
+          field,
+          pair.slice(eq + 1),
+          composites,
         );
-        const next = F.setField(kind, file, field, pair.slice(eq + 1));
         if (F.isProblem(next))
           fail(`refused: ${kind}.${field} ${next.message}`);
         file = next;
         lines.push(
-          `${kind}.${field}: ${before ?? '(unset)'} → ${JSON.stringify((file as unknown as Record<string, unknown>)[field])}`,
+          `${kind}.${label}: ${before ?? '(unset)'} → ${JSON.stringify(shown(file))}`,
         );
       }
       commit({ ...files, [kind]: file }, [{ kind, file }], false);
@@ -310,15 +409,25 @@ export async function runEdit(args: readonly string[]) {
         'template',
         'brand',
         'traits',
-        'mount',
+        'meta',
         'sources',
         'affordances',
       ];
-      if (!field || !optional.includes(field))
-        fail(`refused: unset takes one of ${optional.join(', ')}`);
-      if (file[field] === undefined)
-        fail(`refused: ${kind}.${field} is not set`);
-      delete file[field];
+      const meta = { ...((file.meta as Record<string, unknown>) ?? {}) };
+      if (field && meta[field] !== undefined) {
+        // A metadata value: back to the inherited or default value.
+        delete meta[field];
+        if (Object.keys(meta).length) file.meta = meta;
+        else delete file.meta;
+      } else {
+        if (!field || !optional.includes(field))
+          fail(
+            `refused: unset takes one of ${optional.join(', ')}, or a metadata key the kind sets (${Object.keys(meta).join(', ') || 'none'})`,
+          );
+        if (file[field] === undefined)
+          fail(`refused: ${kind}.${field} is not set`);
+        delete file[field];
+      }
       commit(
         { ...files, [kind]: file as unknown as KindFile },
         [{ kind, file: file as unknown as KindFile }],
@@ -347,6 +456,375 @@ export async function runEdit(args: readonly string[]) {
       };
       commit({ ...files, [kind]: next }, [{ kind, file: next }], false);
       console.log(`bound ${room}/${thing} to ${kind}`);
+      break;
+    }
+    case 'traits': {
+      // Every trait: primitives by facet, then composites, with how many kinds use each.
+      for (const facet of T.FACETS) {
+        const r = T.FACET_RULES[facet];
+        console.log(
+          `${facet}: ${r.words}${r.derived ? ' [derived, never set]' : ''}`,
+        );
+        for (const n of T.PRIMITIVE_NAMES.filter(
+          (p) => T.PRIMITIVES[p].facet === facet,
+        ))
+          console.log(
+            `  ${n.padEnd(16)} ${T.PRIMITIVES[n].words} (${traitUsers(n).kinds.length} kinds)`,
+          );
+      }
+      console.log('composites:');
+      for (const [n, c] of Object.entries(composites))
+        console.log(
+          `  ${n.padEnd(16)} ${c.description} = ${c.extends.join(' + ')} (${traitUsers(n).kinds.length} kinds)`,
+        );
+      if (!Object.keys(composites).length) console.log('  (none yet)');
+      break;
+    }
+    case 'trait': {
+      const [sub, name] = rest;
+      if (!sub || !name)
+        fail('usage: trait show|define|edit|rename|remove <name> …');
+      const writeTraits = (
+        next: Record<string, CompositeTrait>,
+        changedNames: string[],
+        renamed?: [string, string],
+      ) => {
+        // The whole graph as it would be: every composite and every kind.
+        const kinds2 = renamed
+          ? Object.fromEntries(
+              Object.entries(files).map(([k, f]) => [
+                k,
+                f.traits?.includes(renamed[0])
+                  ? {
+                      ...f,
+                      traits: [
+                        ...f.traits.filter((t) => t !== renamed[0]),
+                        renamed[1],
+                      ].sort(),
+                    }
+                  : f,
+              ]),
+            )
+          : files;
+        const problems = F.validateRegistry(kinds2, readIndex(), next);
+        if (problems.length)
+          fail(
+            problems
+              .map(
+                (p) =>
+                  `refused: ${p.kind}${p.field ? `.${p.field}` : ''} ${p.message}`,
+              )
+              .join('\n'),
+          );
+        if (opts['dry-run']) {
+          console.log('dry run: valid; nothing written');
+          return;
+        }
+        mkdirSync(traitDir, { recursive: true });
+        const written: string[] = [];
+        for (const n of changedNames) {
+          const path = join(traitDir, `${n}.json`);
+          if (next[n]) {
+            writeAtomic(path, T.compositeText(next[n]));
+            written.push(path);
+          } else if (existsSync(path)) rmSync(path);
+        }
+        writeAtomic(traitIndexPath, T.traitIndexText(Object.keys(next)));
+        written.push(traitIndexPath);
+        if (renamed)
+          for (const [k, f] of Object.entries(kinds2))
+            if (f !== files[k]) {
+              const path = join(dir, `${k}.json`);
+              writeAtomic(path, F.kindFileText(f));
+              written.push(path);
+            }
+        try {
+          execFileSync('npx', ['vp', 'fmt', ...written], {
+            cwd: root,
+            stdio: 'ignore',
+          });
+        } catch {
+          // The pre-commit hook formats in any case.
+        }
+      };
+      const metaOpts = () =>
+        Object.fromEntries(
+          (opts.set ? opts.set.split(',') : []).map((kv) => {
+            const [k, v] = kv.split('=');
+            const n = Number(v);
+            return [k, Number.isFinite(n) && v.trim() !== '' ? n : v];
+          }),
+        );
+      switch (sub) {
+        case 'show': {
+          if (T.isPrimitive(name)) {
+            const p = T.PRIMITIVES[
+              name
+            ] as import('../src/game/plant/traits.ts').Primitive;
+            console.log(`${name}: primitive, facet ${p.facet}: ${p.words}`);
+            if (p.implies?.length)
+              console.log(`  implies: ${p.implies.join(', ')}`);
+            if (p.needs) console.log(`  needs a ${p.needs} trait`);
+            for (const [k, m] of Object.entries(p.meta ?? {}))
+              console.log(
+                `  metadata ${k}: ${m.words}${m.values ? ` (${m.values.join('|')})` : ''}${m.default !== undefined ? `, default ${m.default}` : ''}`,
+              );
+          } else if (composites[name]) {
+            const c = composites[name];
+            console.log(`${name}: composite: ${c.description}`);
+            console.log(`  extends: ${c.extends.join(', ')}`);
+            console.log(
+              `  expands to: ${T.expand([name], composites).primitives.join(', ')}`,
+            );
+            for (const [k, v] of Object.entries(c.meta ?? {}))
+              console.log(`  metadata ${k} = ${v}`);
+          } else
+            fail(
+              `'${name}' is not a trait; npm run -s audit -- traits lists them`,
+            );
+          const u = traitUsers(name);
+          console.log(`  used by kinds: ${u.kinds.join(', ') || 'none'}`);
+          console.log(
+            `  used by composites: ${u.composites.join(', ') || 'none'}`,
+          );
+          break;
+        }
+        case 'define': {
+          if (composites[name] || T.isPrimitive(name))
+            fail(`refused: '${name}' is already a trait`);
+          if (!opts.extends || !opts.description)
+            fail(
+              'usage: trait define <name> --extends a,b --description "…" [--set key=value,…]',
+            );
+          const c: CompositeTrait = {
+            description: opts.description,
+            extends: opts.extends
+              .split(',')
+              .map((t) => t.trim())
+              .filter(Boolean),
+            ...(opts.set ? { meta: metaOpts() } : {}),
+          };
+          writeTraits({ ...composites, [name]: c }, [name]);
+          if (!opts['dry-run'])
+            console.log(`defined ${name} = ${c.extends.join(' + ')}`);
+          break;
+        }
+        case 'edit': {
+          const c = composites[name];
+          if (!c) fail(`refused: '${name}' is not a composite trait`);
+          const next: CompositeTrait = {
+            description: opts.description ?? c.description,
+            extends: opts.extends
+              ? opts.extends
+                  .split(',')
+                  .map((t) => t.trim())
+                  .filter(Boolean)
+              : c.extends,
+            ...(opts.set
+              ? { meta: { ...(c.meta ?? {}), ...metaOpts() } }
+              : c.meta
+                ? { meta: c.meta }
+                : {}),
+          };
+          const u = traitUsers(name);
+          console.log(
+            `affects kinds: ${u.kinds.join(', ') || 'none'}; composites: ${u.composites.join(', ') || 'none'}`,
+          );
+          writeTraits({ ...composites, [name]: next }, [name]);
+          if (!opts['dry-run'])
+            console.log(`edited ${name} = ${next.extends.join(' + ')}`);
+          break;
+        }
+        case 'rename': {
+          const to = rest[2];
+          if (!composites[name] || !to)
+            fail('usage: trait rename <composite> <new-name>');
+          if (composites[to] || T.isPrimitive(to))
+            fail(`refused: '${to}' is already a trait`);
+          const next: Record<string, CompositeTrait> = {};
+          for (const [n, c] of Object.entries(composites))
+            next[n === name ? to : n] = {
+              ...c,
+              extends: c.extends.map((e) => (e === name ? to : e)),
+            };
+          const touched = Object.keys(next).filter(
+            (n) => n === to || next[n].extends.includes(to),
+          );
+          writeTraits(next, [name, ...touched], [name, to]);
+          if (!opts['dry-run']) console.log(`renamed ${name} to ${to}`);
+          break;
+        }
+        case 'remove': {
+          if (!composites[name])
+            fail(
+              `refused: '${name}' is not a composite trait (primitives are code)`,
+            );
+          const u = traitUsers(name, true);
+          const replace = opts['replace-with'];
+          if ((u.kinds.length || u.composites.length) && !replace)
+            fail(
+              `refused: '${name}' is used by kinds: ${u.kinds.join(', ') || 'none'}; composites: ${u.composites.join(', ') || 'none'}. Use --replace-with <trait> to move them first.`,
+            );
+          const next = { ...composites };
+          delete next[name];
+          for (const n of u.composites)
+            next[n] = {
+              ...next[n],
+              extends: [
+                ...new Set(
+                  next[n].extends.map((e) => (e === name ? replace! : e)),
+                ),
+              ],
+            };
+          const kindsNext = Object.fromEntries(
+            Object.entries(files).map(([k, f]) => [
+              k,
+              f.traits?.includes(name)
+                ? {
+                    ...f,
+                    traits: [
+                      ...new Set(
+                        f.traits.map((t) => (t === name ? replace! : t)),
+                      ),
+                    ].sort(),
+                  }
+                : f,
+            ]),
+          );
+          const problems = F.validateRegistry(kindsNext, readIndex(), next);
+          if (problems.length)
+            fail(
+              problems.map((p) => `refused: ${p.kind} ${p.message}`).join('\n'),
+            );
+          if (opts['dry-run']) {
+            console.log(
+              `dry run: would move kinds ${u.kinds.join(', ') || 'none'} and composites ${u.composites.join(', ') || 'none'} to ${replace ?? '(nothing)'}`,
+            );
+            break;
+          }
+          const written: string[] = [];
+          for (const [k, f] of Object.entries(kindsNext))
+            if (f !== files[k]) {
+              writeAtomic(join(dir, `${k}.json`), F.kindFileText(f));
+              written.push(join(dir, `${k}.json`));
+            }
+          for (const n of u.composites) {
+            writeAtomic(join(traitDir, `${n}.json`), T.compositeText(next[n]));
+            written.push(join(traitDir, `${n}.json`));
+          }
+          rmSync(join(traitDir, `${name}.json`));
+          writeAtomic(traitIndexPath, T.traitIndexText(Object.keys(next)));
+          written.push(traitIndexPath);
+          try {
+            execFileSync('npx', ['vp', 'fmt', ...written], {
+              cwd: root,
+              stdio: 'ignore',
+            });
+          } catch {
+            // The pre-commit hook formats in any case.
+          }
+          console.log(
+            `removed ${name}${replace ? `; its users now have ${replace}` : ''}`,
+          );
+          break;
+        }
+        default:
+          fail(`unknown: trait ${sub}; trait show|define|edit|rename|remove`);
+      }
+      break;
+    }
+    case 'kinds': {
+      // Only reached with --with or --without (audit.ts sends plain listings elsewhere).
+      const services =
+        opts.with &&
+        T.isPrimitive(opts.with) &&
+        T.PRIMITIVES[opts.with].facet === 'service'
+          ? await derivedServices()
+          : null;
+      const withUsers =
+        opts.with && !services ? new Set(traitUsers(opts.with).kinds) : null;
+      const out = Object.keys(files).filter((k) => {
+        if (opts.with)
+          return services
+            ? (services.get(k)?.includes(opts.with) ?? false)
+            : withUsers!.has(k);
+        if (opts.without) {
+          const facet =
+            opts.without as import('../src/game/plant/traits.ts').Facet;
+          if (!T.FACETS.includes(facet))
+            fail(`refused: --without takes a facet: ${T.FACETS.join(', ')}`);
+          const ps = T.expand(files[k].traits ?? [], composites).primitives;
+          return !ps.some((p) => T.PRIMITIVES[p].facet === facet);
+        }
+        return true;
+      });
+      console.log(out.join('\n'));
+      break;
+    }
+    case 'unclassified': {
+      const scope = opts.room
+        ? new Set(
+            (
+              await load<Model>(
+                'src/toolkit/gallery/logic/audit-export/audit-export.ts',
+              )
+            )
+              .roomAudit(opts.room)
+              .objects.map((o) => o.kind),
+          )
+        : null;
+      for (const [k, f] of Object.entries(files)) {
+        if (scope && !scope.has(k)) continue;
+        const ps = T.expand(f.traits ?? [], composites).primitives;
+        if (!f.traits?.length) console.log(`${k}\tno traits`);
+        else {
+          const missing = T.primitiveProblems(k, ps, true).map(
+            (p) => p.message,
+          );
+          if (missing.length) console.log(`${k}\t${missing.join('; ')}`);
+        }
+      }
+      break;
+    }
+    case 'check': {
+      const problems = F.validateRegistry(files, readIndex(), composites);
+      const traitIndex = existsSync(traitIndexPath)
+        ? T.traitIndexIds(readFileSync(traitIndexPath, 'utf8'))
+        : [];
+      const names = Object.keys(composites);
+      for (const n of names)
+        if (!traitIndex.includes(n))
+          problems.push({
+            kind: `trait:${n}`,
+            message: 'has a file but is not in the traits index',
+          });
+      for (const n of traitIndex)
+        if (!names.includes(n))
+          problems.push({
+            kind: `trait:${n}`,
+            message: 'in the traits index but has no file',
+          });
+      const scoped = problems.filter((p) => !opts.kind || p.kind === opts.kind);
+      for (const p of scoped)
+        console.log(`${p.kind}${p.field ? `.${p.field}` : ''}: ${p.message}`);
+      console.log(scoped.length ? `${scoped.length} problems` : 'no problems');
+      if (scoped.length) process.exit(1);
+      break;
+    }
+    case 'find': {
+      const words = rest.join(' ').toLowerCase().split(/\s+/).filter(Boolean);
+      if (!words.length) fail('usage: find <words>');
+      const hit = (hay: string) =>
+        words.every((w) => hay.toLowerCase().includes(w));
+      for (const [k, f] of Object.entries(files))
+        if (hit(`${k} ${f.type} ${f.purpose} ${(f.traits ?? []).join(' ')}`))
+          console.log(`kind  ${k}\t${f.type}: ${f.purpose}`);
+      for (const n of T.PRIMITIVE_NAMES)
+        if (hit(`${n} ${T.PRIMITIVES[n].words}`))
+          console.log(`trait ${n}\t${T.PRIMITIVES[n].words}`);
+      for (const [n, c] of Object.entries(composites))
+        if (hit(`${n} ${c.description}`))
+          console.log(`trait ${n}\t${c.description}`);
       break;
     }
     default:

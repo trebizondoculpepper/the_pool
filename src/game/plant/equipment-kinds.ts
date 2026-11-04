@@ -1,5 +1,7 @@
 import type { BrandId } from '../../toolkit/components/core/logic/brands';
 import { kindFiles } from './kind-files';
+import { compositeTraits, expand, resolveMeta } from './traits';
+import type { CompositeTrait } from './traits';
 import type { KindFile } from './kind-files';
 import { KIND_IDS, OTHER_KIND_IDS, PLACED_KIND_IDS } from './kinds/index';
 
@@ -97,6 +99,10 @@ export interface EquipmentKind {
   brand?: BrandId;
   /** Mission 158: reviewed affordances, resolved by `kindAffordances`. */
   affordances?: KindAffordanceDeclaration;
+  /** Mission 172: its traits, primitive or composite; when present they decide its affordances. */
+  traits?: readonly string[];
+  /** Mission 172: metadata its traits imply, where it differs from their defaults. */
+  meta?: Readonly<Record<string, number | string>>;
 }
 
 /**
@@ -107,14 +113,7 @@ export interface EquipmentKind {
  * reads, with each kind's ids kept as compile-time unions by the index.
  */
 const asKind = (f: KindFile): EquipmentKind => {
-  const {
-    group: _group,
-    traits: _t,
-    mount: _m,
-    sources: _s,
-    bindings: _b,
-    ...k
-  } = f;
+  const { group: _group, sources: _s, bindings: _b, ...k } = f;
   return k as EquipmentKind;
 };
 
@@ -147,8 +146,16 @@ export function equipmentKind(kind: string): EquipmentKind {
   return EQUIPMENT_KINDS[kind];
 }
 
-/** Explicit defaults for every registered kind, without changing scene behaviour. */
+/**
+ * A kind's affordances. Mission 172: a kind with traits is resolved from
+ * them (interaction from its use traits, portable from holdable, solidity
+ * and shape from its form, surface from supportable, its seat from
+ * sittable's metadata); a kind not yet classified keeps 158's declared
+ * flags and defaults (the migration gate).
+ */
 export function resolveKindAffordances(kind: EquipmentKind): KindAffordances {
+  if (kind.traits?.length)
+    return affordancesFromTraits(kind.traits, kind.meta ?? {});
   const declared = kind.affordances;
   const solid = declared?.solid ?? true;
   return {
@@ -160,6 +167,42 @@ export function resolveKindAffordances(kind: EquipmentKind): KindAffordances {
     shape: declared?.shape ?? { type: 'bounds' },
     surface: solid,
     seat: declared?.seat ?? null,
+  };
+}
+
+const LOOK: Record<string, { x: number; z: number }> = {
+  '+x': { x: 1, z: 0 },
+  '-x': { x: -1, z: 0 },
+  '+z': { x: 0, z: 1 },
+  '-z': { x: 0, z: -1 },
+};
+
+/** The affordances a set of traits gives, through the composites (pure). */
+export function affordancesFromTraits(
+  traits: readonly string[],
+  own: Readonly<Record<string, number | string>>,
+  composites: Readonly<Record<string, CompositeTrait>> = compositeTraits(),
+): KindAffordances {
+  const ps = expand(traits, composites).primitives;
+  const has = (p: string) => (ps as readonly string[]).includes(p);
+  const meta = resolveMeta(traits, own, composites).values;
+  const solid = !has('decorative') && !has('run-like');
+  return {
+    interaction: has('decorative')
+      ? 'decorative'
+      : has('operable') || has('sittable')
+        ? 'usable'
+        : 'inspect-only',
+    portable: has('holdable'),
+    solid,
+    shape: { type: 'bounds' },
+    surface: solid && has('supportable'),
+    seat: has('sittable')
+      ? {
+          height: Number(meta.seatHeight ?? 0.45),
+          lookDirection: LOOK[String(meta.look ?? '+z')] ?? LOOK['+z'],
+        }
+      : null,
   };
 }
 

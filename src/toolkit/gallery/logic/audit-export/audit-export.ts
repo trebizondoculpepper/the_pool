@@ -8,6 +8,8 @@ import type {
   KindAffordances,
 } from '../../../../game/plant/equipment-kinds';
 import { objectDescriptors } from '../../../../game/descriptors/registry';
+import { kindFiles } from '../../../../game/plant/kind-files';
+import type { KindFile } from '../../../../game/plant/kind-files';
 import { ROOMS } from '../dev-room-links';
 import { itemAuditLink } from '../item-audit';
 import { kindCatalogue } from '../kind-catalogue';
@@ -103,6 +105,8 @@ export interface AuditManifestRecord extends ManifestEntry {
   evidence: Evidence;
   /** Whether its owner is found among the room's catalogued objects. */
   matched: boolean;
+  /** The kind it is bound to in that kind's file, if any (mission 169). */
+  boundTo?: string;
 }
 
 /**
@@ -218,6 +222,8 @@ export interface AuditInput {
   manifests?: Readonly<Record<string, () => RoomManifest>>;
   /** The owner's rulings (`AUDIT_RULINGS`), for tests. */
   rulings?: readonly AuditRuling[];
+  /** The kind files (`kindFiles()`), for their bindings; for tests. */
+  kindFiles?: Readonly<Record<string, KindFile>>;
 }
 
 const kindsOf = (input: AuditInput) =>
@@ -310,7 +316,8 @@ function roomFindings(
         links: o.links,
       });
   for (const m of manifest)
-    if (!m.matched)
+    if (m.boundTo) continue;
+    else if (!m.matched)
       findings.push({
         id: `room:${room}:manifest-unmatched:${m.ref}`,
         severity: 'warning',
@@ -363,11 +370,17 @@ export function roomAudit(room: string, input: AuditInput = {}): RoomAudit {
     .sort(byRef);
   const manifestData = manifestFor(room, input);
   const owners = new Set(objects.flatMap((o) => [o.kind, o.ref]));
+  // Things bound to a kind in its file (`npm run audit -- bind`) are registered.
+  const bound = new Map<string, string>();
+  for (const [kind, f] of Object.entries(input.kindFiles ?? kindFiles()))
+    for (const b of f.bindings ?? [])
+      if (b.room === room) bound.set(b.thing, kind);
   const manifest = manifestData.entries
     .map((m) => ({
       ...m,
       evidence: 'declared' as Evidence,
       matched: m.owner !== undefined && owners.has(m.owner),
+      ...(bound.has(m.ref) ? { boundTo: bound.get(m.ref) } : {}),
     }))
     .sort(byRef);
   const coverage = coverageOf(objects, manifestData);

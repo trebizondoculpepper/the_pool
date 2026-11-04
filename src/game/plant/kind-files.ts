@@ -1,5 +1,16 @@
 import { BRANDS } from '../../toolkit/components/core/logic/brands';
 import { KIND_FILES } from './kinds/index';
+import {
+  compositeProblems,
+  expand,
+  isPrimitive,
+  metaSpecs,
+  parseMeta,
+  primitive,
+  primitiveProblems,
+  resolveMeta,
+} from './traits';
+import type { CompositeTrait } from './traits';
 import type {
   Classification,
   DescriptionTemplate,
@@ -11,7 +22,7 @@ import type {
  * The object registry as one JSON file per kind (mission 168; the owner,
  * 2026-11-04): `src/game/plant/kinds/<kind>.json`, listed by the index
  * `kinds/index.ts`. Registering a kind is adding its file, unregistering
- * removing it, and its traits, mounting and the rest are edits to that one
+ * removing it, and its traits, metadata and the rest are edits to that one
  * file, made only by `npm run audit -- register | set | unset |
  * unregister | bind`, never by hand. This module is the format: its
  * fields, the trait vocabulary and its consistency rules, the validator,
@@ -22,43 +33,6 @@ import type {
 
 export const KIND_FILE_DIR = 'src/game/plant/kinds';
 export const KIND_INDEX_FILE = `${KIND_FILE_DIR}/index.ts`;
-
-/** The traits (mission 170): combinable; the flags follow from them. */
-export const TRAITS = [
-  'box-like',
-  'chair-like',
-  'decorative',
-  'luggable',
-  'operable',
-  'panel-like',
-  'portable',
-  'run-like',
-] as const;
-export type Trait = (typeof TRAITS)[number];
-
-export const TRAIT_WORDS: Record<Trait, string> = {
-  'box-like':
-    'a rectangular solid: its top holds objects, walkable where reachable',
-  'chair-like': 'something to sit on',
-  decorative: 'intentionally inert: seen, does nothing',
-  luggable: 'large or heavy but movable: shifted, not carried',
-  operable: 'has working controls',
-  'panel-like': 'flat on a wall: signs, noticeboards, wall instruments',
-  portable: 'can be picked up and carried',
-  'run-like': 'pipes, cables, ducts: not solid, walk-through',
-};
-
-/** What a kind stands on, and which face of it meets that support. */
-export const MOUNTS = ['floor', 'wall', 'ceiling'] as const;
-export type MountOn = (typeof MOUNTS)[number];
-export const FACES = ['+x', '-x', '+y', '-y', '+z', '-z'] as const;
-export type Face = (typeof FACES)[number];
-
-export interface KindMount {
-  on: MountOn;
-  /** The object's face that meets its support, in its own frame. */
-  face: Face;
-}
 
 /** A thing with no identity of its own in the scene, tied to this kind. */
 export interface KindBinding {
@@ -76,8 +50,10 @@ export interface KindFile {
   purpose: string;
   brand?: string;
   affordances?: KindAffordanceDeclaration;
-  traits?: Trait[];
-  mount?: KindMount;
+  /** Its traits, primitive or composite (mission 172), addition only. */
+  traits?: string[];
+  /** Metadata its traits imply, where it differs from their defaults. */
+  meta?: Record<string, number | string>;
   /** Source files to scan for its behaviour, beyond those found by name. */
   sources?: string[];
   bindings?: KindBinding[];
@@ -95,7 +71,7 @@ export const FIELD_ORDER: readonly (keyof KindFile)[] = [
   'brand',
   'affordances',
   'traits',
-  'mount',
+  'meta',
   'sources',
   'bindings',
 ];
@@ -113,6 +89,18 @@ const STATUSES: readonly StatusPolicy[] = [
   'uv',
   'filter',
 ];
+const listOf = (v: string) =>
+  v
+    ? [
+        ...new Set(
+          v
+            .split(',')
+            .map((t) => t.trim())
+            .filter(Boolean),
+        ),
+      ].sort()
+    : [];
+
 const TEMPLATES: readonly DescriptionTemplate[] = [
   'valve',
   'power',
@@ -128,47 +116,14 @@ export interface Problem {
   message: string;
 }
 
-/**
- * The traits' consistency rules (mission 170): `error`s are refused;
- * `odd` combinations are reported for a person to confirm.
- */
-export function traitProblems(
-  kind: string,
-  traits: readonly Trait[],
-): { errors: Problem[]; odd: Problem[] } {
-  const has = (t: Trait) => traits.includes(t);
-  const errors: Problem[] = [];
-  const odd: Problem[] = [];
-  for (const t of ['operable', 'chair-like', 'portable', 'luggable'] as const)
-    if (has('decorative') && has(t))
-      errors.push({
-        kind,
-        field: 'traits',
-        message: `decorative and ${t} contradict: decorative means it does nothing`,
-      });
-  if (has('portable') && has('luggable'))
-    errors.push({
-      kind,
-      field: 'traits',
-      message:
-        'portable and luggable contradict: carried, or shifted, not both',
-    });
-  if (has('decorative') && has('box-like'))
-    odd.push({
-      kind,
-      field: 'traits',
-      message:
-        'decorative and box-like is odd: decorative implies walk-through',
-    });
-  if (new Set(traits).size !== traits.length)
-    errors.push({ kind, field: 'traits', message: 'a trait is listed twice' });
-  return { errors, odd };
-}
-
 const BRAND_IDS = new Set(BRANDS.map((b) => b.id as string));
 
 /** One file's problems, as refused by the commands and by CI. */
-export function validateKindFile(kind: string, f: KindFile): Problem[] {
+export function validateKindFile(
+  kind: string,
+  f: KindFile,
+  composites: Readonly<Record<string, CompositeTrait>> = {},
+): Problem[] {
   const p: Problem[] = [];
   const bad = (field: string, message: string) =>
     p.push({ kind, field, message });
@@ -193,20 +148,23 @@ export function validateKindFile(kind: string, f: KindFile): Problem[] {
     bad('brand', `'${f.brand}' is not a brand in brands.ts`);
   if (f.traits !== undefined) {
     for (const t of f.traits)
-      if (!TRAITS.includes(t))
-        bad('traits', `'${t}' is not a trait (${TRAITS.join(', ')})`);
-    p.push(
-      ...traitProblems(
-        kind,
-        f.traits.filter((t) => TRAITS.includes(t)),
-      ).errors,
-    );
+      if (isPrimitive(t) && primitive(t).facet === 'service')
+        bad('traits', `${t} is derived from the model's ports, never set`);
+    const e = expand(f.traits, composites);
+    for (const q of e.problems) bad('traits', q.message);
+    for (const q of primitiveProblems(kind, e.primitives))
+      bad('traits', q.message);
   }
-  if (f.mount !== undefined) {
-    if (!MOUNTS.includes(f.mount.on))
-      bad('mount', `stands on ${MOUNTS.join(', ')}`);
-    if (!FACES.includes(f.mount.face))
-      bad('mount', `its face is one of ${FACES.join(', ')}`);
+  if (f.meta !== undefined) {
+    const r = resolveMeta(f.traits ?? [], f.meta, composites);
+    for (const q of r.problems) bad('meta', `${q.subject}: ${q.message}`);
+    const specs = metaSpecs(expand(f.traits ?? [], composites).primitives);
+    for (const [k, v] of Object.entries(f.meta)) {
+      const spec = specs[k];
+      if (!spec) continue;
+      const parsed = parseMeta(spec, String(v));
+      if (typeof parsed === 'object') bad('meta', `${k} ${parsed.message}`);
+    }
   }
   for (const b of f.bindings ?? [])
     if (!b.room?.trim() || !b.thing?.trim())
@@ -224,10 +182,14 @@ export function validateKindFile(kind: string, f: KindFile): Problem[] {
 export function validateRegistry(
   files: Readonly<Record<string, KindFile>>,
   index: Readonly<Record<KindFile['group'], readonly string[]>>,
+  composites: Readonly<Record<string, CompositeTrait>> = {},
 ): Problem[] {
   const p: Problem[] = [];
   for (const [kind, f] of Object.entries(files))
-    p.push(...validateKindFile(kind, f));
+    p.push(...validateKindFile(kind, f, composites));
+  for (const name of Object.keys(composites))
+    for (const q of compositeProblems(name, composites))
+      p.push({ kind: `trait:${name}`, message: q.message });
   // Tag codes are shared by family (every tank is T, every panel CP): not unique.
   for (const group of ['placed', 'other'] as const) {
     const ids = index[group];
@@ -330,6 +292,7 @@ export function setField(
   f: KindFile,
   field: string,
   value: string,
+  composites: Readonly<Record<string, CompositeTrait>> = {},
 ): KindFile | Problem {
   const v = value.trim();
   switch (field) {
@@ -349,24 +312,39 @@ export function setField(
     case 'brand':
       return { ...f, brand: v };
     case 'traits':
+      return { ...f, traits: listOf(v) };
+    case 'traits+':
       return {
         ...f,
-        traits: v ? (v.split(',').map((t) => t.trim()) as Trait[]).sort() : [],
+        traits: [...new Set([...(f.traits ?? []), ...listOf(v)])].sort(),
       };
-    case 'mount': {
-      const [on, face] = v.split(':');
-      if (!on || !face)
-        return { kind, field, message: 'is written on:face, e.g. floor:-y' };
-      return { ...f, mount: { on: on as MountOn, face: face as Face } };
+    case 'traits-': {
+      const drop = new Set(listOf(v));
+      const missing = [...drop].filter((t) => !(f.traits ?? []).includes(t));
+      if (missing.length)
+        return {
+          kind,
+          field: 'traits',
+          message: `does not name ${missing.join(', ')} (inherited traits cannot be removed: traits are addition only)`,
+        };
+      return { ...f, traits: (f.traits ?? []).filter((t) => !drop.has(t)) };
     }
     case 'sources':
       return { ...f, sources: v ? v.split(',').map((s) => s.trim()) : [] };
-    default:
-      return {
-        kind,
-        field,
-        message: `cannot be set; settable: type, purpose, code, class, status, template, group, brand, traits, mount, sources`,
-      };
+    default: {
+      const specs = metaSpecs(expand(f.traits ?? [], composites).primitives);
+      const spec = specs[field];
+      if (!spec)
+        return {
+          kind,
+          field,
+          message: `cannot be set: not a field (type, purpose, code, class, status, template, group, brand, traits, traits+, traits-, sources) nor metadata its traits imply (${Object.keys(specs).join(', ') || 'none'})`,
+        };
+      const parsed = parseMeta(spec, v);
+      if (typeof parsed === 'object')
+        return { kind, field, message: parsed.message };
+      return { ...f, meta: { ...(f.meta ?? {}), [field]: parsed } };
+    }
   }
 }
 

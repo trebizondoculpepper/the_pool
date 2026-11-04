@@ -15,7 +15,8 @@ const kinds = kindCatalogue();
 const input = { kinds };
 
 describe('the engineers office, from data alone (mission 167 fixture)', () => {
-  const office = roomAudit('engineers_office', input);
+  // No bindings: the fixture is the room's own data, whatever pass 1 has bound.
+  const office = roomAudit('engineers_office', { ...input, kindFiles: {} });
 
   test('lists its six catalogue copies, each registered as the registry says', () => {
     expect(office.objects.map((o) => [o.ref, o.kind])).toEqual([
@@ -206,4 +207,32 @@ test('the export path never reaches a scene: no Three.js, DOM views or scanner i
         /^three|\/views\/|look-audit-scene|room-build/,
       );
   }
+});
+
+test('a manifest thing bound to a kind in its file is registered, with no finding', () => {
+  const kindFilesFixture = {
+    'software-box': {
+      group: 'other' as const,
+      type: 'Software box',
+      code: 'SB',
+      class: 'non-plant' as const,
+      status: 'none' as const,
+      purpose: 'A boxed title.',
+      bindings: [{ room: 'engineers_office', thing: 'software-box:panes-95' }],
+    },
+  };
+  const a = roomAudit('engineers_office', {
+    kinds,
+    kindFiles: kindFilesFixture,
+  });
+  expect(
+    a.manifest.find((m) => m.ref === 'software-box:panes-95')?.boundTo,
+  ).toBe('software-box');
+  expect(a.findings.some((f) => f.id.endsWith(':software-box:panes-95'))).toBe(
+    false,
+  );
+  const unbound = roomAudit('engineers_office', { kinds, kindFiles: {} });
+  expect(
+    unbound.findings.some((f) => f.id.endsWith(':software-box:panes-95')),
+  ).toBe(true);
 });

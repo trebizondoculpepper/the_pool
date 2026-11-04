@@ -9,7 +9,6 @@ import {
   kindFileText,
   kindFiles,
   setField,
-  traitProblems,
   validateKindFile,
   validateRegistry,
 } from './kind-files';
@@ -45,38 +44,19 @@ describe('one file', () => {
     expect(fields).toEqual(['id', 'code', 'class', 'purpose', 'colour']);
   });
 
-  test('refuses an unknown brand, trait and mounting', () => {
+  test('refuses an unknown brand and trait, a set service trait and stray metadata', () => {
     const f = {
       ...desk,
       brand: 'acme',
-      traits: ['box-like', 'sparkly'],
-      mount: { on: 'roof', face: 'up' },
+      traits: ['box-like', 'sparkly', 'powered'],
+      meta: { colour: 'red' },
     } as unknown as KindFile;
     expect(validateKindFile('desk', f).map((p) => p.field)).toEqual([
       'brand',
       'traits',
-      'mount',
-      'mount',
+      'traits',
+      'meta',
     ]);
-  });
-});
-
-describe('traits', () => {
-  test('decorative contradicts doing anything; portable contradicts luggable', () => {
-    expect(traitProblems('x', ['decorative', 'operable']).errors).toHaveLength(
-      1,
-    );
-    expect(
-      traitProblems('x', ['decorative', 'chair-like', 'portable']).errors,
-    ).toHaveLength(2);
-    expect(traitProblems('x', ['portable', 'luggable']).errors).toHaveLength(1);
-    expect(traitProblems('x', ['box-like', 'operable']).errors).toEqual([]);
-  });
-
-  test('decorative and box-like is odd, not refused', () => {
-    const r = traitProblems('x', ['box-like', 'decorative']);
-    expect(r.errors).toEqual([]);
-    expect(r.odd).toHaveLength(1);
   });
 });
 
@@ -139,12 +119,28 @@ describe('writing', () => {
     expect(indexIds(text)).toEqual(['bin', 'desk', 'chair']);
   });
 
-  test('set parses each field; unknown fields and bad mountings are problems', () => {
+  test('set parses traits, traits+ and traits-, and metadata the traits imply', () => {
     const t = setField('desk', desk, 'traits', 'operable, box-like');
     expect(!isProblem(t) && t.traits).toEqual(['box-like', 'operable']);
-    const m = setField('desk', desk, 'mount', 'floor:-y');
-    expect(!isProblem(m) && m.mount).toEqual({ on: 'floor', face: '-y' });
-    expect(isProblem(setField('desk', desk, 'mount', 'floor'))).toBe(true);
+    const plus =
+      !isProblem(t) && setField('desk', t, 'traits+', 'floor-standing');
+    expect(plus && !isProblem(plus) && plus.traits).toEqual([
+      'box-like',
+      'floor-standing',
+      'operable',
+    ]);
+    const minus =
+      plus && !isProblem(plus) && setField('desk', plus, 'traits-', 'operable');
+    expect(minus && !isProblem(minus) && minus.traits).toEqual([
+      'box-like',
+      'floor-standing',
+    ]);
+    // Inherited traits cannot be removed: addition only.
+    expect(isProblem(setField('desk', desk, 'traits-', 'box-like'))).toBe(true);
+    const m =
+      plus && !isProblem(plus) && setField('desk', plus, 'origin', 'centre');
+    expect(m && !isProblem(m) && m.meta).toEqual({ origin: 'centre' });
+    expect(isProblem(setField('desk', desk, 'origin', 'centre'))).toBe(true);
     expect(isProblem(setField('desk', desk, 'colour', 'red'))).toBe(true);
   });
 
