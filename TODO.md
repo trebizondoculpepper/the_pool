@@ -76,6 +76,32 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
   - [ ] Later (the owner, 2026-11-04): world and level design as configuration edited by the same kind of tool: world objects' configuration, every room's layout, possibly control panels' layouts.
   - [ ] [170: Pass 2, phase 1: survey the kinds and propose the trait vocabulary](doc/prompts/170-traits-pass.md): propose composites and which kinds they go on; the owner approves. No kind changed. Proposal written 2026-11-04 in `doc/plans/170-trait-vocabulary.md` (17 composites covering all 108 kinds); awaiting the owner's ruling on each, then 176 applies them. (Phase 2 is 176.)
   - [ ] [176: Pass 2, phase 2: apply the approved traits, then enforce](doc/prompts/176-apply-traits.md): define and apply the approved traits through the command; when every kind has one, enforce at least one trait per object. Needs 170.
+  - [ ] **Each trait in code, one mission per trait** (the owner, 2026-11-04; briefs only): what each trait means for gameplay, implemented from the trait, never per kind or room. Every trait needs a plausible gameplay reason, or is retired.
+    - [ ] [177: the `box-like` trait in code](doc/prompts/177-trait-box-like.md) (form): Physical consistency.
+    - [ ] [178: the `cylindrical` trait in code](doc/prompts/178-trait-cylindrical.md) (form): Round things behave round.
+    - [ ] [179: the `panel-like` trait in code](doc/prompts/179-trait-panel-like.md) (form): Thin things are read and slipped, not walked into.
+    - [ ] [180: the `run-like` trait in code](doc/prompts/180-trait-run-like.md) (form): Runs fill rooms without blocking them.
+    - [ ] [181: the `supportable` trait in code](doc/prompts/181-trait-supportable.md) (surface): The player's hands are free.
+    - [ ] [182: the `walkable` trait in code](doc/prompts/182-trait-walkable.md) (surface): Climbing matters.
+    - [ ] [183: the `floor-standing` trait in code](doc/prompts/183-trait-floor-standing.md) (support): Placement without hand-tuning.
+    - [ ] [184: the `wall-mounted` trait in code](doc/prompts/184-trait-wall-mounted.md) (support): Walls carry the instruments.
+    - [ ] [185: the `ceiling-mounted` trait in code](doc/prompts/185-trait-ceiling-mounted.md) (support): Overhead plant (lights, extract fans, cable trays) is placed by code against the ceiling at any room height, and is out of the walker's way.
+    - [ ] [186: the `in-line` trait in code](doc/prompts/186-trait-in-line.md) (connection): In-line things are where the plant is worked.
+    - [ ] [187: the `terminal` trait in code](doc/prompts/187-trait-terminal.md) (connection): Runs must end somewhere the player can find.
+    - [ ] [188: the `fixed` trait in code](doc/prompts/188-trait-fixed.md) (handling): Plant stays where it is installed.
+    - [ ] [189: the `holdable` trait in code](doc/prompts/189-trait-holdable.md) (handling): Things travel with the player.
+    - [ ] [190: the `luggable` trait in code](doc/prompts/190-trait-luggable.md) (handling): Some things are moved but not lifted.
+    - [ ] [191: the `pocketable` trait in code](doc/prompts/191-trait-pocketable.md) (handling (proposed)): The player keeps things for later.
+    - [ ] [192: the `operable` trait in code](doc/prompts/192-trait-operable.md) (use): The plant is played through its controls.
+    - [ ] [193: the `sittable` trait in code](doc/prompts/193-trait-sittable.md) (use): Sitting changes the view and frees the hands.
+    - [ ] [194: the `readable` trait in code](doc/prompts/194-trait-readable.md) (use): The game is read as much as played.
+    - [ ] [195: the `container` trait in code](doc/prompts/195-trait-container.md) (role): Stocks run out and are refilled.
+    - [ ] [196: the `powered` trait in code](doc/prompts/196-trait-powered.md) (service): Power cuts are part of the game.
+    - [ ] [197: the `water-fed` trait in code](doc/prompts/197-trait-water-fed.md) (service): Water supply faults (a closed valve, an empty tank) stop things downstream; the trait finds every water-fed thing at once.
+    - [ ] [198: the `gas-fed` trait in code](doc/prompts/198-trait-gas-fed.md) (service): Gas safety.
+    - [ ] [199: the `networked` trait in code](doc/prompts/199-trait-networked.md) (service): Control and alarms travel on signal lines.
+    - [ ] [200: the `decorative` trait in code](doc/prompts/200-trait-decorative.md) (decorative): Set dressing is honest.
+    - [ ] [201: the `metal` trait in code](doc/prompts/201-trait-metal.md) (material (proposed)): Materials are heard and felt.
   - [x] [171: Migrate the registry to one file per kind](doc/prompts/171-registry-migration.md) (2026-11-04, ahnaa_dmitrieva): 106 kinds migrated, validated (field-for-field test, validator, random spot checks with seed 171), switched and the hard-coded entries removed.
   - [ ] Later, not this job (the owner, 2026-11-04): a classification for parts with constrained movement: linear (a drawer), rotary (a hinged door, a valve handle), and later more complex fixed paths (a linkage such as a connecting rod, whose motion is not linear). To design with the traits (170) when wanted.
   - [ ] [167: Data-first, machine-readable audits](doc/prompts/167-machine-readable-audits.md) (the owner, 2026-11-04): fast JSON for one room or kind, shared with the existing web pages, explicit coverage and provenance, and an optional one-room scene verification. Brief written for another agent; supports 158's room-by-room census.
