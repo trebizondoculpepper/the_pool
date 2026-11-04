@@ -23,10 +23,21 @@ Read first: `CLAUDE.md`, `doc/agent-tooling.md` (the bench pages, the object det
 3. **Built from data alone,** never from a scene: the pure parts in `src/toolkit/gallery/logic/` (tested beside them), sharing the command line's functions rather than duplicating them (`traits.ts`, the audit CLI's kind and trait queries, `kindCatalogue`, `groupPlacements`).
 4. **Reachable:** registered in the bench index (137's page registry) under Things (a Traits group, or traits under each kind), and linked from the catalogue panel's kind rows; `npm run audit -- trait show <t> --json` (or the existing JSON form) gives the same content to agents, so the page and the CLI cannot disagree.
 
+## The owner's test (2026-11-04)
+
+"If this works well, I should be able to see that the balance tank (`bench.html?bench=item-audit&kind=balance-tank`) is box-like, supportable, walkable, etc. Clicking each of those traits should give me a description of what that trait means (its sub-traits and expanded primitive traits), and what other objects implement that trait: what other things are box-like? That would be a good way to check, especially if I looked at that object and found that it wasn't box-like."
+
+So:
+
+- **The balance tank is the worked example.** Its traits are not yet assigned (mission 170). With 170's owner, classify it first, through the command (`npm run -s audit -- set balance-tank traits=…`), as normal practice for a sectional tank says: `box-like` (form), `floor-standing` (support), `supportable` and `walkable` (its roof bears weight and is walked on: mission 151), `container`, `fixed`, and its service traits derived from its ports (`water-fed`). Its item audit then shows each, by facet, each a link.
+- **Each trait page explains itself:** what the trait means in words (its description and its facet's), whether it is a primitive or a composite, its sub-traits and their full expansion down to primitives, and the metadata it implies, so the owner can tell what "walkable" promises in the game (for example: the walker can stand on its top).
+- **"What else is box-like?":** the trait page lists every kind and every object in the world with it, each with a thumbnail where 133's CAD views or a look exist, and a link to its item audit and object detail, so a wrongly classified object stands out at a glance.
+- **Correcting a wrong one:** beside each kind on a trait page, show the exact command that would remove the trait from it (`npm run -s audit -- set <kind> traits-=<trait>`), and on the item audit the command to add or remove one, so a misfit spotted on the page is one command away from fixed (the page stays read-only; the registry is changed only by the command, as 168 rules).
+
 ## Tests and checks
 
 - Pure: a composite's expansion and its tree; the reverse (what includes a trait); kinds with a trait directly, by composite and by ports; placements grouped by room; a trait used by nothing; a kind with no traits.
-- In the browser: the balance tank's item audit (no traits yet: says so, links to unclassified); `floppy-disk`'s item audit (its traits, each linking on); a composite's trait page (its tree down and up, its kinds, its objects, each object opening its detail page and from there its look). Screenshots in the plan.
+- In the browser: the balance tank's item audit (box-like, floor-standing, supportable, walkable and the rest, after classifying it; a kind still without traits says so and links to unclassified); `floppy-disk`'s item audit (its traits, each linking on); a composite's trait page (its tree down and up, its kinds, its objects, each object opening its detail page and from there its look). Screenshots in the plan.
 - `npm run typecheck`, `npm run lint`, `npm run format:check`, the targeted tests (`--maxWorkers=2`), `npm run build`, then one full `npm test` announced on agent-inbox (one full run per machine).
 
 ## Records
