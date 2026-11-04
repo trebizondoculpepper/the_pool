@@ -29,9 +29,9 @@ Primitives are grouped by facet so the vocabulary stays orderly and conflicts ar
 | **service** (what it depends on)        | `powered`, `water-fed`, `gas-fed`, `networked`                                                                                 | any number; descriptive only                                                        | none yet: recorded, later checked against the simulation graph (138)              |
 | —                                       | `decorative`                                                                                                                   | alone with form and support                                                         | seen and nothing else: no context, no clicks, no handling but `fixed`, no service |
 
-So a sign is `panel-like`, `wall-mounted`, `readable` (not decorative: it has hover context); a pipe is `run-like`, `ceiling-mounted` or `wall-mounted`, `in-line`; a software box is `box-like`, `floor-standing` (on whatever it rests on), `holdable`.
+So a large cuboidal water tank is `box-like`, `supportable`, `walkable`, `container`, `floor-standing`, `fixed` (the owner's example, 2026-11-04); a sign is `panel-like`, `wall-mounted`, `readable` (not decorative: it has hover context); a pipe is `run-like`, `ceiling-mounted` or `wall-mounted`, `in-line`; a software box is `box-like`, `floor-standing` (on whatever it rests on), `holdable`.
 
-Renames for clarity, done by the command and recorded: `portable` → `holdable`, `chair-like` → `sittable`; the owner's wording is used where it differs.
+Renames (the owner chose the new names, 2026-11-04): `portable` → `holdable`, `chair-like` → `sittable`. `box-like` no longer implies a top that bears anything: that is `supportable` and `walkable`, said separately.
 
 ## 3. Traits imply metadata, mostly with no configuration
 
@@ -49,7 +49,7 @@ Each primitive declares the metadata it implies, its type, and a default. A kind
 
 ## 4. The resolver: traits drive the game
 
-Today `equipment-kinds.ts` drops `traits` and `mount` when it builds the registry, and `resolveKindAffordances` still works from 158's separate flags (Codex). 172 adds one pure resolver: a kind's expanded traits and resolved metadata → its affordances (interaction from use, portable and luggable from handling, solid and shape from form, surface from form and support, seat from `sittable`'s metadata). **Migration gate:** a kind with traits is resolved from them; a kind without traits keeps its old `affordances`/`mount` until pass 2 classifies it, when those fields are removed by the command. A test compares old and new flags for every classified kind and lists differences for review.
+Today `equipment-kinds.ts` drops `traits` and `mount` when it builds the registry, and `resolveKindAffordances` still works from 158's separate flags (Codex). 172 adds one pure resolver: a kind's expanded traits and resolved metadata → its affordances (interaction from use, portable and luggable from handling, solid and shape from form, put-down from `supportable` and standing from `walkable`, seat from `sittable`'s metadata). **Migration gate:** a kind with traits is resolved from them; a kind without traits keeps its old `affordances`/`mount` until pass 2 classifies it, when those fields are removed by the command. A test compares old and new flags for every classified kind and lists differences for review.
 
 ## 5. The command line: everything without a browser
 
@@ -92,6 +92,5 @@ Codex agreed with primitives in code and composites as data, and asked for: the 
 
 ## Open questions for the owner
 
-1. The renames: `portable` → `holdable` and `chair-like` → `sittable`, or keep the 168 names?
-2. Should a kind be able to **subtract** a trait it inherits through a composite (an office chair that is not luggable), or only add (simpler; make another composite instead)?
-3. Should service traits (powered, water-fed) be derived from the simulation model where it already knows (the electrical model knows what is fed), with the trait only for what the model does not cover?
+1. Should a kind be able to **subtract** a trait it inherits through a composite (an office chair that is not luggable), or only add (simpler; make another composite instead)?
+2. Should service traits (powered, water-fed) be derived from the simulation model where it already knows (the electrical model knows what is fed), with the trait only for what the model does not cover?
