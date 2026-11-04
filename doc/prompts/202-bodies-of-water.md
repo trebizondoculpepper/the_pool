@@ -25,13 +25,15 @@ The pool edge is a drop of under 1 m to the water, so walking off it is allowed;
 
 ## Getting out (the owner, 2026-11-04)
 
-- **Very shallow water (the owner, 2026-11-04): walk out of any part of it.** The Jacuzzi, the foot bath and the lazy pool are shallow enough that the walker simply steps out over any edge, as onto a low step.
-- **Deeper pools, for now: only by the pool's ladders and steps** (they are ladder zones already): the player swims to one.
-- **Later, with climbing and clambering** (not yet designed, anywhere): one general rule for clambering over an edge, decided by the height of the walker's camera relative to the edge; it applies in water as anywhere else (from shallow water the head is high and the edge low, so clambering out is easy; from deep water, less so).
+A simplified rule, as games have it, decided by whether the walker can stand where it is:
+
+- **Shallow enough to stand** (the Jacuzzi, the foot bath, the lazy pool, a pool's shallow end): the walker clambers out over any edge, as onto a low step.
+- **Too deep to stand:** the walker swims to a ladder or the steps (ladder zones already), or, perhaps, clambers out slowly over the edge; which, the owner has not decided.
+- **Later, with climbing and clambering** (not yet designed, anywhere): one general rule for clambering over an edge, decided by the walker's camera height relative to the edge, in water as on land; the rule above is its first, simplified form.
 
 ## Still to discuss
 
-- The owner's note on shallow water was cut off at "the only thing that might be slightly difficult would…": what that difficulty is.
+- Out of deep water: a slow clamber over the edge, or only ladders and steps.
 
 - Whether the player's state changes when wet (dripping, footsteps), with the material trait (201).
 - What the view and sound do while submerged.
