@@ -1721,7 +1721,8 @@ export function poolPlantPipework(room: string): {
   // ---- The balance tank's drain, through its valve over a floor gully -----
   // Out under the tank's ladder to just beyond it, then straight down,
   // so it barely enters the walkway round the tank; its valve on the
-  // drop, reached from the walkway. Its open end leaves a 100 mm air gap.
+  // horizontal run out of the tank (the owner, 2026-11-04). Its open end
+  // leaves a 100 mm air gap.
   {
     const d = port(tank, 'drain');
     const f = tank.footprint;
@@ -1745,8 +1746,10 @@ export function poolPlantPipework(room: string): {
       label: 'DRAIN',
       valves: [
         {
-          at: [s[0], Math.max(0.12, d.at[1] - 0.18), s[2]],
-          axis: 'y',
+          // On the horizontal run's middle (the owner, 2026-11-04), not the
+          // drop below it.
+          at: [(d.at[0] + s[0]) / 2, d.at[1], (d.at[2] + s[2]) / 2],
+          axis: Math.abs(ox) > Math.abs(oz) ? 'x' : 'z',
           name: 'Balance tank drain valve',
           od: d.od,
           facing: d.outward,
