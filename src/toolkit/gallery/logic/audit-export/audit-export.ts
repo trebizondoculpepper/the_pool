@@ -3,7 +3,10 @@ import {
   isKindId,
   resolveKindAffordances,
 } from '../../../../game/plant/equipment-kinds';
-import type { KindAffordances } from '../../../../game/plant/equipment-kinds';
+import type {
+  EquipmentKind,
+  KindAffordances,
+} from '../../../../game/plant/equipment-kinds';
 import { objectDescriptors } from '../../../../game/descriptors/registry';
 import { ROOMS } from '../dev-room-links';
 import { itemAuditLink } from '../item-audit';
@@ -31,10 +34,16 @@ export const AUDIT_SCHEMA_VERSION = 1;
 
 /**
  * How a claim is known: `declared` by the registry, catalogue or a
- * descriptor; `observed` by an explicit scene scan; `proposed` by the
+ * descriptor; `default` when nobody declared it and the value is the
+ * registry's default (mission 168: never shown as declared); `observed` by an explicit scene scan; `proposed` by the
  * software's inference; `approved` by a recorded owner ruling.
  */
-export type Evidence = 'declared' | 'observed' | 'proposed' | 'approved';
+export type Evidence =
+  | 'declared'
+  | 'default'
+  | 'observed'
+  | 'proposed'
+  | 'approved';
 
 /**
  * What the data vouches for, per capability: `covered`, represented with
@@ -186,7 +195,11 @@ const affordancesOf = (
   isKindId(kind)
     ? {
         value: resolveKindAffordances(EQUIPMENT_KINDS[kind]),
-        evidence: rulingOf(kind, rulings) ? 'approved' : 'declared',
+        evidence: rulingOf(kind, rulings)
+          ? 'approved'
+          : (EQUIPMENT_KINDS[kind] as EquipmentKind).affordances
+            ? 'declared'
+            : 'default',
         source: REGISTRY_SOURCE,
       }
     : undefined;

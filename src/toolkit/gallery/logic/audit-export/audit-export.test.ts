@@ -62,7 +62,8 @@ describe('the engineers office, from data alone (mission 167 fixture)', () => {
   test('is proposed, never signed off without a recorded ruling', () => {
     expect(office.signOff).toBe('proposed');
     for (const o of office.objects)
-      if (o.affordances) expect(o.affordances.evidence).toBe('declared');
+      if (o.affordances)
+        expect(['declared', 'default']).toContain(o.affordances.evidence);
   });
 
   test('carries its schema version, links and JSON path', () => {
@@ -131,7 +132,8 @@ describe('the rules', () => {
       kinds,
       rulings: [{ subject: 'desk', date: '2026-11-04', decision: 'test' }],
     };
-    expect(kindAudit('desk', input).affordances?.evidence).toBe('declared');
+    // Nobody has declared the desk's affordances: they are defaults, not declarations.
+    expect(kindAudit('desk', input).affordances?.evidence).toBe('default');
     expect(kindAudit('desk', ruled).affordances?.evidence).toBe('approved');
     expect(kindAudit('desk', input).findings.map((f) => f.id)).toContain(
       'kind:desk:affordances-unruled',

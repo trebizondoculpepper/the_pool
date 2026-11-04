@@ -11,14 +11,23 @@
  *
  * Options: `--summary` prints counts, coverage and findings as text instead
  * of JSON. JSON goes to stdout; exit status 2 for a bad request.
+ *
+ * Editing the registry (mission 168): `show`, `register`, `unregister`,
+ * `set`, `unset` and `bind`, in `scripts/audit-edit.ts`.
  */
 import { runnerImport } from 'vite-plus';
+import { EDIT_COMMANDS, runEdit } from './audit-edit.ts';
+
+if ((EDIT_COMMANDS as readonly string[]).includes(process.argv[2] ?? '')) {
+  await runEdit(process.argv.slice(2));
+  process.exit(0);
+}
 
 type Model =
   typeof import('../src/toolkit/gallery/logic/audit-export/audit-export.ts');
 
 const USAGE =
-  'usage: node scripts/audit.ts room <room> | kind <kind> | index | rooms | kinds [--summary]';
+  'usage: node scripts/audit.ts room <room> | kind <kind> | index | rooms [--by-size] | kinds [--summary]\n       node scripts/audit.ts show | register | unregister | set | unset | bind … (see scripts/audit-edit.ts)';
 
 const args = process.argv.slice(2);
 const summary = args.includes('--summary');
@@ -97,7 +106,29 @@ switch (what) {
   case 'rooms':
   case 'kinds': {
     const index = model.auditIndex();
-    console.log(index[what].map((x) => x.id).join('\n'));
+    if (what === 'rooms' && args.includes('--by-size')) {
+      // Smallest and simplest first (mission 169): objects, then manifest entries.
+      const sized = index.rooms.map((r) => {
+        const a = model.roomAudit(r.id);
+        return {
+          id: r.id,
+          n: a.counts.objects + a.counts.manifest,
+          u: r.unresolved,
+        };
+      });
+      sized.sort((a, b) => a.n - b.n || a.u - b.u || (a.id < b.id ? -1 : 1));
+      // Rooms the catalogue counts nothing in come last: no data is not small.
+      const counted = sized.filter((r) => r.n > 0);
+      const blank = sized.filter((r) => r.n === 0);
+      console.log(
+        [
+          ...counted.map((r) => `${r.id}\t${r.n} objects\t${r.u} unresolved`),
+          ...blank.map(
+            (r) => `${r.id}\tno catalogue data (verify in the browser)`,
+          ),
+        ].join('\n'),
+      );
+    } else console.log(index[what].map((x) => x.id).join('\n'));
     break;
   }
   default:
