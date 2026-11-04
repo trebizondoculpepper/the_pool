@@ -13,6 +13,7 @@ Status: design (2026-11-04), revised after Codex's second opinion (see the end),
 
 - **Primitive traits** are the ones code gives meaning to. Each is defined once in code (`src/game/plant/traits.ts`, replacing `TRAITS`/`TRAIT_WORDS`) with: its name, description, **facet** (below), the metadata it implies (with defaults), the flags it implies, and the primitives it conflicts with. Adding a primitive is a code change, deliberately: it means new game behaviour.
 - **Composite traits** are data: one JSON file each, `src/game/plant/traits/<trait>.json`, listed by `traits/index.ts` (the kinds' arrangement): `{ "description": "…", "extends": ["holdable", "box-like"] }`. A composite extends primitives and other composites; it adds no meaning of its own beyond the bundle (and optional metadata defaults, §3). Anyone can define one through the command.
+- **Addition only** (the owner, 2026-11-04): a kind's traits are the plain union of what it names and what those expand to; nothing is subtracted. An exception is a different composite. This keeps the model simple and maps directly onto TypeScript's own composition (a kind's resolved affordances are an intersection of its traits' types).
 - A kind's `traits` may name either. Its **expanded traits** are the transitive closure down to primitives; flags, validation and behaviour use only the expanded set. `show` prints both.
 
 ## 2. Facets: what a primitive is about
@@ -92,5 +93,4 @@ Codex agreed with primitives in code and composites as data, and asked for: the 
 
 ## Open questions for the owner
 
-1. Should a kind be able to **subtract** a trait it inherits through a composite (an office chair that is not luggable), or only add (simpler; make another composite instead)?
-2. Should service traits (powered, water-fed) be derived from the simulation model where it already knows (the electrical model knows what is fed), with the trait only for what the model does not cover?
+1. Should service traits (powered, water-fed) be derived from the simulation model where it already knows (the electrical model knows what is fed), with the trait only for what the model does not cover?
