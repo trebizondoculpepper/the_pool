@@ -8,6 +8,7 @@
     "lint": "vp lint .",
     "look": "node scripts/look.ts",
     "look:audit": "node scripts/look-audit.ts",
+    "audit": "node scripts/audit.ts",
     "format": "vp fmt .",
     "format:check": "vp fmt --check .",
     "test": "vp test run --passWithNoTests",
