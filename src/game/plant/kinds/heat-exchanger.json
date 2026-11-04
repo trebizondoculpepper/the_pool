@@ -1,0 +1,8 @@
+{
+  "group": "placed",
+  "type": "Heat exchanger",
+  "code": "HX",
+  "class": "plant",
+  "status": "none",
+  "purpose": "Transfers heat from the heating circuit into pool water."
+}

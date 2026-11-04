@@ -1,0 +1,8 @@
+{
+  "group": "placed",
+  "type": "Contact tank",
+  "code": "T",
+  "class": "plant",
+  "status": "none",
+  "purpose": "Holds ozonated water for its required contact time."
+}

@@ -1,0 +1,8 @@
+{
+  "group": "placed",
+  "type": "Mimic panel",
+  "code": "MP",
+  "class": "plant",
+  "status": "none",
+  "purpose": "Shows the boiler-house gas safety circuit."
+}

@@ -13,10 +13,26 @@
  * of JSON. JSON goes to stdout; exit status 2 for a bad request.
  *
  * Editing the registry (mission 168): `show`, `register`, `unregister`,
- * `set`, `unset` and `bind`, in `scripts/audit-edit.ts`.
+ * `set`, `unset` and `bind`, in `scripts/audit-edit.ts`. Run with no
+ * arguments, `help` or `--help` for the full help (`scripts/audit-help.ts`).
  */
 import { runnerImport } from 'vite-plus';
 import { EDIT_COMMANDS, runEdit } from './audit-edit.ts';
+import { helpText } from './audit-help.ts';
+
+const first = process.argv[2];
+if (!first || first === 'help' || first === '--help' || first === '-h') {
+  const root0 = new URL('..', import.meta.url).pathname;
+  const { module: files } = await runnerImport<
+    typeof import('../src/game/plant/kind-files.ts')
+  >(`${root0}src/game/plant/kind-files.ts`, {
+    root: root0,
+    configFile: false,
+    logLevel: 'error',
+  });
+  process.stdout.write(helpText(files.TRAIT_WORDS));
+  process.exit(0);
+}
 
 if ((EDIT_COMMANDS as readonly string[]).includes(process.argv[2] ?? '')) {
   await runEdit(process.argv.slice(2));

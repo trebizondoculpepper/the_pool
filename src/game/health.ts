@@ -525,6 +525,7 @@ export const KIND_HEALTH_COVERAGE = {
   'acid-ibc': 'chemicals: acid stock',
   'safety-shower': 'not health: set decoration (the owner, 2026-10-22)',
   'fire-point': 'not health: set decoration, extinguishers and a notice',
+  sign: 'not health: a room notice or safety warning',
   'spill-kit': 'not health: set decoration',
   'ppe-cabinet': 'not health: set decoration',
   'store-extract': 'gas: its zone clear; services: its room',

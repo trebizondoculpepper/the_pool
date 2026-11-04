@@ -8,16 +8,17 @@ import type { EquipmentKind, KindId } from './equipment-kinds';
 
 it('resolves explicit affordance defaults for every registered kind', () => {
   for (const id of Object.keys(EQUIPMENT_KINDS) as KindId[]) {
-    const kind = EQUIPMENT_KINDS[id];
+    const kind: EquipmentKind = EQUIPMENT_KINDS[id];
     const a = kindAffordances(id);
     expect(a.interaction, id).toBe(
-      kind.class === 'decorative' ? 'decorative' : 'inspect-only',
+      kind.affordances?.interaction ??
+        (kind.class === 'decorative' ? 'decorative' : 'inspect-only'),
     );
-    expect(a.portable, id).toBe(false);
-    expect(a.solid, id).toBe(true);
-    expect(a.shape, id).toEqual({ type: 'bounds' });
-    expect(a.surface, id).toBe(true);
-    expect(a.seat, id).toBeNull();
+    expect(a.portable, id).toBe(kind.affordances?.portable ?? false);
+    expect(a.solid, id).toBe(kind.affordances?.solid ?? true);
+    expect(a.shape, id).toEqual(kind.affordances?.shape ?? { type: 'bounds' });
+    expect(a.surface, id).toBe(a.solid);
+    expect(a.seat, id).toEqual(kind.affordances?.seat ?? null);
   }
 });
 

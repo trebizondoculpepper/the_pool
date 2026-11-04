@@ -119,16 +119,34 @@ export async function runEdit(args: readonly string[]) {
     );
   };
   const readIndex = () =>
-    existsSync(indexPath) ? F.indexIds(readFileSync(indexPath, 'utf8')) : [];
+    existsSync(indexPath)
+      ? F.indexGroups(readFileSync(indexPath, 'utf8'))
+      : { placed: [], other: [] };
 
   /** Validate the registry as it would be, then write what changed and format it. */
   const commit = (
     files: Record<string, KindFile>,
-    index: string[],
     changed: { kind: string; file?: KindFile }[],
     indexChanged: boolean,
   ) => {
-    const problems = F.validateRegistry(files, [...index].sort());
+    // The index as it will be: every kind file by its group, sorted.
+    const entries = Object.entries(files).map(([id, f]) => ({
+      id,
+      group: f.group,
+    }));
+    const index = indexChanged
+      ? {
+          placed: entries
+            .filter((e) => e.group === 'placed')
+            .map((e) => e.id)
+            .sort(),
+          other: entries
+            .filter((e) => e.group === 'other')
+            .map((e) => e.id)
+            .sort(),
+        }
+      : readIndex();
+    const problems = F.validateRegistry(files, index);
     const mine = problems.filter((p) =>
       changed.some((c) => c.kind === p.kind || p.kind === '(index)'),
     );
@@ -151,7 +169,7 @@ export async function runEdit(args: readonly string[]) {
       } else rmSync(path);
     }
     if (indexChanged) {
-      writeAtomic(indexPath, F.indexText(index));
+      writeAtomic(indexPath, F.indexText(entries));
       written.push(indexPath);
     }
     if (written.length)
@@ -170,7 +188,6 @@ export async function runEdit(args: readonly string[]) {
   };
 
   const files = readAll();
-  const index = readIndex();
   const need = (kind: string | undefined) => {
     if (!kind) fail(`usage: ${command} <kind> …`);
     if (!files[kind])
@@ -232,13 +249,13 @@ export async function runEdit(args: readonly string[]) {
       const file: KindFile = {
         group,
         type: opts.type,
-        code: opts.code?.toUpperCase() ?? F.deriveCode(opts.type, group, files),
+        code: opts.code?.toUpperCase() ?? F.deriveCode(opts.type),
         class: opts.class as KindFile['class'],
         status: (opts.status ?? 'none') as KindFile['status'],
         purpose: opts.purpose,
       };
       const next = { ...files, [kind]: file };
-      commit(next, [...index, kind], [{ kind, file }], true);
+      commit(next, [{ kind, file }], true);
       console.log(
         `registered ${kind}: ${file.type}, code ${file.code}, ${file.class}`,
       );
@@ -258,12 +275,7 @@ export async function runEdit(args: readonly string[]) {
       if (placed) fail(`refused: ${kind} is placed ${placed} times`);
       const next = { ...files };
       delete next[kind];
-      commit(
-        next,
-        index.filter((i) => i !== kind),
-        [{ kind }],
-        true,
-      );
+      commit(next, [{ kind }], true);
       console.log(`unregistered ${kind}`);
       break;
     }
@@ -287,7 +299,7 @@ export async function runEdit(args: readonly string[]) {
           `${kind}.${field}: ${before ?? '(unset)'} → ${JSON.stringify((file as unknown as Record<string, unknown>)[field])}`,
         );
       }
-      commit({ ...files, [kind]: file }, index, [{ kind, file }], false);
+      commit({ ...files, [kind]: file }, [{ kind, file }], false);
       for (const l of lines) console.log(l);
       break;
     }
@@ -309,7 +321,6 @@ export async function runEdit(args: readonly string[]) {
       delete file[field];
       commit(
         { ...files, [kind]: file as unknown as KindFile },
-        index,
         [{ kind, file: file as unknown as KindFile }],
         false,
       );
@@ -334,11 +345,11 @@ export async function runEdit(args: readonly string[]) {
           `${a.room}/${a.thing}` < `${b.room}/${b.thing}` ? -1 : 1,
         ),
       };
-      commit({ ...files, [kind]: next }, index, [{ kind, file: next }], false);
+      commit({ ...files, [kind]: next }, [{ kind, file: next }], false);
       console.log(`bound ${room}/${thing} to ${kind}`);
       break;
     }
     default:
-      fail(`unknown command '${command}'`);
+      fail(`unknown command '${command}'; npm run -s audit -- help`);
   }
 }

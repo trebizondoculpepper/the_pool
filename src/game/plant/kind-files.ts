@@ -1,4 +1,5 @@
 import { BRANDS } from '../../toolkit/components/core/logic/brands';
+import { KIND_FILES } from './kinds/index';
 import type {
   Classification,
   DescriptionTemplate,
@@ -217,38 +218,34 @@ export function validateKindFile(kind: string, f: KindFile): Problem[] {
 }
 
 /**
- * The whole registry's problems: each file's, codes unique within a group,
- * and the index naming exactly the files there are.
+ * The whole registry's problems: each file's, and the index naming exactly
+ * the files there are, each in its group, sorted.
  */
 export function validateRegistry(
   files: Readonly<Record<string, KindFile>>,
-  index: readonly string[],
+  index: Readonly<Record<KindFile['group'], readonly string[]>>,
 ): Problem[] {
   const p: Problem[] = [];
   for (const [kind, f] of Object.entries(files))
     p.push(...validateKindFile(kind, f));
-  const codes = new Map<string, string>();
-  for (const [kind, f] of Object.entries(files)) {
-    const key = `${f.group}:${f.code}`;
-    const other = codes.get(key);
-    if (other)
-      p.push({
-        kind,
-        field: 'code',
-        message: `${f.code} is already ${other}'s in the ${f.group} group`,
-      });
-    else codes.set(key, kind);
+  // Tag codes are shared by family (every tank is T, every panel CP): not unique.
+  for (const group of ['placed', 'other'] as const) {
+    const ids = index[group];
+    for (const id of ids)
+      if (!files[id])
+        p.push({ kind: id, message: 'in the index but has no file' });
+      else if (files[id].group !== group)
+        p.push({
+          kind: id,
+          message: `listed as ${group} in the index but its file says ${files[id].group}`,
+        });
+    if ([...ids].sort().join() !== ids.join())
+      p.push({ kind: '(index)', message: `the ${group} list is not sorted` });
   }
-  const ids = new Set(Object.keys(files));
-  for (const id of index)
-    if (!ids.has(id))
-      p.push({ kind: id, message: 'in the index but has no file' });
-  const listed = new Set(index);
-  for (const id of ids)
+  const listed = new Set([...index.placed, ...index.other]);
+  for (const id of Object.keys(files))
     if (!listed.has(id))
       p.push({ kind: id, message: 'has a file but is not in the index' });
-  if ([...index].sort().join() !== index.join())
-    p.push({ kind: '(index)', message: 'the index is not sorted' });
   return p;
 }
 
@@ -264,60 +261,64 @@ export function kindFileText(f: KindFile): string {
   return `${JSON.stringify(ordered, null, 2)}\n`;
 }
 
-/** The index's text: every kind id, sorted, one per line. */
-export function indexText(ids: readonly string[]): string {
-  const sorted = [...new Set(ids)].sort();
+/** The index's text: the placed kinds and the others, each sorted, one per line. */
+export function indexText(
+  entries: readonly { id: string; group: KindFile['group'] }[],
+): string {
+  const ids = (group: KindFile['group']) =>
+    [...new Set(entries.filter((e) => e.group === group).map((e) => e.id))]
+      .sort()
+      .map((id) => `  '${id}',`);
   return [
     '/**',
-    ' * Every registered kind, one per line, sorted (mission 168): kept by',
-    ' * `npm run audit -- register` and `unregister` with the kind files beside',
-    ' * it, never by hand. A test fails if it and the directory disagree.',
+    " * Every registered kind, placed by the rooms' layouts or other, one per",
+    ' * line, sorted (mission 168): kept by `npm run audit -- register` and',
+    ' * `unregister` with the kind files beside it, never by hand. A test fails',
+    ' * if it and the directory disagree.',
     ' */',
-    'export const KIND_IDS = [',
-    ...sorted.map((id) => `  '${id}',`),
+    'export const PLACED_KIND_IDS = [',
+    ...ids('placed'),
     '] as const;',
     '',
-    'export type FileKindId = (typeof KIND_IDS)[number];',
+    'export const OTHER_KIND_IDS = [',
+    ...ids('other'),
+    '] as const;',
+    '',
+    'export const KIND_IDS = [...PLACED_KIND_IDS, ...OTHER_KIND_IDS] as const;',
+    '',
+    '/** The kind files themselves, gathered here so this file changes when they come or go. */',
+    "export const KIND_FILES: Record<string, unknown> = import.meta.glob('./*.json', {",
+    '  eager: true,',
+    "  import: 'default',",
+    '});',
     '',
   ].join('\n');
 }
 
-/** The ids an index's text lists, however the formatter has laid it out. */
-export function indexIds(text: string): string[] {
-  const body = /KIND_IDS = \[([\s\S]*?)\] as const/.exec(text)?.[1] ?? '';
-  return [...body.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+/** The ids an index's text lists, by group, however the formatter laid it out. */
+export function indexGroups(text: string): Record<KindFile['group'], string[]> {
+  const list = (name: string) => {
+    const body =
+      new RegExp(`${name} = \\[([\\s\\S]*?)\\] as const`).exec(text)?.[1] ?? '';
+    return [...body.matchAll(/'([^']+)'/g)].map((m) => m[1]);
+  };
+  return { placed: list('PLACED_KIND_IDS'), other: list('OTHER_KIND_IDS') };
 }
 
-/** A free tag code for a new kind, from its type's initials. */
-export function deriveCode(
-  type: string,
-  group: KindFile['group'],
-  files: Readonly<Record<string, KindFile>>,
-): string {
-  const taken = new Set(
-    Object.values(files)
-      .filter((f) => f.group === group)
-      .map((f) => f.code),
-  );
+/** Every id an index's text lists. */
+export function indexIds(text: string): string[] {
+  const g = indexGroups(text);
+  return [...g.placed, ...g.other];
+}
+
+/** A new kind's tag code, from its type's initials (codes are shared by family). */
+export function deriveCode(type: string): string {
   const words = type.toUpperCase().match(/[A-Z0-9]+/g) ?? ['K'];
-  const initials =
-    words
-      .map((w) => w[0])
-      .join('')
-      .slice(0, 3) || 'K';
-  const first = words[0];
-  const tries = [
-    initials,
-    first.slice(0, 2),
-    first.slice(0, 3),
-    first.slice(0, 4),
-  ];
-  for (const t of tries) if (/^[A-Z]/.test(t) && !taken.has(t)) return t;
-  for (let n = 2; n < 100; n += 1) {
-    const t = `${initials.slice(0, 2)}${n}`;
-    if (!taken.has(t)) return t;
-  }
-  throw new Error(`No free code for ${type}`);
+  const code = words
+    .map((w) => w[0])
+    .join('')
+    .slice(0, 3);
+  return /^[A-Z]/.test(code) ? code : `K${code}`.slice(0, 4);
 }
 
 /**
@@ -372,19 +373,17 @@ export function setField(
 export const isProblem = (x: KindFile | Problem): x is Problem =>
   'message' in x;
 
-const FILES = import.meta.glob<KindFile>('./kinds/*.json', {
-  eager: true,
-  import: 'default',
-});
-
 /**
  * The registry compiled from the kind files (Vite gathers the directory
  * at build, in the dev server, the tests and the Node command): each
- * kind's file by its id. Empty until mission 171 migrates the registry.
+ * kind's file by its id. The gathering is in `kinds/index.ts`, which
+ * changes whenever a kind is added or removed, so no transform cache
+ * (`node_modules/.vitest-cache` keys modules by their text) can hold a
+ * stale list of files.
  */
 export function kindFiles(): Record<string, KindFile> {
   return Object.fromEntries(
-    Object.entries(FILES)
+    Object.entries(KIND_FILES as Record<string, KindFile>)
       .map(
         ([path, f]) =>
           [path.replace(/^.*\//, '').replace(/\.json$/, ''), f] as const,

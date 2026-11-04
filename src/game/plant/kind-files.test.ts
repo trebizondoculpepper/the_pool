@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vite-plus/test';
 import {
   KIND_ID,
   deriveCode,
+  indexGroups,
   indexIds,
   indexText,
   isProblem,
@@ -80,22 +81,24 @@ describe('traits', () => {
 });
 
 describe('the registry', () => {
-  test('codes are unique within a group, and the index matches the files', () => {
+  test('the index matches the files, each in its group', () => {
     const files = {
       desk,
       'other-desk': { ...desk, type: 'Other desk' },
       chair: { ...desk, type: 'Chair', code: 'CH', group: 'other' as const },
     };
-    const problems = validateRegistry(files, ['chair', 'desk', 'stool']);
+    const problems = validateRegistry(files, {
+      placed: ['desk', 'stool'],
+      other: ['chair'],
+    });
     expect(problems.map((p) => p.message)).toEqual([
-      "DK is already desk's in the placed group",
       'in the index but has no file',
       'has a file but is not in the index',
     ]);
   });
 
   test('the repository’s kind files and index agree and are valid', () => {
-    expect(validateRegistry(kindFiles(), [...KIND_IDS])).toEqual([]);
+    expect(validateRegistry(kindFiles(), indexGroups(KINDS_INDEX))).toEqual([]);
     expect(indexIds(KINDS_INDEX)).toEqual([...KIND_IDS]);
   });
 });
@@ -123,15 +126,17 @@ describe('writing', () => {
     expect(text.endsWith('}\n')).toBe(true);
   });
 
-  test('the index round-trips, sorted and unique', () => {
-    expect(indexIds(indexText(['desk', 'chair', 'desk']))).toEqual([
-      'chair',
-      'desk',
+  test('the index round-trips, by group, sorted and unique', () => {
+    const text = indexText([
+      { id: 'desk', group: 'placed' },
+      { id: 'chair', group: 'other' },
+      { id: 'bin', group: 'placed' },
     ]);
-    expect(indexIds("export const KIND_IDS = ['a', 'b'] as const;")).toEqual([
-      'a',
-      'b',
-    ]);
+    expect(indexGroups(text)).toEqual({
+      placed: ['bin', 'desk'],
+      other: ['chair'],
+    });
+    expect(indexIds(text)).toEqual(['bin', 'desk', 'chair']);
   });
 
   test('set parses each field; unknown fields and bad mountings are problems', () => {
@@ -143,13 +148,9 @@ describe('writing', () => {
     expect(isProblem(setField('desk', desk, 'colour', 'red'))).toBe(true);
   });
 
-  test('a derived code is free in its group', () => {
-    expect(deriveCode('Office chair', 'other', {})).toBe('OC');
-    expect(
-      deriveCode('Office chair', 'other', {
-        a: { ...desk, group: 'other', code: 'OC' },
-      }),
-    ).toBe('OF');
+  test('a derived code is the type’s initials', () => {
+    expect(deriveCode('Office chair')).toBe('OC');
+    expect(deriveCode('Desk')).toBe('D');
     expect(KIND_ID.test('office-chair')).toBe(true);
   });
 });
