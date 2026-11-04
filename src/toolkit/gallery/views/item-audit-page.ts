@@ -1,3 +1,4 @@
+import { kindTraitsSection } from './kind-traits-section';
 import { kindAudit } from '../logic/audit-export/audit-export';
 import { kindDataSection } from './audit-data-section';
 import type { Object3D } from 'three';
@@ -342,6 +343,9 @@ export async function runItemAuditPage(root: HTMLElement) {
       ],
     ),
   );
+
+  // Mission 174: its traits, each a link to its trait page.
+  page.append(kindTraitsSection(kind.key));
 
   // Its parts: the catalogue's (copies nesting under its copies' tags) and the built item's.
   const tags = new Set(kind.copies.flatMap((c) => (c.tag ? [c.tag] : [])));

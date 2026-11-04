@@ -3,6 +3,7 @@ import type { BrandId } from '../../components/core/logic/brands';
 import { itemAuditLink, magicPageLink, magicRoomLink } from './item-audit';
 import { auditLink } from './look-catalogue';
 import { registerPage } from './page-registry';
+import { traitAuditLink } from './trait-audit';
 
 /**
  * The development pages that exist today, registered with the bench index
@@ -40,6 +41,13 @@ registerPage({
   branch: 'things',
   subject: 'kind',
   link: itemAuditLink,
+});
+registerPage({
+  id: 'trait-audit',
+  name: 'Traits: every trait, what composes it, the kinds and objects with it',
+  branch: 'things',
+  subject: 'none',
+  link: () => traitAuditLink(),
 });
 registerPage({
   id: 'magic-room',

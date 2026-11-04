@@ -1,3 +1,5 @@
+import { EQUIPMENT_KINDS, isKindId } from '../../../game/plant/equipment-kinds';
+import { traitAuditLink } from '../logic/trait-audit';
 import { auditJsonPath, roomAudit } from '../logic/audit-export/audit-export';
 import { ROOMS, DEV_ROOM_NAMES } from '../logic/dev-room-links';
 import { kindControls } from '../../../game/descriptors/registry';
@@ -463,6 +465,16 @@ export function createCataloguePanel(): HTMLElement {
         ),
       );
     box.append(el('p', { className: 'cat-rooms' }, itemAudit));
+    // Mission 174: the kind's traits, each a link to its trait page.
+    const named = isKindId(k.key) ? (EQUIPMENT_KINDS[k.key].traits ?? []) : [];
+    const traits = el('p', { className: 'cat-rooms' }, 'Traits: ');
+    if (named.length)
+      named.forEach((t, i) => {
+        if (i) traits.append(', ');
+        traits.append(el('a', { href: traitAuditLink(t) }, t));
+      });
+    else traits.append(el('a', { href: traitAuditLink() }, 'none yet'));
+    box.append(traits);
     if (k.usage.rooms.length) {
       const rooms = el('p', { className: 'cat-rooms' }, 'In: ');
       k.usage.rooms.forEach((room, i) => {

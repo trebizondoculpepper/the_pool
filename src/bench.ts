@@ -5,7 +5,8 @@
  * audit (mission 127, `toolkit/gallery/views/look-audit-page.ts`), one room
  * with `&room=<id>`, else every room's summary; `?bench=room-audit&room=<id>`
  * the room audit (mission 129, `toolkit/gallery/views/room-audit-page.ts`);
- * `?bench=item-audit&kind=<kind>` the item audit, `?bench=magic-room&kind=…`
+ * `?bench=item-audit&kind=<kind>` the item audit, `?bench=trait-audit[&trait=<t>]`
+ * the trait audit (mission 174), `?bench=magic-room&kind=…`
  * its magic room and `?bench=magic-page&kind=…` its magic page (mission 130,
  * `toolkit/gallery/views/item-audit-page.ts`, `magic-room.ts`);
  * `?bench=brand-audit&brand=<id>` a brand's audit (every brand without
@@ -65,6 +66,11 @@ if (!import.meta.env.DEV) {
   const { runSimObjectPage } =
     await import('./toolkit/gallery/views/sim-node-page');
   await runSimObjectPage(root);
+} else if (root && which === 'trait-audit') {
+  // Mission 174: one trait, or every trait.
+  const { runTraitAuditPage } =
+    await import('./toolkit/gallery/views/trait-audit-page');
+  runTraitAuditPage(root);
 } else if (root && which === 'object-detail') {
   const { runObjectDetailPage } =
     await import('./toolkit/gallery/views/object-detail-page');

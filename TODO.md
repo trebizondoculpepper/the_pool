@@ -571,7 +571,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 
 ## Housekeeping
 
-- [ ] **Traits on the item audit, and a trait audit page** ([174](doc/prompts/174-trait-audit-page.md); the owner, 2026-11-04; brief only, not started): the item audit lists a kind's traits (named, through composites, derived), each linking to a new trait page (`bench.html?bench=trait-audit&trait=<t>`) showing what composes it, what includes it, the kinds that have it, and every object in the world with it (each to its object detail page); from data alone, sharing `npm run audit`'s functions.
+- [x] **Traits on the item audit, and a trait audit page** ([174](doc/prompts/174-trait-audit-page.md); the owner, 2026-11-04; done 2026-11-04, ahnaa_dmitrieva): the item audit's Its traits (by facet, how each is had, links, add/remove commands); `bench.html?bench=trait-audit[&trait=<t>]` (meaning, composition tree, included by, kinds with it, objects by room); the shared `trait-index.ts` behind `npm run audit -- traits | trait show [--json]`; the balance tank classified as the worked example. Not done: CAD thumbnails on the trait page (optional in the spec).
 
 - [ ] **One object registry** ([147](doc/prompts/147-object-registry.md); the owner, 2026-11-03; brief only, not started): every kind built anywhere (plant rooms, dev rooms, the magic room, CAD views) by one builder from minimal knowledge of how it fits the world (floor, wall, ceiling…), its world behaviour and descriptor registered with it, looked up by kind, tag, asset id or model node; replaces per-kind magic-room adapters, `MODELS`' mismatched keys and the room builder's special cases.
 

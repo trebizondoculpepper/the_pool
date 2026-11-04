@@ -170,3 +170,9 @@ So the pages must show configuration as a first-class part of a trait:
 ## Files
 
 New: `src/game/plant/trait-index.ts` (+ test), `src/toolkit/gallery/logic/trait-audit.ts` (+ test), `src/toolkit/gallery/views/trait-audit-page.ts`. Changed: `scripts/audit-edit.ts` (and `audit.ts`/`audit-help.ts` for `--json`), `src/bench.ts`, `src/toolkit/gallery/views/item-audit-page.ts`, `src/toolkit/gallery/logic/bench-pages.ts`, `src/toolkit/gallery/views/catalogue-panel.ts`, `src/game/plant/kinds/balance-tank.ts` (by the command only), `doc/agent-tooling.md`, `TODO.md`, `CHANGELOG.md` (`### Added`). Claim them on the mailbox first: the registry and the audit CLI are `ahnaa_dmitrieva`'s (172, 173) and mission 170 is assigning traits.
+
+## As built (2026-11-04, ahnaa_dmitrieva)
+
+- Built as specified, with these changes: `serviceTraitsByKind` takes port media (`mediaByKind(graph)` first), so the CLI and the page share the media too; `traitIndex` counts kinds only (objects are counted on each trait's page, from the catalogue); `kinds --with` uses `traitDetail` as well. The item audit's section is placed directly after What it is (not through `ITEM_AUDIT_SECTIONS`), with a note when a kind has no support trait.
+- Not built: CAD thumbnails on the trait page (optional in the spec; the item audit, one link away, has them).
+- Browser check: the balance tank's item audit lists box-like, supportable (implied by walkable), walkable, floor-standing, fixed, container and water-fed (from ports), each linking on; `box-like` lists the balance tank and its three objects (PL1-T1, PL2-T1, PL3-BT1), each opening its object detail page; `floppy-disk` shows its tree and expansion; the index lists every facet and the composites.
