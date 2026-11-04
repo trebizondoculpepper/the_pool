@@ -44,7 +44,7 @@ Each primitive declares the metadata it implies, its type, and a default. A kind
 - `cylindrical`: `axis` (`y` default: an upright vessel or filter; `x` or `z` for one lying down); radius and length come from its bounds, not configuration.
 - `box-like`: its bounds; a better `box` only if declared (168's shape field moves here).
 - `sittable`: `seatHeight` and `look` (default +z), the existing seat metadata.
-- `powered`: descriptive only, no behaviour claimed: it records that the kind depends on electricity (`supply` optional). Where the simulation model already knows the dependency (the electrical model knows what is fed), the audit compares the two and reports mismatches, rather than the trait inventing behaviour.
+- **Service traits are derived from the model's ports** (the owner, 2026-11-04): a kind whose model has an electrical input port (400 V three-phase, 230 V single-phase, 12 V DC…) is `powered`, with the supply as its metadata; a water inlet makes it `water-fed`, a gas inlet `gas-fed`, a signal or network port `networked`. They are computed, never stored in a kind file and never set by the command (which refuses); their use is indexing: `kinds --with powered` and the bench find devices that behave alike for auditing and examination. They do not build the game.
 - Composites may set metadata defaults for what they contain (an `upright-filter` composite: `cylindrical` with `axis: y`).
 - **Precedence:** a kind's own value, else the nearest composite's, else the primitive's default. Two parents of one composite giving different defaults for one key is refused unless the composite sets its own value. `trait edit` re-resolves every descendant and refuses if any would become invalid.
 
@@ -93,4 +93,4 @@ Codex agreed with primitives in code and composites as data, and asked for: the 
 
 ## Open questions for the owner
 
-1. Should service traits (powered, water-fed) be derived from the simulation model where it already knows (the electrical model knows what is fed), with the trait only for what the model does not cover?
+None: the owner settled the names (holdable, sittable), addition only, and derived service traits (2026-11-04).
