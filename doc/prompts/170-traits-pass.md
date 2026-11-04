@@ -1,6 +1,21 @@
-# 170: Audit pass 2: each kind's traits and mounting
+# 170: Audit pass 2, phase 1: survey the kinds and propose the trait vocabulary
 
-The owner, 2026-11-04. Brief only; not started until the owner says. Uses missions 168 and 172's tools (**the trait vocabulary, composites and metadata are now 172's: read `doc/plans/172-trait-hierarchy.md` and `npm run -s audit -- help`; where this brief's table, names (`chair-like`, `portable`) or `mount` differ, 172 wins**); follows 169 (a kind must be registered first). Supersedes the hand-set affordance flags of 158 stage 1 as the way kinds are classified: flags follow from traits.
+The owner, 2026-11-04. Brief only; not started until the owner says. Uses missions 168 and 172's tools (**the trait vocabulary, composites and metadata are now 172's: read `doc/plans/172-trait-hierarchy.md` and `npm run -s audit -- help`; where this brief's table, names (`chair-like`, `portable`) or `mount` differ, 172 wins**); follows 169 (a kind must be registered first).
+
+**Split (the owner, 2026-11-04):** pass 2 is two phases. **Phase 1 (this mission):** go through the objects in the collection and propose the list of traits, mostly composites, that will later be applied; the owner approves which. Nothing is applied to kinds in this phase. **Phase 2 is mission 176:** apply the approved traits to every kind, then switch on enforcement that every object has at least one trait. Where the sections below describe applying traits to kinds, that is 176's.
+
+## Phase 1: what to do
+
+1. Survey every registered kind from the command line (`npm run -s audit -- kinds`, `show <kind>` for its source evidence, placements and derived services; the item audit and its CAD views where a look helps), without changing any kind.
+2. Group kinds that behave alike and propose, for each group, a composite trait: its name, its description, the primitives it extends, any metadata defaults, and the kinds it would go on (for example `sectional-tank` = box-like, floor-standing, walkable, container, fixed: balance, break and backwash tanks). Propose primitives alone where no bundle is worth naming.
+3. Write the proposal as one reviewable list in `doc/plans/170-trait-vocabulary.md`: composites first, each with its members and why; then the kinds no proposal covers. No `trait define` and no `set … traits=` yet.
+4. The owner approves, edits or rejects each proposed trait; the approved list is recorded in the same file and 176 starts from it.
+
+## Acceptance (phase 1)
+
+- Every registered kind appears in the proposal, under a proposed trait or as uncovered.
+- The owner has ruled on each proposed trait; the approved list is in `doc/plans/170-trait-vocabulary.md`.
+- No kind or trait file changed. Supersedes the hand-set affordance flags of 158 stage 1 as the way kinds are classified: flags follow from traits.
 
 ## Kind by kind, not room by room
 
