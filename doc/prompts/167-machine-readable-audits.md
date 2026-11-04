@@ -34,6 +34,10 @@ An agent can fetch a stable JSON document for one room or one kind, read its fac
 - Test the pure joins, deterministic output, schema version, coverage rules, absent descriptors, an unmatched manifest entry, and the distinction between proposal and approval. Verify that the normal export path never calls the scene builder; test the explicit one-room verification path separately. Update `doc/agent-tooling.md` with the JSON URLs, field meanings, coverage states, and verification action.
 - Do not turn this into a whole-building playthrough or silently sign off mission 158. Present the first room's report for the owner's ruling; subsequent rooms can be reviewed one at a time. The stage-1 affordance metadata from 158 remains usable by mission 159 independently.
 
+## Delivered so far (2026-11-04, ahnaa_dmitrieva)
+
+The pure model (`src/toolkit/gallery/logic/audit-export/`, 3826917d); the `audit/*.json` exports on the dev server and the static build, with `linkBase` for nested links, and data-first room and item audit pages with **Verify this room** (571cdac5); and the command line, at the owner's request (a310b1d0): `npm run -s audit -- room <room> | kind <kind> | index | rooms | kinds [--summary]`, the same documents from Node alone. Agents should reach for the command first; the pages are for people, and the scene only for verification. Still to do: verification reporting observed-versus-data discrepancies, more manifests, recorded cold and warm timings.
+
 ## Coordination and records
 
 The shared checkout has uncommitted mission 158 census work in `scripts/registry-census.ts`, `src/toolkit/gallery/views/look-audit-scene.ts`, `doc/plans/158-one-kind-of-room.md`, `TODO.md`, `CHANGELOG.md` and related files. Coordinate claims with its agent before editing or retiring that work; preserve any valid scanner evidence, but do not keep a second Markdown/JSON sign-off pipeline. Work on `main` without a worktree. Record progress in `TODO.md`, a plan in `doc/plans/`, `CHANGELOG.md` under Unreleased for shipped behaviour, and a diary entry. Run the required project checks before committing and pushing.
