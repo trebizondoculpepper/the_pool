@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows each facility’s heat from the LTHW ring.',
+  traits: ['board-like'],
 });

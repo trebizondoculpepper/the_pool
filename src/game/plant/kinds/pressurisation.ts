@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Maintains heating circuit pressure and expansion volume.',
+  traits: ['floor-standing', 'machine-like'],
 });

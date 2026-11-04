@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'Sends a dosing chemical from its store along its main to the day tanks.',
+  traits: ['floor-standing', 'machine-like'],
 });

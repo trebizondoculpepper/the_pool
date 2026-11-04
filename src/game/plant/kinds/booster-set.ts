@@ -8,4 +8,5 @@ export default defineKind({
   status: 'booster',
   purpose: 'Pressurises make-up water with duty and standby pumps.',
   brand: 'grundflow',
+  traits: ['floor-standing', 'machine-like'],
 });

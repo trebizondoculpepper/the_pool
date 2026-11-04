@@ -156,7 +156,7 @@ describe('objectClass', () => {
   it('makes signs and fire fittings architectural, never decorative', () => {
     expect(objectClass('sign:no-entry')).toBe('architectural');
     expect(objectClass('fire-point')).toBe('architectural');
-    expect(objectClass('desk')).toBe('decorative');
+    expect(objectClass('desk')).toBe('non-plant');
     expect(objectClass('spill-kit')).toBe('decorative');
     expect(objectClass('balance-tank:3x2x2')).toBe('plant');
     expect(objectClass('nonsense')).toBeUndefined();

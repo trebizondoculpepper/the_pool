@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   template: 'valve',
   purpose: 'Isolates gas to a boiler.',
+  traits: ['cylindrical', 'valve-like'],
 });

@@ -9,4 +9,5 @@ export default defineKind({
   purpose:
     'Measures water depth and sends its level signal to the tank control panel.',
   brand: 'trager-feinstein',
+  traits: ['cylindrical', 'instrument-like', 'terminal'],
 });

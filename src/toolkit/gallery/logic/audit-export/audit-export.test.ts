@@ -21,11 +21,11 @@ describe('the engineers office, from data alone (mission 167 fixture)', () => {
   test('lists its six catalogue copies, each registered as the registry says', () => {
     expect(office.objects.map((o) => [o.ref, o.kind])).toEqual([
       ['EO-CP1', 'scenario-simulator'],
+      ['EO-FX1', 'desk'],
+      ['EO-FX2', 'storage-cupboard'],
+      ['EO-FX3', 'storage-cupboard'],
       ['EO-SF1', 'switch-fuse'],
-      ['engineer-s-desk', 'desk'],
-      ['parts-stores-cupboard', 'storage-cupboard'],
       ['staff-noticeboard', 'sign'],
-      ['test-equipment-cupboard', 'storage-cupboard'],
     ]);
     for (const o of office.objects) {
       expect(o.registered).toBe(isKindId(o.kind));
@@ -172,7 +172,7 @@ describe('the rules', () => {
     expect(desk.registered).toBe(true);
     expect(desk.placements.find((p) => p.room === 'engineers_office')).toEqual({
       room: 'engineers_office',
-      refs: ['engineer-s-desk'],
+      refs: ['EO-FX1'],
       links: {
         html: 'bench.html?bench=room-audit&room=engineers_office',
         json: auditJsonPath.room('engineers_office'),

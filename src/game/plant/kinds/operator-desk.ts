@@ -7,4 +7,12 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Provides the operator workstation.',
+  traits: [
+    'box-like',
+    'fixed',
+    'floor-standing',
+    'operable',
+    'readable',
+    'supportable',
+  ],
 });

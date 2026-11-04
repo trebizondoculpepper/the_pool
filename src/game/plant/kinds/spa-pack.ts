@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Contains the footbath circulation and treatment equipment.',
+  traits: ['floor-standing', 'machine-like'],
 });

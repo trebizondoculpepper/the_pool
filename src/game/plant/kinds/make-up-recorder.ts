@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Records the make-up water used, from the meter’s pulses.',
+  traits: ['box-like', 'instrument-like', 'wall-mounted'],
 });

@@ -9,4 +9,5 @@ export default defineKind({
   template: 'power',
   purpose: 'Isolates and fuses the electrical supply to a room.',
   brand: 'voltara',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

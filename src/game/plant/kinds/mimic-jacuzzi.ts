@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows the jacuzzi’s water circuit.',
+  traits: ['board-like'],
 });

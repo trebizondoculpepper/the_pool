@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Provides a segregated bulk chemical delivery connection.',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

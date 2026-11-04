@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Accepts a temporary generator connection.',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

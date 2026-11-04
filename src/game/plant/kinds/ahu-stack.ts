@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Conditions and moves air for the pool halls.',
+  traits: ['duct-air-like', 'floor-standing'],
 });

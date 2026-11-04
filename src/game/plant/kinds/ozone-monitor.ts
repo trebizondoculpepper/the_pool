@@ -8,4 +8,5 @@ export default defineKind({
   status: 'gas',
   purpose: 'Monitors room air for ozone and raises a warning and alarm.',
   brand: 'warden',
+  traits: ['box-like', 'instrument-like', 'wall-mounted'],
 });

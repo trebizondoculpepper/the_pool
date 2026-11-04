@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Sends a dosing chemical to each plant room’s day tank in turn.',
+  traits: ['box-like', 'valve-like'],
 });

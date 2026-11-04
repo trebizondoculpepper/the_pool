@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Meters low-pressure CO₂ into the pool return under the Trio.',
   brand: 'chlorella',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

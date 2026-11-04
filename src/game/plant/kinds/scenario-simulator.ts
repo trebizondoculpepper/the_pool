@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Runs the plant scenario simulation.',
+  traits: ['box-like', 'control-panel-like', 'floor-standing'],
 });

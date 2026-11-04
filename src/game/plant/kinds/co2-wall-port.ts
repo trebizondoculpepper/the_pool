@@ -9,4 +9,5 @@ export default defineKind({
   purpose:
     'Brings the low-pressure CO₂ line through the wall, with its isolating valve and gauge.',
   brand: 'arncliffe',
+  traits: ['box-like', 'valve-like'],
 });

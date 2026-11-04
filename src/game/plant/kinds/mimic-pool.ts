@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows the main pool treatment circuit.',
+  traits: ['board-like'],
 });

@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Generates ozone for water treatment.',
   brand: 'trioxa',
+  traits: ['floor-standing', 'machine-like'],
 });

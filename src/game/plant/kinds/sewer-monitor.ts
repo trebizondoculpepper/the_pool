@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'Measures and records the flow to the foul sewer against the discharge consent.',
+  traits: ['box-like', 'instrument-like', 'wall-mounted'],
 });

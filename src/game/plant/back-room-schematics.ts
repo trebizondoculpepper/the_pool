@@ -18,9 +18,8 @@ import {
  * every component in the model): the chemical stores, the loading bay, the
  * air plant, the control room and the engineers' office. Each names its
  * machines as the room draws them, what links them to the rest of the
- * plant, and the room's electrics. The stores' safety showers, spill kits
- * and PPE cabinets, and the control room's water-test kit, are set
- * decoration by the owner's rulings and are not here. Pure.
+ * plant, and the room's electrics. The office's operable desk and cupboards
+ * are nodes even though they have no service links. Pure.
  */
 
 const machine = (id: string, kind: string, name: string): SchematicNode => ({
@@ -427,6 +426,9 @@ export const ENGINEERS_OFFICE_SCHEMATIC = backRoom(
   'EO',
   [
     simulator,
+    machine('desk', 'desk', 'Engineer’s desk'),
+    machine('parts-cupboard', 'storage-cupboard', 'Parts stores cupboard'),
+    machine('test-cupboard', 'storage-cupboard', 'Test equipment cupboard'),
     ring,
     ...sockets,
     pir,

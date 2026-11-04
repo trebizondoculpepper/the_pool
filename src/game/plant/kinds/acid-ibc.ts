@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Stores acid for pool dosing on a spill pallet.',
+  traits: ['tank-like'],
 });

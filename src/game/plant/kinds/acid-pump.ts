@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Meters acid to control pool-water pH.',
+  traits: ['machine-like', 'wall-mounted'],
 });

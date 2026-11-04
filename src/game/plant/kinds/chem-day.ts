@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'Holds a plant room’s dosing chemical for its pool, refilled from the store.',
+  traits: ['container', 'cylindrical', 'fixed', 'floor-standing'],
 });

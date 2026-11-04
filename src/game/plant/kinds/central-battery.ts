@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Supplies emergency lighting when mains power fails.',
+  traits: ['box-like', 'control-panel-like', 'floor-standing'],
 });

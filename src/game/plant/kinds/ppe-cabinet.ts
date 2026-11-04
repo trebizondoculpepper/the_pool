@@ -7,4 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Stores protective equipment for chemical work.',
+  traits: ['box-like', 'fixed', 'operable', 'wall-mounted'],
 });

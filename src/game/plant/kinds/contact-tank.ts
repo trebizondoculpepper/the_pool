@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Holds ozonated water for its required contact time.',
+  traits: ['tank-like'],
 });

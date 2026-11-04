@@ -7,4 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Contains materials for a chemical spill response.',
+  traits: ['box-like', 'holdable-small'],
 });

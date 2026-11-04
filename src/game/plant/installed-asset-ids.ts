@@ -402,6 +402,18 @@ export const INSTALLED_ASSET_IDS: Readonly<
     assetId: 'asset-0091',
     tag: 'EO-CP1',
   },
+  'engineers_office|desk|Engineer’s desk': {
+    assetId: 'asset-1309',
+    tag: 'EO-FX1',
+  },
+  'engineers_office|storage-cupboard:solid|Parts stores cupboard': {
+    assetId: 'asset-1310',
+    tag: 'EO-FX2',
+  },
+  'engineers_office|storage-cupboard:glass|Test equipment cupboard': {
+    assetId: 'asset-1311',
+    tag: 'EO-FX3',
+  },
   // The Olympic pool's plant room, redone by the pipeline (prompt 033, 2026-10-23).
   'plant_pool_02|sand-filter:3|Olympic pool sand filter 1': {
     assetId: 'asset-0092',

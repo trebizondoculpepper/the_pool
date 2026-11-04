@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Distributes the incoming low-voltage supply.',
   brand: 'voltara',
+  traits: ['box-like', 'control-panel-like', 'floor-standing'],
 });

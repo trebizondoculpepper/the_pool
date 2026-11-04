@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Distributes and protects lighting-zone circuits.',
   brand: 'voltara',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'uv',
   purpose: 'Disinfects circulating water with ultraviolet light.',
+  traits: ['filter-like'],
 });

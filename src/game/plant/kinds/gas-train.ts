@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Isolates and regulates the boiler gas supply.',
+  traits: ['gas-train-like', 'run-like'],
 });

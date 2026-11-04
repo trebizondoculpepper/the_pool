@@ -11,4 +11,5 @@ export default defineKind({
     interaction: 'inspect-only',
     solid: false,
   },
+  traits: ['fixed', 'panel-like', 'readable', 'wall-mounted'],
 });

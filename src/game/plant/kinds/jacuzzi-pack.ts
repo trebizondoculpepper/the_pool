@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'cabinet',
   purpose: 'Contains the Jacuzzi circulation and treatment equipment.',
+  traits: ['floor-standing', 'machine-like'],
 });

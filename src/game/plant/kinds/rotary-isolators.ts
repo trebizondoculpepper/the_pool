@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Locally isolates plant electrical circuits.',
   brand: 'voltara',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

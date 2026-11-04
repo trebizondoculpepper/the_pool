@@ -50,9 +50,9 @@ describe('kindCatalogue', () => {
     expect(kind('exhibit:panel').worst).toContain('generic-name');
   });
   test('decoration is exempt', () => {
-    const desk = kind('desk');
-    expect(desk.exempt).toBe(true);
-    expect(desk.worst).toEqual([]);
+    const filing = kind('filing');
+    expect(filing.exempt).toBe(true);
+    expect(filing.worst).toEqual([]);
   });
   test('a tag outside its room code is flagged; parts nest under their owner', () => {
     const pump = kind('pump').copies.find((c) => c.tag === 'P-101A')!;

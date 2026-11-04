@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Records operating measurements over time.',
+  traits: ['board-like'],
 });

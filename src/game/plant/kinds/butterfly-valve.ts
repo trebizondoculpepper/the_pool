@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   template: 'valve',
   purpose: 'Isolates or admits flow in its pipe run.',
+  traits: ['cylindrical', 'valve-like'],
 });

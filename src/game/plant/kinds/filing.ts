@@ -7,4 +7,5 @@ export default defineKind({
   class: 'decorative',
   status: 'none',
   purpose: 'Stores paper records and spares.',
+  traits: ['decorative', 'office-furniture-like'],
 });

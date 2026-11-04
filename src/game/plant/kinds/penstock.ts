@@ -10,4 +10,5 @@ export default defineKind({
   purpose:
     'Opens or shuts a tank outlet, worked by an extended spindle from above.',
   brand: 'grundflow',
+  traits: ['panel-like', 'valve-like'],
 });

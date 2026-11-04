@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'Runs both chemical lines’ transfer in AUTO: calls each day tank at its own levels and tells each selector which outlet to open.',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

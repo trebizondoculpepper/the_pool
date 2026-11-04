@@ -41,11 +41,11 @@ describe('links and commands', () => {
 describe('the registry’s worked example: the balance tank', () => {
   const ctx = traitContext();
 
-  test('box-like lists the balance tank, named; supportable has it implied by walkable', () => {
+  test('box-like lists the balance tank through tank-like; supportable is implied by walkable', () => {
     expect(
       traitDetail('box-like', ctx).kinds.find((k) => k.kind === 'balance-tank')
         ?.sources,
-    ).toEqual([{ by: 'named' }]);
+    ).toEqual([{ by: 'composite', via: ['tank-like'] }]);
     expect(
       traitDetail('supportable', ctx).kinds.find(
         (k) => k.kind === 'balance-tank',

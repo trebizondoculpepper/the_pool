@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Displays live plant measurements.',
+  traits: ['board-like'],
 });

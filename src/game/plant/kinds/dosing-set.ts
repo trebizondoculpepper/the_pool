@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Controls chemical addition to the return water.',
+  traits: ['floor-standing', 'machine-like'],
 });

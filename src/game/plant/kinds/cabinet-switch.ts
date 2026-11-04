@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'switch',
   purpose: 'Starts or stops a packaged set when its isolator is on.',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

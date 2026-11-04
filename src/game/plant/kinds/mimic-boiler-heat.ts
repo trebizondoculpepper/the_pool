@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows boiler status and heat output.',
+  traits: ['board-like'],
 });

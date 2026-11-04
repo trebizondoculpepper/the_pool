@@ -7,4 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Repeats the building fire-alarm status.',
+  traits: ['board-like'],
 });

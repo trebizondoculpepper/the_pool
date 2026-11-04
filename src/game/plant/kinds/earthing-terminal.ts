@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Bonds the electrical installation to earth.',
+  traits: ['box-like', 'fixed', 'readable', 'terminal'],
 });

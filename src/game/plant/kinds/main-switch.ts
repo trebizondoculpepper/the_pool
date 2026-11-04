@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Isolates the incoming electrical supply.',
   brand: 'voltara',
+  traits: ['box-like', 'control-panel-like', 'floor-standing'],
 });

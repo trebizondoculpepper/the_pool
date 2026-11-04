@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows the weather outside, from the roof sensors.',
+  traits: ['board-like'],
 });

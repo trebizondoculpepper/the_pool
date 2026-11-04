@@ -7,4 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Displays security camera views.',
+  traits: ['board-like'],
 });

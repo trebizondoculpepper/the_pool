@@ -172,6 +172,8 @@ const ACTIVE_KINDS: ReadonlySet<string> = new Set([
   'weather-station',
   'cctv',
   'scenario-simulator',
+  'desk',
+  'storage-cupboard',
   'twin-socket',
   'pir-switch',
   'lighting-zone',

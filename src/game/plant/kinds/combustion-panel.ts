@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Indicates combustion and ventilation status.',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

@@ -7,4 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Holds equipment for manual pool-water testing.',
+  traits: ['box-like', 'holdable-small'],
 });

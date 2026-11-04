@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Circulates low-temperature heating water.',
+  traits: ['floor-standing', 'machine-like'],
 });

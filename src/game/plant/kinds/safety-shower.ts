@@ -7,4 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Provides emergency drenching and eyewash after exposure.',
+  traits: ['floor-standing', 'wash-down-like'],
 });

@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'level',
   purpose: 'Holds pool overflow and supplies the circulation pumps.',
-  traits: ['box-like', 'container', 'fixed', 'floor-standing', 'walkable'],
+  traits: ['tank-like', 'walkable'],
 });

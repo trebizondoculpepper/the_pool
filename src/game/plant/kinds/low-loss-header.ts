@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Hydraulically separates boiler and distribution flows.',
+  traits: ['container', 'cylindrical', 'fixed', 'floor-standing'],
 });

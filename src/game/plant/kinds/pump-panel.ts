@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Controls and indicates the local circulation plant.',
+  traits: ['box-like', 'control-panel-like', 'floor-standing'],
 });

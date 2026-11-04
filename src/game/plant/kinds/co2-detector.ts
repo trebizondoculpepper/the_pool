@@ -9,4 +9,5 @@ export default defineKind({
   purpose:
     'Watches the room’s air for CO₂ and shuts the dosing, or the whole supply, on its alarms.',
   brand: 'warden',
+  traits: ['box-like', 'instrument-like', 'wall-mounted'],
 });

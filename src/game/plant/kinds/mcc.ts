@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Starts and protects plant motors.',
+  traits: ['box-like', 'control-panel-like', 'floor-standing'],
 });

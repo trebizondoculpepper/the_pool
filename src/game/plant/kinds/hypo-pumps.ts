@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Meters hypochlorite into the treatment circuit.',
+  traits: ['machine-like', 'wall-mounted'],
 });

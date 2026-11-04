@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows the lounge pool’s filters, pumps and valves.',
+  traits: ['board-like'],
 });

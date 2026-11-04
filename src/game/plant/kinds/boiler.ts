@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Heats the shared low-temperature heating circuit.',
   brand: 'hamwarmy',
+  traits: ['heat-like'],
 });

@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose: 'Distributes power to final circuits.',
   brand: 'voltara',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });

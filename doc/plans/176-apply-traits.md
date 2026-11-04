@@ -2,7 +2,9 @@
 
 Stage 1 is done (`46c55011`, `nicole_buruaah`, 2026-11-04): the 14 owner-approved composites from 170 defined with `npm run -s audit -- trait define` (tank-like, machine-like, heat-like, filter-like, valve-like, instrument-like, board-like, control-panel-like, gas-train-like, duct-air-like, office-furniture-like, seat-like, holdable-small, wash-down-like); `audit check`: no problems. `board-like` is the proposal's read-only "panel-like" boards (that name is a primitive). Where the proposal offered either/or, the composite leaves the facet to each kind: a kind has at most one form (the owner, 2026-11-04: box-like and cylindrical are both claims about its dominant shape).
 
-## Stage 2: the assignment, ready to apply (not yet applied)
+## Stage 2: application in progress
+
+The 107 rows below were applied through `npm run -s audit -- set` on 2026-11-04. `audit check`, the targeted registry tests, typecheck, lint, formatting check and build pass. `unclassified` still reports 21 kinds without a support trait, mostly in-line fittings and handheld items. The owner has been asked whether those need new support categories or an exception before enforcement is enabled.
 
 Apply each line with `npm run -s audit -- set <kind> traits=<traits>` (one group per commit, `audit check` and the targeted tests each time). Supports come from how the room layouts place each kind (`wall(…)` or `floor(…)` in `room-equipment.ts`). Corrections to the proposal, recorded: cylindrical vessels (calorifier, chem-bulk, chem-day, hypo-tank, low-loss-header, dosing-pot) take tank-like's primitives with `cylindrical`; the wall-hung changeover-switch and rotary-isolators are control panels, not in-line valves; ppe-cabinet is wall-mounted; desk and storage-cupboard are operable (their class `decorative` must be re-classed before `operable` is accepted, per 170's consistency notes). `balance-tank` is walkable (151, 175). `floppy-disk` is already classified.
 

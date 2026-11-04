@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Measures incoming make-up water volume.',
+  traits: ['cylindrical', 'in-line', 'instrument-like'],
 });

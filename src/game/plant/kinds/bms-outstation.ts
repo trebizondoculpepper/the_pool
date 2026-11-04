@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Collects plant signals for building controls.',
+  traits: ['board-like'],
 });

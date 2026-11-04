@@ -8,4 +8,5 @@ export default defineKind({
   status: 'motor',
   purpose: 'Circulates water, driven by its own motor and starter.',
   brand: 'grundflow',
+  traits: ['floor-standing', 'machine-like'],
 });

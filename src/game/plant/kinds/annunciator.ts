@@ -7,4 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Indicates and acknowledges plant alarms.',
+  traits: ['board-like'],
 });

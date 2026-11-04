@@ -9,4 +9,5 @@ export default defineKind({
   purpose:
     'Opens and shuts the whole building’s CO₂ supply; tripped shut by a high gas alarm.',
   brand: 'penfold',
+  traits: ['box-like', 'valve-like'],
 });

@@ -7,4 +7,5 @@ export default defineKind({
   class: 'decorative',
   status: 'none',
   purpose: 'Displays room safety notices.',
+  traits: ['decorative', 'fixed', 'panel-like', 'wall-mounted'],
 });

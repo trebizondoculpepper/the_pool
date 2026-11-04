@@ -8,4 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'Indicates the balance tank’s level and floats, and switches its make-up and the pumps.',
+  traits: ['box-like', 'control-panel-like', 'wall-mounted'],
 });
