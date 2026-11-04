@@ -1,4 +1,4 @@
-# 168 plan: the audit command edits the registry, one file per kind
+# 168 plan: the tools for a registry of one file per kind
 
 Brief: [168](../prompts/168-audit-proposals.md). The owner's rulings (2026-11-04): **no proposals, no review page**. The audit command changes the configuration directly; git is the review (a bad change is rolled back) and CI validates. The LLM never edits files by hand: it reads with the command and changes data with the command. Each registered kind is one JSON file in one directory, compiled into the registry at build.
 
@@ -9,6 +9,10 @@ Brief: [168](../prompts/168-audit-proposals.md). The owner's rulings (2026-11-04
 - Stage C: source evidence and honest defaults
 - Validation
 - Tests and risks
+
+## The split (the owner, 2026-11-04)
+
+**168 builds the tools; 171 migrates.** 168 delivers the file format, the index, the loader that compiles `kinds/*.json`, the validator, the commands and the source scan, all working on the new directory and tested on fixtures, while the hard-coded `equipment-kinds.ts` stays the game's registry. Mission 171 then runs the one-off migration into the directory, validates it (including random spot checks), switches the game to the files and removes the hard-coded registry.
 
 ## Stage A: one JSON file per kind
 
@@ -29,9 +33,9 @@ The owner (2026-11-04): each registered kind is **one JSON file in one directory
 }
 ```
 
-- **Compiled at build:** `equipment-kinds.ts` gathers the directory with Vite's `import.meta.glob('./kinds/*.json', { eager: true })`, so the dev server, the build, the tests and the Node command (`runnerImport`) all see the files as one object with no extra step; `EQUIPMENT_KINDS`, `PLACED_KINDS`, `OTHER_KINDS` derive from it. A one-file change is picked up at once by the dev server.
+- **Compiled at build:** a loader (`src/game/plant/kind-files.ts`, built and tested here, made the game's registry by 171) gathers the directory with Vite's `import.meta.glob('./kinds/*.json', { eager: true })`, so the dev server, the build, the tests and the Node command (`runnerImport`) all see the files as one object with no extra step; `EQUIPMENT_KINDS`, `PLACED_KINDS`, `OTHER_KINDS` derive from it. A one-file change is picked up at once by the dev server.
 - **The index** (the owner, 2026-11-04): `src/game/plant/kinds/index.ts`, `export const KIND_IDS = ['acid-ibc', 'acid-pump', …] as const`, one id per line, sorted. `register` adds the kind's line and `unregister` removes it, in the same change as its file, so `KindId` stays a compile-time union (`(typeof KIND_IDS)[number]`) for the 19 files that use it, and listing the kinds needs no directory read. A test (and so CI) fails if the index and the directory disagree; the migration script writes it first time.
-- Migration once, by `scripts/registry-to-files.ts`, writing one file per kind from today's TypeScript, with a test that the gathered registry equals today's object entry for entry. Coordinate first: `equipment-kinds.ts` has another agent's uncommitted edit (the `sign` kind); claim the file and migrate after it lands.
+- The migration itself is mission 171's; 168's tests run on a small fixture directory.
 - Things with behaviour but no identity of their own in the scene (the desk's chair, its PC) are tied to their kind by a `bindings` list in the kind's own file (`"bindings": [{ "room": "engineers_office", "thing": "desk-chair" }]`); the audit counts them registered and lists the builder that still has to mark them in code.
 
 ## Stage B: the command edits it

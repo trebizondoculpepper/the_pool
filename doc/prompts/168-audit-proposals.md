@@ -1,10 +1,10 @@
-# 168: The audit command edits the registry
+# 168: The audit tools for a registry of one file per kind
 
 The owner, 2026-11-04. Brief only; not started until the owner says. Audit tooling (the designer's responsibility, ahnaa_dmitrieva). Read `CLAUDE.md`, mission 167 (the audit model and `npm run audit`), and `doc/agent-tooling.md`'s "Audit data and JSON". The two audit passes that use it are 169 (registration) and 170 (traits).
 
 ## Why
 
-Agents auditing rooms keep getting stuck: the data runs out, they read code across many files or build scenes in Chrome, and they invent their own report formats (one ran to 5,384 lines). The owner's answer (2026-11-04): push as much of the work as possible back into dumb code, and drop proposals altogether. The audit command changes the configuration directly; git is the review (a bad change is rolled back) and CI validates. Agents never edit files by hand. Each registered kind is one JSON file in `src/game/plant/kinds/`, compiled into the registry at build (the owner, 2026-11-04). **This brief's earlier proposal and review-page design is superseded by the plan, `doc/plans/168-audit-proposals.md`, which is authoritative.**
+Agents auditing rooms keep getting stuck: the data runs out, they read code across many files or build scenes in Chrome, and they invent their own report formats (one ran to 5,384 lines). The owner's answer (2026-11-04): push as much of the work as possible back into dumb code, and drop proposals altogether. The audit command changes the configuration directly; git is the review (a bad change is rolled back) and CI validates. Agents never edit files by hand. Each registered kind is one JSON file in `src/game/plant/kinds/`, compiled into the registry at build (the owner, 2026-11-04). 168 builds the tools; the migration from the hard-coded registry, its validation and the old registry's removal are mission 171. **This brief's earlier proposal and review-page design is superseded by the plan, `doc/plans/168-audit-proposals.md`, which is authoritative.**
 
 ## The command line
 
