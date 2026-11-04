@@ -7,13 +7,13 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 ## The trait
 
 - **Facet:** handling.
-- **What it means:** Picked up and carried (the owner's 'carryable').
-- **Gameplay reason:** Things travel with the player: test kits, sample bottles, tools and boxes can be taken where they are needed. The owner: you can pick it up, and when examined it rotates in the hand; you can move it around and lift it off the y = 0 plane, always tethered to the ground (put back down, never left floating).
+- **What it means:** You can hold it and take it to places (the owner, 2026-11-04, correcting an earlier mistranscription about tethering and rotating).
+- **Gameplay reason:** Things travel with the player: test kits, sample bottles, tools and boxes can be picked up, held, and taken where they are needed.
 
 ## What to implement
 
-- Pick-up: held in front of the camera; examine mode rotates it in the hand.
-- Put-down on any supportable surface or the floor; never left in the air (tethered to the ground: dropped, it falls to the nearest surface below).
+- Pick-up: held in front of the camera while the player moves.
+- Put-down on any supportable surface or the floor.
 - Its mass and centre of gravity from its form, for how it sits when put down.
 - Behaviour comes from the trait, never from per-kind or per-room code: a kind gains it by `npm run -s audit -- set <kind> traits+=holdable` and nothing else.
 
@@ -27,7 +27,7 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 
 ## Open questions for the owner
 
-- Is 'always tethered to the ground' that it falls to the nearest surface when released, or that it cannot be raised above a height while held?
+- The owner's definition was cut off after 'take it to places and…': complete it before implementing.
 
 ## Records
 
