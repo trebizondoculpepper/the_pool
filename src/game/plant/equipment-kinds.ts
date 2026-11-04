@@ -40,6 +40,46 @@ export type StatusPolicy =
  */
 export type DescriptionTemplate = 'valve' | 'power' | 'equipment';
 
+/** What aiming at a registered kind can offer, independently of plant status. */
+export type InteractionClass = 'decorative' | 'inspect-only' | 'usable';
+
+/** The default solid shape is the built object's bounds, in its own frame. */
+export type KindSolidShape =
+  | { readonly type: 'bounds' }
+  | {
+      readonly type: 'box';
+      readonly width: number;
+      readonly height: number;
+      readonly depth: number;
+      readonly centre?: {
+        readonly x: number;
+        readonly y: number;
+        readonly z: number;
+      };
+    };
+
+/** A seat faces its local +z unless the kind says otherwise. Metres. */
+export interface KindSeat {
+  readonly height: number;
+  readonly lookDirection?: { readonly x: number; readonly z: number };
+}
+
+/** Proposed kind-level behaviour. Current room wiring does not read these yet. */
+export interface KindAffordances {
+  readonly interaction: InteractionClass;
+  readonly portable: boolean;
+  readonly solid: boolean;
+  readonly shape: KindSolidShape;
+  /** A solid object's reachable top can support placement and walking. */
+  readonly surface: boolean;
+  readonly seat: KindSeat | null;
+}
+
+/** A kind declares only departures from the defaults; surface follows solidity. */
+export type KindAffordanceDeclaration = Partial<
+  Omit<KindAffordances, 'surface' | 'seat'>
+> & { readonly seat?: KindSeat | null };
+
 export interface EquipmentKind {
   /** The letters of its tag after the room's code (PL2-P1), for placed items. */
   code: string;
@@ -52,6 +92,8 @@ export interface EquipmentKind {
   purpose: string;
   /** Maker printed on the installed unit, when its model specifies one. */
   brand?: BrandId;
+  /** Mission 158: reviewed affordances, resolved by `kindAffordances`. */
+  affordances?: KindAffordanceDeclaration;
 }
 
 /** The kinds placed by the rooms' layouts (`roomEquipment`), including excluded scenery. */
@@ -859,3 +901,23 @@ export function equipmentKind(kind: string): EquipmentKind {
   if (!isKindId(kind)) throw new Error(`Unknown equipment kind ${kind}`);
   return EQUIPMENT_KINDS[kind];
 }
+
+/** Explicit defaults for every registered kind, without changing scene behaviour. */
+export function resolveKindAffordances(kind: EquipmentKind): KindAffordances {
+  const declared = kind.affordances;
+  const solid = declared?.solid ?? true;
+  return {
+    interaction:
+      declared?.interaction ??
+      (kind.class === 'decorative' ? 'decorative' : 'inspect-only'),
+    portable: declared?.portable ?? false,
+    solid,
+    shape: declared?.shape ?? { type: 'bounds' },
+    surface: solid,
+    seat: declared?.seat ?? null,
+  };
+}
+
+/** The proposed affordances of a registered kind. */
+export const kindAffordances = (kind: KindId): KindAffordances =>
+  resolveKindAffordances(equipmentKind(kind));

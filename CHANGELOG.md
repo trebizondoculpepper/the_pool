@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Mission 158's typed registry affordances and resolver for every equipment kind: interaction, portability, solidity, bounding shape, supporting surface and seat metadata, with no change to room controls yet.
+
 ## [0.14.0] - 2026-11-04
 
 ### Added
