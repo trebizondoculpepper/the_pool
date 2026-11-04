@@ -40,4 +40,4 @@ The pure model (`src/toolkit/gallery/logic/audit-export/`, 3826917d); the `audit
 
 ## Coordination and records
 
-The shared checkout has uncommitted mission 158 census work in `scripts/registry-census.ts`, `src/toolkit/gallery/views/look-audit-scene.ts`, `doc/plans/158-one-kind-of-room.md`, `TODO.md`, `CHANGELOG.md` and related files. Coordinate claims with its agent before editing or retiring that work; preserve any valid scanner evidence, but do not keep a second Markdown/JSON sign-off pipeline. Work on `main` without a worktree. Record progress in `TODO.md`, a plan in `doc/plans/`, `CHANGELOG.md` under Unreleased for shipped behaviour, and a diary entry. Run the required project checks before committing and pushing.
+The old mission 158 census work (`scripts/registry-census.ts` and its reports) was removed on the owner's word, 2026-11-04: the audit command (168, 171) replaces it. Work on `main` without a worktree. Record progress in `TODO.md`, a plan in `doc/plans/`, `CHANGELOG.md` under Unreleased for shipped behaviour, and a diary entry. Run the required project checks before committing and pushing.
