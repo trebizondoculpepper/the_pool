@@ -1,4 +1,4 @@
-import { Object3D } from 'three';
+import { Group, Object3D } from 'three';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import type { PartSet } from '../../components/core/parts/parts';
 import { createWaterButterflyValve } from '../../components/plant/views/water-butterfly-valve';
@@ -10,6 +10,10 @@ import { createSwitchFuse } from '../../components/industrial-control/views/swit
 import { SWITCH_FUSE } from '../../components/industrial-control/logic/enclosures';
 import { createOzoneMonitor } from '../../components/plant/views/ozone-plant';
 import { createEndSuctionPump } from '../../components/plant/views/pumps-plant';
+import { createOfficeChair } from '../../components/site-dressing/views/office-chair';
+import { createSoftwareBox } from '../../components/site-dressing/views/software-box';
+import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
+import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
 import type { ItemSize } from '../logic/magic-room-layout';
 
 /**
@@ -40,7 +44,14 @@ function objectOf(built: unknown): { object: Object3D; parts?: PartSet } {
   const object = b.group ?? b.object;
   if (!(object instanceof Object3D))
     throw new Error('A kind builder returned no object');
-  return { object, ...(b.parts ? { parts: b.parts } : {}) };
+  // Only a real part set (its update and its lookup), not a builder's own `parts` field.
+  const parts =
+    b.parts &&
+    typeof (b.parts as { update?: unknown }).update === 'function' &&
+    typeof (b.parts as { keys?: unknown }).keys === 'function'
+      ? b.parts
+      : undefined;
+  return { object, ...(parts ? { parts } : {}) };
 }
 
 const noop = () => {};
@@ -93,6 +104,31 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
     size: { w: 0.3, d: 0.12, h: 0.3, mount: 'wall', y: 1.5 },
     build: (kit) =>
       objectOf(createOzoneMonitor(kit, { test: noop, reset: noop })),
+  },
+  'office-chair': {
+    title: 'Office chair',
+    size: { w: 0.65, d: 0.65, h: 1.1, mount: 'floor' },
+    build: () => objectOf(createOfficeChair(1)),
+  },
+  'software-box': {
+    title: 'Software box',
+    size: { w: 0.3, d: 0.1, h: 0.35, mount: 'floor' },
+    build: (kit) => objectOf(createSoftwareBox(kit, SOFTWARE_TITLES[0])),
+  },
+  'office-computer': {
+    title: 'Office computer',
+    size: { w: 0.6, d: 0.6, h: 0.6, mount: 'floor' },
+    build: (kit) => {
+      // The PC comes as its parts, laid out by the desk; set them out as on one.
+      const pc = createPeriodPc(kit);
+      const group = new Group();
+      group.name = 'Office computer';
+      pc.tower.position.set(-0.35, 0, 0);
+      pc.keyboard.position.set(0.05, 0, 0.3);
+      pc.mouse.position.set(0.32, 0, 0.3);
+      group.add(pc.monitor, pc.tower, pc.keyboard, pc.mouse);
+      return { object: group };
+    },
   },
   pump: {
     title: 'End-suction pump',
