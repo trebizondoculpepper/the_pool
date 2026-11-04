@@ -7,5 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Furnishes the engineer’s office.',
-  traits: ['office-furniture-like', 'operable', 'supportable'],
+  traits: ['box-like', 'fixed', 'floor-standing', 'supportable'],
 });

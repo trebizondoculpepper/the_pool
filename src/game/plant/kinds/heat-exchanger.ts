@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Transfers heat from the heating circuit into pool water.',
-  traits: ['heat-like'],
+  traits: ['box-like', 'fixed', 'floor-standing'],
 });

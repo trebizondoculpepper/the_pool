@@ -7,5 +7,12 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Stores the engineers’ parts and test equipment.',
-  traits: ['office-furniture-like', 'operable', 'supportable'],
+  traits: [
+    'box-like',
+    'container',
+    'fixed',
+    'floor-standing',
+    'openable',
+    'supportable',
+  ],
 });

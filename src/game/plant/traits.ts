@@ -186,7 +186,24 @@ export const PRIMITIVES = {
     facet: 'handling',
     words: 'large or heavy, shifted rather than carried',
   },
-  operable: { facet: 'use', words: 'has working controls' },
+  slidable: {
+    facet: 'handling',
+    words:
+      'moves in a limited straight run along a line (a drawer); a fixed thing cannot slide',
+    meta: {
+      slideAxis: {
+        type: 'enum',
+        values: AXES,
+        default: 'x',
+        words: 'the axis it slides along',
+      },
+    },
+  },
+  operable: {
+    facet: 'use',
+    words:
+      'has a control whose action changes something else in the simulation (a valve, a pump starter)',
+  },
   sittable: {
     facet: 'use',
     words: 'something to sit on',
@@ -208,10 +225,20 @@ export const PRIMITIVES = {
     facet: 'use',
     words: 'hover context: a sign, gauge or display to read',
   },
+  openable: {
+    facet: 'use',
+    words:
+      'a door, lid or drawer gives access to what is inside; a local state that does not drive the plant',
+  },
   container: {
     facet: 'role',
     words:
-      'holds a stock (water, chemical, parts); storage logic may apply later',
+      'can potentially hold other game objects (not merely a material stock)',
+  },
+  'safety-gear': {
+    facet: 'role',
+    words:
+      'safety equipment kept for realism; it exists in the world but is not simulated',
   },
   powered: {
     facet: 'service',
