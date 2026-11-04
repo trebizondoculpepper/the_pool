@@ -7,14 +7,17 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 ## The trait
 
 - **Facet:** handling.
-- **What it means:** Large or heavy, shifted rather than carried (a heavy chair, a drum).
-- **Gameplay reason:** Some things are moved but not lifted: the player can drag or push a chair, a drum or a trolley across the floor, which is slower and can block doorways, so moving heavy stock is work.
+- **What it means:** A very heavy or bulky thing, too big or too heavy to pick up, that can still be moved: pushed, staying on the floor, tethered to the y = 0 plane (the owner's example: a crate you can push but cannot carry).
+- **Gameplay reason:** Moving heavy stock is work: crates, drums and heavy chairs are pushed across the floor, slower than walking, and can block a doorway, so where things are put matters.
+
+**Movable things (the owner, 2026-11-04):** all three handling traits are kinds of movable thing. Some movable things can be carried (**holdable**), and some carryable things can also go into the inventory (**pocketable**); others are too big or heavy to lift and are pushed along the floor (**luggable**). So: movable → luggable, or holdable → pocketable. Everything pocketable is also holdable (`pocketable` implies `holdable`, as `walkable` implies `supportable`); luggable and holdable exclude each other.
 
 ## What to implement
 
-- Push and drag along the floor, staying on y = 0; slower walking while lugging.
-- Blocked by walls and other solids; cannot be lugged up ladders.
-- Released where it stands.
+- Push along the floor: the object stays on y = 0, never lifted; the player walks slower while pushing.
+- Blocked by walls and other solids; never up ladders or stairs.
+- Left where it stops, and remembered there (world state).
+- Never holdable (they exclude each other).
 - Behaviour comes from the trait, never from per-kind or per-room code: a kind gains it by `npm run -s audit -- set <kind> traits+=luggable` and nothing else.
 
 **Metadata it implies:** `mass` (kg, optional).
@@ -27,7 +30,8 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 
 ## Open questions for the owner
 
-- Should lugging make a noise (a chair's casters, a drum scraping)?
+- Pull as well as push, or push only?
+- Can a luggable thing be pushed through a door into the next room (with holdable's carrying between rooms)?
 
 ## Records
 

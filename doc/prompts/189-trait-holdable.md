@@ -7,14 +7,17 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 ## The trait
 
 - **Facet:** handling.
-- **What it means:** You can hold it and take it to places (the owner, 2026-11-04, correcting an earlier mistranscription about tethering and rotating).
-- **Gameplay reason:** Things travel with the player: test kits, sample bottles, tools and boxes can be picked up, held, and taken where they are needed.
+- **What it means:** Something the player can physically hold: pick it up, examine it, turn it over in their hands, and take it anywhere (the owner, 2026-11-04).
+- **Gameplay reason:** Things travel with the player: test kits, sample bottles, tools and boxes are picked up, looked at closely and taken where they are needed.
+
+**Movable things (the owner, 2026-11-04):** all three handling traits are kinds of movable thing. Some movable things can be carried (**holdable**), and some carryable things can also go into the inventory (**pocketable**); others are too big or heavy to lift and are pushed along the floor (**luggable**). So: movable → luggable, or holdable → pocketable. Everything pocketable is also holdable (`pocketable` implies `holdable`, as `walkable` implies `supportable`); luggable and holdable exclude each other.
 
 ## What to implement
 
 - Pick-up: held in front of the camera while the player moves.
+- Examine: brought close and turned over in the hands (rotated by the player) to look at every side.
 - Put-down on any supportable surface or the floor.
-- Its mass and centre of gravity from its form, for how it sits when put down.
+- No limit to where it can be held: **carrying a held thing from one room into the next** does not exist yet (each room is its own scene) and is part of this mission, or a mission of its own: the held thing must leave one room's scene and arrive in the next, and be remembered where it is put down (the world state).
 - Behaviour comes from the trait, never from per-kind or per-room code: a kind gains it by `npm run -s audit -- set <kind> traits+=holdable` and nothing else.
 
 **Metadata it implies:** `mass` (kg, optional).
@@ -27,7 +30,8 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 
 ## Open questions for the owner
 
-- The owner's definition was cut off after 'take it to places and…': complete it before implementing.
+- Carrying between rooms: part of this mission, or its own?
+- Where is a put-down thing remembered (world state, saved), so it is still there when the player comes back?
 
 ## Records
 

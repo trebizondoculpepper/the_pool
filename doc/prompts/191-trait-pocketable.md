@@ -7,14 +7,17 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 ## The trait
 
 - **Facet:** handling (proposed).
-- **What it means:** Small enough to pick up and put in the player's inventory (the owner, 2026-11-04).
-- **Gameplay reason:** The player keeps things for later: keys, a test-kit reagent, a fuse, a floppy disk go into the inventory and come out where they are needed, without filling the hands. The inventory is not yet designed; this trait marks what will go in it.
+- **What it means:** Something that can go into the player's inventory (the owner, 2026-11-04); everything pocketable is also holdable.
+- **Gameplay reason:** The player keeps things for later without filling their hands: keys, a reagent, a fuse, a floppy disk go into the inventory and come out where needed. The inventory is not designed yet; this trait marks what will go in it.
+
+**Movable things (the owner, 2026-11-04):** all three handling traits are kinds of movable thing. Some movable things can be carried (**holdable**), and some carryable things can also go into the inventory (**pocketable**); others are too big or heavy to lift and are pushed along the floor (**luggable**). So: movable → luggable, or holdable → pocketable. Everything pocketable is also holdable (`pocketable` implies `holdable`, as `walkable` implies `supportable`); luggable and holdable exclude each other.
 
 ## What to implement
 
-- A new primitive (code), compatible with holdable (a pocketable thing is also holdable).
-- Until the inventory exists: listed by `kinds --with pocketable`, and shown on the item audit, so the inventory's design has its candidates.
-- When the inventory exists: pick up to pocket, take out to hand.
+- A new primitive that **implies holdable** (in `PRIMITIVES`, `implies: ['holdable']`), so pocketable things are picked up, examined and carried like any holdable thing.
+- The handling facet's rule adjusted so holdable and pocketable together count as one handling (pocketable refines holdable), while luggable still excludes both.
+- Until the inventory exists: listed by `kinds --with pocketable` and on the trait page, as the inventory's candidates.
+- When the inventory exists: pocket a held thing, take it out into the hand.
 - Behaviour comes from the trait, never from per-kind or per-room code: a kind gains it by `npm run -s audit -- set <kind> traits+=pocketable` and nothing else.
 
 **Metadata it implies:** none yet.
@@ -27,7 +30,7 @@ The owner, 2026-11-04. Brief only; not started until the owner says. One of a se
 
 ## Open questions for the owner
 
-- Is pocketable a handling trait (instead of holdable) or a use trait alongside it?
+- How big may a pocketable thing be (a fuse yes, a 5 L can no)?
 
 ## Records
 
