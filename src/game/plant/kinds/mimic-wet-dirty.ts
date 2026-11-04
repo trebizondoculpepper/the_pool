@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows each pool branch entering the wet-hall pit.',
-  traits: ['board-like'],
+  traits: ['mimic'],
 });

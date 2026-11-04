@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows boosted fresh-water distribution to each pool.',
-  traits: ['board-like'],
+  traits: ['mimic'],
 });

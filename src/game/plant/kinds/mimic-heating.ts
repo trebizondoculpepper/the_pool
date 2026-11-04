@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows the heating circuit.',
-  traits: ['board-like'],
+  traits: ['mimic'],
 });

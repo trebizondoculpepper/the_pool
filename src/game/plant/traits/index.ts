@@ -7,6 +7,7 @@
 export const TRAIT_IDS = [
   'board-like',
   'control-panel-like',
+  'desk',
   'duct-air-like',
   'filter-like',
   'floppy-disk',
@@ -15,7 +16,9 @@ export const TRAIT_IDS = [
   'holdable-small',
   'instrument-like',
   'machine-like',
+  'mimic',
   'office-furniture-like',
+  'safety-shower',
   'seat-like',
   'tank-like',
   'valve-like',

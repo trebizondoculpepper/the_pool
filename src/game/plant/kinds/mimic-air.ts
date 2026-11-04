@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Shows air-handling plant status.',
-  traits: ['board-like'],
+  traits: ['mimic'],
 });
