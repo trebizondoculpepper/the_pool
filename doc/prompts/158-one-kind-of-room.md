@@ -37,6 +37,31 @@ What a thing does when clicked, hovered or touched is decided by its kind, once,
 
 So each kind carries its interaction class and its affordances (sittable, a placing surface, usable controls, inspectable, decorative) in the one object registry (mission 147's `EQUIPMENT_KINDS`, `src/game/plant/equipment-kinds.ts`, and the descriptors in `src/game/descriptors/`), and the room factory applies them; a room never adds or removes one. An exception to a kind's behaviour is the owner's ruling, recorded on the kind. The plan lists every kind with its class, for the owner to check, and flags kinds that behave differently today (a chair that does not seat, a desk that refuses a placed object, decoration that shows a cue).
 
+## The owner's decisions (2026-11-04)
+
+1. **The object registry is the gateway.** Only a registered object has a name, context (the hover line), click actions, behaviour, solidity, a bench screen and a magic room. Anything unregistered (a bit of wall, a decorative pipe) is decoration and does nothing; that is fine and needs no work. So everything that should do something must be registered, in one consistent representation.
+2. **Mouse-over context is the existing inspection line** (prompt 061, `src/toolkit/controls/logic/inspection.ts`), made universal: every registered object, in every room, is named when aimed at. `INSPECTED_ROOMS` (`src/toolkit/gallery/logic/inspected-rooms.ts`) and its per-room opt-in go.
+3. **Carrying flags on the kind.** A kind may be **portable** (it can be picked up and put down); later a subset will also be **inventory**-able (flag reserved now, doing nothing yet). Fixed plant and furniture are not portable unless the kind says so.
+4. **Solidity.** Registered kinds are **solid by default**; a kind may be flagged non-solid (many pipes can be walked through). The solid shape is **inferred from the object's bounding box** by default (a boxy thing is its box), a kind declaring a better shape only where the box fits badly. Solid tops support placed objects and, where the walker can reach them (a tank top up its ladder), the walker, as floor does; solid sides block, and an object can never be put into or through one. The room shell's walls and floors count as registered. The 1 m drop rule stands.
+5. **Seats.** A kind may be a **seat**, with its seat height and a **default look direction**; a placed seat may override that with a target (a desk, a console, a workstation's screen; the BBC workstation's chair is the pattern). Clicking a seat sits you; seated you can look round and use what is in reach; moving or Esc gets you up. Every office chair is a seat.
+6. **Experiment rooms get the standard room by default.** If one later needs something different, that becomes a named alternative **room style**, approved by the owner, never private room code.
+
+## Stages
+
+Each stage is pushed, then reviewed by the designer (the coordinating agent) before the next starts. The owner signs off stage 2's list. Every stage keeps the full suite green and changes nothing it does not name.
+
+1. **Registry flags (no behaviour change).** Add to each kind in the object registry (mission 147's `EQUIPMENT_KINDS`, `src/game/plant/equipment-kinds.ts`, and `src/game/descriptors/`): interaction class (decorative, usable, inspect-only), portable, inventory (reserved), solid (default true) and its shape (default: bounding box), surface (derived from solidity), seat (height, default look direction). Pure, typed, tested; every flag defaulted so nothing changes yet.
+2. **The inventory, for the owner's sign-off.** A generated report (a script or a `?dev` page, recorded in `doc/agent-tooling.md`) listing (a) every kind with its proposed flags, and (b) every object in any room that has behaviour, a use, a cue, a seat, pick-up or collision today but is not registered, with what it does and which room builder wires it. The owner rules on the list; the agreed flags are written into the registry, and the unregistered behaving objects are registered or ruled decorative. Machinery and a report only, no whole-game playthroughs.
+3. **One room factory, behaviour unchanged.** Every room builder's `createFirstPerson({...})` call (41 of them) goes through one factory that `main.ts` uses when opening any room, dev and magic rooms included; each room's current options are passed through as they are, so nothing changes for the player yet. Experiment rooms included. This gives every later stage one place to land.
+4. **Hover context everywhere.** The factory wires inspection for every room from the registry; `INSPECTED_ROOMS` and the main corridor gap go. Prove on a pool hall, a plant room, the main corridor, dev0 and a magic room.
+5. **One click handler.** A click reaches whatever the cue finds through the registry (`markUsable` / `parts.uses`); the per-room `use` lists and the eight empty `use: () => {}` go. No cue without a use, no use without a cue, tested.
+6. **Seats everywhere.** Seating comes from the kind's seat flag in every room, replacing `shell-room`'s own `declareSeat` wiring; placed targets override the default look direction.
+7. **Solidity and surfaces.** Bounding-box colliders for solid registered kinds; put-down onto any solid top an object fits on, never into or through a side; walkable tops (tank roofs) support the walker as floor does, edges keeping the 1 m rule.
+8. **Pick-up everywhere.** Portable kinds can be picked up and put down in every room, by the one rule, replacing the per-room `objects` / `allowPickup` options.
+9. **Enforcement.** A test walks the room registry and fails if any room is not built by the factory or lacks a capability without an owner-ruled room style; another checks the registry's invariants (decoration has no cue or use, every chair kind seats, every solid kind has a top). `doc/agent-tooling.md`, `CHANGELOG.md` and a diary entry.
+
+Stages 4 and 5 can be one push if small; 6, 7 and 8 are independent of one another once 3 has landed.
+
 ## Acceptance
 
 - Every room, dev and magic rooms included, is built by the one room factory; a test walks the room registry and checks no room lacks a capability that is not an owner-ruled exception.
