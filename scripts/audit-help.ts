@@ -89,10 +89,11 @@ READING
 
 EDITING THE REGISTRY
   register <kind> --type "Word" --class plant|non-plant|decorative --purpose "Sentence."
-           [--code XY] [--group placed|other] [--status none]
+           --traits a,b [--code XY] [--group placed|other] [--status none]
       Creates kinds/<kind>.ts and adds it to the index. <kind> is lower-case
       words joined by hyphens (office-chair). --type is its word in a
       description ("Office chair"); --purpose what such a thing is for;
+      --traits its traits, primitive or composite (mission 176: required);
       --code its tag letters (default: the type's initials; codes are shared
       by family, every tank is T); --group placed if the room layouts place it,
       else other (default other); --status how its live state is put
@@ -166,7 +167,7 @@ EXAMPLES
   npm run -s audit -- rooms --by-size
   npm run -s audit -- room engineers_office --summary
   npm run -s audit -- show desk
-  npm run -s audit -- register office-chair --type "Office chair" --class non-plant --purpose "A swivel chair to sit in."
+  npm run -s audit -- register office-chair --type "Office chair" --class non-plant --purpose "A swivel chair to sit in." --traits sittable,luggable,floor-standing
   npm run -s audit -- trait define software-box --extends holdable,box-like,floor-standing --description "A boxed software package."
   npm run -s audit -- set office-chair traits=sittable,luggable,floor-standing seatHeight=0.47
   npm run -s audit -- kinds --with powered

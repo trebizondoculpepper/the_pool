@@ -313,8 +313,11 @@ export async function runEdit(args: readonly string[]) {
         fail(
           `refused: '${kind}' is not a kind id (lower-case words joined by hyphens)`,
         );
-      for (const o of ['type', 'class', 'purpose'])
-        if (!opts[o]) fail(`refused: register needs --${o}`);
+      for (const o of ['type', 'class', 'purpose', 'traits'])
+        if (!opts[o])
+          fail(
+            `refused: register needs --${o} (mission 176: a kind must have at least one trait)`,
+          );
       const group = (opts.group ?? 'other') as KindFile['group'];
       const file: KindFile = {
         group,
@@ -323,6 +326,7 @@ export async function runEdit(args: readonly string[]) {
         class: opts.class as KindFile['class'],
         status: (opts.status ?? 'none') as KindFile['status'],
         purpose: opts.purpose,
+        traits: F.listOf(opts.traits),
       };
       const next = { ...files, [kind]: file };
       await commit(next, [{ kind, file }], true);

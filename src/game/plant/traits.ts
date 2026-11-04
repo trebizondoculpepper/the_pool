@@ -31,7 +31,11 @@ export const FACET_RULES: Record<
 > = {
   form: { words: 'its shape in the world', atMost: 1 },
   surface: { words: 'what its top bears' },
-  support: { words: 'what holds it up', exactly: 1 },
+  support: {
+    words:
+      'what holds it up (floor-standing, wall-mounted or ceiling-mounted; in-line, terminal, held and run-like kinds are supported by their pipe, hand or room and name none)',
+    exactly: 1,
+  },
   connection: { words: 'how it joins the plant', atMost: 1 },
   handling: { words: 'how the player moves it', exactly: 1 },
   use: { words: 'what the player gets from it' },
@@ -301,6 +305,20 @@ export function expand(
 }
 
 /**
+ * Whether a set of primitives must name how it is held up. A kind that
+ * sits in or ends a run (its pipe or cable holds it), is held or lugged
+ * by the player, or is itself a walk-through run, needs no floor-, wall-
+ * or ceiling-mounted support (the owner, 2026-11-04, mission 176).
+ */
+export function needsSupport(ps: readonly PrimitiveName[]): boolean {
+  const has = (f: Facet) => ps.some((p) => PRIMITIVES[p].facet === f);
+  if (has('connection')) return false;
+  if (has('handling') && !ps.includes('fixed')) return false;
+  if (ps.includes('run-like')) return false;
+  return true;
+}
+
+/**
  * The facet rules and conflicts on a set of primitives. `complete` asks
  * for the facets a classified kind must have (support); without it a
  * missing one is not a problem (a composite need not be complete).
@@ -325,7 +343,7 @@ export function primitiveProblems(
         subject,
         message: `more than ${r.exactly} ${f} trait: ${by(f).join(', ')}`,
       });
-    if (complete && f === 'support' && n === 0)
+    if (complete && f === 'support' && n === 0 && needsSupport(ps))
       problems.push({
         subject,
         message:

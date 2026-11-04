@@ -20,6 +20,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 ### Changed
 
 - Applied mission 176's approved traits to 107 registered kinds; the engineers' desk and two storage cupboards are now operable non-plant fixtures with permanent installation IDs and office model nodes.
+- Mission 176 support rule and enforcement (the owner, 2026-11-04): a kind that is in-line, terminal, holdable, luggable or run-like names no floor/wall/ceiling support (its pipe, hand or room holds it), so `unclassified` is empty; `check` and the test suite fail a kind with no trait, and `register` requires `--traits`.
 - Walkable and supportable tops are derived from each object's geometry (missions 175, 181, 182): rays cast down on its body (ladders and guard rails excluded) find its top, or a fixed plane where its kind says (`surface=plane`, `surfaceY`); the walker stands on walkable tops and is stopped at their edges where the drop is over 1 m, and dropped things rest on supportable ones. The hand-placed tank-roof marker and its rules are gone, and a test guards against such special rules returning. The break and backwash tanks are walkable, like the balance tank.
 
 ## [0.14.0] - 2026-11-04

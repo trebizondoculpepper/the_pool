@@ -89,7 +89,7 @@ const STATUSES: readonly StatusPolicy[] = [
   'uv',
   'filter',
 ];
-const listOf = (v: string) =>
+export const listOf = (v: string) =>
   v
     ? [
         ...new Set(
@@ -185,8 +185,16 @@ export function validateRegistry(
   composites: Readonly<Record<string, CompositeTrait>> = {},
 ): Problem[] {
   const p: Problem[] = [];
-  for (const [kind, f] of Object.entries(files))
+  for (const [kind, f] of Object.entries(files)) {
     p.push(...validateKindFile(kind, f, composites));
+    if (!f.traits?.length)
+      p.push({
+        kind,
+        field: 'traits',
+        message:
+          'a kind must have at least one trait (mission 176); give it one with `set <kind> traits=…`',
+      });
+  }
   for (const name of Object.keys(composites))
     for (const q of compositeProblems(name, composites))
       p.push({ kind: `trait:${name}`, message: q.message });

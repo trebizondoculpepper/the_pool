@@ -63,10 +63,17 @@ describe('one file', () => {
 
 describe('the registry', () => {
   test('the index matches the files, each in its group', () => {
+    const withTraits = { traits: ['box-like'] };
     const files = {
-      desk,
-      'other-desk': { ...desk, type: 'Other desk' },
-      chair: { ...desk, type: 'Chair', code: 'CH', group: 'other' as const },
+      desk: { ...desk, ...withTraits },
+      'other-desk': { ...desk, ...withTraits, type: 'Other desk' },
+      chair: {
+        ...desk,
+        ...withTraits,
+        type: 'Chair',
+        code: 'CH',
+        group: 'other' as const,
+      },
     };
     const problems = validateRegistry(files, {
       placed: ['desk', 'stool'],
@@ -75,6 +82,16 @@ describe('the registry', () => {
     expect(problems.map((p) => p.message)).toEqual([
       'in the index but has no file',
       'has a file but is not in the index',
+    ]);
+  });
+
+  test('a registered kind must have at least one trait (mission 176)', () => {
+    const problems = validateRegistry(
+      { bare: { ...desk, type: 'Bare cabinet' } },
+      { placed: ['bare'], other: [] },
+    );
+    expect(problems.map((p) => p.message)).toEqual([
+      'a kind must have at least one trait (mission 176); give it one with `set <kind> traits=…`',
     ]);
   });
 
