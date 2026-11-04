@@ -1,63 +1,63 @@
-# 168 plan: audit proposals
+# 168 plan: the audit command edits the registry
 
-Brief: [168](../prompts/168-audit-proposals.md). Owner's rulings (2026-11-04): agents propose through the audit command, never by writing files; the owner approves Yes/No on a web page; **Yes applies straight away**; **the whole object registry moves to JSON** so applying is writing data, never editing TypeScript.
+Brief: [168](../prompts/168-audit-proposals.md). The owner's rulings (2026-11-04): **no proposals, no review page**. The audit command changes the configuration directly; git is the review (a bad change is rolled back) and CI validates. The LLM never edits files by hand: it reads with the command and changes data with the command. The whole object registry is JSON, and each kind's configuration is one JSON document.
 
 ## Contents
 
 - Stage A: the registry as JSON
-- Stage B: proposals from the command line
+- Stage B: the command edits it
 - Stage C: source evidence and honest defaults
-- Stage D: the review page and applying
-- Files, schemas and tests
-- Risks
+- Validation
+- Tests and risks
 
 ## Stage A: the registry as JSON
 
-- `src/game/plant/kind-registry.json`: one object keyed by kind, each entry `{ group: "placed" | "other", type, code, class, status, template?, purpose, brand?, affordances? }`, keys sorted, two-space indented, one trailing newline (the form every writer uses, so diffs stay small). Pass 2 (170) later adds `traits` and `mount`.
-- `equipment-kinds.ts` keeps its types and functions and reads the JSON (`resolveJsonModule` is on): `EQUIPMENT_KINDS`, `PLACED_KINDS` and `OTHER_KINDS` are derived from it, `KindId` stays the union of its keys, and a pure `validateRegistry` (tested) checks every entry at load: known `class`, `status`, `template` and `brand`; unique `code` within its group; non-empty `type` and `purpose`.
-- Migration by script, once: `scripts/registry-to-json.ts` writes the JSON from today's TypeScript, and a test proves the derived `EQUIPMENT_KINDS` equals the old object, entry for entry. Coordinate first: `equipment-kinds.ts` has another agent's uncommitted edit (the `sign` kind, 2026-11-04); claim the file on the mailbox and migrate after it lands.
+- `src/game/plant/kind-registry.json`: one document per kind, keyed by kind, keys sorted, two-space indented, one trailing newline (the only form any writer produces, so diffs stay small):
 
-## Stage B: proposals from the command line
+```json
+"desk": {
+  "group": "placed",
+  "type": "Desk",
+  "code": "DK",
+  "class": "non-plant",
+  "status": "none",
+  "purpose": "…",
+  "traits": ["box-like", "operable"],
+  "mount": { "on": "floor", "face": "-y" }
+}
+```
 
-Commands (all through `npm run -s audit --`, Node only):
+- `equipment-kinds.ts` keeps its types and functions and reads the JSON (`resolveJsonModule` is on); `EQUIPMENT_KINDS`, `PLACED_KINDS`, `OTHER_KINDS` and `KindId` derive from it. 170 adds `traits` and `mount`; the flags 158–165 use derive from traits.
+- Migration once, by `scripts/registry-to-json.ts`, with a test that the derived registry equals today's object entry for entry. Coordinate first: `equipment-kinds.ts` has another agent's uncommitted edit (the `sign` kind); claim the file and migrate after it lands.
+- Things that have behaviour but no identity of their own in the scene (the desk's chair, its PC) are tied to their kind in `src/game/plant/kind-bindings.json` (room, thing, kind); the audit counts them registered, and lists the builder that still has to mark them in code.
 
-| Command                                                                                                                | Pass | Effect                                                                                     |
-| ---------------------------------------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------ |
-| `propose-register <room> <thing> <kind>`                                                                               | 1    | this thing is an existing kind                                                             |
-| `propose-register <room> <thing> new:<kind> --type "…" --class plant\|non-plant\|decorative --purpose "…" [--code XY]` | 1    | register a new kind for it; the code is derived from the type if omitted, and must be free |
-| `propose-traits <kind> <trait,…> [mount=floor:-y\|wall:-z\|ceiling:+y]`                                                | 2    | its traits and mounting (170's vocabulary and consistency rules)                           |
-| `proposals [<room>\|kinds] [--pending]`                                                                                |      | list                                                                                       |
-| `withdraw <id>`                                                                                                        |      | remove a pending proposal                                                                  |
+## Stage B: the command edits it
 
-Every option is validated before anything is written; a bad request exits with status 2 and one line saying what is wrong and what would be accepted (the room's things, the kinds that exist, the trait vocabulary). Duplicates and no-ops are refused. `--reason "…"` is required and short (one line, at most 200 characters); `--by` defaults to the mailbox identity in `agent-inbox.toml`, else `unknown`.
+All through `npm run -s audit --`, Node only, each one change, written at once:
 
-Files, written only by the command and the review endpoint, deterministic:
+| Command                                                                                  | Does                                                                                           |
+| ---------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| `show <kind>`                                                                            | prints the kind's document, its placements and its source evidence                             |
+| `register <kind> --type "…" --class … --purpose "…" [--code XY] [--group placed\|other]` | adds a new kind's document (code derived from the type if omitted)                             |
+| `set <kind> <field>=<value> …`                                                           | changes fields: `traits=box-like,operable`, `mount=floor:-y`, `type=…`, `class=…`, `purpose=…` |
+| `unset <kind> <field>`                                                                   | removes an optional field                                                                      |
+| `bind <room> <thing> <kind>`                                                             | ties a thing with no identity of its own to its kind                                           |
+| `room <room>`, `kind <kind>`, `index`, `rooms --by-size`                                 | read, as now (167)                                                                             |
 
-- `proposals/rooms/<room>.json` (pass 1, one per room, as the owner asked), `proposals/kinds.json` (pass 2).
-- Each: `{ schemaVersion, subject, proposals: [...] }`; a proposal is `{ id, op: "register" | "traits", room?, thing?, kind, newKind?, traits?, mount?, reason, by, created, evidence: [{ at: "path:line", what }], effect: { rooms, copies }, status: "pending" | "approved" | "rejected", decided? }`. `id` is a short hash of op, subject and value, so the same proposal has the same id. Sorted by id.
+Every change prints what it changed (the field's old and new value). Nothing else writes the registry or the bindings.
 
 ## Stage C: source evidence and honest defaults
 
-- **Finding a kind's code:** `adapterFor` (mission 130's adapters, 167's builders) says how a kind is built; its builder function's name leads to its definition (`export function <name>`), and the scan takes that file and the component files it imports, one level, within `src/toolkit/components/`. A layout-built kind uses `modelFor`'s branch for its key.
-- **The scan** (pure, in `logic/audit-export/source-scan.ts`, tested on fixtures): `uses.set(`, `markUsable(`, `parts.uses`, `declareSeat(`, `createOfficeChair(`, pick-up wiring (`portable`, `objects`), and named parts, each hit with its file, line and the nearest name, as evidence `observed in source`.
-- **Things with no kind:** a hit inside a kind's builder that names its own sub-object (the desk's chair, its PC) is offered as a pass-1 candidate: something with behaviour that may need its own kind.
-- **`default` evidence:** a flag nobody declared is reported as `default`, never `declared`; an interaction left to default is `unknown`, no longer guessed from plant class.
+- **Finding a kind's code:** `adapterFor` says how a kind is built; its builder's name leads to its definition (`export function <name>`), and the scan takes that file and the component files it imports, one level, within `src/toolkit/components/`. A layout-built kind uses `modelFor`'s branch for its key.
+- **The scan** (pure, `logic/audit-export/source-scan.ts`, tested on fixtures): `uses.set(`, `markUsable(`, `parts.uses`, `declareSeat(`, pick-up wiring and named parts, each with file, line and the nearest name, as evidence `observed in source`, shown by `show` and in the room and kind audits. A hit naming a sub-object with no kind (the desk's chair) is listed as a candidate to `register` and `bind`.
+- **`default` evidence:** a value nobody set is reported as `default`, never `declared`; an interaction left to default is `unknown`, not guessed from plant class.
 
-## Stage D: the review page and applying
+## Validation
 
-- `bench.html?bench=audit-review`: rooms with pending proposals, smallest first (by object count), then kinds. One card per proposal: subject, current and proposed values, reason, evidence with source links, effect, and **Yes** / **No**. Decided ones collapse below.
-- **Endpoint** (dev server only, in `scripts/audit-json-plugin.ts`): `POST audit/decide` `{ file, id, decision }`. Writes are serialised. On **Yes** it applies at once: a `register` with `newKind` adds the entry to `kind-registry.json`; a `traits` writes the kind's `traits` and `mount`; then it marks the proposal approved with the date. On **No**, marked rejected. It answers with the updated proposal and the room's new audit; Vite reloads modules that read the registry.
-- **Identity for things that have none:** registering a kind is data, but making the scene part carry it (the chair's hover name, its seat flag) needs its builder to mark it. The endpoint therefore also records the binding (`proposals/bindings.json`: room, thing, kind), the audit counts a bound thing as registered-pending-code, and `TODO.md`'s registry list names the builder to mark. The code change stays a person's or agent's job; everything else is data.
-- **Static build:** the page is read-only (no endpoint), showing proposals and their decisions.
+One pure validator (`validateRegistry`, tested) checks every document: required fields; known `class`, `status`, `brand`; unique `code` per group; traits from 170's vocabulary and its consistency rules (decorative never with operable, chair-like, portable or luggable; portable and luggable never together; decorative with box-like flagged); a mounting `on` of floor, wall or ceiling with a face of `±x`, `±y` or `±z`; every binding naming a room, a thing and a kind that exist. The command runs it before writing, so an obviously bad value is refused at once with the field and the reason (cheap, and it saves a CI round trip); CI runs it with the tests on every push (the owner: validation is CI's job).
 
-## Files, schemas and tests
+## Tests and risks
 
-New: `kind-registry.json`, `scripts/registry-to-json.ts`, `logic/audit-export/proposals.ts` (pure: validation, ids, file form), `logic/audit-export/source-scan.ts`, `views/audit-review-page.ts`; changed: `equipment-kinds.ts`, `scripts/audit.ts`, `scripts/audit-json-plugin.ts`, `audit-export.ts`, `doc/agent-tooling.md`.
+Tests: the registry round trip; the validator's refusals; each command's effect on a copy of the registry and its printed change; byte-identical output across runs; the scan on fixture sources (desk, cupboard, switch-fuse).
 
-Tests: the registry round trip and `validateRegistry`'s refusals; each command's refusals (unknown room, thing, kind, trait; taken code; duplicate; no-op; missing reason); ids stable; files byte-identical across runs; the scan on fixture sources (desk, cupboard, switch-fuse); applying a register and a traits proposal to a copy of the registry; the endpoint refusing in a static build.
-
-## Risks
-
-- The migration touches the registry every mission reads: do it in one push with the round-trip test, after the `sign` edit lands.
-- The source scan is heuristic: it can miss behaviour wired in an unusual way. It only adds evidence; nothing is signed off on its silence.
-- Writes from the browser to tracked files: limited to the endpoint, two files and fixed forms, dev server only.
+Risks: the migration touches what every mission reads, so it goes in one push with the round-trip test; the scan is heuristic and only adds evidence; several agents running `set` at once on one shared checkout write the same file, so the command writes atomically (write a temporary file and rename) and re-reads before each change.
