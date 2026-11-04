@@ -8,7 +8,7 @@ In the new world everything is a registered kind (the owner, 2026-11-04). Many t
 
 ## Tools: the audit command only
 
-Never edit `src/game/plant/kinds/*.json` or `kinds/index.ts` by hand, never use Chrome, never run whole-game audits.
+Kinds are typed TypeScript files since mission 173 (`src/game/plant/kinds/<kind>.ts`, `defineKind`). Never edit them or `kinds/index.ts` by hand, never use Chrome, never run whole-game audits.
 
 - `npm run -s audit -- help`: every command and option.
 - `npm run -s audit -- rooms --by-size`: rooms, smallest first.
@@ -26,6 +26,12 @@ Start with `air_plant`, `loading_bay`, `main_corridor`, `switch_room`, `engineer
 3. Do not set traits or mounting (pass 2).
 4. Re-run `room <room> --summary`: the room is done when nothing in it is unregistered.
 5. Commit that room's changes alone (only the files the command wrote), its name in the message, after the project's checks (`AGENTS.md`); push. One room per commit.
+
+## Known traps (2026-11-04)
+
+- **A new kind needs a 3D form.** `src/toolkit/gallery/views/magic-adapters.test.ts` requires every kind to have a magic room or a recorded reason it has none, and that is code (`views/magic-builders.ts`), not something the command writes. When you register a kind the room layouts do not place, run `npx vp test run src/toolkit/gallery/views/magic-adapters.test.ts`; if it fails for your new kind, do not edit `magic-builders.ts` yourself: mail ahnaa_dmitrieva (the audit tools' owner) the kind and its builder from `show`, and wait for it before pushing that room. `office-chair`, `office-computer` and `software-box` already have builders.
+- **Bindings, not manifest edits.** A thing in a room's manifest (the office's software boxes) is registered by `bind`; the room audit then counts it registered. Do not edit `logic/audit-export/manifests.ts`.
+- **One room per commit, small.** Run the targeted tests above and `npm run -s audit -- check` before the full suite; push each room as soon as it is green, so nothing is left uncommitted.
 
 ## Coordination
 
