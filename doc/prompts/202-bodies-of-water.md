@@ -1,6 +1,6 @@
 # 202: Bodies of water: falling in, wading and swimming
 
-The owner, 2026-11-04. **A discussion brief, not for implementation yet:** it records the design as it is settled, one question at a time. Read `AGENTS.md` (no falling more than 1 m; not a platforming game), mission 175 (derived surfaces) and the trait rules (172, 177–201).
+The owner, 2026-11-04. **Parked (the owner, 2026-11-04): to be picked up later. The simple way out, when it is built: wherever the walker can stand, it walks or clambers out over any edge; where it cannot, it swims to the pool's ladders or steps.** A discussion brief, not for implementation yet: it records the design as it is settled, one question at a time. Read `AGENTS.md` (no falling more than 1 m; not a platforming game), mission 175 (derived surfaces) and the trait rules (172, 177–201).
 
 ## Why (the owner)
 
@@ -28,12 +28,10 @@ The pool edge is a drop of under 1 m to the water, so walking off it is allowed;
 A simplified rule, as games have it, decided by whether the walker can stand where it is:
 
 - **Shallow enough to stand** (the Jacuzzi, the foot bath, the lazy pool, a pool's shallow end): the walker clambers out over any edge, as onto a low step.
-- **Too deep to stand:** the walker swims to a ladder or the steps (ladder zones already), or, perhaps, clambers out slowly over the edge; which, the owner has not decided.
+- **Too deep to stand:** the walker swims to a ladder or the steps (ladder zones already). (A slow clamber over the edge was floated, and parked.)
 - **Later, with climbing and clambering** (not yet designed, anywhere): one general rule for clambering over an edge, decided by the walker's camera height relative to the edge, in water as on land; the rule above is its first, simplified form.
 
 ## Still to discuss
-
-- Out of deep water: a slow clamber over the edge, or only ladders and steps.
 
 - Whether the player's state changes when wet (dripping, footsteps), with the material trait (201).
 - What the view and sound do while submerged.
