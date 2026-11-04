@@ -42,4 +42,4 @@ So:
 
 ## Records
 
-The plan in `doc/plans/174-trait-audit-page.md`; the CHANGELOG under Unreleased (`### Added`); `TODO.md`: this mission, ticked with its date and commit; `doc/agent-tooling.md`: the trait audit page and its link from the item audit.
+The plan and spec in [`doc/plans/174-trait-audit-page.md`](../plans/174-trait-audit-page.md) (written with the brief, 2026-11-04; follow it, recording any change); the CHANGELOG under Unreleased (`### Added`); `TODO.md`: this mission, ticked with its date and commit; `doc/agent-tooling.md`: the trait audit page and its link from the item audit.
