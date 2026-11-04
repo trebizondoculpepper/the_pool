@@ -6,9 +6,11 @@ import {
 } from './equipment-kinds';
 import type { EquipmentKind, KindId } from './equipment-kinds';
 
-it('resolves explicit affordance defaults for every registered kind', () => {
+it('resolves explicit affordance defaults for every kind not yet given traits', () => {
   for (const id of Object.keys(EQUIPMENT_KINDS) as KindId[]) {
     const kind: EquipmentKind = EQUIPMENT_KINDS[id];
+    // A kind with traits is resolved from them (mission 172; traits.test.ts).
+    if (kind.traits?.length) continue;
     const a = kindAffordances(id);
     expect(a.interaction, id).toBe(
       kind.affordances?.interaction ??

@@ -13,6 +13,7 @@ import {
   validateRegistry,
 } from './kind-files';
 import type { KindFile } from './kind-files';
+import { compositeTraits } from './traits';
 import { KIND_IDS } from './kinds/index';
 import KINDS_INDEX from './kinds/index.ts?raw';
 
@@ -78,7 +79,13 @@ describe('the registry', () => {
   });
 
   test('the repository’s kind files and index agree and are valid', () => {
-    expect(validateRegistry(kindFiles(), indexGroups(KINDS_INDEX))).toEqual([]);
+    expect(
+      validateRegistry(
+        kindFiles(),
+        indexGroups(KINDS_INDEX),
+        compositeTraits(),
+      ),
+    ).toEqual([]);
     expect(indexIds(KINDS_INDEX)).toEqual([...KIND_IDS]);
   });
 });

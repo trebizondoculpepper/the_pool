@@ -34,6 +34,7 @@ type Files = typeof import('../src/game/plant/kind-files.ts');
 type Traits = typeof import('../src/game/plant/traits.ts');
 type CompositeTrait = import('../src/game/plant/traits.ts').CompositeTrait;
 type Graph = typeof import('../src/toolkit/gallery/logic/sim-graph/index.ts');
+type TraitIndex = typeof import('../src/game/plant/trait-index.ts');
 type Model =
   typeof import('../src/toolkit/gallery/logic/audit-export/audit-export.ts');
 type Scan =
@@ -229,21 +230,22 @@ export async function runEdit(args: readonly string[]) {
     return (composites[a]?.extends ?? []).some((e) => reaches(e, b, seen));
   };
   /** Each kind's service traits, derived from its model ports in the simulation graph (mission 172). */
-  const derivedServices = async (): Promise<Map<string, string[]>> => {
+  // The shared trait index (mission 174): the same queries the bench pages use.
+  const TI = await load<TraitIndex>('src/game/plant/trait-index.ts');
+  let media: Map<string, string[]> | undefined;
+  const portMedia = async () => {
+    if (media) return media;
     const G = await load<Graph>('src/toolkit/gallery/logic/sim-graph/index.ts');
-    const graph = G.simGraph();
-    const media = new Map<string, Set<string>>();
-    const kindOf = new Map(
-      [...graph.nodes.values()].map((n) => [n.id, n.kind] as const),
-    );
-    for (const e of graph.edges) {
-      if (!e.medium || e.kind === 'raises') continue;
-      const k = kindOf.get(e.to);
-      if (!k) continue;
-      media.set(k, new Set([...(media.get(k) ?? []), e.medium]));
-    }
-    return new Map([...media].map(([k, m]) => [k, T.serviceTraits(m)]));
+    media = TI.mediaByKind(G.simGraph());
+    return media;
   };
+  const traitCtx = async () => ({
+    kinds: files,
+    composites,
+    media: await portMedia(),
+  });
+  const derivedServices = async (): Promise<Map<string, string[]>> =>
+    TI.serviceTraitsByKind(await portMedia());
 
   switch (command) {
     case 'show': {
@@ -440,25 +442,21 @@ export async function runEdit(args: readonly string[]) {
       break;
     }
     case 'traits': {
-      // Every trait: primitives by facet, then composites, with how many kinds use each.
-      for (const facet of T.FACETS) {
-        const r = T.FACET_RULES[facet];
-        console.log(
-          `${facet}: ${r.words}${r.derived ? ' [derived, never set]' : ''}`,
-        );
-        for (const n of T.PRIMITIVE_NAMES.filter(
-          (p) => T.PRIMITIVES[p].facet === facet,
-        ))
-          console.log(
-            `  ${n.padEnd(16)} ${T.PRIMITIVES[n].words} (${traitUsers(n).kinds.length} kinds)`,
-          );
+      // Every trait: primitives by facet, then composites, with how many kinds have each.
+      const groups = TI.traitIndex(await traitCtx());
+      if (opts.json) {
+        process.stdout.write(`${JSON.stringify(groups, null, 2)}\n`);
+        break;
       }
-      console.log('composites:');
-      for (const [n, c] of Object.entries(composites))
+      for (const g of groups) {
+        const r = g.facet === 'composite' ? undefined : T.FACET_RULES[g.facet];
         console.log(
-          `  ${n.padEnd(16)} ${c.description} = ${c.extends.join(' + ')} (${traitUsers(n).kinds.length} kinds)`,
+          `${g.facet}: ${g.words}${r?.derived ? ' [derived, never set]' : ''}`,
         );
-      if (!Object.keys(composites).length) console.log('  (none yet)');
+        for (const t of g.traits)
+          console.log(`  ${t.name.padEnd(16)} ${t.words} (${t.kinds} kinds)`);
+        if (!g.traits.length) console.log('  (none yet)');
+      }
       break;
     }
     case 'trait': {
@@ -542,35 +540,46 @@ export async function runEdit(args: readonly string[]) {
         );
       switch (sub) {
         case 'show': {
-          if (T.isPrimitive(name)) {
-            const p = T.PRIMITIVES[
-              name
-            ] as import('../src/game/plant/traits.ts').Primitive;
-            console.log(`${name}: primitive, facet ${p.facet}: ${p.words}`);
-            if (p.implies?.length)
-              console.log(`  implies: ${p.implies.join(', ')}`);
-            if (p.needs) console.log(`  needs a ${p.needs} trait`);
-            for (const [k, m] of Object.entries(p.meta ?? {}))
-              console.log(
-                `  metadata ${k}: ${m.words}${m.values ? ` (${m.values.join('|')})` : ''}${m.default !== undefined ? `, default ${m.default}` : ''}`,
-              );
-          } else if (composites[name]) {
-            const c = composites[name];
-            console.log(`${name}: composite: ${c.description}`);
-            console.log(`  extends: ${c.extends.join(', ')}`);
-            console.log(
-              `  expands to: ${T.expand([name], composites).primitives.join(', ')}`,
-            );
-            for (const [k, v] of Object.entries(c.meta ?? {}))
-              console.log(`  metadata ${k} = ${v}`);
-          } else
+          const d = TI.traitDetail(name, await traitCtx());
+          if (opts.json) {
+            process.stdout.write(`${JSON.stringify(d, null, 2)}\n`);
+            break;
+          }
+          if (d.kind === 'unknown')
             fail(
               `'${name}' is not a trait; npm run -s audit -- traits lists them`,
             );
-          const u = traitUsers(name);
-          console.log(`  used by kinds: ${u.kinds.join(', ') || 'none'}`);
           console.log(
-            `  used by composites: ${u.composites.join(', ') || 'none'}`,
+            d.kind === 'primitive'
+              ? `${name}: primitive, facet ${d.facet} (${d.facetWords})${d.derived ? ' [derived from ports, never set]' : ''}: ${d.words}`
+              : `${name}: composite: ${d.words}`,
+          );
+          if (d.composedOf)
+            console.log(
+              `  extends: ${d.composedOf.children.map((c) => c.trait).join(', ')}`,
+            );
+          if (d.kind === 'composite')
+            console.log(`  expands to: ${d.expandsTo.join(', ')}`);
+          if (d.implies.length)
+            console.log(`  implies: ${d.implies.join(', ')}`);
+          if (d.needs) console.log(`  needs a ${d.needs} trait`);
+          for (const m of d.meta)
+            console.log(
+              `  metadata ${m.key}: ${m.spec.words}${m.spec.values ? ` (${m.spec.values.join('|')})` : ''}${m.value !== undefined ? `, set to ${m.value}` : m.spec.default !== undefined ? `, default ${m.spec.default}` : ''}`,
+            );
+          console.log(`  included by: ${d.includedBy.join(', ') || 'none'}`);
+          const how = (
+            s: import('../src/game/plant/trait-index.ts').TraitSource,
+          ) =>
+            s.by === 'named'
+              ? 'named'
+              : s.by === 'composite'
+                ? `via ${s.via.join(' › ')}`
+                : s.by === 'implied'
+                  ? `implied by ${s.from}`
+                  : `from ports: ${s.media.join(', ')}`;
+          console.log(
+            `  kinds (${d.kinds.length}): ${d.kinds.map((k) => `${k.kind} (${k.sources.map(how).join('; ')})`).join(', ') || 'none'}`,
           );
           break;
         }
@@ -728,19 +737,16 @@ export async function runEdit(args: readonly string[]) {
     }
     case 'kinds': {
       // Only reached with --with or --without (audit.ts sends plain listings elsewhere).
-      const services =
-        opts.with &&
-        T.isPrimitive(opts.with) &&
-        T.PRIMITIVES[opts.with].facet === 'service'
-          ? await derivedServices()
-          : null;
-      const withUsers =
-        opts.with && !services ? new Set(traitUsers(opts.with).kinds) : null;
+      // The same answer as the trait page's "kinds with it" (mission 174).
+      const withUsers = opts.with
+        ? new Set(
+            TI.traitDetail(opts.with, await traitCtx()).kinds.map(
+              (k) => k.kind,
+            ),
+          )
+        : null;
       const out = Object.keys(files).filter((k) => {
-        if (opts.with)
-          return services
-            ? (services.get(k)?.includes(opts.with) ?? false)
-            : withUsers!.has(k);
+        if (opts.with) return withUsers!.has(k);
         if (opts.without) {
           const facet =
             opts.without as import('../src/game/plant/traits.ts').Facet;
