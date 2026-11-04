@@ -81,6 +81,57 @@ export function throughWater(
   depth: number,
   viewY: number,
 ) {
-  const kept = transmittance(lightPath(depth, viewY));
-  return tile.map((c, i) => c * kept[i] + SCATTER[i] * (1 - kept[i]));
+  return waterFog(tile, lightPath(depth, viewY));
 }
+
+/**
+ * A colour seen through `path` metres of water: what the water keeps of it,
+ * plus its own faint blue-green glow for what it absorbed (mission 203; the
+ * same formula as `throughWater`, for an arbitrary water path).
+ */
+export function waterFog(
+  colour: readonly number[],
+  path: number,
+): [number, number, number] {
+  const kept = transmittance(path);
+  return colour.map((c, i) => c * kept[i] + SCATTER[i] * (1 - kept[i])) as [
+    number,
+    number,
+    number,
+  ];
+}
+
+/** A point in 3D, as metres (x, y, z). */
+export type WaterPoint = readonly [number, number, number];
+
+const lengthOf = (a: WaterPoint, b: WaterPoint) =>
+  Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]);
+
+/**
+ * The length of the line of sight from `a` to `b` that lies below the water
+ * plane at `waterY` (water occupies y < `waterY`): the whole ray for two
+ * underwater points, none for two strictly above, the submerged part where
+ * the sight crosses the surface — from under the water's surface or through
+ * a porthole (mission 203).
+ */
+export function waterPathLength(
+  a: WaterPoint,
+  b: WaterPoint,
+  waterY: number,
+): number {
+  const elsewhere = (p: WaterPoint) => p[1] >= waterY;
+  if (elsewhere(a) && elsewhere(b)) return 0;
+  if (!elsewhere(a) && !elsewhere(b)) return lengthOf(a, b);
+  // It crosses the surface; the crossing point splits the ray.
+  const t = (waterY - a[1]) / (b[1] - a[1]);
+  const at: WaterPoint = [
+    a[0] + (b[0] - a[0]) * t,
+    waterY,
+    a[2] + (b[2] - a[2]) * t,
+  ];
+  return elsewhere(a) ? lengthOf(at, b) : lengthOf(at, a);
+}
+
+/** Snell's window, the full angle of the air side a swimmer sees above, degrees. */
+export const snellsWindow = () =>
+  2 * Math.atan2(1, Math.sqrt(WATER_IOR * WATER_IOR - 1)) * (180 / Math.PI);

@@ -3,9 +3,14 @@ import {
   ABSORPTION,
   CAUSTIC_FOCUS,
   causticFocus,
+  SCATTER,
+  WATER_IOR,
+  snellsWindow,
   throughWater,
   transmittance,
   viewPath,
+  waterFog,
+  waterPathLength,
 } from './water-optics';
 
 describe('light through the pool’s water', () => {
@@ -38,5 +43,34 @@ describe('light through the pool’s water', () => {
     expect(causticFocus(CAUSTIC_FOCUS)).toBeCloseTo(1, 12);
     expect(causticFocus(0.2)).toBeLessThan(causticFocus(0.6));
     expect(causticFocus(2)).toBeLessThan(causticFocus(1));
+  });
+
+  it('measures the line of sight under the water plane across a crossing surface', () => {
+    expect(waterPathLength([0, -1, 0], [0, 1, 0], 0)).toBeCloseTo(1, 12);
+    expect(waterPathLength([0, -1, 0], [0, -2, 0], 0)).toBeCloseTo(1, 12);
+    expect(waterPathLength([0, 1, 0], [0, 2, 0], 0)).toBe(0);
+    // An oblique crossing, from below the surface to above it.
+    expect(waterPathLength([0, -1, 0], [2, 1, 0], 0)).toBeCloseTo(
+      Math.sqrt(2),
+      12,
+    );
+  });
+
+  it('fogs a colour by its underwater path, fading to the water’s glow', () => {
+    expect(waterFog([1, 1, 1], 0)).toEqual([1, 1, 1]);
+    const shallow = waterFog([1, 1, 1], 1);
+    const deep = waterFog([1, 1, 1], 30);
+    expect(shallow[0]).toBeLessThan(shallow[2]);
+    expect(deep[0]).toBeLessThan(shallow[0]);
+    expect(deep[0]).toBeCloseTo(SCATTER[0], 6);
+  });
+
+  it('opens Snell’s window to about 97° above the swimmer', () => {
+    expect(snellsWindow()).toBeCloseTo(
+      2 * Math.asin(1 / WATER_IOR) * (180 / Math.PI),
+      12,
+    );
+    expect(snellsWindow()).toBeGreaterThan(90);
+    expect(snellsWindow()).toBeLessThan(100);
   });
 });
