@@ -1,21 +1,23 @@
-# 168 plan: the audit command edits the registry
+# 168 plan: the audit command edits the registry, one file per kind
 
-Brief: [168](../prompts/168-audit-proposals.md). The owner's rulings (2026-11-04): **no proposals, no review page**. The audit command changes the configuration directly; git is the review (a bad change is rolled back) and CI validates. The LLM never edits files by hand: it reads with the command and changes data with the command. The whole object registry is JSON, and each kind's configuration is one JSON document.
+Brief: [168](../prompts/168-audit-proposals.md). The owner's rulings (2026-11-04): **no proposals, no review page**. The audit command changes the configuration directly; git is the review (a bad change is rolled back) and CI validates. The LLM never edits files by hand: it reads with the command and changes data with the command. Each registered kind is one JSON file in one directory, compiled into the registry at build.
 
 ## Contents
 
-- Stage A: the registry as JSON
+- Stage A: one JSON file per kind
 - Stage B: the command edits it
 - Stage C: source evidence and honest defaults
 - Validation
 - Tests and risks
 
-## Stage A: the registry as JSON
+## Stage A: one JSON file per kind
 
-- `src/game/plant/kind-registry.json`: one document per kind, keyed by kind, keys sorted, two-space indented, one trailing newline (the only form any writer produces, so diffs stay small):
+The owner (2026-11-04): each registered kind is **one JSON file in one directory**. Registering a kind is adding its file; unregistering is removing it; recategorising, traits, mounting and the floor plane are edits to that one file. Until the build it is just data; the build compiles the directory into the registry the game reads.
+
+- `src/game/plant/kinds/<kind>.json`, the file name the kind's id, keys in a fixed order, two-space indented, one trailing newline (the only form any writer produces):
 
 ```json
-"desk": {
+{
   "group": "placed",
   "type": "Desk",
   "code": "DK",
@@ -27,9 +29,10 @@ Brief: [168](../prompts/168-audit-proposals.md). The owner's rulings (2026-11-04
 }
 ```
 
-- `equipment-kinds.ts` keeps its types and functions and reads the JSON (`resolveJsonModule` is on); `EQUIPMENT_KINDS`, `PLACED_KINDS`, `OTHER_KINDS` and `KindId` derive from it. 170 adds `traits` and `mount`; the flags 158–165 use derive from traits.
-- Migration once, by `scripts/registry-to-json.ts`, with a test that the derived registry equals today's object entry for entry. Coordinate first: `equipment-kinds.ts` has another agent's uncommitted edit (the `sign` kind); claim the file and migrate after it lands.
-- Things that have behaviour but no identity of their own in the scene (the desk's chair, its PC) are tied to their kind in `src/game/plant/kind-bindings.json` (room, thing, kind); the audit counts them registered, and lists the builder that still has to mark them in code.
+- **Compiled at build:** `equipment-kinds.ts` gathers the directory with Vite's `import.meta.glob('./kinds/*.json', { eager: true })`, so the dev server, the build, the tests and the Node command (`runnerImport`) all see the files as one object with no extra step; `EQUIPMENT_KINDS`, `PLACED_KINDS`, `OTHER_KINDS` derive from it. A one-file change is picked up at once by the dev server.
+- **`KindId`:** today a union of the registry's literal keys, used in 19 files. With a directory, the compiler cannot see the keys, so `KindId` becomes a checked string (`isKindId` at run time, the validator in CI). If the owner wants the compile-time union back, the command can write a generated `kind-ids.generated.ts` on every register and unregister, checked in sync by CI; not planned unless asked.
+- Migration once, by `scripts/registry-to-files.ts`, writing one file per kind from today's TypeScript, with a test that the gathered registry equals today's object entry for entry. Coordinate first: `equipment-kinds.ts` has another agent's uncommitted edit (the `sign` kind); claim the file and migrate after it lands.
+- Things with behaviour but no identity of their own in the scene (the desk's chair, its PC) are tied to their kind by a `bindings` list in the kind's own file (`"bindings": [{ "room": "engineers_office", "thing": "desk-chair" }]`); the audit counts them registered and lists the builder that still has to mark them in code.
 
 ## Stage B: the command edits it
 
@@ -44,7 +47,7 @@ All through `npm run -s audit --`, Node only, each one change, written at once:
 | `bind <room> <thing> <kind>`                                                             | ties a thing with no identity of its own to its kind                                           |
 | `room <room>`, `kind <kind>`, `index`, `rooms --by-size`                                 | read, as now (167)                                                                             |
 
-Every change prints what it changed (the field's old and new value). Nothing else writes the registry or the bindings.
+Every change touches one file and prints what it changed (the field's old and new value). Nothing else writes the kinds' files, and agents never edit them by hand.
 
 ## Stage C: source evidence and honest defaults
 
@@ -58,6 +61,6 @@ One pure validator (`validateRegistry`, tested) checks every document: required 
 
 ## Tests and risks
 
-Tests: the registry round trip; the validator's refusals; each command's effect on a copy of the registry and its printed change; byte-identical output across runs; the scan on fixture sources (desk, cupboard, switch-fuse).
+Tests: the per-file registry equals today's (round trip); the validator's refusals; each command's effect on a copy of the registry and its printed change; byte-identical output across runs; the scan on fixture sources (desk, cupboard, switch-fuse).
 
-Risks: the migration touches what every mission reads, so it goes in one push with the round-trip test; the scan is heuristic and only adds evidence; several agents running `set` at once on one shared checkout write the same file, so the command writes atomically (write a temporary file and rename) and re-reads before each change.
+Risks: the migration touches what every mission reads, so it goes in one push with the round-trip test; the scan is heuristic and only adds evidence; with one file per kind, two agents rarely touch the same file; the command still writes atomically (a temporary file, then a rename) and re-reads before each change.
