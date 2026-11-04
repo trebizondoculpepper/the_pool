@@ -118,6 +118,8 @@ The boxed _The Pool_ front, back and spine at `doc/marketing/box-art/` were gene
 
 `resources/images/vibetoplist/vibetoplist-badge.svg` is VibeTopList's "Featured on VibeTopList" badge for the game (https://vibetoplist.com/badge/the-pool.svg), downloaded unchanged on 2026-10-31 and shown, as VibeTopList offers it to listed games, on the title screen and the pause menu, linked to the game's vote page. The robot (`vibetoplist-robot.png`) is the badge's own image, taken out of it unchanged; the pause menu's panel redraws the badge around it as a rectangular button. Both are VibeTopList's, not covered by the game's licence.
 
-## Sound files as MP3
+## The floppy disk: after a CC-BY free model
+
+The `floppy-disk` component that carries the engineer's office's loose disks (`src/toolkit/components/site-dressing/views/floppy-disk.ts`) is built procedurally, drawn after the disks already on the desk, which in turn follow "Floppy Disk 3.5-inch" by blissful_decay13 on Sketchfab (https://sketchfab.com/3d-models/floppy-disk-35-inch-db46f0c62f0d481c82c19753e995414f), licensed CC-BY (Creative Commons Attribution). The model file itself is not bundled; the component draws an equivalent 90 × 94 × 3.3 mm 3.5" disk with a per-disk label. Recorded in `doc/reuse-inventory.md` (2026-11-04).
 
 Every sound that was an Ogg Vorbis file (the title theme, the bridge's theme and room tone, and the Frutiger Aero console sounds) was converted to MP3 on 2026-11-01 (ffmpeg, LAME VBR quality 2), unchanged otherwise, because Safari on an iPad would not play them (the owner, 2026-11-01). Their credits above are as before.

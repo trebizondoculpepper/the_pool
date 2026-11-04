@@ -105,6 +105,7 @@ export const OTHER_KIND_IDS = [
   'cabinet-switch',
   'cartridge-filter',
   'dosing-set',
+  'floppy-disk',
   'flowmeter',
   'gas-ball-valve',
   'level-transmitter',

@@ -12,6 +12,7 @@ import { createOzoneMonitor } from '../../components/plant/views/ozone-plant';
 import { createEndSuctionPump } from '../../components/plant/views/pumps-plant';
 import { createOfficeChair } from '../../components/site-dressing/views/office-chair';
 import { createSoftwareBox } from '../../components/site-dressing/views/software-box';
+import { createFloppyDisk } from '../../components/site-dressing/views/floppy-disk';
 import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
 import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
 import type { ItemSize } from '../logic/magic-room-layout';
@@ -114,6 +115,13 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
     title: 'Software box',
     size: { w: 0.3, d: 0.1, h: 0.35, mount: 'floor' },
     build: (kit) => objectOf(createSoftwareBox(kit, SOFTWARE_TITLES[0])),
+  },
+  'floppy-disk': {
+    title: 'Floppy disk',
+    // 90 × 94 × 3.3 mm, displayed standing on a plinth in the magic room.
+    size: { w: 0.09, d: 0.094, h: 0.1, mount: 'wall', y: 1.1 },
+    build: (kit) =>
+      objectOf(createFloppyDisk(kit, { label: 'DISK', sub: 'Disk 1 of 3' })),
   },
   'office-computer': {
     title: 'Office computer',

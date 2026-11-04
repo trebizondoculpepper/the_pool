@@ -4,7 +4,7 @@
  * hand. The files are gathered here so this file changes when they come
  * or go.
  */
-export const TRAIT_IDS = [] as const;
+export const TRAIT_IDS = ['floppy-disk'] as const;
 
 export const TRAIT_FILES: Record<string, unknown> = import.meta.glob(
   ['./*.ts', '!./index.ts'],
