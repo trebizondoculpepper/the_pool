@@ -68,7 +68,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
   - [ ] [165: Enforcement](doc/prompts/165-one-kind-of-room-enforcement.md) (after 160–164)
   - [ ] [166: A retired flag for objects and rooms](doc/prompts/166-retired-flag.md) (the owner, 2026-11-04): obsolete kinds and rooms marked retired, with reason and date, and excluded from every audit. Brief only.
 - [ ] **The registry audit, in two passes** (the owner, 2026-11-04): briefs written, not started.
-  - [ ] [168: Audit proposals](doc/prompts/168-audit-proposals.md): `npm run audit -- propose-…` validates and records proposals; the owner approves Yes/No on a review page; source evidence from Node. Tooling first.
+  - [x] [168: The audit tools](doc/prompts/168-audit-proposals.md) (2026-11-04, ahnaa_dmitrieva): one JSON file per kind, index, validator, `npm run audit -- show | register | unregister | set | unset | bind`, source evidence, `rooms --by-size`, `default` evidence.
   - [ ] [169: Pass 1, everything is a registered kind](doc/prompts/169-registration-pass.md): room by room, smallest first. Needs 168.
   - [ ] [170: Pass 2, traits and mounting](doc/prompts/170-traits-pass.md): kind by kind; flags follow from traits. Needs 168, 169.
   - [ ] [171: Migrate the registry to one file per kind](doc/prompts/171-registry-migration.md): one-off migration, validated (round trip, random spot checks), switch, then remove the hard-coded registry. Needs 168.
