@@ -24,11 +24,7 @@ The command finds each kind's builder (its explicit adapter, model exhibit, the 
 
 ## Applying
 
-Kind registrations and traits move into a plain data file the registry reads (for example `src/game/plant/kind-affordances.json`), so applying an approval is writing a value, never editing TypeScript. Whether **Yes** applies at once or marks approved for a later `npm run -s audit -- apply` is the open question below.
-
-## Open questions for the owner
-
-- On **Yes**: apply straight away (recommended: a plain data value, visible as a diff) or mark approved and apply in a batch?
+Kind registrations and traits move into a plain data file the registry reads (for example `src/game/plant/kind-affordances.json`), so applying an approval is writing a value, never editing TypeScript. **Yes** applies at once (the owner, 2026-11-04); the whole registry moves to JSON first (the owner, 2026-11-04). The plan: `doc/plans/168-audit-proposals.md`.
 
 ## Acceptance
 

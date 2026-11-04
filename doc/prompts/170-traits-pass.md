@@ -21,7 +21,7 @@ A kind carries any number of traits; the flags follow mechanically:
 | decorative | intentionally inert: seen, does nothing                | no context, no clicks                                                |
 
 - **No traits = unlabelled**, a finding; **decorative** is the deliberate label, so intent and omission are distinguishable.
-- **Consistency rules**, pure and tested: decorative never with operable, chair-like or portable; decorative with box-like is flagged as odd (decorative implies walk-through); more rules as they are found.
+- **Consistency rules**, pure and tested: decorative never with operable, chair-like, portable or luggable; portable and luggable never together; decorative with box-like is flagged as odd (decorative implies walk-through); more rules as they are found.
 
 ## Mounting (the owner, 2026-11-04)
 
@@ -34,7 +34,7 @@ How the kind relates to the physical world: **floor-standing**, **wall-mounted**
 ## Acceptance
 
 - Every registered kind has traits (or `decorative`) and a mounting; the consistency rules pass; the flags 158–165 rely on are derived from traits.
-- The engineers' office's kinds are the worked examples (desk: box-like, operable; storage cupboard: box-like, operable; chair: chair-like, portable; software box: box-like, portable; noticeboard: panel-like).
+- The engineers' office's kinds are the worked examples (desk: box-like, operable; storage cupboard: box-like, operable; chair: chair-like, luggable; software box: box-like, portable; noticeboard: panel-like).
 
 ## Records
 
