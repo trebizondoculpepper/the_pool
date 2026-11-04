@@ -149,6 +149,7 @@ export function createTank(
       const ladder = createHumanLadder('caged', tank.top + 0.05, {
         kit,
         landing: false,
+        tankWarnings: true,
       }).group;
       ladder.position.set(-nx / 2 + 0.45, 0, back + nz / 2 + 0.02);
       group.add(ladder);

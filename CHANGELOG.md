@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Tank ladders carry warnings: a fall sign (ISO 7010 W008) and a deep-water, risk of drowning sign on the tank behind the rungs, and a yellow and black hazard border on the floor round the foot. Stepping onto a ladder is eased instead of a jump: from the foot over 6 frames to one rung up, from the top over 10 frames to two rungs down, turning square on to the ladder by the shorter way round.
 - Traits on the bench (mission 174): `bench.html?bench=trait-audit` (every trait by facet, with counts) and `&trait=<t>` (its meaning, metadata, composition tree, what includes it, the kinds with it and how, every object with it by room, and the command that would remove it); the item audit gains an Its traits section and the `?dev` catalogue links each kind's traits; a shared pure trait index behind both the pages and `npm run audit -- traits | trait show [--json]`; the balance tank classified as the worked example.
 - Kinds and composite traits are typed TypeScript configuration (mission 173): `export default defineKind({ … })` and `defineTrait`, so the compiler checks every kind; migrated from JSON (validated field for field and by spot checks); the audit command edits them through magicast (comments kept) and formats them.
 - Underwater optics (mission 203, the pure parts first): `waterPathLength(a, b, waterY)` — the underwater length of a line of sight (whole below, none above, the submerged part across a crossing surface); `waterFog(colour, path)` — a colour through `path` metres of water, the water's keeps plus its blue-green glow (the same formula the deep ends use); and `snellsWindow()` — the ≈ 97° cone of air a swimmer sees above. In `water-optics.ts`, tested (7).
@@ -27,6 +28,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The walker fell into the pool plant rooms' tanks at the top of the ladder (the landing and roof heights were scaled twice); the roof's edge guard now measures its drop to the room's floor. A caged ladder's hoops are fixed to its stiles instead of floating clear of them, and the climber's eye follows a line 0.4 m out, inside the cage, not against the rungs.
 - PL1’s freshwater feed now runs from the south-wall boosted make-up supply to the balance tank, instead of ending in mid-air above it.
 
 ## [0.14.0] - 2026-11-04

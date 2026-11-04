@@ -52,6 +52,8 @@ export type Pictogram =
   | 'automatic-start'
   | 'slippery'
   | 'confined'
+  | 'drop'
+  | 'deep-water'
   // Mandatory.
   | 'ear'
   | 'eye'
@@ -83,6 +85,8 @@ const CATEGORY: Record<Pictogram, SignCategory> = {
   'automatic-start': 'warning',
   slippery: 'warning',
   confined: 'warning',
+  drop: 'warning',
+  'deep-water': 'warning',
   ear: 'mandatory',
   eye: 'mandatory',
   gloves: 'mandatory',
@@ -305,6 +309,52 @@ function drawSymbol(c: Ctx, p: Pictogram, ink: string, ground: string) {
       c.stroke();
       figure(c, 0, -22, 0.75);
       break;
+    case 'drop': {
+      // ISO 7010 W008, danger of a drop: a figure falling headlong from
+      // the edge of a step.
+      c.fillRect(-34, 4, 30, 6);
+      c.fillRect(-10, 4, 6, 26);
+      c.beginPath();
+      c.arc(16, 14, 6, 0, Math.PI * 2);
+      c.fill();
+      c.lineWidth = 7;
+      c.beginPath();
+      c.moveTo(12, 6);
+      c.lineTo(2, -14);
+      c.moveTo(2, -14);
+      c.lineTo(-6, -30);
+      c.moveTo(2, -14);
+      c.lineTo(12, -28);
+      c.moveTo(8, 0);
+      c.lineTo(22, -6);
+      c.moveTo(8, 0);
+      c.lineTo(-4, 2);
+      c.stroke();
+      break;
+    }
+    case 'deep-water': {
+      // Deep water, a risk of drowning (after ISO 20712-1 WSW001): a
+      // figure in the water, an arm raised, waves over it.
+      c.beginPath();
+      c.arc(0, -6, 6, 0, Math.PI * 2);
+      c.fill();
+      c.lineWidth = 6;
+      c.beginPath();
+      c.moveTo(4, -2);
+      c.lineTo(14, -26);
+      c.stroke();
+      c.lineWidth = 5;
+      for (const y of [6, 20]) {
+        c.beginPath();
+        c.moveTo(-34, y);
+        for (let x = -34; x < 34; x += 17) {
+          c.quadraticCurveTo(x + 4, y - 7, x + 8.5, y);
+          c.quadraticCurveTo(x + 13, y + 7, x + 17, y);
+        }
+        c.stroke();
+      }
+      break;
+    }
     case 'ear':
       // A head wearing ear defenders.
       head(c, -2, -6, 15);

@@ -7,6 +7,7 @@ import {
   vi,
 } from 'vite-plus/test';
 import { Box3 } from 'three';
+import type { Mesh } from 'three';
 import {
   createPanelKit,
   disposeKit,
@@ -59,7 +60,13 @@ describe.each([
       const built = exhibit.build(kit);
       const model = isLive(built) ? built.object : built;
       model.updateMatrixWorld(true);
-      const box = new Box3().setFromObject(model);
+      // Less what lies beside it on the floor by design (`userData.beside`).
+      const box = new Box3();
+      model.traverse((o) => {
+        for (let up: typeof o | null = o; up; up = up.parent)
+          if (up.userData.beside) return;
+        if ((o as Mesh).isMesh) box.expandByObject(o, false);
+      });
       const { w, d, h, mount } = exhibit.size;
       expect(box.min.x).toBeGreaterThan(-w / 2 - SLACK);
       expect(box.max.x).toBeLessThan(w / 2 + SLACK);

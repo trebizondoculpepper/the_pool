@@ -23,11 +23,18 @@ import type { PortableObject, SupportSurface } from './object-handling';
 import { LOCK_SILENCE_MS, lockUnavailable } from '../logic/pointer-lock';
 import { cutOpenings, slide } from '../logic/walk-collision';
 import type { Footprint } from '../logic/walk-collision';
-import { climb, ladderToUse } from '../logic/ladder-zone';
+import {
+  climb,
+  ladderMountPose,
+  ladderToUse,
+  LADDER_MOUNT_SECONDS,
+  LADDER_RUNG_PITCH,
+  yawFacingLadder,
+} from '../logic/ladder-zone';
 import { smoothStairFloor } from '../logic/stair-smoothing';
 import { standsUp } from '../logic/seat';
 import type { SeatPose } from '../logic/seat';
-import type { LadderZone } from '../logic/ladder-zone';
+import type { LadderZone, MountPose } from '../logic/ladder-zone';
 import {
   PAD,
   carryingHelp,
@@ -376,10 +383,26 @@ export function createFirstPerson(options: FirstPersonOptions) {
     );
     if (mount) {
       attachedLadder = mount.zone;
-      currentFloorY = mount.zone[mount.end];
-      smoothedFloorY = currentFloorY;
-      walker.x = mount.zone.rung.x;
-      walker.z = mount.zone.rung.z;
+      // Stepped onto over a few frames, eased, not jumped to (the owner, 2026-11-04).
+      // Turning square on to face the ladder; from the top, more slowly.
+      mounting = {
+        from: { x: walker.x, z: walker.z, y: smoothedFloorY, yaw: walker.yaw },
+        // Square on to the ladder, facing it, from either end, by the
+        // shorter turn, left or right (`ladderMountPose`).
+        toYaw: yawFacingLadder(mount.zone),
+        elapsed: 0,
+        seconds: LADDER_MOUNT_SECONDS[mount.end],
+      };
+      // Already a step on (the owner, 2026-11-04): one rung up from the
+      // foot, two rungs down from the top (rungs 0.3 m apart).
+      currentFloorY = Math.min(
+        mount.zone.top,
+        Math.max(
+          mount.zone.bottom,
+          mount.zone[mount.end] +
+            (mount.end === 'bottom' ? 1 : -2) * LADDER_RUNG_PITCH * metre,
+        ),
+      );
       nudge.forward = 0;
       nudge.right = 0;
       help.textContent =
@@ -434,6 +457,13 @@ export function createFirstPerson(options: FirstPersonOptions) {
   const tapped = new Set<string>();
   const nudge = { forward: 0, right: 0 };
   let attachedLadder: LadderZone | null = null;
+  /** Stepping onto the ladder: where from, and how many frames in. */
+  let mounting: {
+    from: MountPose;
+    toYaw: number;
+    elapsed: number;
+    seconds: number;
+  } | null = null;
   /** Seated on a chair (`sit`): where the walker stood before, to stand there again. */
   let seated: { from: { x: number; z: number } } | null = null;
   /** Up from a chair, where it sat down from, at its own eye's height. */
@@ -1397,6 +1427,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
         returnTo = null;
       }
       attachedLadder = null;
+      mounting = null;
       seated = null;
       // Walking, an eye no stance can reach is dropped: the walker stands.
       // (A camera link opens in noclip before `flying` catches up.)
@@ -1441,6 +1472,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       if (flying || holding) return;
       if (!seated) seated = { from: { x: walker.x, z: walker.z } };
       attachedLadder = null;
+      mounting = null;
       walker.x = pose.x;
       walker.z = pose.z;
       walker.yaw = pose.yaw;
@@ -1525,6 +1557,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
           walker.crouched = walker.lowCrouched = false;
           walker.crouch = 0;
           attachedLadder = null;
+          mounting = null;
           fallbackBounds = null;
         } else {
           if (returnTo) {
@@ -1729,7 +1762,26 @@ export function createFirstPerson(options: FirstPersonOptions) {
       tapped.clear();
       const ladder = attachedLadder;
       const priorFloorY = currentFloorY;
-      if (ladder) {
+      let mountY: number | null = null;
+      if (ladder && mounting) {
+        // Still stepping on: no climbing until the walker is on the ladder.
+        mounting.elapsed += delta;
+        const pose = ladderMountPose(
+          mounting.from,
+          {
+            x: ladder.rung.x,
+            z: ladder.rung.z,
+            y: currentFloorY,
+            yaw: mounting.toYaw,
+          },
+          mounting.elapsed / mounting.seconds,
+        );
+        walker.x = pose.x;
+        walker.z = pose.z;
+        walker.yaw = pose.yaw;
+        mountY = pose.y;
+        if (mounting.elapsed >= mounting.seconds) mounting = null;
+      } else if (ladder) {
         const travel = ahead + nudge.forward / metre;
         currentFloorY = Math.min(
           ladder.top,
@@ -1748,6 +1800,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
           walker.x = exit.x;
           walker.z = exit.z;
           attachedLadder = null;
+          mounting = null;
           help.textContent = '';
         }
       }
@@ -1791,7 +1844,11 @@ export function createFirstPerson(options: FirstPersonOptions) {
               WALKER_RADIUS_METRES * metre,
             );
       if (flying && 'y' in next && typeof next.y === 'number') flightY = next.y;
-      const kept = attachedLadder ? attachedLadder.rung : next;
+      const kept = mounting
+        ? { x: walker.x, z: walker.z }
+        : attachedLadder
+          ? attachedLadder.rung
+          : next;
       walker.stride += Math.hypot(kept.x - walker.x, kept.z - walker.z);
       walker.x = kept.x;
       walker.z = kept.z;
@@ -1808,6 +1865,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
           Boolean(ladder) ||
           Math.abs(currentFloorY - priorFloorY) > 0.5 * metre,
       );
+      if (mountY !== null) smoothedFloorY = mountY;
       walker.crouch +=
         ((walker.lowCrouched ? 1.85 : walker.crouched ? 1 : 0) -
           walker.crouch) *

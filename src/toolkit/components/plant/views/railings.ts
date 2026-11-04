@@ -106,25 +106,38 @@ export function createCagedLadder(kit: PanelKit, rise = 4, cage = true) {
   const depth = 0.7;
   const hoopY: number[] = [];
   if (cage) for (let y = 2.4; y <= rise + 1.0; y += 0.9) hoopY.push(y);
+  // Each hoop is fixed to both stiles: a short leg out from each stile to
+  // a half-round whose back is `depth` from the rungs (it once began 0.3 m
+  // clear of the stiles, joined to nothing, and seemed to float).
+  const radius = 0.35;
+  const centreZ = off + depth - radius;
+  const onHoop = (a: number, y: number) =>
+    [Math.cos(a) * radius, y, centreZ + Math.sin(a) * radius] as const;
   for (const y of hoopY) {
     const points = 10;
-    for (let i = 0; i < points; i++) {
-      const a0 = Math.PI * (i / points);
-      const a1 = Math.PI * ((i + 1) / points);
-      const p = (a: number) =>
-        [
-          Math.cos(a) * 0.35,
-          y,
-          off + Math.sin(a) * depth * 0.5 + depth * 0.5 - 0.05,
-        ] as const;
-      t.rod(group, steel, p(a0), p(a1), 0.008, 6);
-    }
+    for (let i = 0; i < points; i++)
+      t.rod(
+        group,
+        steel,
+        onHoop(Math.PI * (i / points), y),
+        onHoop(Math.PI * ((i + 1) / points), y),
+        0.008,
+        6,
+      );
+    for (const side of [-1, 1])
+      t.rod(
+        group,
+        steel,
+        [side * 0.255, y, off],
+        [side * radius, y, centreZ],
+        0.008,
+        6,
+      );
   }
   // Vertical bars round the cage, at most 300 mm apart.
   for (let i = 0; hoopY.length > 0 && i <= 6; i++) {
     const a = Math.PI * (i / 6);
-    const x = Math.cos(a) * 0.35;
-    const z = off + Math.sin(a) * depth * 0.5 + depth * 0.5 - 0.05;
+    const [x, , z] = onHoop(a, 0);
     t.box(
       group,
       steel,

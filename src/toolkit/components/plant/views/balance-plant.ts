@@ -294,6 +294,7 @@ export function createBalanceTank(kit: PanelKit) {
   const ladder = createHumanLadder('caged', top + 0.05, {
     kit,
     landing: false,
+    tankWarnings: true,
   }).group;
   ladder.position.set(-2.55, 0, front + 0.02);
   group.add(ladder);
