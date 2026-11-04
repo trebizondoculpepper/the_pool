@@ -61,6 +61,11 @@ describe('the engineers office, from data alone (mission 167 fixture)', () => {
 
   test('carries its schema version, links and JSON path', () => {
     expect(office.schemaVersion).toBe(AUDIT_SCHEMA_VERSION);
+    // Links are site-relative; linkBase leads from the JSON's URL to the root.
+    const json = new URL(office.links.json, 'https://x.test/pool/');
+    expect(new URL(office.linkBase + office.links.html, json).href).toBe(
+      'https://x.test/pool/bench.html?bench=room-audit&room=engineers_office',
+    );
     expect(office.links).toEqual({
       html: 'bench.html?bench=room-audit&room=engineers_office',
       json: 'audit/room/engineers_office.json',

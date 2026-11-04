@@ -19,6 +19,8 @@ import type {
 import { auditInFrame, count, el, table } from './look-audit-page';
 import { resolveRef } from '../logic/sim-graph/graph';
 import { nodeLink } from '../logic/sim-graph/node-page';
+import { roomAudit } from '../logic/audit-export/audit-export';
+import { roomDataSection } from './audit-data-section';
 
 /**
  * The room audit page (mission 129, `bench.html?bench=room-audit&room=<id>`):
@@ -27,6 +29,11 @@ import { nodeLink } from '../logic/sim-graph/node-page';
  * every look target listed with its model node, connections, controls,
  * copies, readings and flags (`logic/room-audit.ts`). Nothing runs while
  * idle.
+ *
+ * Mission 167: the page opens from data alone (`roomAudit`, the same
+ * document as `audit/room/<id>.json`), with no scene; building and
+ * scanning the room is the explicit **Verify this room** action, run at
+ * once only when asked (`&verify=1`) or when a row is linked (`#row-…`).
  */
 
 const STYLE = `
@@ -330,9 +337,42 @@ export async function runRoomAuditPage(root: HTMLElement) {
       ' · mission 129',
     ),
   );
-  const status = el('p', { className: 'note' }, 'Building the room…');
+  const data = roomAudit(room);
+  (window as unknown as { __roomAuditData: unknown }).__roomAuditData = data;
+  page.append(roomDataSection(data));
+  const verify = el('button', { type: 'button' }, 'Verify this room');
+  const status = el(
+    'p',
+    { className: 'note' },
+    'Verifying builds this one room in a frame, scans its marks and removes it.',
+  );
   const host = el('div');
-  page.append(status, host);
+  page.append(
+    el('h2', {}, 'Verified in the scene (127, 129)'),
+    verify,
+    status,
+    host,
+  );
+  const asked167 = new URLSearchParams(location.search).get('verify');
+  if (asked167 === '1' || location.hash.startsWith('#row-'))
+    await verifyRoom(page, room, status, host, verify);
+  else
+    verify.addEventListener(
+      'click',
+      () => void verifyRoom(page, room, status, host, verify),
+      { once: true },
+    );
+}
+
+async function verifyRoom(
+  page: HTMLElement,
+  room: string,
+  status: HTMLElement,
+  host: HTMLElement,
+  verify: HTMLButtonElement,
+) {
+  verify.disabled = true;
+  status.textContent = 'Building the room…';
   try {
     const t0 = performance.now();
     const audit = await auditInFrame(host, room);

@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Audit data and JSON (mission 167): every room and kind's audit as machine-readable JSON (audit/index.json, audit/room/<id>.json, audit/kind/<kind>.json) on the dev server and the static build, from one pure audit model with evidence and coverage states; the room and item audit pages open from data with no scene, building the room only on Verify this room.
 - Mission 158's typed registry affordances and resolver for every equipment kind: interaction, portability, solidity, bounding shape, supporting surface and seat metadata, with no change to room controls yet.
 
 ## [0.14.0] - 2026-11-04

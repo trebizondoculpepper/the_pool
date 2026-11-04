@@ -96,7 +96,16 @@ export interface AuditManifestRecord extends ManifestEntry {
   matched: boolean;
 }
 
-export interface RoomAudit {
+/**
+ * Every `links` value in a document is relative to the site root (beside
+ * `bench.html`); `linkBase` is the path from the document's own JSON URL
+ * to that root, so a reader resolves `new URL(linkBase + link, jsonUrl)`.
+ */
+export interface LinkBase {
+  linkBase: string;
+}
+
+export interface RoomAudit extends LinkBase {
   schemaVersion: number;
   subject: { type: 'room'; id: string };
   links: AuditLinks;
@@ -115,7 +124,7 @@ export interface RoomAudit {
   };
 }
 
-export interface KindAudit {
+export interface KindAudit extends LinkBase {
   schemaVersion: number;
   subject: { type: 'kind'; id: string };
   links: AuditLinks;
@@ -130,7 +139,7 @@ export interface KindAudit {
   counts: { placements: number; rooms: number; findings: number };
 }
 
-export interface AuditIndex {
+export interface AuditIndex extends LinkBase {
   schemaVersion: number;
   subject: { type: 'index'; id: 'audit' };
   rooms: {
@@ -360,6 +369,7 @@ export function roomAudit(room: string, input: AuditInput = {}): RoomAudit {
         : 'not-started';
   return {
     schemaVersion: AUDIT_SCHEMA_VERSION,
+    linkBase: '../../',
     subject: { type: 'room', id: room },
     links: roomLinks(room),
     objects,
@@ -418,6 +428,7 @@ export function kindAudit(kind: string, input: AuditInput = {}): KindAudit {
     });
   return {
     schemaVersion: AUDIT_SCHEMA_VERSION,
+    linkBase: '../../',
     subject: { type: 'kind', id: kind },
     links: kindLinks(kind),
     registered,
@@ -458,6 +469,7 @@ export function auditIndex(input: AuditInput = {}): AuditIndex {
   ].sort();
   return {
     schemaVersion: AUDIT_SCHEMA_VERSION,
+    linkBase: '../',
     subject: { type: 'index', id: 'audit' },
     rooms,
     kinds: keys.map((id) => {

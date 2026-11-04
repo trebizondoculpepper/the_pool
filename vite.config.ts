@@ -6,6 +6,7 @@ import {
   derivedVersion,
   gitIn,
 } from './scripts/versioning.ts';
+import { auditJsonPlugin } from './scripts/audit-json-plugin.ts';
 
 /** Build identity for both local and CI builds, beside the package version. */
 const git = (...args: string[]) => {
@@ -44,6 +45,8 @@ const truthy = (v: string | undefined) => !!v && v !== '0' && v !== 'false';
 const fastOnly = truthy(process.env.CI) || truthy(process.env.FAST_TESTS_ONLY);
 
 export default defineConfig({
+  // Mission 167: the audits' JSON exports (audit/*.json), dev and build.
+  plugins: [auditJsonPlugin()],
   test: {
     exclude: [
       ...configDefaults.exclude,

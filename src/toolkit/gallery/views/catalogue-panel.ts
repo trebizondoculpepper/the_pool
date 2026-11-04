@@ -1,3 +1,4 @@
+import { auditJsonPath, roomAudit } from '../logic/audit-export/audit-export';
 import { ROOMS, DEV_ROOM_NAMES } from '../logic/dev-room-links';
 import { kindControls } from '../../../game/descriptors/registry';
 import { deprecationOf, itemAuditLink } from '../logic/item-audit';
@@ -341,9 +342,18 @@ export function createCataloguePanel(): HTMLElement {
       },
       'Audit',
     );
+    const json = el('a', { href: auditJsonPath.room(room) }, 'JSON');
+    // Its audit status (mission 167), worked out from data when the menu opens.
+    menu.addEventListener('toggle', () => {
+      if (!menu.open || audit.dataset.status) return;
+      const a = roomAudit(room, { kinds });
+      audit.dataset.status = a.signOff;
+      audit.textContent = `Audit · ${a.signOff}`;
+      audit.title = `The room audit (missions 129, 167): ${a.counts.objects} objects, ${a.findings.filter((f) => f.severity !== 'info').length} unresolved`;
+    });
     menu.append(
       el('summary', { title: 'Room menu' }, '⋯'),
-      el('div', { className: 'cat-menu-items' }, open, cat, audit),
+      el('div', { className: 'cat-menu-items' }, open, cat, audit, json),
     );
     return menu;
   };

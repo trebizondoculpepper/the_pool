@@ -1,3 +1,5 @@
+import { kindAudit } from '../logic/audit-export/audit-export';
+import { kindDataSection } from './audit-data-section';
 import type { Object3D } from 'three';
 import { Group } from 'three';
 import { brandById } from '../../components/core/logic/brands';
@@ -293,6 +295,11 @@ export async function runItemAuditPage(root: HTMLElement) {
       ' · mission 130',
     ),
   );
+
+  // Mission 167: the kind's audit from data, the same as audit/kind/<kind>.json.
+  const data = kindAudit(kind.key, { kinds });
+  (window as unknown as { __itemAuditData: unknown }).__itemAuditData = data;
+  page.append(kindDataSection(data));
 
   // What it is.
   const maker = kind.maker ? (brandById(kind.maker)?.name ?? kind.maker) : '';
