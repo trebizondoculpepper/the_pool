@@ -138,5 +138,6 @@ describe('rooms that place machines with buttons and actions wire the informatio
         `${room} places parts with actions but is not in INSPECTED_ROOMS`,
       ).toContain(room);
     }
-  });
+    // It builds every room's equipment: about 4 s alone, more under a full run's load.
+  }, 30_000);
 });
