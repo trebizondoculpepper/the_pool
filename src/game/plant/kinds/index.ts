@@ -112,6 +112,7 @@ export const OTHER_KIND_IDS = [
   'pipework',
   'plant-room',
   'pump',
+  'software-box',
   'switch-fuse',
   'valve',
 ] as const;
