@@ -419,6 +419,10 @@ export function poolPlantPipework(room: string): {
   // ---- From the pool, into the balance tank --------------------------------
   for (const name of ['overflow', 'mainDrain'] as const) {
     const p = port(tank, name);
+    // Into the room above the tank, then straight down into its roof port
+    // (the owner, 2026-11-04): the horizontal leg clears a walker's head, so
+    // the walkway under it stays open.
+    const above = Math.max(L.toPool, p.at[1] + 0.35);
     run({
       name:
         name === 'overflow'
@@ -426,7 +430,7 @@ export function poolPlantPipework(room: string): {
           : 'Main drains to the balance tank',
       kind: 'pvc-pressure',
       od: p.od,
-      points: [[p.at[0], p.at[1], -hz], p.at],
+      points: [[p.at[0], above, -hz], [p.at[0], above, p.at[2]], p.at],
       joins: [tank.item.label],
       service: 'pool water',
       label: name === 'overflow' ? 'FROM OVERFLOW' : 'FROM MAIN DRAINS',

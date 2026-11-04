@@ -263,18 +263,21 @@ export function machinePorts(item: Item): MachinePort[] {
         port('drain', [nx / 2 - 0.6, 0.35, front], [0, 0, 1], 0.09, 'drain'),
       ];
     return [
-      // The pool's water in high on its back, under its roof.
+      // The pool's water in through its roof, standing above the tank so
+      // the pipes can drop straight down into it (the owner, 2026-11-04:
+      // the overflow and main drain come in higher up, above the tank, and
+      // bend down into the top, not the side, so the walkway stays clear).
       port(
         'overflow',
-        [-nx * 0.25, top - 0.3, north],
-        [0, 0, -1],
+        [-nx * 0.25, top, north + 0.35],
+        [0, 1, 0],
         0.355,
         'pool-water',
       ),
       port(
         'mainDrain',
-        [nx * 0.25, top - 0.3, north],
-        [0, 0, -1],
+        [nx * 0.25, top, north + 0.35],
+        [0, 1, 0],
         0.355,
         'pool-water',
       ),
