@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.14.0] - 2026-11-04
+
 ### Added
 
 - The live plant bill of parts links each matching catalogue entry to its in-room Look view.
@@ -1272,7 +1274,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.13.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.14.0...HEAD
+[0.14.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.10.0...v0.11.0
