@@ -1,6 +1,6 @@
-# 158: One kind of room: the same interaction everywhere
+# 158: One kind of room: the registry flags and the inventory
 
-The owner, 2026-11-04. **The most urgent of the room and frame-rate missions, above the graphical ones (154–157), because it affects gameplay.** Brief only; not started until the owner says. Read `CLAUDE.md`, `src/toolkit/controls/CLAUDE.md`, mission 147 (one object registry) and 130 (magic rooms).
+The owner, 2026-11-04. **The first of the one-kind-of-room missions (158–165), the most urgent work in the set, above the graphical ones (154–157), because it affects gameplay.** This brief also holds the decisions the whole series shares; 159–165 refer to it. Brief only; not started until the owner says. Read `CLAUDE.md`, `src/toolkit/controls/CLAUDE.md`, mission 147 (one object registry) and 130 (magic rooms).
 
 ## Why
 
@@ -46,34 +46,35 @@ So each kind carries its interaction class and its affordances (sittable, a plac
 5. **Seats.** A kind may be a **seat**, with its seat height and a **default look direction**; a placed seat may override that with a target (a desk, a console, a workstation's screen; the BBC workstation's chair is the pattern). Clicking a seat sits you; seated you can look round and use what is in reach; moving or Esc gets you up. Every office chair is a seat.
 6. **Experiment rooms get the standard room by default.** If one later needs something different, that becomes a named alternative **room style**, approved by the owner, never private room code.
 
-## Stages
+## The series
 
-Each stage is pushed, then reviewed by the designer (the coordinating agent) before the next starts. The owner signs off stage 2's list. Every stage keeps the full suite green and changes nothing it does not name.
+| Mission | What                                          | Priority       | Needs       |
+| ------- | --------------------------------------------- | -------------- | ----------- |
+| 158     | Registry flags and the inventory (this brief) | Urgent         | —           |
+| 159     | One room factory, behaviour unchanged         | Urgent         | 158 stage 1 |
+| 160     | Hover context in every room                   | Urgent         | 159         |
+| 161     | One click handler                             | Urgent         | 159         |
+| 162     | Solidity and surfaces                         | High           | 158, 159    |
+| 163     | Pick-up and put-down everywhere               | High           | 162         |
+| 164     | Seats everywhere                              | Low            | 158, 159    |
+| 165     | Enforcement                                   | After the rest | 160–164     |
+
+Each mission is pushed, then reviewed by the designer (the coordinating agent) before its dependants start.
+
+## This mission
 
 1. **Registry flags (no behaviour change).** Add to each kind in the object registry (mission 147's `EQUIPMENT_KINDS`, `src/game/plant/equipment-kinds.ts`, and `src/game/descriptors/`): interaction class (decorative, usable, inspect-only), portable, inventory (reserved), solid (default true) and its shape (default: bounding box), surface (derived from solidity), seat (height, default look direction). Pure, typed, tested; every flag defaulted so nothing changes yet.
 2. **The inventory, for the owner's sign-off.** A generated report (a script or a `?dev` page, recorded in `doc/agent-tooling.md`) listing (a) every kind with its proposed flags, and (b) every object in any room that has behaviour, a use, a cue, a seat, pick-up or collision today but is not registered, with what it does and which room builder wires it. The owner rules on the list; the agreed flags are written into the registry, and the unregistered behaving objects are registered or ruled decorative. Machinery and a report only, no whole-game playthroughs.
-3. **One room factory, behaviour unchanged.** Every room builder's `createFirstPerson({...})` call (41 of them) goes through one factory that `main.ts` uses when opening any room, dev and magic rooms included; each room's current options are passed through as they are, so nothing changes for the player yet. Experiment rooms included. This gives every later stage one place to land.
-4. **Hover context everywhere.** The factory wires inspection for every room from the registry; `INSPECTED_ROOMS` and the main corridor gap go. Prove on a pool hall, a plant room, the main corridor, dev0 and a magic room.
-5. **One click handler.** A click reaches whatever the cue finds through the registry (`markUsable` / `parts.uses`); the per-room `use` lists and the eight empty `use: () => {}` go. No cue without a use, no use without a cue, tested.
-6. **Seats everywhere.** Seating comes from the kind's seat flag in every room, replacing `shell-room`'s own `declareSeat` wiring; placed targets override the default look direction.
-7. **Solidity and surfaces.** Bounding-box colliders for solid registered kinds; put-down onto any solid top an object fits on, never into or through a side; walkable tops (tank roofs) support the walker as floor does, edges keeping the 1 m rule.
-8. **Pick-up everywhere.** Portable kinds can be picked up and put down in every room, by the one rule, replacing the per-room `objects` / `allowPickup` options.
-9. **Enforcement.** A test walks the room registry and fails if any room is not built by the factory or lacks a capability without an owner-ruled room style; another checks the registry's invariants (decoration has no cue or use, every chair kind seats, every solid kind has a top). `doc/agent-tooling.md`, `CHANGELOG.md` and a diary entry.
-
-Stages 4 and 5 can be one push if small; 6, 7 and 8 are independent of one another once 3 has landed.
 
 ## Acceptance
 
-- Every room, dev and magic rooms included, is built by the one room factory; a test walks the room registry and checks no room lacks a capability that is not an owner-ruled exception.
-- In every room: hovering an object shows its context; a click reaches whatever shows a cue (no cue without a use, no use without a cue); every chair seats; a held object is put down on any flat top it fits on and picked up again.
-- Each kind's interaction class and affordances live in the registry; a test checks that decoration has no cue or use, every chair kind seats, and every box-like kind with a flat top accepts a placed object by the shared rule.
-- The plan's list of every kind with its class has been checked by the owner.
-- The full test suite passes; a smoke run of a sample of rooms (a pool hall, a plant room, a corridor, dev0, a shared-plant-layout room, a magic room) confirms hover, click, sit and put-down by hand.
+- The flags exist on every kind, typed and defaulted, with tests; nothing changes for the player.
+- The inventory report runs, is documented in `doc/agent-tooling.md`, and its list has been signed off by the owner; the agreed flags are in the registry.
 
 ## Coordination
 
-Touches `first-person.ts`, `object-handling.ts`, `use-marking.ts`, `seating.ts`, `main.ts`'s room opening and every room builder's `createFirstPerson` call: claim on the mailbox and migrate builders in batches others can see. 154 builds on its factory and follows it.
+Touches the object registry and descriptors: claim on the mailbox. Stage 1 unblocks 159.
 
 ## Records
 
-A plan in `doc/plans/158-one-kind-of-room.md`; `TODO.md`; `CHANGELOG.md` under Unreleased once built; `doc/agent-tooling.md` if the registry check is a tool; a diary entry.
+A plan in `doc/plans/158-one-kind-of-room.md`; `TODO.md`; `CHANGELOG.md` under Unreleased once built; a diary entry.
