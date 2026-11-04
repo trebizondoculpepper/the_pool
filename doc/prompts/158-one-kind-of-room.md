@@ -41,30 +41,30 @@ So each kind carries its interaction class and its affordances (sittable, a plac
 
 1. **The object registry is the gateway.** Only a registered object has a name, context (the hover line), click actions, behaviour, solidity, a bench screen and a magic room. Anything unregistered (a bit of wall, a decorative pipe) is decoration and does nothing; that is fine and needs no work. So everything that should do something must be registered, in one consistent representation.
 2. **Mouse-over context is the existing inspection line** (prompt 061, `src/toolkit/controls/logic/inspection.ts`), made universal: every registered object, in every room, is named when aimed at. `INSPECTED_ROOMS` (`src/toolkit/gallery/logic/inspected-rooms.ts`) and its per-room opt-in go.
-3. **Carrying flags on the kind.** A kind may be **portable** (it can be picked up and put down); later a subset will also be **inventory**-able (flag reserved now, doing nothing yet). Fixed plant and furniture are not portable unless the kind says so.
+3. **Carrying flags on the kind.** A kind may be **portable** (it can be picked up and put down); how things are carried (large items such as a 10 kg sack of bicarb, a player inventory) is a future design, not this series; nothing is reserved for it now. Fixed plant and furniture are not portable unless the kind says so.
 4. **Solidity.** Registered kinds are **solid by default**; a kind may be flagged non-solid (many pipes can be walked through). The solid shape is **inferred from the object's bounding box** by default (a boxy thing is its box), a kind declaring a better shape only where the box fits badly. Solid tops support placed objects and, where the walker can reach them (a tank top up its ladder), the walker, as floor does; solid sides block, and an object can never be put into or through one. The room shell's walls and floors count as registered. The 1 m drop rule stands.
 5. **Seats.** A kind may be a **seat**, with its seat height and a **default look direction**; a placed seat may override that with a target (a desk, a console, a workstation's screen; the BBC workstation's chair is the pattern). Clicking a seat sits you; seated you can look round and use what is in reach; moving or Esc gets you up. Every office chair is a seat.
 6. **Experiment rooms get the standard room by default.** If one later needs something different, that becomes a named alternative **room style**, approved by the owner, never private room code.
 
 ## The series
 
-| Mission | What                                          | Priority       | Needs       |
-| ------- | --------------------------------------------- | -------------- | ----------- |
-| 158     | Registry flags and the inventory (this brief) | Urgent         | —           |
-| 159     | One room factory, behaviour unchanged         | Urgent         | 158 stage 1 |
-| 160     | Hover context in every room                   | Urgent         | 159         |
-| 161     | One click handler                             | Urgent         | 159         |
-| 162     | Solidity and surfaces                         | High           | 158, 159    |
-| 163     | Pick-up and put-down everywhere               | High           | 162         |
-| 164     | Seats everywhere                              | Low            | 158, 159    |
-| 165     | Enforcement                                   | After the rest | 160–164     |
+| Mission | What                                                | Priority       | Needs       |
+| ------- | --------------------------------------------------- | -------------- | ----------- |
+| 158     | Registry flags and the registry census (this brief) | Urgent         | —           |
+| 159     | One room factory, behaviour unchanged               | Urgent         | 158 stage 1 |
+| 160     | Hover context in every room                         | Urgent         | 159         |
+| 161     | One click handler                                   | Urgent         | 159         |
+| 162     | Solidity and surfaces                               | High           | 158, 159    |
+| 163     | Pick-up and put-down everywhere                     | High           | 162         |
+| 164     | Seats everywhere                                    | Low            | 158, 159    |
+| 165     | Enforcement                                         | After the rest | 160–164     |
 
 Each mission is pushed, then reviewed by the designer (the coordinating agent) before its dependants start.
 
 ## This mission
 
-1. **Registry flags (no behaviour change).** Add to each kind in the object registry (mission 147's `EQUIPMENT_KINDS`, `src/game/plant/equipment-kinds.ts`, and `src/game/descriptors/`): interaction class (decorative, usable, inspect-only), portable, inventory (reserved), solid (default true) and its shape (default: bounding box), surface (derived from solidity), seat (height, default look direction). Pure, typed, tested; every flag defaulted so nothing changes yet.
-2. **The inventory, for the owner's sign-off.** A generated report (a script or a `?dev` page, recorded in `doc/agent-tooling.md`) listing (a) every kind with its proposed flags, and (b) every object in any room that has behaviour, a use, a cue, a seat, pick-up or collision today but is not registered, with what it does and which room builder wires it. The owner rules on the list; the agreed flags are written into the registry, and the unregistered behaving objects are registered or ruled decorative. Machinery and a report only, no whole-game playthroughs.
+1. **Registry flags (no behaviour change).** Add to each kind in the object registry (mission 147's `EQUIPMENT_KINDS`, `src/game/plant/equipment-kinds.ts`, and `src/game/descriptors/`): interaction class (decorative, usable, inspect-only), portable, solid (default true) and its shape (default: bounding box), surface (derived from solidity), seat (height, default look direction). Pure, typed, tested; every flag defaulted so nothing changes yet.
+2. **The registry census, for the owner's sign-off.** A generated report (a script or a `?dev` page, recorded in `doc/agent-tooling.md`) listing (a) every kind with its proposed flags, and (b) every object in any room that has behaviour, a use, a cue, a seat, pick-up or collision today but is not registered, with what it does and which room builder wires it. The owner rules on the list; the agreed flags are written into the registry, and the unregistered behaving objects are registered or ruled decorative. Machinery and a report only, no whole-game playthroughs.
 
 ## Findings
 
@@ -75,7 +75,7 @@ Each mission is pushed, then reviewed by the designer (the coordinating agent) b
 ## Approach
 
 1. Add a pure, typed affordance record and resolver to `equipment-kinds.ts`, keeping current `class` separate from the new interaction class. Default every new field explicitly and test default and override resolution without changing scene behaviour; this is stage 1 for 159.
-2. Build a read-only inventory over kinds, descriptors and room starters, with stable room/kind/object refs and source of each observed cue, action, portable mark, seat and collision. Include unregistered behaving objects and a count of unresolved cases; document its command in `doc/agent-tooling.md` when implemented.
+2. Build a read-only registry census over kinds, descriptors and room starters, with stable room/kind/object refs and source of each observed cue, action, portable mark, seat and collision. Include unregistered behaving objects and a count of unresolved cases; document its command in `doc/agent-tooling.md` when implemented.
 3. Put proposed values and discrepancies in `doc/plans/158-one-kind-of-room.md` for the owner's ruling. Apply the approved flags and register or explicitly rule on each behaving object in a follow-up push; do not infer owner decisions from today's inconsistent room wiring.
 
 ## Risks
@@ -84,7 +84,7 @@ Each mission is pushed, then reviewed by the designer (the coordinating agent) b
 
 ## Open questions for the owner
 
-- Which proposed kind flags and unregistered behaving objects in the generated inventory are approved? This is the sign-off already required by this mission, not a new decision about the series.
+- Which proposed kind flags and unregistered behaving objects in the generated census are approved? This is the sign-off already required by this mission, not a new decision about the series.
 
 ## Acceptance
 

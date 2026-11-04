@@ -6,7 +6,7 @@ The owner, 2026-11-04. Part of the one-kind-of-room series (158–165); priority
 
 ## What it is
 
-Portable kinds can be picked up and put down in every room by one rule, onto any solid top they fit on (162), replacing the per-room `objects`, `allowPickup`, `heldAction` and related options. The inventory flag stays reserved, doing nothing.
+Portable kinds can be picked up and put down in every room by one rule, onto any solid top they fit on (162), replacing the per-room `objects`, `allowPickup`, `heldAction` and related options.
 
 ## Findings
 
@@ -26,7 +26,7 @@ Portable kinds can be picked up and put down in every room by one rule, onto any
 
 ## Open questions for the owner
 
-None beyond 158's inventory decisions about which kinds are portable.
+None beyond 158's census decisions about which kinds are portable.
 
 ## Acceptance
 

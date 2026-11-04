@@ -26,7 +26,7 @@ Registered kinds are solid by default (a kind may be flagged non-solid, as many 
 
 ## Open questions for the owner
 
-None beyond 158's kind/shape inventory sign-off; a specific bad bounding box should be proposed there for a shape ruling.
+None beyond 158's kind/shape census sign-off; a specific bad bounding box should be proposed there for a shape ruling.
 
 ## Acceptance
 
