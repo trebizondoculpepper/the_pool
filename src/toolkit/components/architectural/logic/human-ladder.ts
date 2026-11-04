@@ -35,12 +35,13 @@ export function humanLadderLayout(
   const top = kind === 'pool' || kind === 'tank-access' ? 0 : height;
   // The climber's line: on a caged ladder, through the middle of its cage
   // (hoops 0.7 m deep from rungs 0.2 m out, `createCagedLadder`), not
-  // against the rungs, where the eye would be too close to the ladder.
+  // against the rungs, where the eye would be too close; 0.4 m out, as
+  // the owner judged it in the game (2026-11-04).
   const rung: LadderPoint =
     kind === 'pool'
       ? [off, 0, 0]
       : kind === 'caged'
-        ? [0, 0, 0.5]
+        ? [0, 0, 0.4]
         : [0, 0, off];
   return {
     kind,
