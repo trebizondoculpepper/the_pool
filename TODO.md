@@ -66,6 +66,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
   - [ ] [163: Pick-up and put-down everywhere](doc/prompts/163-pick-up-everywhere.md) (high; needs 162)
   - [ ] [164: Seats everywhere](doc/prompts/164-seats-everywhere.md) (low; needs 158, 159)
   - [ ] [165: Enforcement](doc/prompts/165-one-kind-of-room-enforcement.md) (after 160–164)
+  - [ ] [166: A retired flag for objects and rooms](doc/prompts/166-retired-flag.md) (the owner, 2026-11-04): obsolete kinds and rooms marked retired, with reason and date, and excluded from every audit. Brief only.
 - [ ] **Constant frame rate** ([research](doc/research/constant-frame-rate.md), the owner, 2026-11-04), split into four missions; briefs written, not started. Supersedes the remaining work of the presets item below.
   - [ ] [154: One frame pipeline for every room](doc/prompts/154-one-frame-pipeline.md): every frame through one shared loop (measure, input, world step, views, adjust, render). After 158. Start any time.
   - [ ] [155: The world on a fixed simulation step](doc/prompts/155-fixed-simulation-step.md): the plant behaves the same at any frame rate. Start any time.
