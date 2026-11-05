@@ -32,7 +32,7 @@ import {
   openJoint,
   throughDoor,
 } from './toolkit/gallery/logic/door-joins';
-import { firstPersonOn } from './toolkit/controls/input/first-person';
+import { roomControllerOn } from './toolkit/controls/input/room-controller';
 import { cameraIcon, pinIcon } from './toolkit/controls/input/hud-icons';
 import {
   setCopyHandler,
@@ -202,7 +202,7 @@ const rememberPlayer = () => {
   if (!current || noclip.value) return;
   const room = resolveRoomId(new URLSearchParams(location.search).get('room'));
   const surface = surfaceOf(current);
-  const control = surface && firstPersonOn(surface);
+  const control = surface && roomControllerOn(surface);
   if (!room || !control || control.noclip) return;
   const pose = control.pose();
   gameSession.remember(
@@ -493,7 +493,7 @@ document.body.append(positionOverlay);
 const cameraLink = (): string | null => {
   const id = resolveRoomId(new URLSearchParams(location.search).get('room'));
   const surface = current ? surfaceOf(current) : null;
-  const control = surface ? firstPersonOn(surface) : null;
+  const control = surface ? roomControllerOn(surface) : null;
   if (!id || !control) return null;
   const { metre } = control;
   const pose = control.pose();
@@ -1289,7 +1289,7 @@ window.addEventListener('pool-plant:run-room', (event) => {
 // for it, never the player's: the player's rooms and save are untouched.
 /** Put the attract camera where `shot` has it `seconds` into its move: placed, rolled and zoomed. */
 const placeShot = (
-  walk: NonNullable<ReturnType<typeof firstPersonOn>>,
+  walk: NonNullable<ReturnType<typeof roomControllerOn>>,
   shot: AttractShot,
   seconds: number,
 ) => {
@@ -1323,7 +1323,7 @@ const startTitleBackdrop = async () => {
     room: RoomId;
     root: HTMLElement;
     handle: RoomHandle;
-    walk: NonNullable<ReturnType<typeof firstPersonOn>>;
+    walk: NonNullable<ReturnType<typeof roomControllerOn>>;
     store: ReturnType<typeof createScenarioStore>;
   } | null = null;
   /** The shot whose room is built and on screen, and when it may be seen. */
@@ -1370,7 +1370,7 @@ const startTitleBackdrop = async () => {
     canvas.parentElement!.append(root);
     root.append(surface);
     const handle = start(surface);
-    const walk = firstPersonOn(surface);
+    const walk = roomControllerOn(surface);
     const draw = rendererOn(surface);
     if (!walk || !draw) return;
     // A quarter of the resolution each way: the room's own, less the
@@ -1477,7 +1477,7 @@ const startAttractRecording = async (id: string) => {
   Object.assign(surface.style, { position: 'fixed', inset: '0' });
   document.body.append(surface);
   const handle = start(surface);
-  const walk = firstPersonOn(surface);
+  const walk = roomControllerOn(surface);
   const draw = rendererOn(surface);
   if (!walk || !draw) throw new Error(`Shot ${id} has no view`);
   drawAtRatio(draw.renderer, Number(urlParams().get('scale') ?? 1));
@@ -1609,7 +1609,7 @@ const runLook = async (
   await nextFrame();
   if (ownRevision !== revision || current !== key) return;
   const surface = surfaceOf(key);
-  const control = surface ? firstPersonOn(surface) : null;
+  const control = surface ? roomControllerOn(surface) : null;
   const walk = control?.lookSurface();
   if (!control || !walk?.scene)
     return refuse(`no lookable objects in ${room} yet`);
@@ -1700,7 +1700,7 @@ const runLookAudit = async (
   if (ownRevision !== revision || current !== key) return;
   const build = performance.now() - opened;
   const surface = surfaceOf(key);
-  const control = surface ? firstPersonOn(surface) : null;
+  const control = surface ? roomControllerOn(surface) : null;
   const walk = control?.lookSurface();
   if (!control || !walk?.scene) {
     out.__poolLookAudit = { room, done: true, error: 'no scene to scan' };
@@ -1892,7 +1892,7 @@ const openRoom = async () => {
   loaded.root.hidden = false;
   loaded.handle.enter?.(params.get('from'), room);
   const surface = surfaceOf(key);
-  const control = surface ? firstPersonOn(surface) : null;
+  const control = surface ? roomControllerOn(surface) : null;
   const number = (name: string) => {
     const raw = params.get(name);
     if (raw === null || raw.trim() === '') return null;
@@ -2015,7 +2015,7 @@ const stopSeeing = (hide = true) => {
   const underSurface = surfaceOf(keyOf(under));
   jointOf(top, under)?.see(false);
   jointOf(under, top)?.peek(false);
-  const topWalk = topSurface && firstPersonOn(topSurface);
+  const topWalk = topSurface && roomControllerOn(topSurface);
   if (topWalk) topWalk.openings = () => [];
   const topDraw = topSurface && rendererOn(topSurface);
   if (topDraw) topDraw.after = null;
@@ -2025,7 +2025,7 @@ const stopSeeing = (hide = true) => {
     // Back to the plane that clips nothing: never none, so no recompile.
     underDraw.renderer.clippingPlanes = [inertClip()];
   }
-  const underWalk = underSurface && firstPersonOn(underSurface);
+  const underWalk = underSurface && roomControllerOn(underSurface);
   underWalk?.follow(null);
   const entry = rooms.get(keyOf(under));
   if (entry && hide) {
@@ -2054,8 +2054,8 @@ const startSeeing = (top: RoomId, under: RoomId) => {
   const near = jointOf(top, under);
   const far = jointOf(under, top);
   if (!topSurface || !underSurface || !near || !far) return false;
-  const topWalk = firstPersonOn(topSurface);
-  const underWalk = firstPersonOn(underSurface);
+  const topWalk = roomControllerOn(topSurface);
+  const underWalk = roomControllerOn(underSurface);
   const topDraw = rendererOn(topSurface);
   const underDraw = rendererOn(underSurface);
   if (!topWalk || !underWalk || !topDraw || !underDraw) return false;
@@ -2115,7 +2115,7 @@ const checkDoors = () => {
   }
   const top = current as RoomId;
   const surface = surfaceOf(keyOf(top));
-  const eye = surface && firstPersonOn(surface)?.pose();
+  const eye = surface && roomControllerOn(surface)?.pose();
   const door = openDoorJoint(top);
   // Import code ahead of the nearest closed door. An idle callback cannot
   // make synchronous scene construction or a first composer render nonblocking.
@@ -2158,7 +2158,7 @@ const watchDoors = () => {
   requestAnimationFrame(watchDoors);
   checkDoors();
   const surface = current && surfaceOf(current);
-  const pose = surface && firstPersonOn(surface)?.pose();
+  const pose = surface && roomControllerOn(surface)?.pose();
   jacuzziAmbience.setGain(
     current && pose && !app.hidden
       ? jacuzziApproachGain(current, pose.x / METRE, pose.z / METRE)
@@ -2190,7 +2190,7 @@ const warmRoom = async (room: RoomId) => {
   await handle.warm?.();
   if (keyOf(room) === current || seeing?.under === room) return;
   const draw = rendererOn(surface);
-  const walk = firstPersonOn(surface);
+  const walk = roomControllerOn(surface);
   const car = (['freight_lift', 'dev54'] as RoomId[]).find((c) =>
     jointOf(room, c),
   );
@@ -2260,8 +2260,8 @@ const handOver = (to: RoomId, from: RoomId) => {
   const far = jointOf(to, from);
   const fromSurface = surfaceOf(keyOf(from));
   const toSurface = surfaceOf(keyOf(to));
-  const fromWalk = fromSurface && firstPersonOn(fromSurface);
-  const toWalk = toSurface && firstPersonOn(toSurface);
+  const fromWalk = fromSurface && roomControllerOn(fromSurface);
+  const toWalk = toSurface && roomControllerOn(toSurface);
   const entry = rooms.get(keyOf(to));
   if (!near || !far || !fromWalk || !toWalk || !entry) return false;
   const eye = fromWalk.pose();
@@ -2335,7 +2335,7 @@ const stopDryPeek = () => {
   rooms.get(from)?.handle.setVisual?.(true);
   const stairDraw = stair && rendererOn(stair);
   if (stairDraw) stairDraw.after = null;
-  if (pool) firstPersonOn(pool)?.follow(null);
+  if (pool) roomControllerOn(pool)?.follow(null);
   const poolRoot = rooms.get('PR_A')?.root;
   if (poolRoot && current !== 'PR_A') poolRoot.hidden = true;
 };
@@ -2348,8 +2348,8 @@ const startDryPeek = async () => {
   if (current !== from) return;
   const stairSurface = surfaceOf(from);
   const poolSurface = surfaceOf('PR_A');
-  const stairWalk = stairSurface && firstPersonOn(stairSurface);
-  const poolWalk = poolSurface && firstPersonOn(poolSurface);
+  const stairWalk = stairSurface && roomControllerOn(stairSurface);
+  const poolWalk = poolSurface && roomControllerOn(poolSurface);
   const stairDraw = stairSurface && rendererOn(stairSurface);
   const poolDraw = poolSurface && rendererOn(poolSurface);
   if (!stairWalk || !poolWalk || !stairDraw || !poolDraw) return;
@@ -2463,7 +2463,7 @@ window.addEventListener('pool-plant:room-zone', (event) => {
     }
     return;
   }
-  const control = current ? firstPersonOn(surfaceOf(current)!) : null;
+  const control = current ? roomControllerOn(surfaceOf(current)!) : null;
   const pose = control?.pose();
   const zoom = control?.zoom;
   const url = new URL(location.href);
@@ -2499,7 +2499,7 @@ window.addEventListener('pool-plant:room-zone', (event) => {
       loaded.root.hidden = false;
       loaded.handle.enter?.(null, id);
       const nextSurface = surfaceOf(current);
-      const next = nextSurface ? firstPersonOn(nextSurface) : null;
+      const next = nextSurface ? roomControllerOn(nextSurface) : null;
       if (next && pose) {
         next.place(pose.x, pose.z, pose.yaw, pose.pitch, pose.y);
         next.roll = pose.roll ?? 0;

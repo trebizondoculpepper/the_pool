@@ -23,7 +23,7 @@ describe('knob directions', () => {
     const missing = Object.entries(SOURCES)
       .filter(
         ([, text]) =>
-          text.includes('createFirstPerson(') &&
+          text.includes('createRoomController(') &&
           /parts\??\.uses/.test(text) &&
           !text.includes('knobDirection') &&
           // `useOnHit` asks it (`input/touch-point.ts`).

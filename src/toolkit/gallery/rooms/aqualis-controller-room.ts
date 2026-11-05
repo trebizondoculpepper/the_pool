@@ -29,7 +29,7 @@ import {
   pushButton,
   selector,
 } from '../../components/core/parts/parts';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { knobDirection } from '../../controls/input/knob-turning';
 import { createBrandBadge } from '../../components/core/views/brand-badge';
 import { createAqualisCabinet } from '../../components/plant/views/aqualis-cabinet';
@@ -1062,7 +1062,7 @@ export function startAqualisControllerRoom(canvas: HTMLCanvasElement) {
     },
   };
   const half = (s: number) => (s / 2) * m;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

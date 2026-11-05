@@ -38,7 +38,7 @@ import {
   createRenderer,
   layoutSize,
 } from '../toolkit/components/core/parts/render-style';
-import { createFirstPerson } from '../toolkit/controls/input/first-person';
+import { createRoomController } from '../toolkit/controls/input/room-controller';
 import { METRE } from '../toolkit/components/core/logic/units';
 import type { Footprint } from '../toolkit/controls/logic/walk-collision';
 import { createSectionalTank } from '../toolkit/components/plant/views/balance-plant';
@@ -412,7 +412,7 @@ export function startSharedPlantLayout(canvas: HTMLCanvasElement) {
     root.style.position = 'relative';
   root.append(hud);
   const upperSolids = [...solids, ...elevatedBarriers];
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

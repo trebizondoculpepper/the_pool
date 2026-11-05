@@ -59,10 +59,8 @@ import {
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
 import { partAudio } from '../../components/core/audio/part-audio';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { seatDeclared, seatOf } from '../../controls/input/seating';
 import {
   humanLadderLandingAt,
@@ -728,7 +726,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     raycaster.layers.disable(PLACING_AIM_LAYER);
     return hit && hit.distance <= 3 * metre ? hit.object : undefined;
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

@@ -26,7 +26,7 @@ import {
   layoutSize,
   useEnvironment,
 } from '../../components/core/parts/render-style';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { useOnHit } from '../../controls/input/touch-point';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { WALL_THICKNESS, devWalls } from '../logic/dev-room-links';
@@ -68,7 +68,7 @@ import {
  * step it through its curated looks and display pages. Not a room of the
  * building: `main.ts` never opens it, so it is never in the saved
  * position, and nothing here opens a world store, so it never touches the
- * save. All input goes through the one control scheme (`createFirstPerson`).
+ * save. All input goes through the one control scheme (`createRoomController`).
  *
  * Its purpose (the owner, 2026-11-03): to prototype the *visual appearance*
  * of a single object — the cheap surface for seeing a component's design.
@@ -475,7 +475,7 @@ export function runMagicRoom(root: HTMLElement) {
       maxZ: s.maxZ * m,
     })),
   ];
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

@@ -19,10 +19,8 @@ import {
   disposeKit,
 } from '../../components/core/views/eighties-controls';
 import { partAudio } from '../../components/core/audio/part-audio';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { doorActor } from '../../components/architectural/logic/door-proximity';
 import { humanLadderZones } from '../../components/architectural/views/human-ladder';
 import { knobDirection } from '../../controls/input/knob-turning';
@@ -181,7 +179,7 @@ export function startTankHall(canvas: HTMLCanvasElement) {
     minZ: d0,
     maxZ: d1,
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

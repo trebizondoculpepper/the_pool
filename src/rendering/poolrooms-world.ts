@@ -42,7 +42,7 @@ import {
   createRenderer,
   layoutSize,
 } from '../toolkit/components/core/parts/render-style';
-import { createFirstPerson } from '../toolkit/controls/input/first-person';
+import { createRoomController } from '../toolkit/controls/input/room-controller';
 import type { Footprint } from '../toolkit/controls/logic/walk-collision';
 import {
   ALL_ZONES,
@@ -1743,7 +1743,7 @@ export function startPoolroomsWorld(canvas: HTMLCanvasElement) {
     ...lampSolids,
     ...furnitureSolids,
   ];
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

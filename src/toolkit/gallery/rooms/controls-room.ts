@@ -38,7 +38,7 @@ import {
 import { knobDirection } from '../../controls/input/knob-turning';
 import { partAudio } from '../../components/core/audio/part-audio';
 import { createDazzle } from '../../components/core/views/dazzle';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { createCarryCueSheet } from '../views/carry-cue-sheet';
 import { isHeldPortableHit } from '../../controls/input/object-handling';
 import {
@@ -561,7 +561,7 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
   };
   const params = new URLSearchParams(location.search);
   const startView = views[params.get('view') ?? ''];
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

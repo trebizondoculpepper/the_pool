@@ -25,10 +25,8 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import { createMainCorridor } from '../views/main-corridor';
 import {
@@ -450,7 +448,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     minZ: s.minZ * metre,
     maxZ: s.maxZ * metre,
   }));
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

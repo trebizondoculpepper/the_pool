@@ -68,10 +68,8 @@ import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { SANS, tools } from '../../components/core/views/fitting-tools';
 import { mergeTree } from '../../components/core/views/merge-static';
 import { partAudio } from '../../components/core/audio/part-audio';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { doorActor } from '../../components/architectural/logic/door-proximity';
 import {
   humanLadderLandingAt,
@@ -686,7 +684,7 @@ export function startEquipmentRoom(
     }
     return null;
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

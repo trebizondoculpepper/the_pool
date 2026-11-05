@@ -47,7 +47,7 @@ import {
   disposeKit,
 } from '../toolkit/components/core/views/eighties-controls';
 import { createPortals } from '../toolkit/gallery/views/portals';
-import { createFirstPerson } from '../toolkit/controls/input/first-person';
+import { createRoomController } from '../toolkit/controls/input/room-controller';
 import { partAudio } from '../toolkit/components/core/audio/part-audio';
 import { ps1Uniforms } from '../toolkit/components/core/parts/ps1-material';
 import {
@@ -239,7 +239,7 @@ export function startDevCorridorRoom(
   const startRoom = new URLSearchParams(location.search).get('room');
   const startPose = (name: string | null) =>
     startRoom === 'dev60' ? (yardPose(name) ?? yardPose('start')!) : pose(name);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

@@ -42,7 +42,7 @@ import { machineComponent } from '../../components/industrial-control/parts/mach
 import type { MachineDevice } from '../../components/industrial-control/parts/machine-components';
 import { createSkip } from '../../components/site-dressing/views/skip';
 import { createBinTossing } from '../../components/site-dressing/parts/bin-tossing';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { isHeldPortableHit } from '../../controls/input/object-handling';
 import type { PortableObject } from '../../controls/input/object-handling';
 import type { Footprint } from '../../controls/logic/walk-collision';
@@ -636,7 +636,7 @@ export function startRepairRoom(canvas: HTMLCanvasElement) {
     bin: { x: -3.2 * m, z: 3.3 * m, yaw: 0, pitch: -0.5 },
   };
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     nearbyTargetFeedback: tossing.targetFeedback,
     divert: tossing.divert,

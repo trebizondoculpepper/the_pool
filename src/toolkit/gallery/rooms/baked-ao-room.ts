@@ -22,7 +22,7 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { mergeStatic } from '../../components/core/views/merge-static';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { bakeRoomAo, bakeStats } from '../../baking/baked-ao';
 import { clearBakes } from '../../baking/ao-cache';
 
@@ -176,7 +176,7 @@ export function startBakedAoRoom(canvas: HTMLCanvasElement) {
     tank: { x: 1.5 * m, z: 0.5 * m, yaw: -0.7, pitch: -0.15 },
   };
   const half = (s: number) => (s / 2) * m;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

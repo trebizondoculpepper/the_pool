@@ -57,7 +57,7 @@ import {
   SKIP_INSIDE,
 } from '../../components/site-dressing/views/skip';
 import { createPortals } from '../views/portals';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { knobDirection } from '../../controls/input/knob-turning';
 import { machineComponent } from '../../components/industrial-control/parts/machine-components';
 import type { MachineDevice } from '../../components/industrial-control/parts/machine-components';
@@ -581,7 +581,7 @@ export function startSettlingRoom(canvas: HTMLCanvasElement) {
     end: { x: 3 * m, z: 0, yaw: -Math.PI / 2, pitch: -0.25 },
   };
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

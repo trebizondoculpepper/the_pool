@@ -41,7 +41,7 @@ import { createPortals } from '../views/portals';
 import { PIEZO_BENCH, createPiezoTestSet } from '../views/piezo-test-set';
 import { knobDirection } from '../../controls/input/knob-turning';
 import { createCanvasTexture } from '../../components/core/views/screens';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import {
   beginPart,
   createPartSet,
@@ -497,7 +497,7 @@ export function startTonesRoom(canvas: HTMLCanvasElement) {
       pose.y === undefined ? undefined : pose.y * m,
     );
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

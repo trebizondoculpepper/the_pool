@@ -21,7 +21,7 @@ import {
   useEnvironment,
   layoutSize,
 } from '../../components/core/parts/render-style';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { CHALLENGES } from '../../../game/plant/museum-4-cards';
 import {
   narrationWords,
@@ -181,7 +181,7 @@ export function startDosingConsoleRoom(canvas: HTMLCanvasElement) {
     dose: { x: 0.72 * m, z: 0.86 * m, yaw: 0, pitch: -0.62 },
   };
   const half = (s: number) => (s / 2) * m;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

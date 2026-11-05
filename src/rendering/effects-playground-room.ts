@@ -55,7 +55,7 @@ import type {
 import { createTeleprinter } from '../toolkit/components/industrial-control/views/teleprinter';
 import { mightyPrintParts } from '../toolkit/components/industrial-control/parts/mightyprint';
 import { createCanvasTexture } from '../toolkit/components/core/views/screens';
-import { createFirstPerson } from '../toolkit/controls/input/first-person';
+import { createRoomController } from '../toolkit/controls/input/room-controller';
 import {
   createPs1Material,
   ps1Uniforms,
@@ -1581,7 +1581,7 @@ export function startEffectsPlaygroundRoom(canvas: HTMLCanvasElement) {
   resize();
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     // Its scene, for the torch and a look's scan (mission 127).
     scene,
     canvas,

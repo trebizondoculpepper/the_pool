@@ -58,7 +58,7 @@ import {
   exitSign,
   keyPlate,
 } from '../../components/general-safety/parts/safety-parts';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import {
   createPartSet,
   ledPushbutton,
@@ -755,7 +755,7 @@ export function startFittingsRoom(canvas: HTMLCanvasElement) {
     tall: { x: -8 * m, z: -1 * m, yaw: Math.PI / 2, pitch: 0.05 },
   };
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

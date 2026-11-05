@@ -143,7 +143,7 @@ import {
 } from '../../components/core/views/eighties-controls';
 import { SANS, tools } from '../../components/core/views/fitting-tools';
 import { partAudio } from '../../components/core/audio/part-audio';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import {
   createComposer,
   createRenderer,
@@ -960,7 +960,7 @@ export function startPoolRoom(
     }
     return null;
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

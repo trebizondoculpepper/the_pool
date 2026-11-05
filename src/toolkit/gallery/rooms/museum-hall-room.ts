@@ -28,7 +28,7 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { registerJoint } from '../logic/door-joins';
 import type { DoorFrame } from '../logic/door-joins';
@@ -320,7 +320,7 @@ export function startMuseumHallRoom(
   // The lift landing's call button, worked like the exhibit's parts.
   const liftParts = createPartSet();
   let liftLanding: ReturnType<typeof installLiftLanding> | null = null;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

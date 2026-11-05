@@ -26,7 +26,7 @@ import { devPortals, devWalls } from '../logic/dev-room-links';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { METRE } from '../../components/core/logic/units';
 import { createPortals } from '../views/portals';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import {
   createRenderer,
   layoutSize,
@@ -352,7 +352,7 @@ export function startWaterRoom(canvas: HTMLCanvasElement) {
     return () =>
       water.addDrop(u, v, 0.04, 0.03, POOL.halfWidth, POOL.halfLength);
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

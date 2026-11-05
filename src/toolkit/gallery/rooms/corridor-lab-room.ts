@@ -24,7 +24,7 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import {
   corridorLabFloorAt,
@@ -110,7 +110,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
   }));
   const raycaster = new Raycaster();
   const pointer = new Vector2();
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

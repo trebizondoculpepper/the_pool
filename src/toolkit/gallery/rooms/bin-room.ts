@@ -40,7 +40,7 @@ import {
 import { createPortals } from '../views/portals';
 import { knobDirection } from '../../controls/input/knob-turning';
 import { createBinTossing } from '../../components/site-dressing/parts/bin-tossing';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { machineComponent } from '../../components/industrial-control/parts/machine-components';
 import type { MachineDevice } from '../../components/industrial-control/parts/machine-components';
 import { isHeldPortableHit } from '../../controls/input/object-handling';
@@ -288,7 +288,7 @@ export function startBinRoom(canvas: HTMLCanvasElement) {
     };
   }
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     nearbyTargetFeedback: tossing.targetFeedback,
     canvas,

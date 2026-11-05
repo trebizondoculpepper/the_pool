@@ -38,7 +38,7 @@ import {
   createPanelKit,
   disposeKit,
 } from '../toolkit/components/core/views/eighties-controls';
-import { createFirstPerson } from '../toolkit/controls/input/first-person';
+import { createRoomController } from '../toolkit/controls/input/room-controller';
 import {
   createPs1Material,
   ps1Uniforms,
@@ -321,7 +321,7 @@ export function startPlantFitRoom(canvas: HTMLCanvasElement, side: number) {
   const pose = (name: string | null) =>
     views[(name ?? 'start') as keyof typeof views] ?? views.start;
   const start = pose(new URLSearchParams(location.search).get('view'));
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

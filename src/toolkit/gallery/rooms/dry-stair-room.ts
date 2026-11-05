@@ -22,7 +22,7 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import {
   createDryStairPassage,
@@ -127,7 +127,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     minZ: s.minZ * metre,
     maxZ: s.maxZ * metre,
   }));
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

@@ -59,7 +59,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 - [x] **Lower resolution from the URL** ([087](doc/prompts/087-resolution-url-setting.md), the owner, 2026-10-27, widened 2026-10-28 to graphics presets): `?resolution=N` sets the render quality (`renderLevel`, 0–10) and `?graphics=low|medium|high` a graphics preset, before the first frame, saved; the presets on the settings panel's GRAPHICS selector and the plain menu. Done 2026-10-28, `f77eb17`.
 - [ ] **URGENT, above the graphics work: one kind of room** (the owner, 2026-11-04): the same interaction in every room, dev and magic rooms included; behaviour set per kind in the object registry. Mission 158 is under way.
   - [x] [158: Registry flags and the registry census](doc/prompts/158-one-kind-of-room.md) (typed defaults `fe62f033`, 2026-11-04; the census is superseded by the audit command and its two passes, missions 168–171, 169, 170: the owner, 2026-11-04, and the old census tooling removed)
-  - [ ] [159: One room factory](doc/prompts/159-one-room-factory.md) (urgent; needs 158 stage 1)
+  - [x] [159: One room factory](doc/prompts/159-one-room-factory.md) (done 2026-11-05): all 42 room controllers, including magic and both lift controllers, use one factory; the existing options and behaviour are preserved.
   - [ ] [160: Hover context in every room](doc/prompts/160-hover-context-everywhere.md) (urgent; needs 159)
   - [ ] [161: One click handler](doc/prompts/161-one-click-handler.md) (urgent; needs 159)
   - [ ] [162: Solidity and surfaces](doc/prompts/162-solidity-and-surfaces.md) (high; needs 158, 159)

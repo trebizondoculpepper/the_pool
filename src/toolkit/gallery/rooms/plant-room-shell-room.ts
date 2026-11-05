@@ -35,10 +35,8 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import {
   edgeSolids,
   surfaceAt,
@@ -366,7 +364,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
   let onSurface: DerivedSurface | undefined;
   // On its deck, just inside the plant room door, looking into the room.
   const inward = [-northWay.frame.out[0], -northWay.frame.out[1]] as const;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

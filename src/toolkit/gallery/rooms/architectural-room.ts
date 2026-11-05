@@ -70,7 +70,7 @@ import {
   showSpecimens,
 } from './catalogue-specimens';
 import type { SpecimenPlace } from './catalogue-specimens';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import {
   addWallBatten,
   createWallBattenMaterials,
@@ -725,7 +725,7 @@ export function startArchitecturalGalleryRoom(canvas: HTMLCanvasElement) {
     minZ: tableArea.minZ * m,
     maxZ: tableArea.maxZ * m,
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

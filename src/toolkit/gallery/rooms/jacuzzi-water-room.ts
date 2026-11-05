@@ -24,7 +24,7 @@ import {
 } from '../../components/core/views/eighties-controls';
 import { METRE } from '../../components/core/logic/units';
 import { partAudio } from '../../components/core/audio/part-audio';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { knobDirection } from '../../controls/input/knob-turning';
 import { createPoolHall } from '../views/pool-hall';
 import { createJacuzziFibreWall } from '../../components/architectural/views/jacuzzi-fibre-wall';
@@ -141,7 +141,7 @@ export function startJacuzziWaterRoom(canvas: HTMLCanvasElement) {
     }
     return null;
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

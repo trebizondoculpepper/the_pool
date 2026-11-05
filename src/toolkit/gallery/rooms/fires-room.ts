@@ -33,7 +33,7 @@ import { createEmbers } from '../../components/fire/views/embers';
 import { createSmokeEmitter } from '../../components/core/views/smoke-emitter';
 import { VolumetricFire } from '../../components/fire/views/volumetric-fire';
 import { createPortals } from '../views/portals';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { knobDirection } from '../../controls/input/knob-turning';
 import { partAudio } from '../../components/core/audio/part-audio';
 import { ps1Uniforms } from '../../components/core/parts/ps1-material';
@@ -423,7 +423,7 @@ export function startFiresRoom(canvas: HTMLCanvasElement) {
     ),
   };
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

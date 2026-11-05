@@ -35,7 +35,7 @@ import {
   brandSheetTexture,
 } from '../../components/core/views/brand-logo';
 import { createPortals } from '../views/portals';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { ps1Uniforms } from '../../components/core/parts/ps1-material';
 import {
   createRenderer,
@@ -224,7 +224,7 @@ export function startBrandsRoom(canvas: HTMLCanvasElement) {
     };
   });
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

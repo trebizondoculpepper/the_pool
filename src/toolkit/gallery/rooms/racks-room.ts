@@ -43,7 +43,7 @@ import type {
   RackUnitOptions,
   RackUnitView,
 } from '../../components/industrial-control/views/rack-equipment';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { isHeldPortableHit } from '../../controls/input/object-handling';
 import { createPartSet, rackUnit } from '../../components/core/parts/parts';
 import { partAudio } from '../../components/core/audio/part-audio';
@@ -497,7 +497,7 @@ export function startRacksRoom(canvas: HTMLCanvasElement) {
     return hit && hit.distance <= 3.2 * m ? hit.object : undefined;
   };
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

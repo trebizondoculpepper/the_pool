@@ -27,7 +27,7 @@ import {
   layoutSize,
 } from '../../components/core/parts/render-style';
 import { knobDirection } from '../../controls/input/knob-turning';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { createSkyDome } from '../../../scene/sky-dome';
 import { createSkyChanger } from '../../../game/skies';
@@ -252,7 +252,7 @@ export function startTruckYardRoom(canvas: HTMLCanvasElement) {
   };
   const params = new URLSearchParams(location.search);
   const reach = 70 * m;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

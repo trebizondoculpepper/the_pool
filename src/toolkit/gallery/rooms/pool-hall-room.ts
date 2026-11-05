@@ -38,10 +38,8 @@ import {
 } from '../../components/core/parts/render-style';
 import { partAudio } from '../../components/core/audio/part-audio';
 import { METRE } from '../../components/core/logic/units';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import {
   corridorFloorAt,
   corridorFootprints,
@@ -408,7 +406,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
         }
       : null;
   };
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,

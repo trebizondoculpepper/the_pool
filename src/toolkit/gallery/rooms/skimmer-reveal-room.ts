@@ -27,7 +27,7 @@ import {
   kitPaint,
 } from '../../components/core/views/eighties-controls';
 import { tools } from '../../components/core/views/fitting-tools';
-import { createFirstPerson } from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
 import { createPartSet } from '../../components/core/parts/parts';
 import { ps1Uniforms } from '../../components/core/parts/ps1-material';
 import {
@@ -479,7 +479,7 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
     into: { x: SK.x * m, z: (SK.z + 0.55) * m, yaw: 0, pitch: -1.2 },
   };
   const params = new URLSearchParams(location.search);
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     nearbyTargetFeedback: tossing.targetFeedback,
     divert: tossing.divert,

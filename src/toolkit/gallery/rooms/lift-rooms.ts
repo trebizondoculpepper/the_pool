@@ -32,10 +32,8 @@ import {
   createPs1Material,
   ps1Uniforms,
 } from '../../components/core/parts/ps1-material';
-import {
-  createFirstPerson,
-  WALKER_RADIUS_METRES,
-} from '../../controls/input/first-person';
+import { createRoomController } from '../../controls/input/room-controller';
+import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { knobDirection } from '../../controls/input/knob-turning';
 import {
   createPanelKit,
@@ -578,7 +576,7 @@ export function startLiftCarRoom(canvas: HTMLCanvasElement, id: LiftId) {
   ];
   const params = new URLSearchParams(location.search);
   const from = params.get('from');
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,
@@ -871,7 +869,7 @@ export function startLiftTrialFloor(canvas: HTMLCanvasElement, n: string) {
   const params = new URLSearchParams(location.search);
   const arrival = landingArrival(TRIAL_LANDING);
   const fromCar = params.get('from') === LIFTS.trial.car;
-  const walk = createFirstPerson({
+  const walk = createRoomController({
     scene,
     canvas,
     camera,
