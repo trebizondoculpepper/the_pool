@@ -565,6 +565,8 @@ it('throws on LET GO: off a solid wall it rebounds, and it comes to rest on the 
   handling.use(0, 0);
   handling.update(0.6);
   camera.lookAt(0, 1.6, -2);
+  // Held up to look at, LET GO throws (the owner, 2026-11-05).
+  handling.inspect(true);
   expect(handling.letGo(0, 0)).toBe(true);
   expect(handling.thrown(object)).toBe(true);
   let furthest = 0;
@@ -601,9 +603,26 @@ it('a throw that comes down onto a top rests on it (mission 211, 181)', () => {
   // Lobbed up, to come down onto the top rather than hit its side.
   camera.lookAt(0, 2.4, -2);
   handling.update(1 / 60);
+  handling.inspect(true);
   handling.letGo(0, 0);
   for (let i = 0; i < 400; i++) handling.update(1 / 60);
   expect(component.phase.value).toBe('settled');
   expect(new Box3().setFromObject(object).min.y).toBeCloseTo(0.73, 2);
   handling.dispose();
+});
+
+it('drops what is only carried on LET GO, and throws it when held up to look at (the owner, 2026-11-05)', () => {
+  const f = fixture();
+  f.handling.use(0, 0);
+  expect(f.handling.letGo(0, 0)).toBe(true);
+  expect(f.handling.thrown(f.object)).toBe(false);
+  expect(f.component.phase.value).toBe('falling');
+  f.handling.dispose();
+  const g = fixture();
+  g.handling.use(0, 0);
+  g.handling.inspect(true);
+  expect(g.handling.letGo(0, 0)).toBe(true);
+  expect(g.handling.thrown(g.object)).toBe(true);
+  expect(g.handling.inspecting()).toBe(false);
+  g.handling.dispose();
 });

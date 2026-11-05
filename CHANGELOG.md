@@ -8,7 +8,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 - Picking up and putting down are animated (mission 210): a thing eases from where it rests to the hand in about half a second, and use on a clear spot of a desk or other supportable top puts it down there, flat, the same way; anywhere else, use works what is aimed at and the thing stays in hand.
 - LET GO is its own input (mission 211's controls): Q, the gamepad's B, or the LET GO button on touch, shown in the carrying help line; the gamepad's crouch moves to the right stick's click.
-- Things can be thrown (mission 211): LET GO sends what is held off the way it is aimed at one leisurely speed, on a parabola, rebounding off walls and solid things with a quarter of its speed lost, until it comes down on the floor or a top; aimed down, it is a short drop.
+- Things can be thrown (mission 211): LET GO while holding a thing up to look at it (inspecting) sends it off the way it is aimed at one leisurely speed, on a parabola, rebounding off walls and solid things with a quarter of its speed lost, until it comes down on the floor or a top; LET GO while only carrying it drops it, and aimed at a bin, either way, tosses it in.
 - The bin toss is a real lob (mission 209): aimed at a bin within use reach, use or LET GO sends a held thing up and over through the bin's target disc under gravity, glancing off its inside onto the pile, where it can be picked out again; nothing near a bin is drawn into it any more.
 
 - Enterable water bodies (mission 202): a `water-body` volume trait on pool, footbath and Jacuzzi kinds; a live surface and local-floor query shared by the pool view and the walker; shallow wading, deep swimming, and ladder entry from the water surface.

@@ -910,23 +910,33 @@ export function createObjectHandling(
     use: (x: number, y: number) => resolve(x, y).run(),
     /**
      * LET GO at a point (mission 211; the owner, 2026-11-05): a bin aimed
-     * at within reach takes it, as a use would (209); anywhere else it is
-     * thrown the way it is aimed, a short drop when aimed down. Whether it
-     * was let go of.
+     * at within reach takes it, as a use would (209), carried or held up
+     * to look at; otherwise, held up to look at (inspecting), it is thrown
+     * the way it is aimed, and only carried, it is dropped. Whether it was
+     * let go of.
      */
     letGo(x: number, y: number) {
-      if (!held || held.move || inspecting) return false;
+      if (!held || held.move) return false;
       const { object } = held;
       const portable = records.get(object)!.portable;
+      const wasInspecting = inspecting;
+      const done = () => {
+        inspecting = false;
+        facing = false;
+      };
       const destination = placementAt(x, y);
       if (destination?.target.letGo) {
         if (!destination.accepts) return false;
+        done();
         destination.target.place(object, portable);
         if (!destination.retainReset) records.delete(object);
         held = null;
         return true;
       }
-      throwFrom(object, portable);
+      done();
+      // Held up to look at, it is thrown; only carried, it is dropped.
+      if (wasInspecting) throwFrom(object, portable);
+      else fall(object, portable);
       return true;
     },
     /** Whether a thing is in flight, thrown (mission 211). */
