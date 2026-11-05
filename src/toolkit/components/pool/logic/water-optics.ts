@@ -84,11 +84,7 @@ export function throughWater(
   return waterFog(tile, lightPath(depth, viewY));
 }
 
-/**
- * A colour seen through `path` metres of water: what the water keeps of it,
- * plus its own faint blue-green glow for what it absorbed (mission 203; the
- * same formula as `throughWater`, for an arbitrary water path).
- */
+/** A colour seen through `path` metres of water: what the water keeps of it, plus its own faint blue-green glow for what it absorbed (mission 203; the same formula as `throughWater`, for an arbitrary water path). */
 export function waterFog(
   colour: readonly number[],
   path: number,
@@ -99,6 +95,68 @@ export function waterFog(
     number,
     number,
   ];
+}
+
+/** A colour seen through `path` metres of a pool's own water (mission 204): per-colour beam attenuation from its absorption and scattering, and the glow of its own colour. */
+export function poolBeer(
+  absorption: readonly number[],
+  scattering: number,
+  glow: readonly number[],
+  colour: readonly number[],
+  path: number,
+) {
+  const kept = absorption.map((sigma) =>
+    Math.exp(-(sigma + scattering) * Math.max(0, path)),
+  );
+  return colour.map((c, i) => c * kept[i] + glow[i] * (1 - kept[i])) as [
+    number,
+    number,
+    number,
+  ];
+}
+
+/** The scattering a turbidity adds, m⁻¹: about 1 m⁻¹ per NTU (the research's rule of thumb, `pool-water-appearance-when-wrong.md`). */
+export const SCATTER_PER_NTU = 1;
+
+/** The photopic (green) beam attenuation at a turbidity, m⁻¹. */
+export const greenBeam = (ntu: number, absorption = ABSORPTION[1]) =>
+  absorption + SCATTER_PER_NTU * Math.max(0, ntu);
+
+/** Horizontal visibility of a black target at beam attenuation `c`, m (about 4.8/c, Zaneveld and Pegau). */
+export const visibility = (c: number) => 4.8 / Math.max(1e-6, c);
+
+/** The optics of water at a turbidity: the base absorption and the scattering it adds. */
+export function turbidityOptics(ntu: number): {
+  absorption: readonly [number, number, number];
+  scattering: number;
+} {
+  return {
+    absorption: ABSORPTION,
+    scattering: SCATTER_PER_NTU * Math.max(0, ntu),
+  };
+}
+
+/**
+ * A pool's optics from its water's condition (mission 204, the model today):
+ * its base absorption, plus the faint yellow-grey cast of bathers' pollution
+ * (organics) on the absorbed colours, and the scattering of its suspended
+ * solids (turbidity ≈ NTU ≈ solids). Every substance later is a coefficient,
+ * not a special case.
+ */
+export function conditionOptics(condition: {
+  solids: number;
+  organics: number;
+}) {
+  const pollution = Math.max(0, condition.organics);
+  const absorption: [number, number, number] = [
+    ABSORPTION[0] + pollution * 0.06,
+    ABSORPTION[1] + pollution * 0.04,
+    ABSORPTION[2] + pollution * 0.01,
+  ];
+  return {
+    absorption,
+    scattering: SCATTER_PER_NTU * Math.max(0, condition.solids),
+  };
 }
 
 /** A point in 3D, as metres (x, y, z). */
