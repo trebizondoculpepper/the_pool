@@ -23,7 +23,12 @@ import type { LiveExhibit, PlantExhibit } from './exhibit';
 import { roomWorld } from '../../../save/world-store';
 import { jacuzziPlate, jacuzziRuns } from '../../../../game/world';
 import { poolDepth } from '../../../../game/plant/pools';
-import { jacuzziVisualVolume } from '../../logic/jacuzzi-water-level';
+import {
+  JACUZZI_FLOOR_Y,
+  JACUZZI_FULL_SURFACE_Y,
+  JACUZZI_TUB,
+  jacuzziVisualVolume,
+} from '../../logic/jacuzzi-water-level';
 import {
   JACUZZI_CYCLE,
   JACUZZI_LEVEL_SWITCH,
@@ -429,17 +434,7 @@ const jacuzziStartLit = computed(() => {
  */
 const DEMO_FILL_RATE = 0.025;
 
-const TUB = {
-  r: 1.2,
-  rim: 0.9,
-  seat: 0.57,
-  below: 0.45,
-  gutter: 0.2,
-  /** The plinth: its top deck's half-width, and three steps down. */
-  deck: 1.6,
-  steps: 3,
-  going: 0.2,
-};
+const TUB = JACUZZI_TUB;
 
 /**
  * A jacuzzi at true size (POOL-03's): a tiled tub 2.4 m across, 0.9 m
@@ -463,9 +458,9 @@ function buildJacuzzi(
   const m = fittingMaterials(kit);
   const object = new Group();
   object.name = 'Jacuzzi on its plinth';
-  const surface = TUB.rim - 0.015;
+  const surface = JACUZZI_FULL_SURFACE_Y;
   /** The tub's tiled floor, over its plinth's base. */
-  const TUB_FLOOR = 0.005;
+  const TUB_FLOOR = JACUZZI_FLOOR_Y;
   const uniforms = createPoolUniforms(METRE, surface, [
     { minX: -TUB.r, maxX: TUB.r, minZ: -TUB.r, maxZ: TUB.r },
   ]);

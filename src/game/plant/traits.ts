@@ -15,6 +15,7 @@ import { TRAIT_FILES } from './traits/index';
 /** What a primitive is about. */
 export type Facet =
   | 'form'
+  | 'volume'
   | 'surface'
   | 'support'
   | 'connection'
@@ -30,6 +31,7 @@ export const FACET_RULES: Record<
   { words: string; atMost?: number; exactly?: number; derived?: true }
 > = {
   form: { words: 'its shape in the world', atMost: 1 },
+  volume: { words: 'a space the player can enter', atMost: 1 },
   surface: { words: 'what its top bears' },
   support: {
     words:
@@ -93,6 +95,11 @@ export const PRIMITIVES = {
   'run-like': {
     facet: 'form',
     words: 'a pipe, cable or duct run: walk-through',
+  },
+  'water-body': {
+    facet: 'volume',
+    words:
+      'an enterable body of water: the player wades or swims according to its live surface and local floor',
   },
   supportable: {
     facet: 'surface',
@@ -339,6 +346,9 @@ export function expand(
  */
 export function needsSupport(ps: readonly PrimitiveName[]): boolean {
   const has = (f: Facet) => ps.some((p) => PRIMITIVES[p].facet === f);
+  // A sunken basin is part of the room architecture, not an item resting
+  // on its floor. Its water volume needs no mounting classification.
+  if (ps.includes('water-body') && !has('form')) return false;
   if (has('connection')) return false;
   if (has('handling') && !ps.includes('fixed')) return false;
   if (ps.includes('run-like')) return false;

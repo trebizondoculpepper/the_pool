@@ -18,6 +18,8 @@ So the 21 remaining kinds (in-line valves, meters, sensors, `gas-train`, `pipewo
 
 Implementation: a `needsSupport(primitives)` predicate in `src/game/plant/traits.ts`, used by `primitiveProblems(…, complete=true)`; the `support` facet's `words` in `FACET_RULES` explains the exemption.
 
+Mission 202 adds a narrow architectural-volume case: a form-less `water-body` basin is a void in the room, so it needs no mounting trait; a formed tub such as the Jacuzzi still names its floor support. This is the mission 202 implementation interpretation of the owner's new water-body request (2026-11-05).
+
 ## Enforcement (ruled)
 
 Once `unclassified` is empty, switch on the rule that every registered kind must have at least one trait:

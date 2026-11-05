@@ -4,6 +4,7 @@ import {
   plantInventory,
 } from '../../../game/plant/equipment-catalogue';
 import { EQUIPMENT_KINDS } from '../../../game/plant/equipment-kinds';
+import { kindFiles } from '../../../game/plant/kind-files';
 import { EQUIPMENT_ROOM_CODES } from '../../../game/plant/room-names';
 import { brandById } from '../../components/core/logic/brands';
 import type { BrandId } from '../../components/core/logic/brands';
@@ -83,7 +84,8 @@ export type CopySource =
   | 'model'
   | 'register'
   | 'control'
-  | 'exhibit';
+  | 'exhibit'
+  | 'binding';
 
 /**
  * Whether a look link to it is expected to land: `expected`, a thing a
@@ -251,6 +253,31 @@ export function kindCatalogue(input: KindCatalogueInput = {}): KindEntry[] {
       findings: [],
     });
   }
+
+  // The bound water bodies are room architecture with no layout item.
+  // Other bindings (for example loose software boxes) identify a kind but
+  // do not establish an installed catalogue copy.
+  for (const [kind, file] of Object.entries(kindFiles()))
+    for (const binding of file.bindings ?? []) {
+      if (!file.traits?.includes('water-body')) continue;
+      if (
+        copies.some(
+          (copy) => copy.room === binding.room && copy.ref === binding.thing,
+        )
+      )
+        continue;
+      const decorative = objectClass(kind) === 'decorative';
+      copies.push({
+        room: binding.room,
+        kind,
+        name: binding.thing.replaceAll('-', ' '),
+        ref: binding.thing,
+        source: 'binding',
+        look: decorative ? 'none' : 'unverified',
+        exempt: decorative,
+        findings: [],
+      });
+    }
 
   // The dev rooms' exhibits: a model of a placed kind counts as a copy of it.
   for (const exhibit of input.exhibits ?? []) {

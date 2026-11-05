@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { POOLS } from '../../../game/plant-sizing/pools.config';
 import {
   basinArea,
+  basinWaterAt,
   basinVolume,
   hallFloorAt,
   hallSolids,
@@ -23,6 +24,16 @@ import {
 } from './pool-halls';
 
 describe('pool halls', () => {
+  it('uses the local basin floor and the current shared water surface', () => {
+    let surfaceY = WATER_Y;
+    const lounge = basinWaterAt(POOL_HALLS.pool_01, () => surfaceY);
+    expect(lounge(-3, 3.9)?.floorY).toBeCloseTo(WATER_Y - 0.3);
+    expect(lounge(-2.6, -1.2)?.floorY).toBeCloseTo(WATER_Y - 2.4);
+    expect(lounge(5.4, -2)).toBeNull();
+    surfaceY = WATER_Y - 0.4;
+    expect(lounge(-3, 3.9)?.surfaceY).toBeCloseTo(WATER_Y - 0.4);
+    expect(lounge(-2.6, -1.2)?.floorY).toBeCloseTo(WATER_Y - 2.4);
+  });
   it('stands on the deck, and in each pool on its floor', () => {
     const olympic = POOL_HALLS.pool_02;
     expect(hallFloorAt(olympic, -29, 0)).toBe(0);

@@ -106,6 +106,10 @@ import type { PoolUniforms } from '../../components/pool/views/pool-surfaces';
 import { bindRoomPower, sitePowered } from '../views/room-power';
 import { poolDepth } from '../../../game/plant/pools';
 import type { PoolId } from '../../../game/plant/pools';
+import { kindHasPrimitive } from '../../../game/plant/equipment-kinds';
+import { jacuzziFloorAt } from '../logic/jacuzzi-water-level';
+import { basinWaterAt } from '../logic/pool-halls';
+import { markEquipmentKind } from '../views/derived-surfaces';
 
 /**
  * A version-one pool hall (pool_01 to pool_04), in its own scene. None has
@@ -368,6 +372,42 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       }
     }
   };
+  const hallWaterAt = basinWaterAt(
+    spec,
+    () => (rooms.userData.poolUniforms as PoolUniforms).waterY.value,
+  );
+  const spaWater =
+    spaTub && 'object' in spaTub
+      ? spaTub.object.getObjectByName('Jacuzzi water surface')
+      : null;
+  const waterKind =
+    id === 'pool_03' ? 'spa' : id === 'pool_04' ? 'footbath' : 'pool';
+  const waterEnabled = kindHasPrimitive(waterKind, 'water-body');
+  const waterAt = (x: number, z: number) => {
+    if (gallery || !waterEnabled) return null;
+    const localX = x / metre;
+    const localZ = z / metre;
+    const sample =
+      id === 'pool_03'
+        ? (() => {
+            if (!spaWater || !spaTub || !('object' in spaTub)) return null;
+            const floorY = jacuzziFloorAt(
+              localX - spaTub.object.position.x,
+              localZ - spaTub.object.position.z,
+            );
+            return floorY === null
+              ? null
+              : { id: `${id}/spa`, floorY, surfaceY: spaWater.position.y };
+          })()
+        : hallWaterAt(localX, localZ);
+    return sample
+      ? {
+          id: sample.id,
+          floorY: sample.floorY * metre,
+          surfaceY: sample.surfaceY * metre,
+        }
+      : null;
+  };
   const walk = createFirstPerson({
     scene,
     canvas,
@@ -400,14 +440,20 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
           z: spec.start.z * metre,
           yaw: spec.start.yaw,
         },
-    floorAt: (x, z) =>
-      (corridorFloorAt(corridors, x / metre, z / metre) ??
-        (gallery
-          ? // On the office door's sill, in its doorway.
-            officeWay && overlaps(officeWay.leaf, x / metre, z / metre, 0)
+    floorAt: (x, z) => {
+      const corridor = corridorFloorAt(corridors, x / metre, z / metre);
+      if (corridor !== null) return corridor * metre;
+      if (gallery)
+        return (
+          (officeWay && overlaps(officeWay.leaf, x / metre, z / metre, 0)
             ? officeWay.frame.y
-            : gallery.floor
-          : hallFloorAt(spec, x / metre, z / metre))) * metre,
+            : gallery.floor) * metre
+        );
+      return (
+        waterAt(x, z)?.floorY ?? hallFloorAt(spec, x / metre, z / metre) * metre
+      );
+    },
+    waterAt: gallery ? undefined : waterAt,
     ladders: () =>
       gallery
         ? []
@@ -717,6 +763,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     const delta = last ? Math.min(0.1, (time - last) / 1000) : 0;
     levelPanel?.update(delta);
     showWater();
+    if (spaTub && 'object' in spaTub) spaTub.update?.(delta);
     makeUpStreams?.update(delta, {
       // Not in a development room: its water is not the world's.
       filling: !devRoom && footbathMakeUpEntering(world.world.value),
@@ -751,7 +798,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       u.reflected.value = base.reflected * k * w;
     }
     partAudio.listen(camera, metre, scene);
-    if (spaTub && 'object' in spaTub) spaTub.update?.(delta);
     if (spaPanel && 'object' in spaPanel) spaPanel.parts?.update(delta);
     // Near a door, it waits, told before it moves.
     const actor = doorActor(walk, metre, WALKER_RADIUS_METRES);
@@ -931,6 +977,17 @@ export function buildPoolHallContents(
   // themselves where they are made, and keep their marks.)
   for (const child of rooms.children)
     if (!componentOf(child)) markComponent(child, { decorative: true });
+  const basinKind = id === 'pool_04' ? 'footbath' : 'pool';
+  for (const basin of spec.basins) {
+    const water = rooms.getObjectByName(`${basin.name} water`);
+    if (!water) continue;
+    const model = schematicNodeOfKind(`plant_${id}`, basinKind);
+    markComponent(water, {
+      name: basin.name,
+      ...(model ? { model: { node: model } } : {}),
+    });
+    markEquipmentKind(water, basinKind);
+  }
   // In the jacuzzi's room, what each thing is drawn from in its model.
   const bind = <T extends Object3D>(object: T, kind: string): T => {
     const node =
@@ -1046,7 +1103,7 @@ export function buildPoolHallContents(
       : null;
   if (spaTub && 'object' in spaTub) {
     spaTub.object.position.x = -2.7;
-    rooms.add(bind(spaTub.object, 'spa'));
+    rooms.add(markEquipmentKind(bind(spaTub.object, 'spa'), 'spa'));
   }
   if (spaPanel && 'object' in spaPanel) {
     // Flat in the plinth's top deck, in its south-east corner, where the

@@ -151,6 +151,9 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
  * Their audit gets a magic page.
  */
 export const NO_STANDALONE_FORM: Readonly<Record<string, string>> = {
+  pool: 'a basin built into its pool hall floor, with no standalone item',
+  footbath:
+    'a channel built across its pool hall passage, with no standalone item',
   'cabinet-switch':
     'part of the Jacuzzi and spa packs (jacuzzi-pack, spa-pack)',
   'cartridge-filter':

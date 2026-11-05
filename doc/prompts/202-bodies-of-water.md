@@ -1,6 +1,6 @@
 # 202: Bodies of water: falling in, wading and swimming
 
-The owner, 2026-11-04. **Parked (the owner, 2026-11-04): to be picked up later. The simple way out, when it is built: wherever the walker can stand, it walks or clambers out over any edge; where it cannot, it swims to the pool's ladders or steps.** A discussion brief, not for implementation yet: it records the design as it is settled, one question at a time. Read `AGENTS.md` (no falling more than 1 m; not a platforming game), mission 175 (derived surfaces) and the trait rules (172, 177–201).
+The owner, 2026-11-04. Picked up 2026-11-05 for design review with the other agents and implementation. The settled way out is: wherever the walker can stand, it walks or clambers out over any edge; where it cannot, it swims to the pool's ladders or steps. The design and implementation record is in [the plan](../plans/202-bodies-of-water.md). Read `AGENTS.md` (no falling more than 1 m; not a platforming game), mission 175 (derived surfaces) and the trait rules (172, 177–201).
 
 ## Why (the owner)
 

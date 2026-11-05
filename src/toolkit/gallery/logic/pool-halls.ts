@@ -448,9 +448,14 @@ export function rectDepth(b: RectBasin, x: number): number {
  * The floor in a basin at (x, z), or null outside it: the pool's floor,
  * or a ledge, step or seat standing above it.
  */
-export function basinFloorAt(b: Basin, x: number, z: number): number | null {
+export function basinFloorAt(
+  b: Basin,
+  x: number,
+  z: number,
+  sampledOutline?: readonly Point[],
+): number | null {
   if (b.shape === 'free') {
-    if (!insideOutline(freeOutline(b), x, z)) return null;
+    if (!insideOutline(sampledOutline ?? freeOutline(b), x, z)) return null;
     if (b.islands.some((i) => Math.hypot(x - i.x, z - i.z) < i.r)) return null;
     const well = b.wells?.find((w) => Math.hypot(x - w.x, z - w.z) < w.r);
     if (well) return WATER_Y - well.depth;
@@ -477,6 +482,27 @@ export function basinFloorAt(b: Basin, x: number, z: number): number | null {
     if (k < b.steps.count) y = Math.max(y, stepTop(b, k));
   }
   return y;
+}
+
+/** The static basin footprint and floor; the supplied surface stays live. */
+export function basinWaterAt(
+  s: PoolHallSpec,
+  surfaceY: () => number,
+): (
+  x: number,
+  z: number,
+) => { id: string; floorY: number; surfaceY: number } | null {
+  const outlines = s.basins.map((b) =>
+    b.shape === 'free' ? freeOutline(b) : undefined,
+  );
+  return (x, z) => {
+    for (let i = 0; i < s.basins.length; i++) {
+      const floorY = basinFloorAt(s.basins[i], x, z, outlines[i]);
+      if (floorY !== null)
+        return { id: `${s.id}/${i}`, floorY, surfaceY: surfaceY() };
+    }
+    return null;
+  };
 }
 
 /** The top of step `k` (0 the highest) in a basin's steps. */

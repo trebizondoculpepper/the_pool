@@ -1,7 +1,7 @@
 import type { BrandId } from '../../toolkit/components/core/logic/brands';
 import { kindFiles } from './kind-files';
-import { compositeTraits, expand, resolveMeta } from './traits';
-import type { CompositeTrait } from './traits';
+import { PRIMITIVES, compositeTraits, expand, resolveMeta } from './traits';
+import type { CompositeTrait, PrimitiveName } from './traits';
 import type { KindFile } from './kind-files';
 import { KIND_IDS, OTHER_KIND_IDS, PLACED_KIND_IDS } from './kinds/index';
 
@@ -146,6 +146,17 @@ export function equipmentKind(kind: string): EquipmentKind {
   return EQUIPMENT_KINDS[kind];
 }
 
+/** Primitive capability of a registered kind, including composite traits. */
+export function kindHasPrimitive(
+  kind: string,
+  primitive: PrimitiveName,
+): boolean {
+  const traits = equipmentKind(kind).traits ?? [];
+  return expand(traits, compositeTraits()).primitives.some(
+    (p) => p === primitive,
+  );
+}
+
 /**
  * A kind's affordances. Mission 172: a kind with traits is resolved from
  * them (interaction from its use traits, portable from holdable, solidity
@@ -186,7 +197,10 @@ export function affordancesFromTraits(
   const ps = expand(traits, composites).primitives;
   const has = (p: string) => (ps as readonly string[]).includes(p);
   const meta = resolveMeta(traits, own, composites).values;
-  const solid = !has('decorative') && !has('run-like');
+  const solid =
+    !has('decorative') &&
+    !has('run-like') &&
+    !(has('water-body') && !ps.some((p) => PRIMITIVES[p].facet === 'form'));
   return {
     interaction: has('decorative')
       ? 'decorative'

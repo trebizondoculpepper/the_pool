@@ -49,6 +49,14 @@ describe('kindCatalogue', () => {
     expect(isBadlyNamed(e.worst)).toBe(true);
     expect(kind('exhibit:panel').worst).toContain('generic-name');
   });
+  test('bound pool architecture appears in its hall without a layout item', () => {
+    expect(kind('pool').copies.map((c) => [c.room, c.ref, c.source])).toEqual([
+      ['pool_01', 'lounge-pool', 'binding'],
+      ['pool_02', 'olympic-pool', 'binding'],
+    ]);
+    expect(kind('footbath').copies.map((c) => c.room)).toEqual(['pool_04']);
+    expect(kind('spa').copies.map((c) => c.room)).toEqual(['pool_03']);
+  });
   test('decoration is exempt', () => {
     const filing = kind('filing');
     expect(filing.exempt).toBe(true);

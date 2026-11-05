@@ -267,6 +267,7 @@ import { createPartSet } from '../../components/core/parts/parts';
 import { createEngineerStorageCupboard } from '../../components/site-dressing/views/engineer-storage-cupboard';
 import { createEngineersDesk } from '../../components/site-dressing/views/engineers-desk';
 import { clock } from '../../../game/bathers';
+import { JACUZZI_EXHIBIT } from '../rooms/plant/pool-amenities';
 
 /**
  * An exhibit of a room's list, by its title: so a model is the one named,
@@ -282,6 +283,7 @@ function byTitle(list: readonly PlantExhibit[], title: string): PlantExhibit {
 
 /** Each model the rooms' machines are, by its key in `logic/room-equipment.ts`. */
 export const MODELS: Record<string, PlantExhibit> = {
+  spa: JACUZZI_EXHIBIT,
   'pump-pair': byTitle(PUMPS, 'Circulation pumps, duty and standby'),
   'uv-unit': byTitle(PUMPS, 'UV unit'),
   'heat-exchanger': byTitle(PUMPS, 'Plate heat exchanger'),

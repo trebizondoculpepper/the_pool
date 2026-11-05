@@ -32,6 +32,14 @@ import {
   yawFacingLadder,
 } from '../logic/ladder-zone';
 import { smoothStairFloor } from '../logic/stair-smoothing';
+import {
+  mayCrossWaterEdge,
+  swimmingEyeY,
+  SWIM_METRES_PER_SECOND,
+  WADE_METRES_PER_SECOND,
+  waterMode,
+} from '../logic/water-movement';
+import type { WaterSample } from '../logic/water-movement';
 import { standsUp } from '../logic/seat';
 import type { SeatPose } from '../logic/seat';
 import type { LadderZone, MountPose } from '../logic/ladder-zone';
@@ -221,6 +229,8 @@ export interface FirstPersonOptions {
   floorY: number;
   /** Optional connected floor surface for stairs and stacked rooms. */
   floorAt?: (x: number, z: number, previousY: number) => number;
+  /** Live enterable water at a horizontal point, in scene units. */
+  waterAt?: (x: number, z: number) => WaterSample | null;
   start: { x: number; z: number; yaw?: number; pitch?: number };
   /** Solid footprints on the floor plan, in scene units. */
   solids?: () => readonly Footprint[];
@@ -374,19 +384,38 @@ export function createFirstPerson(options: FirstPersonOptions) {
     const carried = handling?.heldObject();
     if (carried && options.useWhileHolding?.(carried, x, y)) return;
     if (attachedLadder) return;
-    const mount = ladderToUse(
-      options.ladders?.() ?? [],
-      walker.x,
-      currentFloorY,
-      walker.z,
-      metre,
-    );
+    const zones = options.ladders?.() ?? [];
+    const water = options.waterAt?.(walker.x, walker.z) ?? null;
+    const fromWater = waterMode(water, metre) === 'swimming';
+    const swimLadder =
+      fromWater && water
+        ? zones.find(
+            (zone) =>
+              zone.canUseBottom !== false &&
+              water.surfaceY > zone.bottom &&
+              water.surfaceY < zone.top + 0.2 * metre &&
+              Math.hypot(walker.x - zone.rung.x, walker.z - zone.rung.z) <=
+                0.9 * metre,
+          )
+        : undefined;
+    const mount = swimLadder
+      ? { zone: swimLadder, end: 'bottom' as const }
+      : ladderToUse(zones, walker.x, currentFloorY, walker.z, metre);
     if (mount) {
       attachedLadder = mount.zone;
       // Stepped onto over a few frames, eased, not jumped to (the owner, 2026-11-04).
       // Turning square on to face the ladder; from the top, more slowly.
+      const swimFootY =
+        swimLadder && water
+          ? swimmingEyeY(water, metre) - EYE_HEIGHT_METRES * metre
+          : null;
       mounting = {
-        from: { x: walker.x, z: walker.z, y: smoothedFloorY, yaw: walker.yaw },
+        from: {
+          x: walker.x,
+          z: walker.z,
+          y: swimFootY ?? smoothedFloorY,
+          yaw: walker.yaw,
+        },
         // Square on to the ladder, facing it, from either end, by the
         // shorter turn, left or right (`ladderMountPose`).
         toYaw: yawFacingLadder(mount.zone),
@@ -395,14 +424,17 @@ export function createFirstPerson(options: FirstPersonOptions) {
       };
       // Already a step on (the owner, 2026-11-04): one rung up from the
       // foot, two rungs down from the top (rungs 0.3 m apart).
-      currentFloorY = Math.min(
-        mount.zone.top,
-        Math.max(
-          mount.zone.bottom,
-          mount.zone[mount.end] +
-            (mount.end === 'bottom' ? 1 : -2) * LADDER_RUNG_PITCH * metre,
-        ),
-      );
+      currentFloorY =
+        swimFootY ??
+        Math.min(
+          mount.zone.top,
+          Math.max(
+            mount.zone.bottom,
+            mount.zone[mount.end] +
+              (mount.end === 'bottom' ? 1 : -2) * LADDER_RUNG_PITCH * metre,
+          ),
+        );
+      if (swimFootY !== null) smoothedFloorY = swimFootY;
       nudge.forward = 0;
       nudge.right = 0;
       help.textContent =
@@ -1319,6 +1351,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
 
   let currentFloorY = floorY;
   let smoothedFloorY = floorY;
+  let waterBobTime = 0;
   const eyeY = () => currentFloorY + EYE_HEIGHT_METRES * metre;
   const controller = {
     walker,
@@ -1732,14 +1765,20 @@ export function createFirstPerson(options: FirstPersonOptions) {
       const stickRun =
         Math.hypot(sticks?.move.x ?? 0, sticks?.move.y ?? 0) >= RUN_DEFLECTION;
       const length = Math.max(1, Math.hypot(ahead, aside));
+      const waterBefore = options.waterAt?.(walker.x, walker.z) ?? null;
+      const movementMode = waterMode(waterBefore, metre);
       const speed =
-        ((flying
-          ? held('ControlLeft', 'ControlRight')
-          : held('ShiftLeft', 'ShiftRight')) ||
-        stickRun ||
-        pad.run
-          ? RUN_METRES_PER_SECOND
-          : WALK_METRES_PER_SECOND) *
+        (flying
+          ? held('ControlLeft', 'ControlRight') || stickRun || pad.run
+            ? RUN_METRES_PER_SECOND
+            : WALK_METRES_PER_SECOND
+          : movementMode === 'swimming'
+            ? SWIM_METRES_PER_SECOND
+            : movementMode === 'wading'
+              ? WADE_METRES_PER_SECOND
+              : held('ShiftLeft', 'ShiftRight') || stickRun || pad.run
+                ? RUN_METRES_PER_SECOND
+                : WALK_METRES_PER_SECOND) *
         metre *
         (walker.lowCrouched ? 0.3 : walker.crouched ? 0.5 : 1) *
         delta;
@@ -1849,9 +1888,24 @@ export function createFirstPerson(options: FirstPersonOptions) {
         : attachedLadder
           ? attachedLadder.rung
           : next;
-      walker.stride += Math.hypot(kept.x - walker.x, kept.z - walker.z);
-      walker.x = kept.x;
-      walker.z = kept.z;
+      const nextWater = options.waterAt?.(kept.x, kept.z) ?? null;
+      const nextFloor =
+        options.floorAt?.(kept.x, kept.z, currentFloorY) ?? floorY;
+      const canMove =
+        flying ||
+        seated ||
+        attachedLadder ||
+        mayCrossWaterEdge(
+          waterBefore,
+          nextWater,
+          currentFloorY,
+          nextFloor,
+          metre,
+        );
+      const moved = canMove ? kept : { x: walker.x, z: walker.z };
+      walker.stride += Math.hypot(moved.x - walker.x, moved.z - walker.z);
+      walker.x = moved.x;
+      walker.z = moved.z;
       // The ladder owns height until the walker leaves an end.
       if (!attachedLadder && !flying && !seated)
         currentFloorY =
@@ -1873,13 +1927,26 @@ export function createFirstPerson(options: FirstPersonOptions) {
       const bob = options.reducedMotion?.()
         ? 0
         : Math.sin((walker.stride / metre) * Math.PI * 1.6) * 0.02 * metre;
+      const waterNow = options.waterAt?.(walker.x, walker.z) ?? null;
+      const swimNow =
+        !flying &&
+        !attachedLadder &&
+        !seated &&
+        waterMode(waterNow, metre) === 'swimming' &&
+        waterNow;
+      waterBobTime += delta;
       const y = flying
         ? flightY
-        : smoothedFloorY +
-          EYE_HEIGHT_METRES * metre +
-          walker.eyeOffset -
-          walker.crouch * 0.65 * metre +
-          bob;
+        : swimNow
+          ? swimmingEyeY(swimNow, metre) +
+            (options.reducedMotion?.()
+              ? 0
+              : Math.sin(waterBobTime * 2.5) * 0.015 * metre)
+          : smoothedFloorY +
+            EYE_HEIGHT_METRES * metre +
+            walker.eyeOffset -
+            walker.crouch * 0.65 * metre +
+            bob;
       if (flying)
         flightReadout.textContent = `NOCLIP · x ${(walker.x / metre).toFixed(2)} · y ${(y / metre).toFixed(2)} · z ${(walker.z / metre).toFixed(2)} · yaw ${((walker.yaw * 180) / Math.PI).toFixed(1)}° · pitch ${((walker.pitch * 180) / Math.PI).toFixed(1)}° · roll ${((walker.roll * 180) / Math.PI).toFixed(1)}°`;
       camera.position.set(walker.x, y, walker.z);

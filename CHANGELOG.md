@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Enterable water bodies (mission 202): a `water-body` volume trait on pool, footbath and Jacuzzi kinds; a live surface and local-floor query shared by the pool view and the walker; shallow wading, deep swimming, and ladder entry from the water surface.
 - Tank ladders carry warnings: a fall sign (ISO 7010 W008) and a deep-water, risk of drowning sign on the tank behind the rungs, and a yellow and black hazard border on the floor round the foot. Stepping onto a ladder is eased instead of a jump: from the foot over 6 frames to one rung up, from the top over 10 frames to two rungs down, turning square on to the ladder by the shorter way round.
 - Traits on the bench (mission 174): `bench.html?bench=trait-audit` (every trait by facet, with counts) and `&trait=<t>` (its meaning, metadata, composition tree, what includes it, the kinds with it and how, every object with it by room, and the command that would remove it); the item audit gains an Its traits section and the `?dev` catalogue links each kind's traits; a shared pure trait index behind both the pages and `npm run audit -- traits | trait show [--json]`; the balance tank classified as the worked example.
 - Kinds and composite traits are typed TypeScript configuration (mission 173): `export default defineKind({ … })` and `defineTrait`, so the compiler checks every kind; migrated from JSON (validated field for field and by spot checks); the audit command edits them through magicast (comments kept) and formats them.
@@ -21,6 +22,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The pool walker now leaves shallow water over a reachable edge and uses steps or ladders to leave deep water. Empty and partly drained basins block deck entries that would drop more than 1 m.
 - Applied mission 176's approved traits to 107 registered kinds; the engineers' desk and two storage cupboards are now operable non-plant fixtures with permanent installation IDs and office model nodes.
 - Mission 176 support rule and enforcement (the owner, 2026-11-04): a kind that is in-line, terminal, holdable, luggable or run-like names no floor/wall/ceiling support (its pipe, hand or room holds it), so `unclassified` is empty; `check` and the test suite fail a kind with no trait, and `register` requires `--traits`.
 - Mission 176 strand 2 (the owner, 2026-11-04): `operable` now means a control whose action changes something else in the simulation, so passive plant and display-only boards stop claiming it; new marker traits `openable` (a door/lid gives access), `slidable` (a thing that moves along a line; a fixed thing cannot), and `safety-gear` (exists for realism, not simulated); `container` means it can hold other game objects. Reclassified the heat exchanger, filters, desk, alarm printer, safety shower, storage cupboard and pump control panel accordingly.

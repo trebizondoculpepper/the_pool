@@ -87,6 +87,19 @@ describe('facet rules', () => {
     ).toBeGreaterThan(0);
   });
 
+  test('an architectural water volume is enterable without a mounting support', () => {
+    expect(primitiveProblems('pool', ['water-body', 'fixed'], true)).toEqual(
+      [],
+    );
+    expect(
+      primitiveProblems(
+        'spa',
+        ['water-body', 'cylindrical', 'floor-standing', 'fixed'],
+        true,
+      ),
+    ).toEqual([]);
+  });
+
   test('a composite cannot bundle a service trait or a contradiction', () => {
     const bad = {
       svc: { description: 'x', extends: ['powered'] },
@@ -173,6 +186,19 @@ describe('the resolver: traits drive affordances', () => {
         composites,
       ).solid,
     ).toBe(false);
+  });
+
+  test('an architectural water volume is not a solid obstacle', () => {
+    expect(affordancesFromTraits(['water-body', 'fixed'], {}, {}).solid).toBe(
+      false,
+    );
+    expect(
+      affordancesFromTraits(
+        ['water-body', 'cylindrical', 'floor-standing', 'fixed'],
+        {},
+        {},
+      ).solid,
+    ).toBe(true);
   });
 });
 
