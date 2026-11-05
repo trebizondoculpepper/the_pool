@@ -1,6 +1,6 @@
 # Mission 209: the bin toss's trajectory
 
-The owner, 2026-11-05, while mission 205 made `bin-like` a trait: the arc a thrown thing follows into a bin wants its own mission ("I think there's a lot to discuss with bin tossing"). Brief only; discuss with the owner, one question at a time, before building.
+The owner, 2026-11-05, while mission 205 made `bin-like` a trait: the arc a thrown thing follows into a bin wants its own mission ("I think there's a lot to discuss with bin tossing"). The owner has settled the design below; implementation is pending. See [the implementation plan](../plans/209-bin-toss-trajectory.md).
 
 ## Today
 
@@ -9,27 +9,32 @@ The owner, 2026-11-05, while mission 205 made `bin-like` a trait: the arc a thro
 ## The owner's ideas so far (2026-11-05)
 
 - **A target plane.** A bin has a target area: a bounded plane, usually within the object (a skip's opening at its rim). The parabola is chosen so that the thing's path crosses that plane, inside its bounds.
-- **As near the normal as the room allows.** The path should cross the plane at the least angle to its normal (coming down as near vertically as it can). With an infinitely high ceiling it could always come in almost along the normal; the room's ceiling limits how high the lob can go, so it takes its best shot under it.
-- **Good enough.** Anything within about 10° of the normal is fine.
+- **As near the normal as feasible (earlier idea).** A near-vertical entry is visually desirable, but the later ruling makes entry through the target zone the requirement; room height and distance can prevent a near-vertical path.
+- **Good enough (earlier idea).** Within about 10° of the normal was suggested, but is no longer a required threshold.
 
 ## Settled with the owner (2026-11-05)
 
-- **Trigger and reach.** Using a `bin-like` object while holding an item starts the bin toss only within the bin's normal use range. This is a third projection category, separate from deliberate placement and the general throw in [211](211-let-go-throw-use-while-holding.md).
+- **Trigger and reach.** With an item held and a `bin-like` object targeted, either USE or LET GO starts the guaranteed bin toss when the bin is in range for ordinary use (the owner, 2026-11-05). Both inputs use that bin's interaction range, with no separate toss distance. For now every holdable item is eligible, regardless of size or kind. `Luggable` objects cannot be picked up and therefore cannot be tossed. This is a third projection category, separate from deliberate placement and the general throw in [211](211-let-go-throw-use-while-holding.md).
 - **Trait scope.** Every object with the `bin-like` trait has this behaviour. All current bin-like objects have an open top, so no additional trait is required. If other bin shapes are added later, refine the trait model then.
-- **Intended objects.** The skip, the Rubbermaid-style cylindrical dustbin, and the engineer's office cardboard carton all need `bin-like`. The carton is also `box-like`; this is a combination of traits, not a separate bin-toss rule. At the time of this brief, only `skip` is marked `bin-like` in the kind registry; registering and binding the dustbin and carton remains work for mission 205 and the engineer's office TODO item.
+- **Intended objects.** The skip, the Rubbermaid-style cylindrical dustbin, and the engineer's office cardboard carton all need `bin-like`. The carton is also `box-like` and fixed on the office floor; this is a combination of traits, not a separate bin-toss rule. The dustbin is now registered and bin-like (mission 205); the carton still needs registration and binding under the engineer's office TODO item.
 - **Flight.** The toss evokes an underarm throw: the object travels upward toward the bin on a parabolic arc, chosen to pass down through the bin's bounded opening plane. It is aimed at the bin rather than merely launched in the player's facing direction.
-- **Guaranteed success.** A bin toss always enters the opening. Once below that plane, the object is constrained by the bin's interior bounds and settles inside it. The path must not pass through the bin's side or rim.
+- **Plausible timing.** The game calculates a plausible underarm launch speed needed to enter the target zone from within the bin's use range; gravity determines the parabolic flight and its duration. The player does not choose the speed or arc height and cannot charge the toss. Higher arcs may take longer (the owner, 2026-11-05).
+- **Guaranteed success.** A bin toss always carries the item's centre through the circular target zone. Once below that plane, the object interacts with the bin's internal bounding box, may ricochet off it, and settles inside. Each internal ricochet loses roughly 20–30% of momentum, tuned for a convincing look. A near-vertical entry is desirable but not required; crossing the target zone takes priority. For oversized holdables, visual overlap with the bin wall is accepted until fit rules are designed (the owner, 2026-11-05).
+- **Target zone.** Every bin supplies a circular target zone with a local Y-height and radius, including the cylindrical dustbin, rectangular skip and cardboard carton (the owner, 2026-11-05). The circle can lie safely inside a wider rectangular opening; the toss need not model the opening's exact outline. Its horizontal centre can come from the bin's declared inside.
+- **No full-bin rule.** Every eligible toss succeeds regardless of how many things are already inside. Items settle on top of the existing pile; there is no capacity, full state or refusal. The simulation does not need bin fullness for now (the owner, 2026-11-05).
+- **Overhead clearance.** The first version ignores ceilings and overhead ducts when choosing or drawing the bin-toss arc (the owner, 2026-11-05).
+- **Orientation and landing.** The item turns to lie flat during the arc, as it does today, then settles on the upper surfaces of items already in the bin using the existing support/raycast approach (the owner, 2026-11-05).
+- **Stationary bins only.** A bin must be stationary to receive a toss. The engineer's office carton is not movable, and this single-player game has no case where a carried bin receives a toss. Moving a bin with contents is outside this design (the owner, 2026-11-05).
+- **Retrievable contents.** Items that have landed in any bin remain pick-upable and carryable. A future bin setting may despawn contents, but no bin does so in this version (the owner, 2026-11-05).
 
-## Points to settle
+## Implementation and later work
 
-- How a bin declares its target plane (its builder, as with the bounds model of mission 208, or derived from its body's rim).
-- The thing's size as a margin in from the plane's edges, and long things going in lengthways.
-- Flight time: a higher lob takes longer; time it by gravity rather than by horizontal distance.
-- Where the ceiling comes from (the room's flight bounds, or the derived surfaces overhead), and what to do under a low duct.
-- How the existing aim angle and magnet interact with the normal-use-range trigger; tossing from farther away is outside this first version.
-- A first draft of the pure maths (target plane, crossing point, least lift that enters the plane) was written and withdrawn on 2026-11-05 at the owner's word; it is in this session's history if wanted.
+- Add the circular target zone's local Y-height and radius to each bin's configuration; its horizontal centre comes from the declared inside.
+- Use the bin's ordinary target and use range for both USE and LET GO. Remove the old near-bin magnet, which would turn a missed aim into a guaranteed toss.
+- Every holdable item must be accepted in this version. Fit rules, edge margins for large objects and items that may not be binned are later work.
+- Ignore ceilings and ducts in this version. A first draft of the pure maths was written and withdrawn on 2026-11-05 at the owner's word; it is in this session's history if wanted.
 
-## Analysis and questions for the owner (ahnaa_dmitrieva, 2026-11-05)
+## Earlier code analysis and answered questions (ahnaa_dmitrieva, 2026-11-05)
 
 Checked against the code after mission 205 finished (`ca6a0ff9`). Questions are numbered so they can be answered by number; the first ones block the most.
 
@@ -38,7 +43,7 @@ Checked against the code after mission 205 finished (`ca6a0ff9`). Questions are 
 - "Only `skip` is marked `bin-like`": the `dustbin` kind is now registered and bin-like too (205), and the skip in the repair room, the skimmer reveal and Hall 5's waste bin all come from the trait. The carton is still not bin-like (its own put-in code, `createDeskCarton`).
 - A bin already declares an inside: `markBin(group, { shape, footprint })`, where `shape` gives the inside's half-width and half-depth at the bottom, its floor and its rim height. The opening plane can be derived from that (at `rim`, the size of the footprint less the walls) with no new declaration.
 
-### Inconsistencies
+### Inconsistencies identified before the rulings above
 
 - **What starts a toss.** The settled trigger is _using_ the bin while holding something. What 205 built is the opposite: _letting go_ within 2 m of the bin's opening, facing within 40°, is diverted into the bin (the "magnet"). And 211 says use while holding works whatever is aimed at, and that let go aimed at anything else throws.
 - **Reach.** "Normal use range" is not one number today: the general use reach is 3.2 m (`destination.reach ?? 3.2`), rooms use 3 m or 4 m for their own uses, and the bin toss has 1.5 m (`BIN_REACH`), 2 m (`BIN_MAGNET_REACH`) and 40° (`BIN_FACING`).
@@ -56,12 +61,12 @@ For the path to come down within 10° of vertical, the top of the arc must rise 
 
 ### Questions
 
-1. **Trigger:** confirm that _use_ aimed at a bin while holding something tosses it in, and that the 205 magnet (let go near a bin, and it goes in) is removed once 211 makes let go its own action. Or should let go aimed at a bin also toss it in?
-2. **Range:** one range for all of this, so that a bin can be tossed into from wherever it can be used? If so, how far: 1.5 m as now, 2 m, or the general 3.2 m use reach?
-3. **Too big to fit:** for a thing longer than the bin's inside, should it be refused (the red cue), go in standing on end and stick out, or lie across the top?
-4. **Full bins:** should a bin have a capacity, after which it refuses? Does it ever get emptied, other than by a room's reset?
-5. **Round bins:** should a round bin get a round opening (a disc at the rim), or is a square inside a circle good enough?
-6. **The ceiling:** since a 10° entry fits under every room ceiling we have, can the first version ignore the ceiling and ducts, with a test that fails if a room is ever too low?
-7. **Turning in flight:** today the thing turns to lie flat as it flies. Should it keep turning that way, keep the way it was held, or tumble?
-8. **The carton:** it is holdable and sits on a desk, so its opening is not at a fixed height. Should a bin that is carried, or one standing on a top, take tosses? And if you pick up a carton with things in it, do they go with it?
-9. **Picking things out:** dev5's bins let you take things out again, and the three game rooms' bins keep them. Is that per room (as now), or one rule for every bin?
+1. **Trigger — answered:** USE or LET GO while holding an item and targeting a bin both guarantee a toss. The old magnet that diverts a let go aimed merely near the bin is removed; this follows from the owner's targeting rule.
+2. **Range — answered:** a bin is tossable whenever it is in its ordinary use range; USE and LET GO share that range.
+3. **Too big to fit — deferred:** all holdable items are tossable for now, including ones larger than the bin's interior. Restrictions and a class of items that cannot be binned may be added later.
+4. **Full bins — answered:** no capacity or full state; items continue to settle on the pile. Emptying and resets are separate from toss acceptance.
+5. **Round bins — superseded:** use a circular target zone for every bin, configured by local Y-height and radius, regardless of the bin's outer shape.
+6. **The ceiling — answered:** ignore ceilings and ducts in the first version; no ceiling-fit requirement is imposed on the trajectory.
+7. **Turning in flight — answered:** keep turning the item toward a flat resting orientation; no tumbling in this version.
+8. **The carton — answered:** it is fixed on the engineer's office floor; only stationary bins receive tosses. A carried bin and moving one with contents are outside this design.
+9. **Picking things out — answered:** every bin's contents remain pick-upable and carryable; future bins may opt into despawning, but that is deferred.
