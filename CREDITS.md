@@ -2,6 +2,10 @@
 
 The program is licensed under the GNU General Public License, version 3 or later (`LICENSE`). The recordings and textures below are not the project's own work: each keeps its own licence, which is listed with it, and must be credited as shown wherever the game is distributed. They were copied from the owner's Encabulator project (`doc/reuse-inventory.md`), whose `CREDITS.md` these entries are taken from.
 
+## Phone model
+
+"Mobile phone" (https://skfb.ly/oosCE) by Ilia_S is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/). Supplied by the owner on 2026-11-05 (downloaded from Sketchfab, `mobile_phone.zip`, glTF) and kept unchanged in `resources/models/phone/mobile-phone/` with its `license.txt`, for mission 213.
+
 ## Weather data
 
 The weather outside, Manchester's now, is [Weather data by Open-Meteo.com](https://open-meteo.com/), licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (mission 123, `src/game/weather.ts`). The game fetches it from Open-Meteo's free API, which is for non-commercial use only: if the game is ever sold or carries advertising it needs Open-Meteo's paid plan or another source. With no reading, the game models a UK climate from the Met Office's 1991-2020 averages for Manchester Airport.

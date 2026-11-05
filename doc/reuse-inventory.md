@@ -95,3 +95,7 @@ Ported, not copied, for the water-chemistry model (`doc/research/water-chemistry
 ## Industrial pendant lamps (2026-10-30)
 
 Copied from the Encabulator (`/Users/sal/PycharmProjects/encabulator`, commit `cb14be7`), at the owner's request, for the museum's corridors (layout C: "a really nice design for an industrial light fitting that I used in the hall model"): `src/toolkit/components/architectural/views/pendant-lamps.ts` (the Lamp Copper Astra pendant, after the Encabulator's industrial hall) and the `buildTiled` instancer it uses, `src/toolkit/components/core/views/instancer.ts`. Both unchanged.
+
+## Phone model (2026-11-05)
+
+For mission 213, the owner downloaded "Mobile phone" by Ilia_S from Sketchfab (https://skfb.ly/oosCE, CC BY 4.0). Its glTF package (`mobile_phone.zip`: `scene.gltf`, `scene.bin`, three textures, `license.txt`) is copied unchanged to `resources/models/phone/mobile-phone/`. The owner's second download (`mobile-phone.zip`, the source package and separate textures) was not copied. Credit is in `CREDITS.md`. Any reduction (smaller textures, a `.glb`) is 213's work and is recorded here when made.
