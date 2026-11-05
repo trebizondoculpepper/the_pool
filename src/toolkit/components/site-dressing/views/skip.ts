@@ -1,3 +1,5 @@
+import { markEquipmentKind } from '../../core/views/equipment-kind';
+import { markBin } from '../parts/bin-tossing';
 import {
   BoxGeometry,
   CylinderGeometry,
@@ -358,6 +360,9 @@ export function createSkip(kit: PanelKit, hirer = anySkipHirer()) {
     panel.userData.skipLettering = true;
     group.add(panel);
   }
+  // A skip is bin-like by its kind (mission 205): rooms need not add it.
+  markEquipmentKind(group, 'skip');
+  markBin(group, { shape: SKIP_SHAPE, footprint: { x: LONG, z: WIDE } });
   return { group, shape: SKIP_SHAPE, footprint: { x: LONG, z: WIDE } };
 }
 

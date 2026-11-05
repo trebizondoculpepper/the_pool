@@ -1,4 +1,4 @@
-import type { Object3D } from 'three';
+import type { Camera, Object3D } from 'three';
 import { createFirstPerson, firstPersonOn } from './first-person';
 import type { FirstPersonOptions } from './first-person';
 import type { PortableObject, SupportSurface } from './object-handling';
@@ -16,6 +16,22 @@ export interface RoomTraits {
   holdable(object: Object3D): boolean | null;
   /** The tops (metres) that things let go of in `root` rest on. */
   supports(root: Object3D, metre: number): readonly SupportSurface[];
+  /**
+   * The room's bins (mission 205): things let go near a bin-like object
+   * fly into it. Made once per room; found among `root`'s objects.
+   */
+  bins?(root: Object3D, camera: Camera, metre: number): RoomBins;
+}
+
+/** Throwing into a room's bin-like objects, as the walker sees it. */
+export interface RoomBins {
+  divert(object: Object3D, portable: PortableObject): boolean;
+  targetFeedback(object: Object3D): 'accept' | null;
+  update(delta: number): void;
+  /** How many things have gone into each bin so far, by name. */
+  filled(): Readonly<Record<string, number>>;
+  /** Throw `object` straight into the nearest bin (for development). */
+  toss(object: Object3D, portable: PortableObject): void;
 }
 
 let registered: RoomTraits | null = null;
@@ -46,11 +62,29 @@ export interface RoomControllerOptions extends FirstPersonOptions {
 export function createRoomController(options: RoomControllerOptions) {
   const traits = registered;
   const root = options.objects;
-  if (!traits || !root) return createFirstPerson(options);
+  if (!traits || !root)
+    return Object.assign(createFirstPerson(options), {
+      bins: null as RoomBins | null,
+    });
   const scene = options.scene ?? root;
   const roomSupports = options.supports;
-  return createFirstPerson({
+  const bins = traits.bins?.(scene, options.camera, options.metre);
+  const walker = createFirstPerson({
     ...options,
+    // A room's own bins first, then the registry's bin-like objects.
+    divert:
+      bins || options.divert
+        ? (object, portable) =>
+            Boolean(options.divert?.(object, portable)) ||
+            Boolean(bins?.divert(object, portable))
+        : undefined,
+    nearbyTargetFeedback:
+      bins || options.nearbyTargetFeedback
+        ? (object, ...rest) =>
+            options.nearbyTargetFeedback?.(object, ...rest) ??
+            bins?.targetFeedback(object) ??
+            null
+        : undefined,
     allowPickup(object, portable) {
       const holdable = traits.holdable(object);
       if (holdable === false) return false;
@@ -63,6 +97,13 @@ export function createRoomController(options: RoomControllerOptions) {
       ...traits.supports(scene, options.metre),
     ],
   });
+  if (!bins) return Object.assign(walker, { bins: null });
+  const step = walker.update.bind(walker);
+  walker.update = (delta: number) => {
+    step(delta);
+    bins.update(delta);
+  };
+  return Object.assign(walker, { bins });
 }
 
 /** The controller attached by a starter, for the main room-mount seam. */

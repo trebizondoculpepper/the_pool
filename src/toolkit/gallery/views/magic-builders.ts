@@ -15,6 +15,7 @@ import { createSoftwareBox } from '../../components/site-dressing/views/software
 import { createFloppyDisk } from '../../components/site-dressing/views/floppy-disk';
 import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
 import { createDesk } from '../../components/site-dressing/views/engineers-desk';
+import { createSkip } from '../../components/site-dressing/views/skip';
 import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
 import type { ItemSize } from '../logic/magic-room-layout';
 
@@ -146,6 +147,11 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
       group.add(pc.monitor, pc.tower, pc.keyboard, pc.mouse);
       return { object: group };
     },
+  },
+  skip: {
+    title: 'Mini skip',
+    size: { w: 1.9, d: 1.3, h: 1, mount: 'floor' },
+    build: (kit) => ({ object: createSkip(kit).group }),
   },
   desk: {
     title: 'Desk',

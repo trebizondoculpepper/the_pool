@@ -39,7 +39,6 @@ import {
 } from '../../components/site-dressing/views/skip';
 import { createPortals } from '../views/portals';
 import { knobDirection } from '../../controls/input/knob-turning';
-import { createBinTossing } from '../../components/site-dressing/parts/bin-tossing';
 import { createRoomController } from '../../controls/input/room-controller';
 import { machineComponent } from '../../components/industrial-control/parts/machine-components';
 import type { MachineDevice } from '../../components/industrial-control/parts/machine-components';
@@ -157,8 +156,10 @@ export function startBinRoom(canvas: HTMLCanvasElement) {
   // ---- The skip -------------------------------------------------------------
   // A mini skip in the middle of the ring; boards are thrown into it by the
   // shared bin tossing (`bin-tossing.ts`).
-  const tossing = createBinTossing({ camera, metre: m, random });
-  const skip = tossing.add({ name: 'skip', ...createSkip(kit), x: 0, z: 0 });
+  // A skip is bin-like by its kind (mission 205): the room's controller
+  // finds it and throws things into it; the room adds nothing by hand.
+  const skip = createSkip(kit);
+  skip.group.name = 'skip';
   room.add(skip.group);
   const dressing = dressSkip(random);
   const graffiti = addSkipGraffiti(kit, skip.group, dressing.tags);
@@ -290,25 +291,23 @@ export function startBinRoom(canvas: HTMLCanvasElement) {
   const params = new URLSearchParams(location.search);
   const walk = createRoomController({
     scene,
-    nearbyTargetFeedback: tossing.targetFeedback,
     canvas,
     camera,
     metre: m,
     floorY: 0,
     objects: scene,
-    divert: tossing.divert,
     start:
       views[params.get('view') ?? ''] ??
       portals.arrival(params.get('from')) ??
       views.room,
     solids: () => [
       ...outer,
-      ...tossing.bins.map((bin) => ({
-        minX: (bin.x - bin.footprint.x / 2 - 0.05) * m,
-        maxX: (bin.x + bin.footprint.x / 2 + 0.05) * m,
-        minZ: (bin.z - bin.footprint.z / 2 - 0.05) * m,
-        maxZ: (bin.z + bin.footprint.z / 2 + 0.05) * m,
-      })),
+      {
+        minX: (-skip.footprint.x / 2 - 0.05) * m,
+        maxX: (skip.footprint.x / 2 + 0.05) * m,
+        minZ: (-skip.footprint.z / 2 - 0.05) * m,
+        maxZ: (skip.footprint.z / 2 + 0.05) * m,
+      },
       ...plinths.map((p) => ({
         minX: (p.x - 0.32) * m,
         maxX: (p.x + 0.32) * m,
@@ -346,14 +345,14 @@ export function startBinRoom(canvas: HTMLCanvasElement) {
       walk.place(x * m, z * m, yaw, pitch);
     },
     /** How many things have gone in each bin. */
-    fill: () => skip.filled,
+    fill: () => walk.bins?.filled().skip ?? 0,
     /** Restock now, without the wait, every plinth whose board has gone. */
     hurry() {
       for (const p of plinths) p.taken = RESTOCK;
     },
     /** Throw plinth boards straight into the skip, `n` of them. */
     throw(n = 1) {
-      const first = skip.filled;
+      const first = walk.bins?.filled().skip ?? 0;
       for (let k = 0; k < n; k++) {
         const p = plinths[(first + k) % plinths.length];
         const board = p.board;
@@ -368,7 +367,7 @@ export function startBinRoom(canvas: HTMLCanvasElement) {
         portable.detach();
         scene.attach(board.object);
         portable.component.drop();
-        tossing.toss(board.object, portable, 'skip');
+        walk.bins?.toss(board.object, portable);
       }
     },
   };
@@ -384,7 +383,6 @@ export function startBinRoom(canvas: HTMLCanvasElement) {
     last = time;
     ps1Uniforms.time.value = time / 1000;
     walk.update(delta);
-    tossing.update(delta);
     lamps.update(time / 1000);
     // A plinth whose board has gone has a fresh one a little later.
     for (const p of plinths) {

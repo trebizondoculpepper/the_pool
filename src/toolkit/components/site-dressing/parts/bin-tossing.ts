@@ -26,6 +26,21 @@ export interface TossBin {
   takes?: (object: Object3D) => boolean;
 }
 
+/**
+ * A bin-like object's inside, set by its own builder (mission 205): the
+ * shared bin tossing a room's controller makes (`room-traits.ts`) finds
+ * every placed object of a `bin-like` kind and reads this from it.
+ */
+export const BIN_MARK = 'bin';
+export interface BinMark {
+  shape: BinShape;
+  footprint: { x: number; z: number };
+}
+export function markBin<T extends Object3D>(group: T, mark: BinMark): T {
+  group.userData[BIN_MARK] = mark;
+  return group;
+}
+
 // Landing in a steel skip: a hollow clang.
 const clang = click({
   band: 820,
@@ -49,10 +64,13 @@ export function createBinTossing({
   metre: m,
   random = Math.random,
   onLanded = () => {},
+  keep = true,
 }: {
   camera: Camera;
   metre: number;
   random?: () => number;
+  /** Whether what lands stays locked in (true), or may be picked out again. */
+  keep?: boolean;
   /** Called as each object lands in its bin. */
   onLanded?: (object: Object3D, bin: TossBin) => void;
 }) {
@@ -115,10 +133,11 @@ export function createBinTossing({
         new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), rest.tilt),
       )
       .multiply(lay);
+    const from = { x: start.x, y: start.y, z: start.z };
     tosses.push({
       object,
       portable,
-      from: { x: start.x, y: start.y, z: start.z },
+      from,
       to,
       fromQ: object.quaternion.clone(),
       toQ,
@@ -219,7 +238,9 @@ export function createBinTossing({
         tosses.splice(i, 1);
         t.portable.component.impact(1.4, 0);
         t.portable.component.settle();
-        t.portable.component.setLocked(true);
+        // It stays in, but can be picked out again (the owner, 2026-11-05),
+        // unless the room's bins keep what they are given.
+        if (keep) t.portable.component.setLocked(true);
         partAudio.play(clang, t.object);
         onLanded(t.object, t.bin);
       }

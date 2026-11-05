@@ -117,6 +117,7 @@ export const OTHER_KIND_IDS = [
   'plant-room',
   'pool',
   'pump',
+  'skip',
   'software-box',
   'spa',
   'switch-fuse',

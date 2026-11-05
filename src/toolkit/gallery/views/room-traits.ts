@@ -1,9 +1,21 @@
-import type { Object3D } from 'three';
+import { Vector3 } from 'three';
+import type { Camera, Object3D } from 'three';
+import {
+  BIN_MARK,
+  createBinTossing,
+} from '../../components/site-dressing/parts/bin-tossing';
+import type {
+  BinMark,
+  TossBin,
+} from '../../components/site-dressing/parts/bin-tossing';
 import { EQUIPMENT_KINDS, isKindId } from '../../../game/plant/equipment-kinds';
 import { compositeTraits, expand } from '../../../game/plant/traits';
 import { EQUIPMENT_KIND } from '../../components/core/views/equipment-kind';
 import { useRoomTraits } from '../../controls/input/room-controller';
-import type { RoomTraits } from '../../controls/input/room-controller';
+import type {
+  RoomBins,
+  RoomTraits,
+} from '../../controls/input/room-controller';
 import { surfaceSupports } from '../logic/derived-surface';
 import { forgetSurfaces, roomSurfaces } from './derived-surfaces';
 
@@ -18,6 +30,83 @@ import { forgetSurfaces, roomSurfaces } from './derived-surfaces';
  */
 
 const holdableKinds = new Map<string, boolean>();
+const binKinds = new Map<string, boolean>();
+
+/** Whether a registered kind is bin-like (mission 205), by its expanded traits. */
+export function kindIsBinLike(kind: string): boolean {
+  if (!isKindId(kind)) return false;
+  const known = binKinds.get(kind);
+  if (known !== undefined) return known;
+  const traits = EQUIPMENT_KINDS[kind].traits ?? [];
+  const bin = (
+    expand(traits, compositeTraits()).primitives as readonly string[]
+  ).includes('bin-like');
+  binKinds.set(kind, bin);
+  return bin;
+}
+
+/**
+ * A room's bins (mission 205; the owner, 2026-11-05): every placed object
+ * of a `bin-like` kind, found in the room as it fills, given to one shared
+ * bin tossing. A thing let go near one, facing it, flies in through its
+ * opening (its target plane) and stays, until picked out again. A bin a
+ * room still adds by hand (it already has a placement target) is left to
+ * that room.
+ */
+export function roomBins(
+  root: Object3D,
+  camera: Camera,
+  metre: number,
+): RoomBins {
+  const tossing = createBinTossing({ camera, metre, keep: false });
+  const known = new WeakSet<Object3D>();
+  let signature = '';
+  const at = new Vector3();
+  const find = () => {
+    const now = String(root.children.length);
+    if (now === signature) return;
+    signature = now;
+    root.traverse((o) => {
+      if (known.has(o)) return;
+      const kind = o.userData[EQUIPMENT_KIND] as string | undefined;
+      const mark = o.userData[BIN_MARK] as BinMark | undefined;
+      if (!kind || !mark || !kindIsBinLike(kind)) return;
+      known.add(o);
+      if (o.userData.placementTarget) return;
+      o.getWorldPosition(at);
+      const bin: TossBin = {
+        name: o.name || kind,
+        group: o,
+        shape: mark.shape,
+        footprint: mark.footprint,
+        x: at.x / metre,
+        z: at.z / metre,
+      };
+      tossing.add(bin);
+    });
+  };
+  return {
+    divert(object, portable) {
+      find();
+      return tossing.divert(object, portable);
+    },
+    targetFeedback(object) {
+      find();
+      return tossing.targetFeedback(object);
+    },
+    update(delta) {
+      find();
+      tossing.update(delta);
+    },
+    filled: () =>
+      Object.fromEntries(tossing.bins.map((b) => [b.name, b.filled])),
+    toss(object, portable) {
+      find();
+      const bin = tossing.bins[0];
+      if (bin) tossing.toss(object, portable, bin.name);
+    },
+  };
+}
 
 /** Whether a registered kind is holdable, by its expanded traits. */
 export function kindIsHoldable(kind: string): boolean | null {
@@ -71,6 +160,7 @@ export const roomTraits: RoomTraits = {
       top: s.top / metre,
     }));
   },
+  bins: roomBins,
 };
 
 /** Give every room's controller the registry's carrying behaviour. */

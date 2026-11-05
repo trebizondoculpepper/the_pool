@@ -252,6 +252,13 @@ export const PRIMITIVES = {
     words:
       'can potentially hold other game objects (not merely a material stock)',
   },
+  // Mission 205 (the owner, 2026-11-05). Gameplay: clearing up is part of
+  // the job, and a throw from a step or two away always goes in.
+  'bin-like': {
+    facet: 'role',
+    words:
+      'things thrown at it from within reach fly in through its opening and stay, until picked out again',
+  },
   'safety-gear': {
     facet: 'role',
     words:
