@@ -23,15 +23,7 @@ import type { DerivedSurface, SurfaceSample } from '../logic/derived-surface';
  */
 
 export { markNonBody } from '../../components/core/views/non-body';
-
-/** Mark a placed object with its kind, so its traits can be read from the scene. */
-export function markEquipmentKind<T extends Object3D>(
-  object: T,
-  kind: string,
-): T {
-  object.userData.equipmentKind = kind;
-  return object;
-}
+export { markEquipmentKind } from '../../components/core/views/equipment-kind';
 
 /** The kinds' surface traits, resolved once. */
 function surfaceTraitsOf(kind: string) {
@@ -49,11 +41,14 @@ function surfaceTraitsOf(kind: string) {
   };
 }
 
-/** The visible meshes of an object's body (its non-body parts left out). */
+/**
+ * The visible meshes of an object's body (its non-body parts left out, and
+ * anything portable resting on or in it: a box on a desk is not the desk).
+ */
 function bodyMeshes(object: Object3D): Mesh[] {
   const meshes: Mesh[] = [];
   const walk = (o: Object3D) => {
-    if (isNonBody(o) || o.visible === false) return;
+    if (isNonBody(o) || o.visible === false || o.userData.portable) return;
     if (o instanceof Mesh) {
       const m = o.material as { opacity?: number; visible?: boolean };
       if (m.visible !== false && (m.opacity ?? 1) > 0) meshes.push(o);

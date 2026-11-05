@@ -2154,7 +2154,7 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
     senseMotion() {
       officeElectrical?.senseMotion();
     },
-    canRemove(item: Object3D) {
+    canRemove(item: Object3D): boolean | null {
       for (const cupboard of storageCupboards) {
         const allowed = cupboard.canRemove(item);
         if (allowed !== null) return allowed;
@@ -2163,7 +2163,8 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
         const allowed = desk.canPickUp(item);
         if (allowed !== null) return allowed;
       }
-      return false;
+      // Not theirs: they have no say.
+      return null;
     },
     /**
      * Let go of a held thing that is a desk's to place (a software box:

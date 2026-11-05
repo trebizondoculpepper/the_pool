@@ -19,6 +19,8 @@ import type { CarryAnswer } from '../../../controls/logic/use-cue';
 import { createDropProfile } from '../../../controls/logic/drop-profile';
 import { createPortableBoard } from '../../../controls/logic/portable-board';
 import type { PanelKit } from '../../core/views/eighties-controls';
+import { markEquipmentKind } from '../../core/views/equipment-kind';
+import { markNonBody } from '../../core/views/non-body';
 import { createPutBack } from '../logic/put-back';
 import type { Pose } from '../logic/put-back';
 import { SOFTWARE_TITLES } from '../logic/software-boxes';
@@ -287,20 +289,11 @@ export function createEngineersDesk(
     })
     .catch(() => {});
 
-  // The desk's top, unseen, as a surface a dropped box lands on (the
-  // carrying's `boardSupport`): one let go over it lands there, one whose
-  // middle is past its edge falls to the floor (the owner, 2026-10-31).
-  const deskTop = new Mesh(
-    new BoxGeometry(DESK.w, 0.01, DESK.d),
-    new MeshBasicMaterial({ visible: false }),
-  );
-  kit.materials.push(deskTop.material);
-  deskTop.name = 'Desk top';
-  deskTop.position.set(0, top - 0.005, 0);
-  deskTop.layers.set(PLACING_AIM_LAYER);
-  deskTop.userData.boardSupport = true;
-  deskTop.userData.noCollision = true;
-  group.add(deskTop);
+  // The desk's top is where a dropped box lands because the desk's kind is
+  // supportable: the room derives the top from the desk's body (missions
+  // 175, 181), so no hidden marker is laid over it. One let go over it
+  // lands there, one whose middle is past its edge falls to the floor (the
+  // owner, 2026-10-31).
 
   // It boots DOS (the game's `dos` boot sequence) when its power is pressed.
   const pc = createPeriodPc(kit, {
@@ -370,6 +363,8 @@ export function createEngineersDesk(
   // desk, the wall and the cupboard, so its flaps on those sides stand up,
   // leaning a little in, and only its flap to the room splays out.
   const carton = createDeskCarton(kit);
+  // The carton is beside the desk, not the desk: no part of its top (175).
+  markNonBody(carton);
   group.add(carton);
 
   // Three older boxes stand spine out, Chlorine Quest leans on them, and
@@ -394,6 +389,8 @@ export function createEngineersDesk(
     if (!t) return;
     const box = createSoftwareBox(kit, t);
     box.userData.softwareBox = t.id;
+    // A software box is holdable by its kind (mission 189), not by the room.
+    markEquipmentKind(box, 'software-box');
     const portable = createPortableBoard(
       createDropProfile('box', softwareBoxSize(t).h, 'board'),
     );
@@ -642,6 +639,9 @@ export function createEngineersDesk(
   seat.rotation.y = 0.25 + Math.PI;
   seat.userData.beside = true;
   seat.add(chair.group);
+  // The chair is the chair's, not the desk's body: its arms are not the
+  // desk's top (the derived surface, missions 175 and 181).
+  markNonBody(seat);
   declareSeat(seat, {
     height: 0.45,
     lookAt: { x: -0.22, y: top + 0.2, z: -0.02 },

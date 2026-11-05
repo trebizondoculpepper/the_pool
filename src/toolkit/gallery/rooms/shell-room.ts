@@ -733,12 +733,13 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     // The scene, not the machines' group: carrying works in world
     // coordinates, and the machines sit in `rooms`, scaled to the metre, so
     // a box held under them was carried nine times too far off, out of
-    // sight. Only the office's things may be picked up (`allowPickup`).
-    objects: cfg.self === 'engineers_office' ? scene : undefined,
-    allowPickup: (object) =>
-      cfg.self === 'engineers_office' && machines.canRemove(object),
+    // sight. What may be picked up is the kinds' to say (holdable, mission
+    // 189), with the desk or cupboard that has it saying whether now; a
+    // thing of no kind only where its owner lets it go.
+    objects: scene,
+    ownerAllows: (object) => machines.canRemove(object),
+    allowPickup: (object) => machines.canRemove(object) === true,
     heldAction(object, _portable, x, y) {
-      if (cfg.self !== 'engineers_office') return false;
       const near = releaseAim(x, y);
       // A software box goes back where it was, or into the carton aimed at.
       const placed = machines.release(object, near);
@@ -747,9 +748,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     },
     // What heldAction will do there, for the crosshair's cue (mission 116).
     targetFeedback: (object, _portable, x, y) =>
-      cfg.self === 'engineers_office'
-        ? machines.releaseCue(object, releaseAim(x, y))
-        : null,
+      machines.releaseCue(object, releaseAim(x, y)),
     metre,
     floorY: cfg.floorAt(cfg.start.x, cfg.start.z, 0) * metre,
     // The loading dock's noclip reaches out over its yard (prompt 080).

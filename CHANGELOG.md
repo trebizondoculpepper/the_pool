@@ -22,6 +22,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- Carrying follows the object registry's traits in every room (missions 189 and 181, first step): a thing of a holdable kind can be picked up, and things let go of rest on the derived tops of supportable objects. The engineer's office no longer decides carrying by its room name, and its desk's hidden top marker is gone.
 - The pool walker now leaves shallow water over a reachable edge and uses steps or ladders to leave deep water. Empty and partly drained basins block deck entries that would drop more than 1 m.
 - Every room starter, including magic rooms, now obtains its first-person controller through one room factory (mission 159). The factory passes the existing options through unchanged and gives later room-wide behaviour work one entry point.
 - Applied mission 176's approved traits to 107 registered kinds; the engineers' desk and two storage cupboards are now operable non-plant fixtures with permanent installation IDs and office model nodes.

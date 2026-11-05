@@ -59,7 +59,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
 - [x] **Lower resolution from the URL** ([087](doc/prompts/087-resolution-url-setting.md), the owner, 2026-10-27, widened 2026-10-28 to graphics presets): `?resolution=N` sets the render quality (`renderLevel`, 0–10) and `?graphics=low|medium|high` a graphics preset, before the first frame, saved; the presets on the settings panel's GRAPHICS selector and the plain menu. Done 2026-10-28, `f77eb17`.
 - [ ] **URGENT, above the graphics work: one kind of room** (the owner, 2026-11-04): the same interaction in every room, dev and magic rooms included; behaviour set per kind in the object registry. Mission 158 is under way.
   - [x] [158: Registry flags and the registry census](doc/prompts/158-one-kind-of-room.md) (typed defaults `fe62f033`, 2026-11-04; the census is superseded by the audit command and its two passes, missions 168–171, 169, 170: the owner, 2026-11-04, and the old census tooling removed)
-  - [x] [159: One room factory](doc/prompts/159-one-room-factory.md) (done 2026-11-05): all 42 room controllers, including magic and both lift controllers, use one factory; the existing options and behaviour are preserved.
+  - [x] [159: One room factory](doc/prompts/done/159-one-room-factory.md) (done 2026-11-05, `cd4799d0`): all 42 room controllers, including magic and both lift controllers, use one factory; the existing options and behaviour are preserved.
   - [ ] [160: Hover context in every room](doc/prompts/160-hover-context-everywhere.md) (urgent; needs 159)
   - [ ] [161: One click handler](doc/prompts/161-one-click-handler.md) (urgent; needs 159)
   - [ ] [162: Solidity and surfaces](doc/prompts/162-solidity-and-surfaces.md) (high; needs 158, 159)
@@ -81,7 +81,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
     - [ ] [178: the `cylindrical` trait in code](doc/prompts/178-trait-cylindrical.md) (form): Round things behave round.
     - [ ] [179: the `panel-like` trait in code](doc/prompts/179-trait-panel-like.md) (form): Thin things are read and slipped, not walked into.
     - [ ] [180: the `run-like` trait in code](doc/prompts/180-trait-run-like.md) (form): Runs fill rooms without blocking them.
-    - [ ] [181: the `supportable` trait in code](doc/prompts/181-trait-supportable.md) (surface): The player's hands are free.
+    - [ ] [181: the `supportable` trait in code](doc/prompts/181-trait-supportable.md) (surface): The player's hands are free. Started 2026-11-05 (nicole_buruaah): things let go of in any room rest on the derived tops of its supportable objects (the room controller asks the registry), so the engineer's desk lost its hidden "Desk top" marker. Still to do: the rest of the brief. Found: a box held while looking down at the desk is below its top, so it falls past it to the floor, as it did with the old marker; the derived top is 0.62 m deep where the desk is 0.8 m.
     - [ ] [182: the `walkable` trait in code](doc/prompts/182-trait-walkable.md) (surface): Climbing matters.
     - [ ] [183: the `floor-standing` trait in code](doc/prompts/183-trait-floor-standing.md) (support): Placement without hand-tuning.
     - [ ] [184: the `wall-mounted` trait in code](doc/prompts/184-trait-wall-mounted.md) (support): Walls carry the instruments.
@@ -89,7 +89,7 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
     - [ ] [186: the `in-line` trait in code](doc/prompts/186-trait-in-line.md) (connection): In-line things are where the plant is worked.
     - [ ] [187: the `terminal` trait in code](doc/prompts/187-trait-terminal.md) (connection): Runs must end somewhere the player can find.
     - [ ] [188: the `fixed` trait in code](doc/prompts/188-trait-fixed.md) (handling): Plant stays where it is installed.
-    - [ ] [189: the `holdable` trait in code](doc/prompts/189-trait-holdable.md) (handling): Things travel with the player.
+    - [ ] [189: the `holdable` trait in code](doc/prompts/189-trait-holdable.md) (handling): Things travel with the player. Started 2026-11-05 (nicole_buruaah): a thing of a holdable kind may be picked up in any room, one of a kind that is not may not, its owner (a desk, a cupboard) saying whether now; the engineer's office no longer gates carrying by its room name, and its software boxes carry their kind. Still to do: the rest of the brief, a portable made from the trait alone, and listing bound copies generally (202's follow-up).
     - [ ] [190: the `luggable` trait in code](doc/prompts/190-trait-luggable.md) (handling): Some things are moved but not lifted.
     - [ ] [191: the `pocketable` trait in code](doc/prompts/191-trait-pocketable.md) (handling (proposed)): The player keeps things for later.
     - [ ] [192: the `operable` trait in code](doc/prompts/192-trait-operable.md) (use): The plant is played through its controls.

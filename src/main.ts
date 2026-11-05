@@ -93,6 +93,10 @@ import {
   isLookMode,
   LOOK_MODES,
 } from './toolkit/gallery/logic/look-ref';
+import { installRoomTraits } from './toolkit/gallery/views/room-traits';
+
+// The registry's traits drive every room's carrying (missions 189, 181).
+installRoomTraits();
 
 // Which build this is, until the title screen shows it.
 console.info(`Pool Plant ${versionLabel()}`);
