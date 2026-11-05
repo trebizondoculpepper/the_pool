@@ -46,6 +46,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The engineer's desk boxes can be picked up again after one is dropped, thrown or put down: the hands now tell a held thing's owner whenever it leaves them, not only through the room's own release.
+
 - The Trio's chlorine recovery now accounts for dose still in the circulation, avoiding low-chlorine overshoot, while pH control responds to turnover and alkalinity and holds its learned correction during hand feeding. All 71 previously marked Aqualis verification failures are ordinary checks again; the world power-loss test is restored (mission 207).
 - The walker fell into the pool plant rooms' tanks at the top of the ladder (the landing and roof heights were scaled twice); the roof's edge guard now measures its drop to the room's floor. A caged ladder's hoops are fixed to its stiles instead of floating clear of them, and the climber's eye follows a line 0.4 m out, inside the cage, not against the rungs.
 - PL1’s freshwater feed now runs from the south-wall boosted make-up supply to the balance tank, instead of ending in mid-air above it.

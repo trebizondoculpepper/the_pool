@@ -626,3 +626,59 @@ it('drops what is only carried on LET GO, and throws it when held up to look at 
   expect(g.handling.inspecting()).toBe(false);
   g.handling.dispose();
 });
+
+it("tells the thing's owner when it leaves the hands by LET GO or a put-down on a top (the desk's boxes, 2026-11-05)", () => {
+  const left: string[] = [];
+  const scene = new Scene();
+  const desk = new Mesh(
+    new BoxGeometry(1.6, 0.73, 0.8),
+    new MeshBasicMaterial(),
+  );
+  desk.position.set(0, 0.365, -1);
+  scene.add(desk);
+  const object = new Mesh(
+    new BoxGeometry(0.2, 0.05, 0.3),
+    new MeshBasicMaterial(),
+  );
+  object.position.set(-0.5, 0.755, -1);
+  scene.add(object);
+  const component = createPortableBoard();
+  object.userData.portable = { component, flat: 'upright', detach() {} };
+  const camera = new PerspectiveCamera(52, 1, 0.05, 20);
+  camera.position.set(0, 1.6, 0);
+  const top = { minX: -0.8, maxX: 0.8, minZ: -1.4, maxZ: -0.6, top: 0.73 };
+  const handling = createObjectHandling(
+    scene,
+    camera,
+    1,
+    0,
+    () => [top],
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    () => left.push('let go'),
+  );
+  const aim = (x: number, z: number) => {
+    camera.lookAt(x, 0.73, z);
+    camera.updateMatrixWorld(true);
+  };
+  aim(-0.5, -1);
+  handling.use(0, 0);
+  handling.update(0.6);
+  aim(0.3, -1.1);
+  handling.use(0, 0);
+  expect(left).toEqual(['let go']);
+  handling.update(0.6);
+  aim(0.3, -1.1);
+  handling.use(0, 0);
+  handling.update(0.6);
+  expect(handling.holding()).toBe(true);
+  handling.letGo(0, 0);
+  expect(left).toEqual(['let go', 'let go']);
+  handling.dispose();
+});

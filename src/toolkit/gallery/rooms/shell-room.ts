@@ -739,6 +739,9 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     objects: scene,
     ownerAllows: (object) => machines.canRemove(object),
     allowPickup: (object) => machines.canRemove(object) === true,
+    // Let go some other way (LET GO, put down on a top): the desk or
+    // cupboard that had it counts it as no longer held.
+    onLetGo: (object) => void machines.release(object),
     heldAction(object, _portable, x, y) {
       const near = releaseAim(x, y);
       // A software box goes back where it was, or into the carton aimed at.

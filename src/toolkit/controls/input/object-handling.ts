@@ -162,6 +162,12 @@ export function createObjectHandling(
    * scene units: what a throw rebounds off (mission 211).
    */
   walls: () => readonly Footprint[] = () => [],
+  /**
+   * A held thing has left the hands by a way that did not ask the room
+   * (`heldAction`): LET GO (dropped, thrown or tossed into a bin) or put
+   * down on a top. Its owner hears so it can count it as no longer held.
+   */
+  onLetGo?: (object: Object3D, portable: PortableObject) => void,
 ) {
   const fixedSupports: SupportSurface[] = [];
   root.updateMatrixWorld(true);
@@ -500,6 +506,7 @@ export function createObjectHandling(
     portable.component.drop();
     // Nothing takes it up again until it is down.
     portable.component.setLocked(true);
+    onLetGo?.(object, portable);
     placing.set(object, {
       portable,
       age: 0,
@@ -928,12 +935,14 @@ export function createObjectHandling(
       if (destination?.target.letGo) {
         if (!destination.accepts) return false;
         done();
+        onLetGo?.(object, portable);
         destination.target.place(object, portable);
         if (!destination.retainReset) records.delete(object);
         held = null;
         return true;
       }
       done();
+      onLetGo?.(object, portable);
       // Held up to look at, it is thrown; only carried, it is dropped.
       if (wasInspecting) throwFrom(object, portable);
       else fall(object, portable);

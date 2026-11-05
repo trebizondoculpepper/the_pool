@@ -268,6 +268,8 @@ export interface FirstPersonOptions {
   allowPickup?: (object: Object3D, portable: PortableObject) => boolean;
   /** A part is being picked up (what that sets off: a spark, a notice). */
   onPickUp?: (object: Object3D, portable: PortableObject) => void;
+  /** A held thing left the hands without `heldAction` (LET GO, a put-down on a top). */
+  onLetGo?: (object: Object3D, portable: PortableObject) => void;
   /** Use whatever is at a normalised screen point (centre is 0, 0). */
   use: (x: number, y: number) => void;
   /** Operate a separate control while carrying, without releasing the part. */
@@ -372,6 +374,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
         options.onPickUp,
         // What a throw rebounds off (211): what the walker cannot walk through.
         () => options.solids?.() ?? [],
+        options.onLetGo,
       )
     : null;
   const use = (x: number, y: number) => {
