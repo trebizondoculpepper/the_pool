@@ -1,0 +1,5 @@
+# Racking and stacking design, 2026-11-05
+
+The owner split the former mission 206 into higher-priority rack/rackable work (206) and a later stackable experiment (212). A designated rack, such as one level of the engineer's shelf, accepts deliberately rackable, stable items such as software boxes. Adding an item compacts and centres the row, snaps the existing items, randomly chooses an end and animates the new item there; removing one leaves the others in place. A shelf fit depends on total row width and depth, and the item's declared outward label face determines its orientation. Floppy disks are excluded.
+
+Stacking is deliberately simple: an explicitly stackable box-like item may be placed on any supportable item, subject to an upper footprint area no more than 105% of the lower one's. It aligns approximate centres with independent normal horizontal offsets whose standard deviations are 5% of the smaller item's dimensions. Piles have no height limit; only the top item can be picked up. No collapse or rigid-body simulation is planned. The two briefs and their plans hold the detailed acceptance rules.
