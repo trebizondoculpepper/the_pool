@@ -29,3 +29,34 @@ The owner, 2026-11-05: "When objects are picked up or placed, that should be ani
 ## Records
 
 When the design is settled: a plan, `TODO.md`, the controls' guide (`src/toolkit/controls/AGENTS.md`).
+
+## Analysis and questions for the owner (ahnaa_dmitrieva, 2026-11-05)
+
+Checked against the code on 2026-11-05. Questions are numbered so they can be answered by number; the first ones block the most.
+
+### Inconsistencies
+
+- **No valid place: kept in hand, or thrown?** Settled point 3 here says that with no valid place the thing stays in hand and nothing begins. 211's proposal says let go aimed at anything that is not a place throws it. Both can hold only if putting down and throwing are different inputs, or if "let go" means put down when there is a place and throw when there is not.
+- **Which input places?** Neither brief says which input starts a put-down. Today it is use (click, E, tap, A). 211 makes use never let go, and lists "put down" and "put in" under the new let go (Q, pad B, touch LET GO). So placing would move from use to let go, but inserting a fuse into its holder is today a use while holding (the repair room's `useWhileHolding`).
+- **The end point of a pick-up moves.** Settled point 2 says a destination is fixed in the world once chosen. That holds for a put-down, but a pick-up's destination is the hand, which moves with the walker.
+
+### Defects and risks found
+
+- **Reach makes half a second look like telekinesis.** Things can be picked up from up to 3.2 m away (`destination.reach ?? 3.2`). Covering 3 m in 0.5 s is 6 m/s, so a thing at the edge of reach would leap to the hand.
+- **The direct route ignores what is in the way.** A straight line from a shelf to the hand, or from the hand to a desk, can pass through a shelf above, a desk edge or the walker's own body.
+- **The rooms' own snaps have side effects.** Every snap in today's rooms (a portable's own home, a board's socket in the repair room, the controls room's targets, dev5's skip) goes through `PlacementTarget.place`, and some set things off at once (sparks, a lamp, a count). With an animation, these must run when it ends, not when it starts.
+- **How a placed thing ends up turned is not settled.** It may have been turned by hand or swung up to be inspected (117) while held.
+- **An object half-way through a move** has no state today (installed, held, falling, settled).
+
+### Questions
+
+1. **Inputs:** does a put-down start from let go (Q / pad B / touch LET GO, with 211), from use, or from either?
+2. **No valid place:** with let go and no valid place, should the thing stay in hand (this brief), or be thrown (211)? If it stays in hand, should the cue be a red ×?
+3. **Distance:** should a move always take 0.5 s, or take longer for longer distances (about 0.5 s at arm's length, more beyond)? Or should pick-up reach be cut to arm's length (about 1 m)?
+4. **Obstacles:** may the move pass through things (the desk edge, the walker), or should it go around (lifting up, then across)?
+5. **How it ends up turned:** when put down, does a thing land upright as it was found (its `flat` setting), as it is held now, or squared to the surface's nearest edge?
+6. **During the move:** can it be inspected, let go of, or used while still moving? The proposal is not until it arrives.
+7. **Snap distance:** how far from the aimed spot may a put-down snap to a valid place: a few centimetres, a hand's breadth (about 10 cm), or anywhere on the aimed top?
+8. **What a valid place is:** a top with enough free room for the thing's footprint, so things don't overlap. Must a thing overhang the edge by less than half (181's open point)? And is putting a thing on another holdable stacking (206), which is otherwise refused?
+9. **Side effects:** confirm that a snap's effect (a board seated, a count, a spark) happens when the move ends.
+10. **Weight:** do luggable things (190) move the same way, or more slowly?
