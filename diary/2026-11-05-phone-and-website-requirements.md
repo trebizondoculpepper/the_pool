@@ -1,0 +1,5 @@
+# Phone and website requirements, 2026-11-05
+
+The owner described an authored fault-scenario mode: freely selectable scenarios start from a normally working plant and alter only what the scenario needs. A pager-like phone gives a unique opening message and later staged clues; success conditions are authored per scenario, such as restoring pumps or returning one pool's chemistry to acceptable bounds. There is no failure state or score in the first version. Fault-scenario design and the first five scenarios are later work.
+
+The owner split the phone work into three small missions. Mission 213 finds and integrates a reusable Nokia-era model and raises it with a black screen; mission 214 puts a Series 60-inspired main menu, Messaging, reverse-chronological inbox and four-line message view on it; mission 215 proves delivery in a one-off dev room at 20 seconds and two minutes from room start. The world keeps running while the phone is open. The user's separate website brief became 216: a short landing page at thepoolsimulation.xyz, with the game under /game, screenshot-derived art and a simple Mailchimp updates form.
