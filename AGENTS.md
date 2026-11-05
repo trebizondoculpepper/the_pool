@@ -2,6 +2,8 @@
 
 `CLAUDE.md` is a symlink to this file. Read `README.md` and the owner's project brief (`/Users/salimfadhley/Downloads/Pool-Plant-Project-Brief.md`) before implementation.
 
+The game's domain name will be https://thepoolsimulation.xyz/ (the owner, 2026-11-05).
+
 ## Picking up a job
 
 1. Read the mission brief in `doc/prompts/` and its linked plan and `TODO.md` items before editing. For a job without a mission, read the owner's request and the relevant project guidance; settle any material ambiguity with the owner, one question at a time.
