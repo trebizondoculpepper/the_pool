@@ -20,7 +20,7 @@ There is no single goal yet: the plant is the game. Walk the building, read its 
 - **Knobs and selectors** turn anticlockwise when used on their left half and clockwise on their right (a gamepad's LB and RB turn them down and up); the crosshair shows an arrow for which way, green if it can turn and red at an end stop.
 - **Ladders**: use one to get on it, then hold forward to climb or back to descend.
 - **Torch**: F (the torch icon on touch, X on a gamepad) switches it on and off; it stays on from room to room.
-- **Phone**: M, gamepad D-pad Up, or the phone icon raises and lowers the handset. The world keeps running while it is up; Esc lowers it before opening Settings.
+- **Phone**: M or the touch phone icon raises and lowers the handset; gamepad D-pad Up raises it. The world keeps running while it is up. W/S move or scroll, A goes back, D/E opens; the gamepad uses its D-pad, A and B, and touch shows phone arrows. Esc backs out one level, then lowers it before opening Settings.
 - **Settings**: Esc (once the cursor is free), a gamepad's Start, or the gear button opens the Penfold settings panel, which works by mouse, touch, keyboard or gamepad and does not pause the game. Lighter graphics presets (LOW · MED · HIGH) help on slower machines.
 - Touch screens get on-screen thumbsticks and buttons, and gamepads work throughout. The help line at the bottom of the screen always shows the controls for whatever you last used.
 

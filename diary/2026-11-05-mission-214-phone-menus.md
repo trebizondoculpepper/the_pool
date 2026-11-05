@@ -1,0 +1,5 @@
+# Mission 214: the phone's first interface
+
+After the owner approved the size and position of the mission 213 handset, they set the next main menu entries: Phone, Messages, Media and Radio. I made the latter three non-message sections simple placeholders and built the Messages → Inbox path with three sample texts, newest first, unread markers and a four-line message reader. Opening a text marks only that text read. The phone's state lives in pure controls logic, with an inbox API that mission 215 can use to deliver new texts.
+
+The screen is a canvas texture on a plane replacing the model's front glass. It redraws and uploads only when the visible frame changes. W/S, A and D/E navigate on keyboard; D-pad, A and B do the same on gamepad, with D-pad Up raising the phone while it is closed; touch gets a small navigation pad. The game continues to run behind the phone and its world controls stay held. I checked the rendered main menu and a long message on the development room's live view, then increased the lettering for the approved phone size.

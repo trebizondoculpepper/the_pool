@@ -85,6 +85,8 @@ import { paused } from '../logic/paused';
 import { consoleOpen } from '../logic/console-open';
 import { menuOpen } from '../logic/menu-open';
 import { phoneOpen } from '../logic/phone-open';
+import { createPhoneMenu } from '../logic/phone-menu';
+import type { PhoneAction } from '../logic/phone-menu';
 import { createPhoneView } from './phone-view';
 import { requestCopy, requestNoclipToggle } from './copy-actions';
 
@@ -363,6 +365,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     camera,
     metre,
   );
+  const phoneMenu = createPhoneMenu();
   let phoneRaised = false;
   let concealed: { object: Object3D; visible: boolean } | null = null;
   // The torch's light, in this room's scene, lit while the torch is on.
@@ -900,6 +903,26 @@ export function createFirstPerson(options: FirstPersonOptions) {
   // Touch: twin thumbsticks and a crouch button, shown while the last
   // input was a finger.
   const container = canvas.parentElement;
+  const phoneNav = document.createElement('div');
+  phoneNav.className = 'phone-nav';
+  phoneNav.hidden = true;
+  phoneNav.setAttribute('role', 'group');
+  phoneNav.setAttribute('aria-label', 'Phone controls');
+  for (const [caption, label, action] of [
+    ['▲', 'Phone up', 'up'],
+    ['▼', 'Phone down', 'down'],
+    ['◀', 'Phone back', 'back'],
+    ['▶', 'Phone select', 'select'],
+  ] as const) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = caption;
+    button.setAttribute('aria-label', label);
+    button.addEventListener('pointerdown', (event) => event.stopPropagation());
+    button.addEventListener('click', () => phoneAction(action));
+    phoneNav.append(button);
+  }
+  container?.append(phoneNav);
   const sticks = container ? createTouchSticks(container) : null;
   const crouchButton = document.createElement('button');
   crouchButton.type = 'button';
@@ -993,10 +1016,29 @@ export function createFirstPerson(options: FirstPersonOptions) {
     Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
 
   const keydown = (event: KeyboardEvent) => {
-    if (event.code === 'KeyM' && !event.repeat && !typing(event)) {
+    if (event.code === 'KeyM' && !event.repeat && current() && !typing(event)) {
       event.preventDefault();
+      setInput('keyboard');
       togglePhone();
       return;
+    }
+    if (phoneRaised && current() && !typing(event)) {
+      const action: PhoneAction | null =
+        event.code === 'KeyW'
+          ? 'up'
+          : event.code === 'KeyS'
+            ? 'down'
+            : event.code === 'KeyA'
+              ? 'back'
+              : event.code === 'KeyD' || event.code === 'KeyE'
+                ? 'select'
+                : null;
+      if (action) {
+        event.preventDefault();
+        if (!event.repeat || action === 'up' || action === 'down')
+          phoneAction(action);
+        return;
+      }
     }
     if (!current() || inputHeld() || typing(event)) return;
     // A room may hold the eye for a cinematic, but its screenshot still
@@ -1072,6 +1114,11 @@ export function createFirstPerson(options: FirstPersonOptions) {
     concealed = object ? { object, visible: object.visible } : null;
     if (concealed) concealed.object.visible = false;
   };
+  const phoneAction = (action: PhoneAction) => {
+    if (!phoneRaised) return;
+    if (phoneMenu.action(action) === 'lower') togglePhone();
+    else phoneView.show(phoneMenu.frame());
+  };
   const togglePhone = () => {
     if (
       !current() ||
@@ -1083,6 +1130,10 @@ export function createFirstPerson(options: FirstPersonOptions) {
       return;
     phoneRaised = !phoneRaised;
     phoneOpen.value = phoneRaised;
+    if (phoneRaised) {
+      phoneMenu.open();
+      phoneView.show(phoneMenu.frame());
+    }
     phoneView.setRaised(phoneRaised);
     forget();
     handling?.inspect(false);
@@ -1092,7 +1143,8 @@ export function createFirstPerson(options: FirstPersonOptions) {
     if (event.key !== 'Escape' || !phoneRaised || !current()) return;
     event.preventDefault();
     event.stopImmediatePropagation();
-    togglePhone();
+    setInput('keyboard');
+    phoneAction('back');
   };
   window.addEventListener('keydown', phoneEscape, true);
   const look = (event: MouseEvent) => {
@@ -1375,9 +1427,36 @@ export function createFirstPerson(options: FirstPersonOptions) {
     const phoneWent = phoneDown && !pressed.has(PAD.phone);
     if (phoneDown) pressed.add(PAD.phone);
     else pressed.delete(PAD.phone);
-    if (phoneWent) {
+    if (phoneWent && !phoneRaised) {
+      setInput('gamepad');
       togglePhone();
       holds.release('pad');
+      return idle;
+    }
+    if (phoneRaised) {
+      let acted = false;
+      if (phoneWent) {
+        phoneAction('up');
+        acted = true;
+      }
+      for (const [button, action] of [
+        [13, 'down'],
+        [14, 'back'],
+        [15, 'select'],
+        [PAD.use, 'select'],
+        [PAD.letGo, 'back'],
+      ] as const) {
+        const down = pad.buttons[button]?.pressed ?? false;
+        const was = pressed.has(button);
+        if (down) pressed.add(button);
+        else pressed.delete(button);
+        if (down && !was) {
+          phoneAction(action);
+          acted = true;
+        }
+      }
+      holds.release('pad');
+      if (acted) setInput('gamepad');
       return idle;
     }
     // Paused: the pad works the menu. Its buttons held now count as held,
@@ -1698,6 +1777,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
         settings.value.onScreenControls,
       );
       const controlsActive = current() && !holding && !inputHeld();
+      phoneNav.hidden = !phoneRaised || input !== 'touch';
       phoneButton.hidden =
         !current() || paused.value || consoleOpen.value || menuOpen.value;
       movement.hidden = !controlsActive || !hud.movement;
@@ -2171,6 +2251,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       if (concealed) concealed.object.visible = concealed.visible;
       if (phoneRaised) phoneOpen.value = false;
       phoneView.dispose();
+      phoneNav.remove();
       window.removeEventListener('keydown', phoneEscape, true);
       altitude.remove();
       flightReadout.remove();

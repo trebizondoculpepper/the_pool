@@ -122,6 +122,29 @@ canvas {
 [data-input='touch'] > .touch-crouch {
   display: block;
 }
+/* The phone takes the touch controls while raised. */
+.phone-nav {
+  display: none;
+  position: absolute;
+  left: max(24px, env(safe-area-inset-left));
+  bottom: max(24px, env(safe-area-inset-bottom));
+  grid-template-columns: repeat(2, 58px);
+  gap: 10px;
+  z-index: 5;
+}
+[data-input='touch'] > .phone-nav:not([hidden]) {
+  display: grid;
+}
+.phone-nav button {
+  width: 58px;
+  height: 58px;
+  border: 2px solid var(--hud-amber);
+  border-radius: 10px;
+  background: var(--hud-grey);
+  color: var(--hud-amber);
+  font: bold 25px monospace;
+  touch-action: manipulation;
+}
 /* The context button beside CROUCH, and INSPECT beside it while
    something is carried: each slot 102 px on (CROUCH is about 90 wide). */
 .touch-context {
@@ -1050,6 +1073,7 @@ canvas {
 .hud-tools,
 .hud-speed,
 .touch-crouch,
+.phone-nav,
 .touch-sticks,
 .noclip-readout,
 .noclip-altitude,

@@ -25,6 +25,7 @@ export type ControlAction =
   | 'crouch'
   | 'torch'
   | 'phone'
+  | 'phoneNavigate'
   | 'eye'
   | 'console'
   | 'release'
@@ -88,7 +89,12 @@ const POINTER_SCHEME: Record<
   phone: {
     mouse: 'M: raise / lower phone',
     touch: 'Phone icon: raise / lower phone',
-    gamepad: 'D-pad Up: raise / lower phone',
+    gamepad: 'D-pad Up: raise phone',
+  },
+  phoneNavigate: {
+    mouse: 'in the phone, W / S: move, A: back, D / E: open',
+    touch: 'in the phone, arrow buttons: move, back, open',
+    gamepad: 'in the phone, D-pad: move, A: open, B: back',
   },
   eye: {
     mouse: 'Alt+wheel: eye height',
@@ -159,6 +165,7 @@ const ORDER: readonly ControlAction[] = [
   'crouch',
   'torch',
   'phone',
+  'phoneNavigate',
   'eye',
   'console',
   'copyReference',

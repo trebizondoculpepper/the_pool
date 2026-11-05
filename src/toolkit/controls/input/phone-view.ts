@@ -1,6 +1,8 @@
-import { Group, Mesh, MeshBasicMaterial, Vector3 } from 'three';
+import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3 } from 'three';
 import type { Material, Object3D, PerspectiveCamera, Texture } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import type { PhoneFrame } from '../logic/phone-menu';
+import { createPhoneDisplay } from './phone-display';
 
 const handsetUrl = `${import.meta.env.BASE_URL}models/phone/scene.gltf`;
 const offset = new Vector3();
@@ -25,6 +27,7 @@ export function createPhoneView(
   let lift = 0;
   const owned: Material[] = [];
   const textures = new Set<Texture>();
+  const display = createPhoneDisplay();
 
   // Keep the handset ahead of the world while preserving depth between its parts.
   const foreground = (source: Material) => {
@@ -64,14 +67,23 @@ export function createPhoneView(
         const screen = part.parent?.name === 'glassFront_low';
         const source = part.material as Material & { map?: Texture };
         if (source.map) textures.add(source.map);
-        const base = screen
-          ? new MeshBasicMaterial({ color: 0x050608 })
-          : source;
-        part.material = foreground(base);
-        if (screen) base.dispose();
+        if (screen) part.visible = false;
+        else part.material = foreground(source);
         part.renderOrder = 1000;
         part.frustumCulled = false;
       });
+      const glass = loaded.getObjectByName('glassFront_low');
+      if (glass) {
+        const screenGeometry = new PlaneGeometry(0.575, 0.604);
+        const base = new MeshBasicMaterial({ map: display.texture });
+        const screen = new Mesh(screenGeometry, foreground(base));
+        base.dispose();
+        screen.name = 'Phone display';
+        screen.position.set(0, 0.337, 0.161);
+        screen.renderOrder = 1001;
+        screen.frustumCulled = false;
+        glass.add(screen);
+      }
       anchor.add(loaded);
     } catch (error) {
       console.warn('The phone model could not be loaded.', error);
@@ -81,6 +93,9 @@ export function createPhoneView(
   };
 
   return {
+    show(frame: PhoneFrame) {
+      display.show(frame);
+    },
     setRaised(on: boolean) {
       raised = on;
       if (on) void load();
@@ -109,6 +124,7 @@ export function createPhoneView(
       });
       for (const material of owned) material.dispose();
       for (const texture of textures) texture.dispose();
+      display.dispose();
     },
   };
 }

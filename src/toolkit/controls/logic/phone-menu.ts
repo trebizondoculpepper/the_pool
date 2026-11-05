@@ -1,0 +1,189 @@
+/** The small phone's menu and inbox. Pure data; rooms can deliver texts later. */
+
+export interface PhoneMessage {
+  id: number;
+  text: string;
+  from: string;
+  read: boolean;
+}
+
+export function createPhoneInbox(
+  samples: readonly { from: string; text: string }[] = [],
+) {
+  let nextId = 1;
+  const messages: PhoneMessage[] = [];
+  const receive = (from: string, text: string) => {
+    const message = { id: nextId++, from, text, read: false };
+    messages.unshift(message);
+    return message;
+  };
+  for (const sample of samples) receive(sample.from, sample.text);
+  return {
+    receive,
+    list: () => messages as readonly PhoneMessage[],
+    unread: () => messages.filter((message) => !message.read).length,
+    read(id: number) {
+      const message = messages.find((item) => item.id === id);
+      if (message) message.read = true;
+      return message ?? null;
+    },
+  };
+}
+
+export const phoneInbox = createPhoneInbox([
+  { from: 'Pool Plant', text: 'Here is the first message.' },
+  { from: 'Pool Plant', text: 'Here is the second message.' },
+  {
+    from: 'Pool Plant',
+    text: 'This is a longer sample message. Use the up and down controls to scroll through the text. Later, reports about the plant will arrive here while the game keeps running.',
+  },
+]);
+
+export type PhonePage =
+  | 'main'
+  | 'messages'
+  | 'inbox'
+  | 'message'
+  | 'placeholder';
+export type PhoneAction = 'up' | 'down' | 'back' | 'select';
+
+export interface PhoneFrame {
+  page: PhonePage;
+  title: string;
+  rows: readonly string[];
+  selected: number;
+  body: readonly string[];
+  unread: number;
+  scroll: number;
+}
+
+/** Wrap the compact message display into lines, without splitting words. */
+export function phoneLines(text: string, columns = 24): string[] {
+  const lines: string[] = [];
+  let line = '';
+  for (const word of text.split(/\s+/)) {
+    if (line && `${line} ${word}`.length > columns) {
+      lines.push(line);
+      line = '';
+    }
+    if (word.length > columns) {
+      if (line) lines.push(line);
+      for (let at = 0; at < word.length; at += columns)
+        lines.push(word.slice(at, at + columns));
+      line = '';
+    } else line = line ? `${line} ${word}` : word;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+export function createPhoneMenu(inbox = phoneInbox) {
+  let page: PhonePage = 'main';
+  let selected = 0;
+  let messageId: number | null = null;
+  let placeholder = '';
+  let scroll = 0;
+  const main = ['Phone', 'Messages', 'Media', 'Radio'];
+  const currentMessage = () =>
+    inbox.list().find((message) => message.id === messageId) ?? null;
+  const rows = () =>
+    page === 'main'
+      ? main
+      : page === 'messages'
+        ? [`Inbox (${inbox.list().length})`]
+        : page === 'inbox'
+          ? inbox
+              .list()
+              .map(
+                (message) =>
+                  `${message.read ? ' ' : '●'} ${message.from}: ${message.text}`,
+              )
+          : [];
+  const back = () => {
+    if (page === 'main') return false;
+    if (page === 'message') {
+      page = 'inbox';
+      selected = Math.max(
+        0,
+        inbox.list().findIndex((item) => item.id === messageId),
+      );
+    } else {
+      page = page === 'inbox' ? 'messages' : 'main';
+      selected = 0;
+    }
+    scroll = 0;
+    return true;
+  };
+  const select = () => {
+    if (page === 'main') {
+      const choice = main[selected];
+      if (choice === 'Messages') page = 'messages';
+      else {
+        placeholder = choice;
+        page = 'placeholder';
+      }
+    } else if (page === 'messages') page = 'inbox';
+    else if (page === 'inbox') {
+      const message = inbox.list()[selected];
+      if (message) {
+        messageId = message.id;
+        inbox.read(message.id);
+        page = 'message';
+      }
+    }
+    selected = 0;
+    scroll = 0;
+  };
+  return {
+    open() {
+      page = 'main';
+      selected = 0;
+      scroll = 0;
+    },
+    action(action: PhoneAction): 'lower' | 'changed' {
+      if (action === 'back') return back() ? 'changed' : 'lower';
+      if (action === 'select') select();
+      else if (page === 'message') {
+        const count = phoneLines(currentMessage()?.text ?? '').length;
+        scroll = Math.max(
+          0,
+          Math.min(
+            Math.max(0, count - 4),
+            scroll + (action === 'down' ? 1 : -1),
+          ),
+        );
+      } else {
+        const count = rows().length;
+        if (count)
+          selected = (selected + (action === 'down' ? 1 : -1) + count) % count;
+      }
+      return 'changed';
+    },
+    frame(): PhoneFrame {
+      const message = currentMessage();
+      return {
+        page,
+        title:
+          page === 'main'
+            ? 'Menu'
+            : page === 'message'
+              ? (message?.from ?? 'Message')
+              : page === 'placeholder'
+                ? placeholder
+                : page === 'inbox'
+                  ? 'Inbox'
+                  : 'Messages',
+        rows: rows(),
+        selected,
+        body:
+          page === 'message'
+            ? phoneLines(message?.text ?? '').slice(scroll, scroll + 4)
+            : page === 'placeholder'
+              ? ['Not available yet']
+              : [],
+        unread: inbox.unread(),
+        scroll,
+      };
+    },
+  };
+}
