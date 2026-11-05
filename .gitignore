@@ -33,3 +33,6 @@ doc/marketing/tmp/
 
 # agent-inbox: generated wake hook; carries this machine's interpreter path. Never commit.
 /.opencode/plugins/agent-inbox-wake.js
+
+# The published site (mission 216, scripts/site.ts): landing page + game/.
+site-dist/

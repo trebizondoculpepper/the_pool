@@ -1,5 +1,8 @@
 /**
- * The development benchmarks' page (`bench.html`, not part of the build):
+ * The development benchmarks' page (`bench.html`, built beside the game since
+ * mission 216, which links its index and simulation graph from the landing
+ * page as behind-the-scenes views; the owner's brief promises no more than
+ * that, and a page needing the dev server may say so):
  * `?bench=components` runs the component benchmark (mission 094,
  * `toolkit/gallery/views/component-bench.ts`); `?bench=lookables` the look
  * audit (mission 127, `toolkit/gallery/views/look-audit-page.ts`), one room
@@ -17,10 +20,7 @@
  */
 const root = document.querySelector<HTMLElement>('#bench');
 const which = new URLSearchParams(location.search).get('bench');
-if (!import.meta.env.DEV) {
-  if (root)
-    root.textContent = 'The benchmarks run on the development server only.';
-} else if (root && which === 'components') {
+if (root && which === 'components') {
   const { runComponentBench } =
     await import('./toolkit/gallery/views/component-bench');
   await runComponentBench(root);
@@ -80,3 +80,5 @@ if (!import.meta.env.DEV) {
     await import('./toolkit/gallery/views/bench-index-page');
   await runBenchIndex(root);
 }
+
+export {};

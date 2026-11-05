@@ -1,5 +1,6 @@
 import { configDefaults, defineConfig } from 'vite-plus';
 import { execFileSync } from 'node:child_process';
+import { resolve } from 'node:path';
 import { version } from './package.json';
 import {
   commitsSinceVersionChange,
@@ -47,6 +48,16 @@ const fastOnly = truthy(process.env.CI) || truthy(process.env.FAST_TESTS_ONLY);
 export default defineConfig({
   // Mission 167: the audits' JSON exports (audit/*.json), dev and build.
   plugins: [auditJsonPlugin()],
+  // Mission 216: the bench (bench.html) is published beside the game, for
+  // the landing page's behind-the-scenes Simulation and Bench links.
+  build: {
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, 'index.html'),
+        bench: resolve(import.meta.dirname, 'bench.html'),
+      },
+    },
+  },
   test: {
     exclude: [
       ...configDefaults.exclude,

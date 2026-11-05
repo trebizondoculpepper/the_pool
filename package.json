@@ -15,6 +15,7 @@
     "test:fast": "FAST_TESTS_ONLY=1 vp test run --passWithNoTests",
     "test:watch": "vp test",
     "build": "npm run typecheck && node scripts/build.ts",
+    "site": "node scripts/site.ts",
     "preview": "vp preview --host 127.0.0.1",
     "check": "vp check",
     "manual": "MANUAL=1 vp test run scripts/build-manual.test.ts && latexmk -lualatex -interaction=nonstopmode -halt-on-error -cd build/manual/manual.tex",

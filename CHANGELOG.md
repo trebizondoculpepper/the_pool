@@ -6,6 +6,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A landing page at the site's root (mission 216): the pitch, pictures from the game, Play now with Low, Medium and High graphics, behind-the-scenes Dev, Simulation and Bench links, and source and issue links. The game moves to `game/`; old links at the root are forwarded. Play now offers an Enter fullscreen button in the game. The bench is published with the game.
+
 - The raised phone now has a Series 60-inspired menu with Phone, Messages, Media and Radio icons, an unread indicator and a sample inbox (mission 214). Messages open in a four-line scrolling view; keyboard, gamepad and touch controls browse it while the plant continues to run.
 - A compact 3D phone can be raised with M, gamepad D-pad Up or the touch phone icon (mission 213). It keeps the plant running while holding movement and use input, leaves carried objects in hand but out of view, and has a black screen for the later message interface.
 - Picking up and putting down are animated (mission 210): a thing eases from where it rests to the hand in about half a second, and use on a clear spot of a desk or other supportable top puts it down there, flat, the same way; anywhere else, use works what is aimed at and the thing stays in hand.

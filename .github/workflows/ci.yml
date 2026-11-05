@@ -48,13 +48,15 @@ jobs:
         run: echo "VITE_BUILD=$(git rev-parse --short HEAD) · $(date -u +'%-d %b %Y')" >> "$GITHUB_ENV"
       # At the next patch, derived; it writes and commits nothing.
       - run: npm run build
+      # Mission 216: the landing page at the root, the game under game/.
+      - run: npm run site
       # The built site, for the deploy job; only pushes to main deploy.
       # GitHub Pages is the bleeding edge; only a release reaches itch.io
       # (release.yml; the owner, 2026-10-28).
       - if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
-          path: dist
+          path: site-dist
 
   deploy:
     name: Deploy to GitHub Pages

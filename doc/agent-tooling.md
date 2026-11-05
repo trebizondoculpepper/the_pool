@@ -189,3 +189,7 @@ The page also carries a semantic summary, room index and current process measure
 - Never write a plant tag whole as a string literal: build it from its parts, as the plant does. `src/game/plant/registration.test.ts` reads the code for whole tags and fails on unregistered ones.
 - One full `npm test` per machine at a time, announced on the mailbox; use targeted tests with `--maxWorkers=2` meanwhile.
 - When you add or change a tool here, update this guide in the same commit.
+
+## The published site (mission 216)
+
+GitHub Pages publishes `site-dist/`, assembled by `npm run site` (`scripts/site.ts`) after `npm run build`: the landing page from `site/` at the root, the built game (`dist/`, unchanged) under `game/`, and `startup-assets.json`, the game's start-up files read from its built `index.html`, which the landing page prefetches. To look at it locally: `npm run build && npm run site`, then serve `site-dist/` on a spare port (`python3 -m http.server 5198 -d site-dist`). `bench.html` is built too and works away from the dev server; the development server is unchanged (the game at its root).

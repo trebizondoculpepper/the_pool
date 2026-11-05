@@ -96,6 +96,7 @@ import {
 } from './toolkit/gallery/logic/look-ref';
 import { installRoomTraits } from './toolkit/gallery/views/room-traits';
 import { installRoomInspector } from './toolkit/gallery/views/inspect-pick';
+import { installFullscreenButton } from './toolkit/fullscreen/views/fullscreen-button';
 
 // The registry's traits drive every room's carrying (missions 189, 181),
 // and the information overlay is the factory's for every room (160).
@@ -501,6 +502,8 @@ const titleActions: Parameters<typeof createTitleScreen>[0] = {
   releaseNotes: releaseNotesUrl(),
 };
 const titleScreen = createTitleScreen(titleActions);
+// Mission 216: the landing page's Play now asks for fullscreen.
+installFullscreenButton();
 const positionStatus = document.createElement('span');
 positionStatus.setAttribute('role', 'status');
 positionOverlay.append(roomName, positionStatus);

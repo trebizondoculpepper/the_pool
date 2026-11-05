@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <script>
+      // Links made before mission 216 put the game at the root (?room=…,
+      // ?dev, bench.html): send them on to the game, unchanged.
+      if (location.search)
+        location.replace('game/' + location.search + location.hash);
+    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#02213a" />
+    <title>The Pool Simulation</title>
+    <meta
+      name="description"
+      content="The Pool: a free, open-source engineering game. Explore the plant behind a leisure centre's pools, find what has gone wrong and put it right."
+    />
+    <link rel="icon" href="images/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="site.css" />
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <img
+          class="logo"
+          src="images/logo.svg"
+          alt="The Pool"
+          width="320"
+          height="320"
+        />
+        <p class="tagline">The real backrooms of the pool rooms.</p>
+        <h1>
+          Behind every swimming pool is a plant room full of machinery.
+          Something in it has gone wrong. Find it and fix it.
+        </h1>
+        <div class="play">
+          <a class="play-now" href="game/?fullscreen=1" data-launch>Play now</a>
+          <p class="quality" aria-label="Graphics quality">
+            <span>Slower computer? Start with</span>
+            <a href="game/?graphics=low&amp;fullscreen=1" data-launch>Low</a>
+            <a href="game/?graphics=medium&amp;fullscreen=1" data-launch
+              >Medium</a
+            >
+            <a href="game/?graphics=high&amp;fullscreen=1" data-launch>High</a>
+            <span>graphics.</span>
+          </p>
+          <p class="free">Free to play in your browser, and open source.</p>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="pitch">
+        <h2>A working simulation</h2>
+        <p>
+          Pumps, filters, boilers, dosing and the controls that run them are
+          modelled as working machines, not scenery. They have state and
+          controls: gauges read real values, switches switch, lamps light. You
+          can inspect them, operate them, work out what is wrong and put it
+          right.
+        </p>
+        <ol class="steps">
+          <li>
+            <strong>Explore</strong> the plant rooms, corridors and control
+            rooms behind the pools.
+          </li>
+          <li>
+            <strong>Diagnose</strong> the problem from the instruments, the
+            alarms and what you can see.
+          </li>
+          <li>
+            <strong>Repair</strong> it, often in the room where it happened.
+          </li>
+        </ol>
+      </section>
+
+      <section class="gallery" aria-label="Pictures from the game">
+        <figure>
+          <img
+            src="images/plant-room-800.webp"
+            srcset="
+              images/plant-room-800.webp  800w,
+              images/plant-room.webp     1600w
+            "
+            sizes="(min-width: 900px) 33vw, 100vw"
+            width="1600"
+            height="839"
+            loading="lazy"
+            alt="A plant room: two blue pump motors, white filter vessels and pipework labelled feed and discharge."
+          />
+          <figcaption>
+            The Lounge pool's plant room: pumps, filters and their valves.
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="images/museum-hall-800.webp"
+            srcset="
+              images/museum-hall-800.webp  800w,
+              images/museum-hall.webp     1600w
+            "
+            sizes="(min-width: 900px) 33vw, 100vw"
+            width="1600"
+            height="839"
+            loading="lazy"
+            alt="A museum hall: a plate heat exchanger, a pump and a red temperature display reading 27.0, with explanatory signs."
+          />
+          <figcaption>
+            A museum hall explains each machine, and every one of them works.
+          </figcaption>
+        </figure>
+        <figure>
+          <img
+            src="images/skimmer-800.webp"
+            srcset="images/skimmer-800.webp 800w, images/skimmer.webp 1600w"
+            sizes="(min-width: 900px) 33vw, 100vw"
+            width="1600"
+            height="1004"
+            loading="lazy"
+            alt="A dead rat held up under a banner reading: You got a DEAD RAT!"
+          />
+          <figcaption>
+            Not everything in a skimmer basket is pleasant.
+          </figcaption>
+        </figure>
+      </section>
+
+      <section class="updates" id="updates">
+        <h2>Updates</h2>
+        <p>
+          An occasional email when there is something new to play: new rooms,
+          new machinery and new things to go wrong.
+        </p>
+        <form class="signup" method="post" target="_blank" hidden>
+          <label for="email">Email address</label>
+          <div class="signup-row">
+            <input
+              id="email"
+              type="email"
+              name="EMAIL"
+              autocomplete="email"
+              required
+            />
+            <button type="submit">Subscribe</button>
+          </div>
+          <p class="note">
+            You will be asked to confirm. Unsubscribe at any time.
+          </p>
+        </form>
+        <p class="signup-soon">Email sign-up is coming soon.</p>
+      </section>
+
+      <section class="behind">
+        <h2>Behind the scenes</h2>
+        <p>
+          The backrooms behind the backrooms: text and data views of the same
+          model the game runs.
+        </p>
+        <ul>
+          <li><a href="game/?dev">Dev</a>: every room in the game.</li>
+          <li>
+            <a href="game/bench.html?bench=sim-graph">Simulation</a>: the plant
+            model's graph.
+          </li>
+          <li>
+            <a href="game/bench.html">Bench</a>: rooms, objects, brands and
+            simulation nodes.
+          </li>
+        </ul>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        <a href="https://github.com/trebizondoculpepper/the_pool"
+          >Source code</a
+        >
+        ·
+        <a href="https://github.com/trebizondoculpepper/the_pool/issues"
+          >Questions or issues? Open a GitHub issue</a
+        >
+      </p>
+      <p class="licence">
+        The program is licensed under the GNU GPL, version 3 or later. Some
+        bundled media have their own licences, listed in
+        <a
+          href="https://github.com/trebizondoculpepper/the_pool/blob/main/CREDITS.md"
+          >CREDITS.md</a
+        >.
+      </p>
+    </footer>
+
+    <script type="module" src="site.js"></script>
+  </body>
+</html>
