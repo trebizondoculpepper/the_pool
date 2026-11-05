@@ -30,6 +30,9 @@ export interface HeadSpec {
   deadMl: number;
   /** Where its relief valve lifts, bar. */
   reliefBar: number;
+  /** Gas generated while standing and drawn with the chemical; zero for acid. */
+  idleGasPerMlHour?: number;
+  drawnGasPerMl?: number;
 }
 
 /** Gas the head's hypochlorite gives off standing, ml an hour per ml of head. */
@@ -145,7 +148,7 @@ export function runStrokes(
   let worked = 0;
   let tripped = false;
   for (; worked < Math.min(count, MAX_STROKES); worked++) {
-    s.gasMl += volume * DRAWN_GAS_PER_ML;
+    s.gasMl += volume * (spec.drawnGasPerMl ?? DRAWN_GAS_PER_ML);
     const r = headStroke(spec, volume, s.gasMl, bar, s.head, s.bleedOpen);
     s.gasMl = Math.max(0, s.gasMl - r.gasOut);
     delivered += r.delivered;
@@ -181,7 +184,10 @@ export function runStrokes(
 /** The head standing `seconds`: its hypochlorite giving off gas. */
 export const standHead = (spec: HeadSpec, s: HeadState, seconds: number) => ({
   ...s,
-  gasMl: s.gasMl + (IDLE_GAS_PER_ML_HOUR * spec.deadMl * seconds) / 3600,
+  gasMl:
+    s.gasMl +
+    ((spec.idleGasPerMlHour ?? IDLE_GAS_PER_ML_HOUR) * spec.deadMl * seconds) /
+      3600,
 });
 
 /** Whether a stroke of `volume` now would not lift the outlet valve. */

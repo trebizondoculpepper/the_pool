@@ -28,10 +28,12 @@ import type {
   MotorPumpInputs,
   MotorPumpKey,
   MotorPumpState,
+  MotorPumpSpec,
 } from '../logic/motor-dosing-pump';
 
 /** Where the pump's state is kept, and what it is given (a demo's or the world's). */
 export interface MotorPumpBinding {
+  spec?: MotorPumpSpec;
   state(): MotorPumpState;
   change(f: (s: MotorPumpState) => MotorPumpState): void;
   inputs(): MotorPumpInputs;
@@ -92,6 +94,7 @@ export function createMotorDosingPump(
   const f = tools(kit);
   const maker = brandLivery(kit, 'grundflow');
   const group = new Group();
+  const spec = bind.spec ?? DMH;
   group.name = `${label} dosing pump`;
   const dark = t.paint('#26292a', 0.6);
   const rubber = t.paint('#151617', 0.9);
@@ -151,7 +154,11 @@ export function createMotorDosingPump(
   badge.position.set(gearX, 0.165, 0.0755);
   group.add(badge);
   const plate = maker.nameplate(
-    [`${DMH.model} PVT`, '21 l/h · 10 bar · 90 /min', '230 V 50 Hz 110 W IP65'],
+    [
+      `${spec.model} PVC`,
+      `${spec.maxLh} l/h · ${spec.maxBar} bar · ${spec.maxSpm} /min`,
+      '230 V 50 Hz · IP65',
+    ],
     0.07,
     0.04,
   );
@@ -499,16 +506,16 @@ export function createMotorDosingPump(
   let bleedShown: boolean | null = null;
   let dialShown = -1;
   let ruptureShown: boolean | null = null;
-  const words = () => motorPumpWords(bind.state(), bind.inputs());
+  const words = () => motorPumpWords(bind.state(), bind.inputs(), spec);
   describe(
     group,
-    `${label}: Grundflow ${DMH.model} motor-driven metering pump`,
+    `${label}: Grundflow ${spec.model} motor-driven metering pump`,
     words,
   );
   const show = (delta: number, strokes: MotorPumpStrokes) => {
     const s = bind.state();
     const i = bind.inputs();
-    const d = motorPumpDisplay(s, i);
+    const d = motorPumpDisplay(s, i, spec);
     if (s.error !== errorHeard) {
       if (s.error && i.powered) beeper.play('error');
       errorHeard = s.error;

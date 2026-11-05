@@ -73,10 +73,16 @@ function run(
 }
 
 describe('the Aqualis loop', () => {
-  it('brings low chlorine up into its band in AUTO', () => {
+  it('lifts low chlorine above its alarm limit in AUTO, never over its band', () => {
+    // Relaxed (the owner, 2026-11-05: the chemistry is a hard balance; get
+    // it as close as we can and accept the rest). Since mission 207 the
+    // Trio's chlorine correction waits out the turnover's dead time so as
+    // not to overshoot; on the test rig it then settles a little under the
+    // band (about 0.7–0.8 mg/l), above its alarm limit. TODO.md has the
+    // tuning follow-up.
     const { readings } = run(newRig('chlorine-low'), 4);
     expect(readings.freeChlorine).toBeGreaterThan(
-      DEFAULT_TARGETS.freeChlorine.low,
+      DEFAULT_TARGETS.freeChlorine.low * 0.5,
     );
     expect(readings.freeChlorine).toBeLessThan(
       DEFAULT_TARGETS.freeChlorine.high,
@@ -135,7 +141,7 @@ describe('the Aqualis loop under First Aid', () => {
     let endedAt: number | null = null;
     let most = 0;
     const dt = 10;
-    for (let t = 0; t < 4 * 3600 && endedAt === null; t += dt) {
+    for (let t = 0; t < 6 * 3600 && endedAt === null; t += dt) {
       const s = stepSampler(sampler, rigSample(rig), dt);
       sampler = s.state;
       if (fa) {
@@ -161,9 +167,11 @@ describe('the Aqualis loop under First Aid', () => {
       control = c.state;
       rig = stepRig(rig, c.out.demands, dt);
     }
-    // Up to 2 mg/l within the hour, held 30 minutes, then the programme ends.
+    // Up to 2 mg/l within three hours (within the hour before mission 207's
+    // slower, non-overshooting chlorine correction; the owner, 2026-11-05,
+    // accepts it), held 30 minutes, then the programme ends.
     expect(reached).not.toBe(null);
-    expect(reached!).toBeLessThan(3600);
+    expect(reached!).toBeLessThan(3 * 3600);
     expect(endedAt).not.toBe(null);
     expect(endedAt! - reached!).toBeGreaterThanOrEqual(
       FIRST_AID_RULES.formed.hold - dt,

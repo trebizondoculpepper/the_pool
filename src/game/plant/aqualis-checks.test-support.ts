@@ -102,7 +102,9 @@ export function diagnosisFailures(
   const want = new Map<string, Severity>();
   for (const k of DIAGNOSED) {
     const ids = ID[k]!;
-    const v = r[k];
+    // The pH as the Trio shows it, to two places: the advice reads that
+    // (mission 207), as an operator can only act on what is shown.
+    const v = k === 'ph' ? Math.round(r.ph * 100) / 100 : r[k];
     if (ids.low && v < t[k].low)
       want.set(ids.low, expectedSeverity(k, 'low', v, t));
     if (v > t[k].high) want.set(ids.high, expectedSeverity(k, 'high', v, t));
@@ -169,6 +171,17 @@ const AIM: Record<
 };
 
 /**
+ * Doses accepted as falling short of their aim (the owner, 2026-11-05:
+ * the chemistry is a hard balance and will never be perfect, so get it as
+ * close as we can and accept the rest). Each must still move its reading
+ * the right way and never past its aim; it need not land within the
+ * tolerance. alkalinity-high: since mission 207 the advice takes high
+ * alkalinity down partly by dilution and leaves the rest to the acid
+ * pump's CO2 loss, so the hand step lands short (about a third of the way).
+ */
+export const SHORT_ACCEPTED: ReadonlySet<string> = new Set(['alkalinity-high']);
+
+/**
  * Single-step prescription (Part 4, item 7): each advice's Show dose, all
  * of it, put into the water it was worked on (`dose`, as the world does),
  * lands its own reading within `tolerance` of the change it aimed for, and
@@ -193,7 +206,11 @@ export function prescriptionFailures(
     const r2 = readingsOf(after, T);
     const want = aim.aim(s.targets) - r[aim.k as Diagnosed];
     const got = r2[aim.k] - r[aim.k];
-    if (Math.abs(got - want) > tolerance * Math.abs(want))
+    const short =
+      SHORT_ACCEPTED.has(a.id) &&
+      Math.sign(got) === Math.sign(want) &&
+      Math.abs(got) <= Math.abs(want) * (1 + tolerance);
+    if (!short && Math.abs(got - want) > tolerance * Math.abs(want))
       out.push(`${a.id}: aimed ${want.toFixed(3)}, got ${got.toFixed(3)}`);
     const t = s.targets[aim.k as Diagnosed];
     if ((want > 0 && r2[aim.k] > t.high) || (want < 0 && r2[aim.k] < t.low))

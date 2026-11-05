@@ -52,6 +52,21 @@ describe('every location annunciator', () => {
     };
     expect(olympicAlarms(fault)).toContain('hypo-pump-fault');
   });
+
+  it('lights ACID PUMP FAULT from the Olympic acid DMH error relay', () => {
+    const w = newWorld();
+    const fault = {
+      ...w,
+      dosingPumps: {
+        ...w.dosingPumps,
+        pool_02: {
+          ...w.dosingPumps.pool_02,
+          acid: { ...w.dosingPumps.pool_02.acid, fault: 'flow' },
+        },
+      },
+    };
+    expect(olympicAlarms(fault)).toContain('acid-pump-fault');
+  });
 });
 
 describe('the Olympic annunciator’s windows', () => {

@@ -3,8 +3,8 @@ import {
   dose,
   mixWaters,
   readings as chemistryReadings,
-  thiosulphateStoichiometry,
   waterFrom,
+  thiosulphateStoichiometry,
 } from '../water/pool-chemistry';
 import { MOLAR } from '../water/pool-chemistry';
 import type { Additions, PoolChemistry } from '../water/pool-chemistry';
@@ -72,7 +72,8 @@ import type { HandChemical } from './hand-dose';
 /**
  * Alarm limits beyond the target bands (each also turns its advice into
  * an alarm): free chlorine below half its low limit or above twice its
- * high limit (the latter also the "very high" that wants thiosulphate);
+ * high limit (the latter marks "very high"; thiosulphate is reserved for
+ * more than three times the high limit);
  * pH 0.2 beyond its band (7.0 and 7.6 by default, PWTAG's outer limits);
  * combined chlorine above twice its high limit (1.0 mg/l); the balance
  * beyond its band (±0.5, the usual action level).
@@ -389,7 +390,7 @@ const lsiTarget = (c: Ctx) => lsiOf(c)(c.w) + (c.s.targets.lsi.set - c.r.lsi);
 /** Fresh water to drain and replace, m³, that brings `key` from the pool's to `target`; null if the mains cannot. */
 function dilutionFor(
   c: Ctx,
-  key: 'hardness' | 'tds' | 'sulphate',
+  key: 'alkalinity' | 'hardness' | 'tds' | 'sulphate',
   target: number,
 ) {
   const C = c.w[key];
@@ -413,6 +414,20 @@ export function dilute(
     ],
     T,
   );
+}
+
+/** Smallest fresh-water replacement that brings the modelled balance to target. */
+function dilutionToLsi(c: Ctx, target: number): number | null {
+  const at = (m3: number) => lsiOf(c)(dilute(c.w, m3, c.V, c.T));
+  if (at(c.V) >= target) return null;
+  let lo = 0;
+  let hi = c.V;
+  for (let i = 0; i < 40; i++) {
+    const mid = (lo + hi) / 2;
+    if (at(mid) > target) lo = mid;
+    else hi = mid;
+  }
+  return hi;
 }
 
 /** What else the advice depends on. */
@@ -564,6 +579,7 @@ function controllerDirection(c: Ctx, id: ChannelId, action: string): string {
 function readingRules(c: Ctx): Draft[] {
   const { r, s, V } = c;
   const t = s.targets;
+  const shownPh = Math.round(r.ph * 100) / 100;
   const out: Draft[] = [];
   const add = (d: Draft) => out.push(d);
   // Each dose is a closure, worked out only when Show dose asks (Part 5).
@@ -594,6 +610,7 @@ function readingRules(c: Ctx): Draft[] {
   } else if (fc > t.freeChlorine.high) {
     const veryHigh = fc > t.freeChlorine.high * ALARM_LIMITS.chlorineHighTimes;
     if (veryHigh) {
+      const rapidReduction = fc > t.freeChlorine.high * 3;
       // Closed, high chlorine harms no bather: it only keeps the pool shut.
       add({
         id: 'free-chlorine-high',
@@ -602,17 +619,25 @@ function readingRules(c: Ctx): Draft[] {
         problem: c.open
           ? `Free chlorine far too high (${twoDp(fc)} mg/l): nobody should swim in that!`
           : `Free chlorine far above its band (${twoDp(fc)} mg/l): the pool stays closed until it is under ${twoDp(t.freeChlorine.high)}.`,
-        direction: c.open
-          ? 'Stop the hypochlorite (First Aid › Bring chlorine down) and take it down with sodium thiosulphate.'
-          : 'Let it fall, or take it down with sodium thiosulphate.',
-        additive: 'thiosulphate',
-        prescribe: () => {
-          const g =
-            // To the top of its band: it falls the rest of the way on its own.
-            (Math.max(0, c.w.freeChlorine - t.freeChlorine.high) * V) /
-            thiosulphateStoichiometry().chlorinePerMg;
-          return doseOf('thiosulphate', g / 1000, 'kg', c);
-        },
+        direction: rapidReduction
+          ? c.open
+            ? 'Close the pool now; start First Aid › Bring chlorine down and use sodium thiosulphate. Retest before reopening.'
+            : 'Keep the pool closed; start First Aid › Bring chlorine down and use sodium thiosulphate. Retest before reopening.'
+          : c.open
+            ? 'Close the pool now; let the chlorine fall naturally. Or start First Aid › Bring chlorine down. Retest before reopening.'
+            : 'Keep the pool closed and let the chlorine fall naturally; retest before reopening.',
+        additive: rapidReduction ? 'thiosulphate' : null,
+        prescribe: rapidReduction
+          ? () =>
+              doseOf(
+                'thiosulphate',
+                ((fc - t.freeChlorine.high) * V) /
+                  thiosulphateStoichiometry().chlorinePerMg /
+                  1000,
+                'kg',
+                c,
+              )
+          : null,
       });
     } else {
       add({
@@ -665,7 +690,7 @@ function readingRules(c: Ctx): Draft[] {
     // band that would take it past its alarm limit, so the pH comes first
     // (the acid pump's, once restored if offline), and the bicarbonate after.
     const acidOnline = c.online('acid') || c.online('co2');
-    const waits = r.ph > t.ph.high;
+    const waits = shownPh > t.ph.high;
     add({
       id: 'alkalinity-low',
       reading: 'alkalinity',
@@ -677,7 +702,7 @@ function readingRules(c: Ctx): Draft[] {
           : c.connected('acid')
             ? 'Restore the acid pump to lower the pH first; then raise the alkalinity with sodium bicarbonate.'
             : 'Lower the pH with acid by hand first; then raise the alkalinity with sodium bicarbonate.'
-        : r.ph < t.ph.set
+        : shownPh < t.ph.set
           ? 'Raise the alkalinity with sodium bicarbonate.'
           : acidOnline
             ? `Raise it with sodium bicarbonate. This will lift the pH a little; the ${c.online('co2') ? 'CO₂' : 'acid pump'} will bring it back down.`
@@ -695,6 +720,15 @@ function readingRules(c: Ctx): Draft[] {
               t.alkalinity.set,
               1000 * V,
             );
+            // Acid control continues while a long bicarbonate feed mixes;
+            // allow a modest extra reserve for the alkalinity it consumes.
+            const compensatedG =
+              g *
+              (c.online('acid') &&
+              !c.online('co2') &&
+              r.ph >= (t.ph.low + t.ph.set) / 2
+                ? 1.12
+                : 1);
             // A visit: its alkalinity limit, and no more than lifts the pH
             // (unbuffered by any acid) to 0.1 inside its alarm limit open,
             // or 0.1 past it closed.
@@ -708,28 +742,43 @@ function readingRules(c: Ctx): Draft[] {
               1000 * V,
             );
             const byAlk =
-              (g * limit(c, 'alkalinity')) /
+              (compensatedG * limit(c, 'alkalinity')) /
               Math.max(1e-9, t.alkalinity.set - c.w.alkalinity);
             return doseOf(
               'bicarbonate',
-              g / 1000,
+              compensatedG / 1000,
               'kg',
               c,
-              Math.max(g * 0.01, Math.min(byAlk, byPh)) / 1000,
+              Math.max(compensatedG * 0.01, Math.min(byAlk, byPh)) / 1000,
             );
           },
     });
   } else if (alk > t.alkalinity.high) {
+    // A material excess takes the pH-controlled acid pump many turnovers
+    // to remove. Within 5 mg/l of the band, leave its trimming alone.
+    // Mains water can bring a larger excess into band directly.
+    const diluteExcess =
+      alk > t.alkalinity.high + 5 &&
+      dilutionFor(c, 'alkalinity', t.alkalinity.high - 2) !== null;
     add({
       id: 'alkalinity-high',
       reading: 'alkalinity',
       severity: 'warning',
       problem: `Alkalinity high (${whole(alk)} mg/l): the pH will keep creeping up.`,
-      direction: controllerDirection(c, 'acid', 'lower the alkalinity'),
-      additive: 'acid',
+      direction: diluteExcess
+        ? 'Close the pool and replace water with fresh mains water in stages; retest after each stage.'
+        : controllerDirection(c, 'acid', 'lower the alkalinity'),
+      additive: diluteExcess ? 'dilution' : 'acid',
       // The connected pump owns this chemical even when offline or saturated.
-      where: whereOf('acid', c),
+      where: whereOf(diluteExcess ? 'dilution' : 'acid', c),
       prescribe: () => {
+        if (diluteExcess)
+          return (
+            dilutionOf(
+              c,
+              dilutionFor(c, 'alkalinity', t.alkalinity.high - 2),
+            )?.() ?? null
+          );
         const g = gramsFor(
           c,
           'hcl',
@@ -760,7 +809,7 @@ function readingRules(c: Ctx): Draft[] {
   }
 
   // pH.
-  const ph = r.ph;
+  const ph = shownPh;
   if (ph > t.ph.high) {
     // CO₂ spares the alkalinity, so it is preferred where that is not high; acid otherwise.
     const useCo2 =
@@ -920,6 +969,7 @@ function readingRules(c: Ctx): Draft[] {
   } else if (lsi > t.lsi.high) {
     const caused =
       has('ph-high') || has('alkalinity-high') || has('calcium-hardness-high');
+    const diluteScaling = !caused && c.online('co2');
     add({
       id: 'balance-scaling',
       reading: 'lsi',
@@ -927,14 +977,18 @@ function readingRules(c: Ctx): Draft[] {
       problem: `Water scaling (LSI ${signed(lsi)}): cloudy water and crusty pipes.`,
       direction: caused
         ? 'Put the pH, alkalinity and hardness right first, then look again.'
-        : controllerDirection(c, 'acid', 'lower the pH a touch'),
-      additive: caused ? null : 'acid',
+        : diluteScaling
+          ? 'Dilute with fresh water; CO₂ holds pH as the minerals fall.'
+          : controllerDirection(c, 'acid', 'lower the pH a touch'),
+      additive: caused ? null : diluteScaling ? 'dilution' : 'acid',
       prescribe: caused
         ? null
-        : () => {
-            const g = gramsFor(c, 'hcl', lsiOf(c), lsiTarget(c), 1000 * V);
-            return doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l', c);
-          },
+        : diluteScaling
+          ? dilutionOf(c, dilutionToLsi(c, t.lsi.high - 0.05))
+          : () => {
+              const g = gramsFor(c, 'hcl', lsiOf(c), lsiTarget(c), 1000 * V);
+              return doseOf('acid', g / CHANNELS.acid.gramsPerUnit, 'l', c);
+            },
     });
   }
 

@@ -12,7 +12,11 @@ import {
   setRate as motorSetRate,
   stepMotorPump,
 } from './motor-dosing-pump';
-import type { LevelInput, MotorPumpState } from './motor-dosing-pump';
+import type {
+  LevelInput,
+  MotorPumpSpec,
+  MotorPumpState,
+} from './motor-dosing-pump';
 
 /**
  * The plant's metering pumps as one family (prompt 102; the owner,
@@ -329,12 +333,19 @@ export function keyedDiaphragmPump(
 
 // ---- The motor-driven diaphragm pump ---------------------------------------------
 
-/** The DMH 21-10 (`motor-dosing-pump.ts`), its demand as 4–20 mA. */
-export const motorPump: MeteringPump<MotorPumpState> = {
+/** A DMH motor-driven pump, its demand as 4–20 mA. */
+export const motorPumpFor = (
+  spec: MotorPumpSpec,
+  strokeLength = 0.6,
+): MeteringPump<MotorPumpState> => ({
   kind: 'motor',
-  model: DMH.model,
-  maxLh: DMH.maxLh,
-  initial: () => newMotorPumpState(),
+  model: spec.model,
+  maxLh: spec.maxLh,
+  initial: () =>
+    newMotorPumpState(
+      spec.gasGenerating === false ? 'standard' : 'degassing',
+      strokeLength,
+    ),
   step(s, i, delta) {
     const signalMa = 4 + 16 * Math.max(0, Math.min(1, i.demand));
     const r = stepMotorPump(
@@ -347,6 +358,7 @@ export const motorPump: MeteringPump<MotorPumpState> = {
         dischargeBar: i.dischargeBar,
       },
       delta,
+      spec,
     );
     return {
       state: r.state,
@@ -359,7 +371,7 @@ export const motorPump: MeteringPump<MotorPumpState> = {
           i.release &&
           i.powered &&
           signalMa > 4.1),
-      setLh: motorSetRate(r.state, signalMa),
+      setLh: motorSetRate(r.state, signalMa, spec),
       strokes: r.strokes,
       delivering: r.delivering,
       fault: r.state.error,
@@ -368,7 +380,10 @@ export const motorPump: MeteringPump<MotorPumpState> = {
   // A flow error clears at STOP/START, leaving it stopped; started again by the same key.
   acknowledge: (s) =>
     s.error === 'flow' ? { ...s, error: null, short: 0, on: true } : s,
-};
+});
+
+/** The Olympic hypochlorite pump, commissioned to 60% stroke. */
+export const motorPump = motorPumpFor(DMH);
 
 /** Each kind's pump by its kind (the ideal one at `maxLh`). */
 export function meteringPump(kind: MeteringKind, maxLh = 1) {

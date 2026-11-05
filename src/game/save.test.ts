@@ -95,7 +95,7 @@ describe('a save', () => {
     expect(loaded.ok && loaded.world.co2.dosers.plant_pool_02.override).toBe(
       'open',
     );
-    expect(WORLD_VERSION).toBe(79);
+    expect(WORLD_VERSION).toBe(80);
   });
 
   it('migrates v75 pool setpoints into AUTO temperature controllers with open isolators', () => {
@@ -256,6 +256,51 @@ describe('a save', () => {
       kind: 'motor',
       state: { strokeLength: 0.6, mode: 'analog', head: 'degassing' },
       deliveredL: 0,
+    });
+  });
+
+  it('replaces the Olympic DDS acid state with the commissioned DMH at 79 → 80', () => {
+    const old = newWorld();
+    const loaded = deserialiseWorld(
+      JSON.stringify({
+        format: 'pool-plant-save',
+        version: 79,
+        savedAt: 5,
+        world: {
+          ...old,
+          aqualis: {
+            ...old.aqualis,
+            pool_02: {
+              ...old.aqualis.pool_02,
+              controller: {
+                ...old.aqualis.pool_02.controller,
+                chlorineRecovery: undefined,
+                integral: 0.42,
+              },
+            },
+          },
+          dosingPumps: {
+            ...old.dosingPumps,
+            pool_02: {
+              ...old.dosingPumps.pool_02,
+              acid: { ...old.dosingPumps.pool_01.acid, deliveredL: 42 },
+            },
+          },
+        },
+      }),
+    );
+    expect(loaded.ok).toBe(true);
+    if (!loaded.ok) return;
+    expect(loaded.world.dosingPumps.pool_02.acid).toMatchObject({
+      kind: 'motor',
+      state: { strokeLength: 1, mode: 'analog', head: 'standard' },
+      deliveredL: 0,
+    });
+    expect(loaded.world.pools).toEqual(old.pools);
+    expect(loaded.world.distribution).toEqual(old.distribution);
+    expect(loaded.world.aqualis.pool_02.controller).toMatchObject({
+      chlorineRecovery: false,
+      integral: 0.42,
     });
   });
 

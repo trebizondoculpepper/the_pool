@@ -3,7 +3,6 @@ import {
   acidFor,
   dose,
   readings as chemistryReadings,
-  thiosulphateStoichiometry,
   waterFrom,
 } from '../water/pool-chemistry';
 import type { PoolChemistry, WaterSpec } from '../water/pool-chemistry';
@@ -171,13 +170,15 @@ describe('advise: each rule', () => {
     expect(x.reading).toBe('alkalinity');
   });
 
-  it('very high chlorine wants thiosulphate, and is an alarm', () => {
+  it('very high chlorine closes the open pool and waits for natural decline', () => {
     const { r, water } = scene({ freeChlorine: 4.5 });
     const x = find(
       advise(r, SETTINGS, ALL_ONLINE, water),
       'free-chlorine-high',
     );
-    expect(x.additive).toBe('thiosulphate');
+    expect(x.additive).toBeNull();
+    expect(x.dose).toBeNull();
+    expect(x.direction).toMatch(/^Close the pool now/);
     expect(x.severity).toBe('alarm');
     expect(x.mood).toBe('alarmed');
   });
@@ -222,7 +223,7 @@ describe('advise: each rule', () => {
   });
 
   it('reports a saturated acid pump as a capacity limit without prescribing hand acid', () => {
-    const { r, water } = scene({ ph: 7.55, alkalinity: 240 });
+    const { r, water } = scene({ ph: 7.55, alkalinity: 203 });
     const channels = [
       view('hypochlorite', { kind: 'online' }),
       { ...view('acid', { kind: 'online' }), demand: 1 },
@@ -392,7 +393,7 @@ describe('Show dose', () => {
   });
 
   it('acid for high alkalinity, in litres at 104.8 g/l', () => {
-    const { d, water } = doseFor({ alkalinity: 240 }, 'alkalinity-high');
+    const { d, water } = doseFor({ alkalinity: 203 }, 'alkalinity-high');
     expect(d.unit).toBe('l');
     near(
       at(water, { hcl: d.amount * CHANNELS.acid.gramsPerUnit }).alkalinity,
@@ -447,12 +448,14 @@ describe('Show dose', () => {
     expect(Math.abs(after)).toBeLessThan(0.02);
   });
 
-  it('thiosulphate for very high chlorine, in kilograms, to the top of its band', () => {
-    const { d } = doseFor({ freeChlorine: 4.5 }, 'free-chlorine-high');
-    expect(d.unit).toBe('kg');
-    const removed =
-      (d.amount * 1000 * thiosulphateStoichiometry().chlorinePerMg) / V;
-    near(removed, 4.5 - 1.5);
+  it('keeps a closed pool closed until its high chlorine falls, with no chemical dose', () => {
+    const { r, water } = scene({ freeChlorine: 4.5 });
+    const x = find(
+      advise(r, SETTINGS, ALL_ONLINE, water, { open: false }),
+      'free-chlorine-high',
+    );
+    expect(x.direction).toMatch(/^Keep the pool closed/);
+    expect(x.dose).toBeNull();
   });
 
   it('superchlorination raises free chlorine to ten times the combined', () => {
@@ -465,6 +468,7 @@ describe('Show dose', () => {
 
   it('dilution, in cubic metres of fresh water', () => {
     for (const [spec, id, key, target] of [
+      [{ alkalinity: 250 }, 'alkalinity-high', 'alkalinity', 198],
       [{ tds: 1800 }, 'tds-high', 'tds', 1000],
       [{ sulphate: 420 }, 'sulphate-high', 'sulphate', 100],
       [{ hardness: 1100 }, 'calcium-hardness-high', 'hardness', 250],

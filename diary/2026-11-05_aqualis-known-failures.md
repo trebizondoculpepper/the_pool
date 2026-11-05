@@ -1,0 +1,9 @@
+# Mission 207: Aqualis known failures
+
+The eight slow suites began at 373 passes and 71 expected failures. I saved each initial failure's numbers in `doc/plans/207-aqualis-baseline.json` before changing the controller, pump or advice. The mission brief's count of 74 came from an older checkout.
+
+The Olympic acid pump was indeed too small for recovery. A Grundfos DMH 102-10 now drives the same metering-pump model, with a local dial, keys, bleed return and fault annunciation; WORLD_VERSION 80 replaces the saved old pump state but retains the water and stock. The installed-valves gate caught an omitted return route; I connected it to a real nozzle on the 500 l acid day bottle. The registration gate then caught the head's unregistered PL2-DP2-P1 tag; it now has its own permanent asset-1500 identity. The installed 60% stroke of the Olympic hypochlorite DMH was sufficient after control tuning.
+
+The largest trap was treating an action's outcome as though the rest of the pool stopped evolving. Low-chlorine feedback ignored chlorine already in the circulation and overshot; the controller now credits delivered chlorine during severe recovery. A bicarbonate hand feed fought the pH integral; its learned term now pauses during feeding. A shock's long high-chlorine standby can gas-lock the Lounge's hypochlorite head; the 24-hour comparison now follows the controller's repair advice when that real fault occurs rather than assuming an unattended operator.
+
+The advice changed where chemistry demanded it: moderate high chlorine can fall in a closed pool, severe post-shock chlorine still needs thiosulphate, and fresh water removes high alkalinity or scaling minerals when acid or CO₂ control cannot settle the water quickly. pH band comparisons now respect the controller's two-decimal display. The old `WHY` catalogue was removed only after each targeted check passed. The final full-suite result and commit are in the mission plan and TODO.

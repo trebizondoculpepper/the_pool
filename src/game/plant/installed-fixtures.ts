@@ -52,6 +52,15 @@ export const INSTALLED_FIXTURES: Readonly<Record<string, InstalledFixture>> = {
     model: 'DMH 21-10',
     purpose: 'Meters sodium hypochlorite into the Olympic pool return line.',
   },
+  'PL2-DP2-P1': {
+    assetId: 'asset-1500',
+    room: 'plant_pool_02',
+    name: 'Olympic acid motor dosing pump',
+    kind: 'acid-pump',
+    brand: 'grundflow',
+    model: 'DMH 102-10',
+    purpose: 'Meters hydrochloric acid into the Olympic pool return line.',
+  },
   ...Object.fromEntries(
     CORRIDOR_WATER_SCHEMATIC.nodes
       .filter((node) => node.kind === 'branch-flowmeter')

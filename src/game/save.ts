@@ -510,6 +510,39 @@ export const MIGRATIONS: Record<number, (world: unknown) => unknown> = {
     }
     return { ...world, poolTemperatureControls: controls };
   },
+  // 79 → 80: the Olympic's acid DDS 7.5-16 is replaced by a DMH 102-10.
+  // Its stepper state cannot become a motor pump's; the new unit starts
+  // primed, with its 100% commissioned stroke. The Trio also gains a
+  // chlorine-recovery latch. Water, stock and controller integrals are kept.
+  79: (world) => {
+    if (!isRecord(world) || !isRecord(world.dosingPumps)) return world;
+    const pumps = world.dosingPumps;
+    if (!isRecord(pumps.pool_02)) return world;
+    const aqualis = isRecord(world.aqualis)
+      ? Object.fromEntries(
+          Object.entries(world.aqualis).map(([id, trio]) => [
+            id,
+            isRecord(trio) && isRecord(trio.controller)
+              ? {
+                  ...trio,
+                  controller: { ...trio.controller, chlorineRecovery: false },
+                }
+              : trio,
+          ]),
+        )
+      : world.aqualis;
+    return {
+      ...world,
+      aqualis,
+      dosingPumps: {
+        ...pumps,
+        pool_02: {
+          ...pumps.pool_02,
+          acid: newWorld().dosingPumps.pool_02.acid,
+        },
+      },
+    };
+  },
   // 60 → 61: the Dr Aqualis Trios (mission 114), the Lounge's and the
   // Olympic's, running in AUTO, each cell settled on its pool's tank water
   // and its chlorine integral carrying on the old controller's dose, so

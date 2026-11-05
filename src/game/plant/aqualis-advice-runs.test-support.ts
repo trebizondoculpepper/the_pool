@@ -34,8 +34,8 @@ const alarmHigh = (k: 'freeChlorine' | 'ph', t: AqualisSettings['targets']) =>
     : t.freeChlorine.high * ALARM_LIMITS.chlorineHighTimes;
 
 /** A reading's side of its band: below, in, or above. */
-const sideOf = (v: number, t: { low: number; high: number }) =>
-  v < t.low ? -1 : v > t.high ? 1 : 0;
+const sideOf = (v: number, t: { low: number; high: number }, resolution = 0) =>
+  v < t.low - resolution ? -1 : v > t.high + resolution ? 1 : 0;
 
 /** A closed loop's record: each round's top instruction and score, and what went wrong. */
 export interface LoopResult {
@@ -76,7 +76,7 @@ export function closedLoop(
   const failures: string[] = [];
   const start = w.aqualis[pool].readings;
   const startSide = Object.fromEntries(
-    SCORED.map((k) => [k, sideOf(start[k], t[k])]),
+    SCORED.map((k) => [k, sideOf(start[k], t[k], k === 'ph' ? 0.005 : 0)]),
   ) as Record<Scored, number>;
   const directions = new Map<string, number>();
   const out: LoopResult['rounds'] = [];
@@ -136,7 +136,10 @@ export function closedLoop(
     // Read again: not on the other side of its band.
     const now = w.aqualis[pool].readings;
     for (const k of SCORED)
-      if (startSide[k] !== 0 && sideOf(now[k], t[k]) === -startSide[k])
+      if (
+        startSide[k] !== 0 &&
+        sideOf(now[k], t[k], k === 'ph' ? 0.005 : 0) === -startSide[k]
+      )
         failures.push(`round ${round}: ${k} overshoots`);
     const sc = score(now, t);
     out.push({ advice: top.id, action: c.done.action, score: sc });
@@ -228,6 +231,19 @@ export function twin(
   for (let time = 600; time <= end; time += 600) {
     followed = advance(followed, 600, 10);
     not = advance(not, 600, 10);
+    // A shock is a supervised programme. A stopped hypochlorite head may
+    // gas-lock during its long standby; follow the Trio's repair advice as
+    // part of the programme, instead of leaving an acknowledged fault for
+    // the rest of this 24-hour comparison.
+    if (shock) {
+      const repair = advisor(followed, pool).find(
+        (a) => a.id === 'hypochlorite-offline',
+      );
+      if (repair) {
+        const step = carryOut(followed, pool, repair);
+        if (step && !/^nothing/.test(step.done.action)) followed = step.world;
+      }
+    }
     const rf = poolReadings(followed, pool);
     const rn = poolReadings(not, pool);
     // A reading in band leaving it because of the instruction: out, with
@@ -265,7 +281,16 @@ export function twin(
         ? { followed: rf.combinedChlorine, not: rn.combinedChlorine }
         : { followed: score(rf, t), not: score(rn, t) };
       const k = top ? AIMS[top.id] : undefined;
-      if (k && top?.dose && top.where !== 'automatic') {
+      // Dilution changes alkalinity directly, but the live pH controller
+      // also changes its acid dose as the water is replaced. Its physical
+      // amount is checked against `dilute` in the advisor's unit tests;
+      // this comparison judges the net outcome through follow and loop.
+      if (
+        k &&
+        top?.dose &&
+        top.where !== 'automatic' &&
+        !(top.id === 'alkalinity-high' && top.additive === 'dilution')
+      ) {
         const goal =
           top.id === 'ph-low'
             ? (t.ph.low + t.ph.set) / 2
@@ -288,7 +313,27 @@ export function twin(
         not: score(poolReadings(not, pool), t),
       };
   const acted = !!c && !/^nothing/.test(c.done.action);
-  if (acted && !(mixed.followed < mixed.not))
+  // Closing a pool is a safety action: it need not change its chemistry.
+  const protectiveClosure = c?.done.action.startsWith('close pool;') ?? false;
+  // Restoring a failed pump is also worthwhile when another online channel
+  // already holds the same reading; require the repaired channel online and
+  // no material deterioration of the water score.
+  const repaired =
+    top?.id === 'acid-offline'
+      ? 'acid'
+      : top?.id === 'hypochlorite-offline'
+        ? 'hypochlorite'
+        : null;
+  const restoredRedundancy =
+    repaired !== null &&
+    followed.aqualis[pool].channels[repaired].status.kind === 'online' &&
+    mixed.followed <= mixed.not + 0.1;
+  if (
+    acted &&
+    !protectiveClosure &&
+    !restoredRedundancy &&
+    !(mixed.followed < mixed.not)
+  )
     failures.push(
       `after mixing not nearer neutral (${mixed.followed.toFixed(2)} against ${mixed.not.toFixed(2)})`,
     );

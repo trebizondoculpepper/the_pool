@@ -325,6 +325,7 @@ function dayBottle(
     product: PRODUCT[c],
     litres: capacity,
     acid: c === 'acid',
+    returnPort: c === 'acid' && DAY_TANKS[c][index].site === 'pool_02',
   });
   const trend = levelTrend();
   const site = DAY_TANKS[c][index].site;

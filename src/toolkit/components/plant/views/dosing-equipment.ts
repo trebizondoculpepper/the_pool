@@ -405,6 +405,89 @@ export function createAcidBoard(kit: PanelKit): DosingBoard {
   };
 }
 
+/** The Olympic's DMH 102-10 acid pump, with its local keys, dial, bleed and return. */
+export function createOlympicAcidBoard(kit: PanelKit, bind: MotorPumpBinding) {
+  const t = plantTools(kit);
+  const group = new Group();
+  t.box(group, t.paint('#ecece6', 0.7), 0.7, 0.8, 0.02, 0, 0, 0.01);
+  const tray = t.paint('#2a2d2f', 0.6);
+  t.box(group, tray, 0.58, 0.02, 0.29, 0, -0.2, 0.15);
+  t.box(group, tray, 0.58, 0.05, 0.01, 0, -0.175, 0.29);
+  const pump = createMotorDosingPump(kit, 'PL2-DP2-P1', bind);
+  const at: Point = [0, -0.2, 0.15];
+  put(group, pump.object, at);
+  const point = (p: readonly [number, number, number]): Point => [
+    at[0] + p[0],
+    at[1] + p[1],
+    at[2] + p[2],
+  ];
+  const suction = point(pump.suctionAt);
+  tube(
+    t,
+    group,
+    [
+      suction,
+      [suction[0], suction[1], BOARD_SUCTION_Z],
+      [suction[0], ACID_SUCTION_Y, BOARD_SUCTION_Z],
+      [ACID_PORTS.supply[0], ACID_SUCTION_Y, BOARD_SUCTION_Z],
+      [ACID_PORTS.supply[0], ACID_SUCTION_Y, ACID_PORTS.supply[2]],
+      [...ACID_PORTS.supply],
+    ],
+    '#d9c9c9',
+  );
+  const discharge = point(pump.dischargeAt);
+  tube(
+    t,
+    group,
+    [
+      discharge,
+      [discharge[0], 0.25, discharge[2]],
+      [discharge[0], 0.25, 0.06],
+      [ACID_PORTS.dose[0], 0.25, 0.06],
+      [ACID_PORTS.dose[0], ACID_PORTS.dose[1], 0.06],
+      [...ACID_PORTS.dose],
+    ],
+    '#d9c9c9',
+  );
+  const returned = point(pump.returnAt);
+  tube(
+    t,
+    group,
+    [
+      returned,
+      [returned[0] - 0.06, returned[1], returned[2]],
+      [-0.29, returned[1], 0.06],
+      [-0.29, 0.38, 0.06],
+    ],
+    '#d9c9c9',
+  );
+  put(
+    group,
+    createTag(t, 'ACID · pH CORRECTION', 0.4, {
+      plate: CHEMICAL_COLOUR.acid,
+      ink: '#ffffff',
+    }),
+    [0, 0.33, 0.021],
+  );
+  put(group, createTag(t, 'PL2-DP2-P1 · DMH 102-10', 0.32), [0, -0.3, 0.021]);
+  let phase = bind.state().phase;
+  let delivered = bind.state().deliveredL;
+  return {
+    object: group,
+    parts: pump.parts,
+    update(delta: number) {
+      const s = bind.state();
+      pump.show(delta, {
+        began: s.phase < phase ? 1 : 0,
+        delivering: s.deliveredL > delivered ? 1 : 0,
+      });
+      phase = s.phase;
+      delivered = s.deliveredL;
+    },
+    status: pump.status,
+  };
+}
+
 /**
  * A dosing board on a floor stand, for a gallery whose exhibits stand on
  * the floor (dev44): two galvanised posts on base plates, the board hung

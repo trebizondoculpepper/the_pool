@@ -736,24 +736,22 @@ export function plumbOlympic(
         [supply.at[0], CHEMICAL_IN, supply.at[2]],
         supply.at,
       ]);
-      if (k === 'hypo') {
-        const relief = port('hypo', 'return');
+      {
+        const relief = port(k, 'return');
         const tankReturn = placedPort(day, 'return');
-        rule(
-          'Hypochlorite return line',
-          'Hypochlorite return line',
-          'chemical',
-          0.012,
-          [
-            relief.at,
-            [relief.at[0], CHEMICAL_IN + 1.3, relief.at[2]],
-            [relief.at[0], CHEMICAL_IN + 1.3, relief.at[2] - 0.44],
-            [-3.5, CHEMICAL_IN + 1.3, relief.at[2] - 0.44],
-            [tankReturn.at[0], CHEMICAL_IN + 1.3, relief.at[2] - 0.44],
-            [tankReturn.at[0], CHEMICAL_IN + 1.3, tankReturn.at[2]],
-            tankReturn.at,
-          ],
-        );
+        const returnY = k === 'hypo' ? CHEMICAL_IN + 1.3 : top;
+        // The acid's high run 1.2 m out from the wall: clear of the reserved region
+        // by the wall and of the acid dosing control's supports (mission 207).
+        const jogZ = relief.at[2] - (k === 'hypo' ? 0.44 : 1.2);
+        rule(`${Name} return line`, `${Name} return line`, 'chemical', 0.012, [
+          relief.at,
+          [relief.at[0], returnY, relief.at[2]],
+          [relief.at[0], returnY, jogZ],
+          ...(k === 'hypo' ? ([[-3.5, returnY, jogZ]] as Vec3[]) : []),
+          [tankReturn.at[0], returnY, jogZ],
+          [tankReturn.at[0], returnY, tankReturn.at[2]],
+          tankReturn.at,
+        ]);
       }
     }
   }

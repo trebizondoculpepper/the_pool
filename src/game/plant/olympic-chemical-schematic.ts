@@ -15,8 +15,8 @@ import type { SchematicFitting, SchematicNode } from './schematics';
  * (`olympic-plumbing.ts`), whose expanded network (with `olympic-annex.ts`)
  * takes these nodes, links and fittings. Each chemical's branch from the
  * wet hall's selector into its day tank (the hypochlorite's a framed
- * 1,000 l tank, its actuated inlet the distribution's; the acid's a dose
- * bottle); each day tank's supply line to its dosing pump; each pump's
+ * 1,000 l tank, its actuated inlet the distribution's; the acid's a 500 l
+ * day tank); each day tank's supply line to its dosing pump; each pump's
  * dose line to its quill on the UV unit's outlet spool, with its isolating
  * and non-return valves at the pump. Every valve given, the plumber
  * adding none; their tags derived as every room's (`model-valves.ts`).
@@ -62,6 +62,12 @@ export const OLYMPIC_CHEMICAL_LINKS: readonly PlumbEdge[] = [
     ['hypochlorite-day', 'return'],
     'chemical',
   ),
+  link(
+    'Acid return line',
+    ['acid', 'return'],
+    ['acid-day', 'return'],
+    'chemical',
+  ),
 ];
 
 export const OLYMPIC_CHEMICAL_FITTINGS: readonly SchematicFitting[] = [
@@ -91,6 +97,13 @@ export const OLYMPIC_CHEMICAL_FITTINGS: readonly SchematicFitting[] = [
   chemicalValve(
     `${OLYMPIC_CODE}.hypo.return.bleed`,
     'Hypochlorite return line',
+    'source',
+    'integral relief and bleed',
+    { normally: 'closed' },
+  ),
+  chemicalValve(
+    `${OLYMPIC_CODE}.acid.return.bleed`,
+    'Acid return line',
     'source',
     'integral relief and bleed',
     { normally: 'closed' },

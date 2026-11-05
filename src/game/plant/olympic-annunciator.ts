@@ -63,9 +63,9 @@ export const OLYMPIC_ALARMS = [
   // flow controller's valve OVERRIDE (2026-11-01).
   ...CO2_WINDOWS,
   CO2_OVERRIDE_WINDOW,
-  // The DMH's own error relay. Five unengraved ways complete the new row.
+  // Both DMHs' error relays. Four unengraved ways complete the row.
   'hypo-pump-fault',
-  'spare-1',
+  'acid-pump-fault',
   'spare-2',
   'spare-3',
   'spare-4',
@@ -101,7 +101,7 @@ export const OLYMPIC_ALARM_TEXT: Record<OlympicAlarmId, string> = {
   ...CO2_WINDOW_TEXT,
   [CO2_OVERRIDE_WINDOW]: CO2_OVERRIDE_TEXT,
   'hypo-pump-fault': 'HYPO PUMP\nFAULT',
-  'spare-1': '',
+  'acid-pump-fault': 'ACID PUMP\nFAULT',
   'spare-2': '',
   'spare-3': '',
   'spare-4': '',
@@ -156,6 +156,7 @@ export function olympicAlarms(world: World): OlympicAlarmId[] {
     ),
     [CO2_OVERRIDE_WINDOW]: co2Overridden(world.co2, 'plant_pool_02'),
     'hypo-pump-fault': world.dosingPumps.pool_02.hypochlorite.fault !== null,
+    'acid-pump-fault': world.dosingPumps.pool_02.acid.fault !== null,
   };
   return OLYMPIC_ALARMS.filter((id) => {
     const from = FROM_MAIN[id];

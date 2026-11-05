@@ -52,6 +52,8 @@ export const CHEMISTRY_TICK = 10;
 export const DOSING_PUMPS: Record<PoolId, Record<Chemical, number>> = {
   // The lounge's and the Olympic's hypochlorite boards: DMX 1602 solenoid
   // pumps, 2.1 l/h (`diaphragm-pump.ts`); their acid, a DDS 7.5-16, 7.5 l/h.
+  // This is the legacy chemistry-bench fallback when no live pump delivery
+  // is supplied; the world uses `dosing-pumps.ts` (DMH 21-10 and DMH 102-10).
   // The Olympic's is undersized (the bench: about 12.5 l/h): the owner,
   // 2026-10-28, keeps it, to see how it goes wrong (mission 101).
   pool_01: { hypochlorite: 2.1, acid: 7.5 },

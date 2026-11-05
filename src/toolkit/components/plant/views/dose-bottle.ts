@@ -31,7 +31,14 @@ export function createDoseBottle(
     product,
     litres,
     acid,
-  }: { tag: string; product: string; litres: number; acid: boolean },
+    returnPort = false,
+  }: {
+    tag: string;
+    product: string;
+    litres: number;
+    acid: boolean;
+    returnPort?: boolean;
+  },
 ) {
   const group = new Group();
   const t = plantTools(kit);
@@ -142,6 +149,19 @@ export function createDoseBottle(
     0.012,
     10,
   );
+  if (returnPort) {
+    const returnX = -fillX;
+    const returnZ = -fillZ;
+    t.cyl(group, hdpe, 0.025, 0.03, returnX, top + 0.015, returnZ, 'y', 16);
+    t.rod(
+      group,
+      pvc,
+      [returnX, top + 0.03, returnZ],
+      [returnX, top + 0.16, returnZ],
+      0.006,
+      10,
+    );
+  }
 
   // The vented cap: a small mushroom, through a carbon cartridge on acid.
   const ventX = -Math.max(hw / 2 + 0.035, r * 0.55);

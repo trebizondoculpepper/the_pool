@@ -62,9 +62,7 @@ describe('the world', () => {
     ).toBe(true);
   });
 
-  // Skipped at the owner's word (2026-10-22): its water quality runs
-  // 0.0162 against a 0.015 limit; work in progress.
-  it.skip('carries pool level and water quality forward when treatment loses power', () => {
+  it('carries pool level and water quality forward when treatment loses power', () => {
     const initial = newWorld();
     const switched = applyAction(initial, {
       type: 'plant/feeder',

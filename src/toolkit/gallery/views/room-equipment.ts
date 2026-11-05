@@ -246,10 +246,15 @@ import { loungeFlowsOf } from '../../../game/plant/lounge-valves';
 import {
   createAcidBoard,
   createHypochloriteBoard,
+  createOlympicAcidBoard,
   createOlympicHypochloriteBoard,
 } from '../../components/plant/views/dosing-equipment';
-import { newMotorPumpState } from '../../components/plant/logic/motor-dosing-pump';
+import {
+  DMH_ACID,
+  newMotorPumpState,
+} from '../../components/plant/logic/motor-dosing-pump';
 import type { MotorPumpState } from '../../components/plant/logic/motor-dosing-pump';
+import type { MotorPumpBinding } from '../../components/plant/views/motor-dosing-pump';
 import { trioSignals } from '../../../game/plant/aqualis-world';
 import { dayTankStock } from '../../../game/plant/chemical-distribution';
 import { createRoomTrio } from './aqualis-room-cabinet';
@@ -664,13 +669,18 @@ function modelFor(
       if (!p) return dosing(chemical)();
       return { running: p.running || !!p.fault, rate: p.setLh, fault: p.fault };
     };
-    if (kind === 'hypo-pumps' && pool === 'pool_02') {
-      let trial = newMotorPumpState();
+    if ((kind === 'hypo-pumps' || kind === 'acid-pump') && pool === 'pool_02') {
+      const chemical = kind === 'acid-pump' ? 'acid' : 'hypochlorite';
+      let trial =
+        chemical === 'acid'
+          ? newMotorPumpState('standard', 1)
+          : newMotorPumpState();
       const state = () =>
         typeof window === 'undefined'
           ? trial
-          : (world().dosingPumps.pool_02.hypochlorite.state as MotorPumpState);
-      return createOlympicHypochloriteBoard(kit, {
+          : (world().dosingPumps.pool_02[chemical].state as MotorPumpState);
+      const binding: MotorPumpBinding = {
+        ...(chemical === 'acid' ? { spec: DMH_ACID } : {}),
         state,
         change: (f) => {
           const before = state();
@@ -712,7 +722,7 @@ function modelFor(
                       : { act: 'key' as const, key: 'startStop' as const };
           roomWorld().dispatch({
             type: 'dosing-pump',
-            action: { ...action, pool: 'pool_02', chemical: 'hypochlorite' },
+            action: { ...action, pool: 'pool_02', chemical },
           });
         },
         inputs: () => {
@@ -725,18 +735,21 @@ function modelFor(
               dischargeBar: 2,
             };
           const w = world();
-          const signal = trioSignals(w.aqualis.pool_02).hypochlorite;
+          const signal = trioSignals(w.aqualis.pool_02)[chemical];
           return {
             powered: serviceAvailable(w.plant, 'plant_pool_02', 'chemical'),
             release: signal.release,
             signalMa: 4 + 16 * signal.demand,
-            level: dayTankStock(w.distribution, 'pool_02').hypochlorite
+            level: dayTankStock(w.distribution, 'pool_02')[chemical]
               ? 'ok'
               : 'empty',
             dischargeBar: 2,
           };
         },
-      });
+      };
+      return chemical === 'acid'
+        ? createOlympicAcidBoard(kit, binding)
+        : createOlympicHypochloriteBoard(kit, binding);
     }
     if (kind === 'hypo-pumps')
       return board(createHypochloriteBoard(kit), pumpShown('hypochlorite'));

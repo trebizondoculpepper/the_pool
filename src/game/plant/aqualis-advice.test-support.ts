@@ -420,7 +420,21 @@ export function carryOut(
     } else return null;
     return done(`pump ${ch}: ${status.reason} put right`);
   }
-  if (!a.additive) return done('nothing: it asks only to wait');
+  if (!a.additive) {
+    if (
+      a.id === 'free-chlorine-high' &&
+      w.aqualis[pool].poolOpen &&
+      a.direction.startsWith('Close the pool')
+    ) {
+      w = applyAction(w, {
+        type: 'aqualis',
+        pool,
+        action: { act: 'pool', open: false },
+      });
+      return done('close pool; wait for chlorine to fall');
+    }
+    return done('nothing: it asks only to wait');
+  }
   if (a.where === 'automatic')
     return done('nothing: the pumps are left to work');
   const d = a.dose;

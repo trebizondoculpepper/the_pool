@@ -440,6 +440,9 @@ export function machinePorts(item: Item): MachinePort[] {
     return [
       port('dose', [...ACID_PORTS.dose], [0, 0, 1], 0.012, 'chemical'),
       port('supply', [...ACID_PORTS.supply], [0, 1, 0], 0.012, 'chemical'),
+      ...(item.label === 'Acid dosing pump'
+        ? [port('return', [-0.29, 0.38, 0.06], [0, 1, 0], 0.012, 'chemical')]
+        : []),
     ];
   if (kind === 'chem-day') {
     // A plant room's day tank (plan 085). A dose bottle (`createDoseBottle`):
@@ -513,6 +516,20 @@ export function machinePorts(item: Item): MachinePort[] {
         ),
         drawn: true,
       },
+      ...(item.key === 'chem-day:acid:pool_02'
+        ? [
+            {
+              ...port(
+                'return',
+                [-fillX, top + 0.16, -fillZ],
+                [0, 1, 0],
+                0.012,
+                'chemical',
+              ),
+              drawn: true,
+            },
+          ]
+        : []),
     ];
   }
   if (kind === 'spa-pack' || kind === 'jacuzzi-pack')

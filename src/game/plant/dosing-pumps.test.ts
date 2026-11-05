@@ -33,7 +33,7 @@ function run(
 }
 
 describe('each pool’s dosing pumps in the world', () => {
-  it('has one commissioned DMH in the Olympic, with the lounge DMX and the acid DDS pumps', () => {
+  it('has the Olympic hypochlorite and acid DMHs at their commissioned strokes', () => {
     const p = newDosingPumps();
     expect(p.pool_01.hypochlorite.kind).toBe('solenoid');
     expect(p.pool_02.hypochlorite.kind).toBe('motor');
@@ -42,9 +42,58 @@ describe('each pool’s dosing pumps in the world', () => {
       mode: 'analog',
       head: 'degassing',
     });
-    expect(p.pool_02.acid.kind).toBe('stepper');
+    expect(p.pool_02.acid).toMatchObject({
+      kind: 'motor',
+      state: { strokeLength: 1, mode: 'analog', head: 'standard' },
+    });
     expect(p.pool_03.hypochlorite.kind).toBe('ideal');
     expect(pumpMost('pool_02', 'hypochlorite')).toBeCloseTo(21);
+    expect(pumpMost('pool_02', 'acid')).toBe(102);
+  });
+
+  it('delivers the Olympic acid pump’s rated flow and accepts its local stroke dial', () => {
+    const r = run(newDosingPumps(), all(0, 1), 60);
+    expect(r.litres.pool_02.acid).toBeCloseTo(102 / 60, 1);
+    expect(r.pumps.pool_02.acid.fault).toBe(null);
+    const dialled = actOnDosingPumps(r.pumps, {
+      act: 'stroke',
+      pool: 'pool_02',
+      chemical: 'acid',
+      direction: -1,
+    });
+    expect(dialled.pool_02.acid.state).toMatchObject({ strokeLength: 0.95 });
+  });
+
+  it('reports an Olympic acid pump flow fault until it is bled and acknowledged', () => {
+    let pumps = actOnDosingPumps(newDosingPumps(), {
+      act: 'gas',
+      pool: 'pool_02',
+      chemical: 'acid',
+      ml: 100,
+    });
+    let r = run(pumps, all(0, 1), 60);
+    expect(r.pumps.pool_02.acid.fault).toBe('flow');
+    pumps = actOnDosingPumps(r.pumps, {
+      act: 'bleed',
+      pool: 'pool_02',
+      chemical: 'acid',
+      open: true,
+    });
+    pumps = actOnDosingPumps(pumps, {
+      act: 'acknowledge',
+      pool: 'pool_02',
+      chemical: 'acid',
+    });
+    pumps = run(pumps, all(0, 1), 30).pumps;
+    pumps = actOnDosingPumps(pumps, {
+      act: 'bleed',
+      pool: 'pool_02',
+      chemical: 'acid',
+      open: false,
+    });
+    r = run(pumps, all(0, 1), 60);
+    expect(r.pumps.pool_02.acid.fault).toBe(null);
+    expect(r.litres.pool_02.acid).toBeGreaterThan(1);
   });
 
   it('gives the Olympic the DMH’s commissioned 12.6 l/h when fully demanded', () => {

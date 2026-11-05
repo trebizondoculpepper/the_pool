@@ -301,6 +301,7 @@ function tick(t: TrioState, plant: TrioPlant, dt: number): TrioState {
       hand: t.hand,
       pause: firstAidHolds(firstAid),
       noHypochlorite: firstAidNoHypochlorite(firstAid),
+      firstAid: firstAid !== null,
       feeding: plant.feeding,
     },
     dt,

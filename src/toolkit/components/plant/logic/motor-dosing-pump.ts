@@ -62,6 +62,35 @@ export const DMH = {
   deadMl: 6,
 } as const;
 
+/** Olympic acid recovery pump: Grundfos DMH 102-10, 102 l/h at 10 bar and 54 strokes/min at 50 Hz. */
+export const DMH_ACID = {
+  model: 'DMH 102-10',
+  maxLh: 102,
+  maxSpm: 54,
+  maxBar: 10,
+  reliefBar: 11,
+  deadMl: 48,
+  gasGenerating: false,
+} as const;
+export type MotorPumpSpec = {
+  model: string;
+  maxLh: number;
+  maxSpm: number;
+  maxBar: number;
+  reliefBar: number;
+  deadMl: number;
+  gasGenerating?: boolean;
+};
+
+const headSpec = (spec: MotorPumpSpec): HeadSpec => ({
+  strokeMl: (spec.maxLh * 1000) / 60 / spec.maxSpm,
+  deadMl: spec.deadMl,
+  reliefBar: spec.reliefBar,
+  ...(spec.gasGenerating === false
+    ? { idleGasPerMlHour: 0, drawnGasPerMl: 0 }
+    : {}),
+});
+
 /** One full stroke's volume, ml (3.9 ml: 21 l/h at 90 a minute). */
 export const FULL_STROKE_ML = (DMH.maxLh * 1000) / 60 / DMH.maxSpm;
 
@@ -108,12 +137,13 @@ export interface MotorPumpState {
 /** As commissioned for the Olympic: EXT, its dial at 60 % (12.6 l/h most). */
 export const newMotorPumpState = (
   head: HeadKind = 'degassing',
+  strokeLength = 0.6,
 ): MotorPumpState => ({
   head,
   on: true,
   mode: 'analog',
   manual: 0.5,
-  strokeLength: 0.6,
+  strokeLength,
   bleedOpen: false,
   shows: 'lh',
   gasMl: 0,
@@ -220,8 +250,11 @@ export function strokes(s: MotorPumpState, i: MotorPumpInputs) {
 }
 
 /** The rate it is set to, l/h: what its display shows. */
-export const setRate = (s: MotorPumpState, signalMa: number) =>
-  rateShare(s, signalMa) * s.strokeLength * DMH.maxLh;
+export const setRate = (
+  s: MotorPumpState,
+  signalMa: number,
+  spec: MotorPumpSpec = DMH,
+) => rateShare(s, signalMa) * s.strokeLength * spec.maxLh;
 
 /** One stroke of the DMH's head (`diaphragm-head.ts`). */
 export const oneStroke = (
@@ -230,7 +263,8 @@ export const oneStroke = (
   bar: number,
   head: HeadKind,
   bleedOpen: boolean,
-) => headStroke(DMH_HEAD, volume, gas, bar, head, bleedOpen);
+  spec: MotorPumpSpec = DMH,
+) => headStroke(headSpec(spec), volume, gas, bar, head, bleedOpen);
 
 /** What happened over a step: its strokes, and what they did. */
 export interface MotorPumpStep {
@@ -248,25 +282,27 @@ export function stepMotorPump(
   s0: MotorPumpState,
   i: MotorPumpInputs,
   delta: number,
+  spec: MotorPumpSpec = DMH,
 ): MotorPumpStep {
   let s = { ...s0 };
+  const head = headSpec(spec);
   // Faults that stop it before it strokes.
   if (s.ruptured) s.error = 'diaphragm';
   if (i.level === 'empty' && !s.error) s.error = 'level';
   if (s.error === 'level' && i.level !== 'empty') s.error = null;
   // The head's hypochlorite gives off gas as it stands, running or not.
-  s = { ...s, ...standHead(DMH_HEAD, s, delta) };
+  s = { ...s, ...standHead(head, s, delta) };
   if (!strokes(s, i))
     return { state: s, strokes: 0, delivering: 0, deliveredL: 0, returnedL: 0 };
-  const spm = rateShare(s, i.signalMa) * DMH.maxSpm;
+  const spm = rateShare(s, i.signalMa) * spec.maxSpm;
   const next = s.phase + (spm / 60) * delta;
   const began = Math.floor(next) - Math.floor(s.phase);
   s.phase = next % 1000;
   const r = runStrokes(
-    DMH_HEAD,
+    head,
     s,
     began,
-    FULL_STROKE_ML * s.strokeLength,
+    head.strokeMl * s.strokeLength,
     i.dischargeBar,
   );
   s = {
@@ -286,8 +322,14 @@ export function stepMotorPump(
 }
 
 /** Whether it is gas-locked: a stroke now would not lift its outlet valve. */
-export const gasLocked = (s: MotorPumpState, bar: number) =>
-  headLocked(DMH_HEAD, s, FULL_STROKE_ML * s.strokeLength, bar);
+export const gasLocked = (
+  s: MotorPumpState,
+  bar: number,
+  spec: MotorPumpSpec = DMH,
+) => {
+  const head = headSpec(spec);
+  return headLocked(head, s, head.strokeMl * s.strokeLength, bar);
+};
 
 /** Its four-digit readout's text, and which of its lamps are lit. */
 export interface MotorPumpDisplay {
@@ -321,6 +363,7 @@ const fourDigits = (v: number) =>
 export function motorPumpDisplay(
   s: MotorPumpState,
   i: Pick<MotorPumpInputs, 'powered' | 'release' | 'signalMa' | 'level'>,
+  spec: MotorPumpSpec = DMH,
 ): MotorPumpDisplay | null {
   if (!i.powered) return null;
   const lamps = {
@@ -338,9 +381,9 @@ export function motorPumpDisplay(
   const share = rateShare(s, i.signalMa);
   const text =
     s.shows === 'lh'
-      ? fourDigits(setRate(s, i.signalMa))
+      ? fourDigits(setRate(s, i.signalMa, spec))
       : s.shows === 'spm'
-        ? String(Math.round(share * DMH.maxSpm))
+        ? String(Math.round(share * spec.maxSpm))
         : s.shows === 'pct'
           ? String(Math.round(share * 100))
           : Math.max(0, i.signalMa).toFixed(1);
@@ -351,15 +394,16 @@ export function motorPumpDisplay(
 export function motorPumpWords(
   s: MotorPumpState,
   i: Pick<MotorPumpInputs, 'powered' | 'release' | 'signalMa' | 'level'>,
+  spec: MotorPumpSpec = DMH,
 ) {
-  const d = motorPumpDisplay(s, i);
+  const d = motorPumpDisplay(s, i, spec);
   if (!d) return 'unpowered, its display dark';
   const what = s.error
     ? `stopped, its display ${d.text}`
     : !s.on
       ? 'stopped at its keys'
       : d.run
-        ? `running, set to ${setRate(s, i.signalMa).toFixed(2)} l/h`
+        ? `running, set to ${setRate(s, i.signalMa, spec).toFixed(2)} l/h`
         : 'paused, waiting for its controller';
   return `${what}; ${s.mode === 'manual' ? 'MAN' : 'EXT'}; stroke dial at ${Math.round(s.strokeLength * 100)} %; bleed valve ${s.bleedOpen ? 'open' : 'shut'}`;
 }

@@ -1,0 +1,2107 @@
+{
+  "date": "2026-11-05",
+  "commit": "cd4799d0",
+  "tests": 444,
+  "passed": 373,
+  "expectedFail": 71,
+  "cases": [
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4948,
+      "got": -1.7424,
+      "accuracy": 0.6984
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "loop:aggressive",
+      "cause": "bicarbThenCo2",
+      "failures": [
+        "round 0: ph overshoots",
+        "round 1: ph oscillates (low then high)"
+      ],
+      "settledAt": 2,
+      "startScore": 5.937,
+      "endScore": 1.588,
+      "rounds": [
+        {
+          "advice": "alkalinity-low",
+          "score": 3.469
+        },
+        {
+          "advice": "calcium-hardness-low",
+          "score": 1.588
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighSlow",
+      "failures": [
+        "round 0: alkalinity-high left it worse (2.54 \u2192 4.05)",
+        "not settled in 10 rounds"
+      ],
+      "settledAt": null,
+      "startScore": 2.54,
+      "endScore": 3.036,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 4.054
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.062
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.674
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.825
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.337
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.638
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.734
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.039
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.782
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.036
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "loop:chlorine-low",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 3.606,
+      "endScore": 1.778,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 4.521
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.663
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.369
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.778
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.69 \u2192 4.08)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 2.691,
+      "endScore": 1.408,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 4.076
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.3
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.065
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.408
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "loop:ph-low+alkalinity-low",
+      "cause": "bicarbThenCo2",
+      "failures": [
+        "round 0: ph overshoots",
+        "round 1: ph oscillates (low then high)"
+      ],
+      "settledAt": 2,
+      "startScore": 7.446,
+      "endScore": 1.272,
+      "rounds": [
+        {
+          "advice": "alkalinity-low",
+          "score": 1.713
+        },
+        {
+          "advice": "ph-high",
+          "score": 1.272
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "loop:scaling",
+      "cause": "phIntegralUndershoot",
+      "failures": ["not settled in 10 rounds"],
+      "settledAt": null,
+      "startScore": 5.71,
+      "endScore": 4.3,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.429
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.596
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.811
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.907
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.851
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.824
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.566
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.896
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.916
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 4.3
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "twin:acid-off",
+      "cause": "co2CarriesPh",
+      "failures": ["after mixing not nearer neutral (3.16 against 3.16)"],
+      "mixed": {
+        "followed": 3.15756718313601,
+        "not": 3.15756718313601
+      },
+      "day": {
+        "followed": 2.6964747558355224,
+        "not": 2.6964747558355224
+      },
+      "maxPh": 7.499
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": true,
+      "check": "twin:combined-high",
+      "cause": "shockCaustic",
+      "failures": [
+        "alarms worse (dosing-offline) because of combined-chlorine-high",
+        "alarms worse (chlorine-low, dosing-offline) because of combined-chlorine-high"
+      ],
+      "mixed": {
+        "followed": 0.12211319980349415,
+        "not": 0.40762604392627744
+      },
+      "day": {
+        "followed": 0.12665458330431079,
+        "not": 0.20117356090372362
+      },
+      "maxPh": 7.449
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4948,
+      "got": -0.7297,
+      "accuracy": 0.2925
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:aggressive",
+      "cause": "sampleSeesFeed",
+      "failures": ["round 0: ph overshoots far"],
+      "settledAt": 2,
+      "startScore": 5.937,
+      "endScore": 1.199,
+      "rounds": [
+        {
+          "advice": "alkalinity-low",
+          "score": 3.607
+        },
+        {
+          "advice": "calcium-hardness-low",
+          "score": 1.199
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighSlow",
+      "failures": [
+        "round 0: alkalinity-high left it worse (2.54 \u2192 4.05)",
+        "not settled in 10 rounds"
+      ],
+      "settledAt": null,
+      "startScore": 2.54,
+      "endScore": 3.036,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 4.054
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.062
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.674
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.825
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.337
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.638
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.734
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.039
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.782
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.036
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:chlorine-high",
+      "cause": "thioFalls",
+      "failures": ["round 0: freeChlorine overshoots far"],
+      "settledAt": 6,
+      "startScore": 12.731,
+      "endScore": 1.474,
+      "rounds": [
+        {
+          "advice": "free-chlorine-high",
+          "score": 6.616
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 4.898
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 4.047
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.451
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.719
+        },
+        {
+          "advice": "hypochlorite-offline",
+          "score": 1.474
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:chlorine-low",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 3.606,
+      "endScore": 1.778,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 4.521
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.663
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.369
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.778
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.69 \u2192 4.08)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 2.691,
+      "endScore": 1.408,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 4.076
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.3
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.065
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.408
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:ph-high+alkalinity-low",
+      "cause": "phIntegralUndershoot",
+      "failures": [
+        "round 1: ph overshoots",
+        "round 2: ph oscillates (high then low)",
+        "round 2: ph overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 5.298,
+      "endScore": 2.245,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 4.401
+        },
+        {
+          "advice": "alkalinity-low",
+          "score": 3.126
+        },
+        {
+          "advice": "ph-low",
+          "score": 2.897
+        },
+        {
+          "advice": "ph-low",
+          "score": 2.245
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "loop:scaling",
+      "cause": "phIntegralUndershoot",
+      "failures": ["not settled in 10 rounds"],
+      "settledAt": null,
+      "startScore": 5.71,
+      "endScore": 4.3,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.429
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.596
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.811
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.907
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.851
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.824
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.566
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.896
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.916
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 4.3
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "twin:acid-off",
+      "cause": "co2CarriesPh",
+      "failures": ["after mixing not nearer neutral (3.16 against 3.16)"],
+      "mixed": {
+        "followed": 3.15756718313601,
+        "not": 3.15756718313601
+      },
+      "day": {
+        "followed": 2.6964747558355224,
+        "not": 2.6964747558355224
+      },
+      "maxPh": 7.499
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "twin:chlorine-high",
+      "cause": "thioFalls",
+      "failures": [
+        "alarms worse (chlorine-low, dosing-offline) because of free-chlorine-high"
+      ],
+      "mixed": {
+        "followed": 7.608735830943985,
+        "not": 11.078558775656209
+      },
+      "day": {
+        "followed": 5.165194626757787,
+        "not": 4.769320014944476
+      },
+      "maxPh": 7.409
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": true,
+      "check": "twin:combined-high",
+      "cause": "shockCaustic",
+      "failures": [
+        "alarms worse (dosing-offline) because of combined-chlorine-high",
+        "alarms worse (chlorine-low, dosing-offline) because of combined-chlorine-high"
+      ],
+      "mixed": {
+        "followed": 0.12211319980349415,
+        "not": 0.40762604392627744
+      },
+      "day": {
+        "followed": 0.12665458330431079,
+        "not": 0.20117356090372362
+      },
+      "maxPh": 7.449
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "loop:chlorine-low",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 3.596,
+      "endScore": 1.973,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 3.855
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.586
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.973
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "twin:chlorine-high",
+      "cause": "dmhThioBackfire",
+      "failures": ["backfired by 24 h (3.40 against 2.40)"],
+      "mixed": {
+        "followed": 2.368455046003285,
+        "not": 10.05696006659643
+      },
+      "day": {
+        "followed": 3.3996460505190913,
+        "not": 2.3982164745909795
+      },
+      "maxPh": 7.373
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.64 \u2192 3.82)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 2.642,
+      "endScore": 1.793,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 3.82
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.38
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.793
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4953,
+      "got": -1.5282,
+      "accuracy": 0.6124
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighOlympic",
+      "failures": [
+        "round 0: alkalinity-high left it worse (2.30 \u2192 3.70)",
+        "not settled in 10 rounds"
+      ],
+      "settledAt": null,
+      "startScore": 2.299,
+      "endScore": 3.131,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 3.702
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.271
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.215
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.544
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.032
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.412
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.591
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.117
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.745
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.131
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "loop:scaling",
+      "cause": "scalingOlympic",
+      "failures": ["not settled in 10 rounds"],
+      "settledAt": null,
+      "startScore": 5.569,
+      "endScore": 3.755,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.005
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.657
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.192
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.723
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.396
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.902
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 4.0
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.543
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.278
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.755
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "twin:acid-manual",
+      "cause": "co2CarriesPh",
+      "failures": ["after mixing not nearer neutral (2.68 against 2.65)"],
+      "mixed": {
+        "followed": 2.6771144121550243,
+        "not": 2.6541950951507087
+      },
+      "day": {
+        "followed": 3.186007992683881,
+        "not": 3.0151534856396944
+      },
+      "maxPh": 7.498
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": true,
+      "check": "twin:acid-off",
+      "cause": "co2CarriesPh",
+      "failures": ["after mixing not nearer neutral (2.68 against 2.22)"],
+      "mixed": {
+        "followed": 2.680876143072758,
+        "not": 2.224839875949389
+      },
+      "day": {
+        "followed": 3.183746603343075,
+        "not": 2.9766766847095405
+      },
+      "maxPh": 7.498
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "loop:chlorine-low",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 3.596,
+      "endScore": 1.973,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 3.855
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.586
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.973
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "twin:chlorine-high",
+      "cause": "dmhThioBackfire",
+      "failures": ["backfired by 24 h (4.09 against 2.40)"],
+      "mixed": {
+        "followed": 6.384327194374607,
+        "not": 10.05696006659643
+      },
+      "day": {
+        "followed": 4.092390168771495,
+        "not": 2.3982164745909795
+      },
+      "maxPh": 7.393
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.64 \u2192 3.82)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 2.642,
+      "endScore": 1.793,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 3.82
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.38
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.793
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4953,
+      "got": -0.7273,
+      "accuracy": 0.2915
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighOlympic",
+      "failures": [
+        "round 0: alkalinity-high left it worse (2.30 \u2192 3.70)",
+        "not settled in 10 rounds"
+      ],
+      "settledAt": null,
+      "startScore": 2.299,
+      "endScore": 3.131,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 3.702
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.271
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.215
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.544
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.032
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.412
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.591
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.117
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.745
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.131
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "loop:chlorine-high",
+      "cause": "thioFalls",
+      "failures": ["round 0: freeChlorine overshoots far"],
+      "settledAt": 2,
+      "startScore": 13.512,
+      "endScore": 1.279,
+      "rounds": [
+        {
+          "advice": "free-chlorine-high",
+          "score": 5.478
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.279
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "loop:scaling",
+      "cause": "scalingOlympic",
+      "failures": ["not settled in 10 rounds"],
+      "settledAt": null,
+      "startScore": 5.569,
+      "endScore": 3.755,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.005
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.657
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.192
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.723
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.396
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.902
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 4.0
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.543
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.278
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.755
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "twin:acid-manual",
+      "cause": "co2CarriesPh",
+      "failures": ["after mixing not nearer neutral (2.68 against 2.65)"],
+      "mixed": {
+        "followed": 2.6771144121550243,
+        "not": 2.6541950951507087
+      },
+      "day": {
+        "followed": 3.186007992683881,
+        "not": 3.0151534856396944
+      },
+      "maxPh": 7.498
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": true,
+      "check": "twin:acid-off",
+      "cause": "co2CarriesPh",
+      "failures": ["after mixing not nearer neutral (2.68 against 2.22)"],
+      "mixed": {
+        "followed": 2.680876143072758,
+        "not": 2.224839875949389
+      },
+      "day": {
+        "followed": 3.183746603343075,
+        "not": 2.9766766847095405
+      },
+      "maxPh": 7.498
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "loop:chlorine-low",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 3.606,
+      "endScore": 2.108,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 4.517
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.637
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.413
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.108
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.69 \u2192 4.07)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 2.691,
+      "endScore": 1.733,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 4.073
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.282
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.093
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.733
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4948,
+      "got": -1.7424,
+      "accuracy": 0.6984
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "accuracy:alkalinity-low",
+      "cause": "acidTakesAlkalinity",
+      "aimed": 69.9992,
+      "got": 55.3256,
+      "accuracy": 0.7904
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "accuracy:aggressive",
+      "cause": "acidTakesAlkalinity",
+      "aimed": 59.9989,
+      "got": 48.6159,
+      "accuracy": 0.8103
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighSlow",
+      "failures": ["round 0: alkalinity-high left it worse (2.54 \u2192 4.04)"],
+      "settledAt": 9,
+      "startScore": 2.54,
+      "endScore": 2.286,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 4.044
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.954
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.387
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.387
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.181
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.469
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.501
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.737
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.286
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "twin:combined-high",
+      "cause": "shockCaustic",
+      "failures": [
+        "alarms worse (dosing-offline) because of combined-chlorine-high",
+        "alarms worse (chlorine-low, dosing-offline) because of combined-chlorine-high"
+      ],
+      "mixed": {
+        "followed": 0.12044447672920262,
+        "not": 0.40743455328107686
+      },
+      "day": {
+        "followed": 0.12663897723777107,
+        "not": 0.203789962280962
+      },
+      "maxPh": 7.449
+    },
+    {
+      "pool": "pool_01",
+      "open": false,
+      "co2": false,
+      "check": "loop:scaling",
+      "cause": "phIntegralUndershoot",
+      "failures": [
+        "round 3: ph overshoots",
+        "round 4: ph oscillates (high then low)"
+      ],
+      "settledAt": 5,
+      "startScore": 5.71,
+      "endScore": 3.585,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.302
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.24
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.762
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.795
+        },
+        {
+          "advice": "ph-low",
+          "score": 3.585
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:chlorine-low",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 3.606,
+      "endScore": 2.108,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 4.517
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.637
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.413
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.108
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "chlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.69 \u2192 4.07)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots",
+        "round 2: freeChlorine overshoots far",
+        "round 2: freeChlorine overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 2.691,
+      "endScore": 1.733,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 4.073
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.282
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.093
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.733
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:chlorine-high",
+      "cause": "thioFalls",
+      "failures": ["round 0: freeChlorine overshoots far"],
+      "settledAt": 6,
+      "startScore": 12.731,
+      "endScore": 1.65,
+      "rounds": [
+        {
+          "advice": "free-chlorine-high",
+          "score": 6.599
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 4.933
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 4.402
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 3.908
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.039
+        },
+        {
+          "advice": "hypochlorite-offline",
+          "score": 1.65
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "twin:chlorine-high",
+      "cause": "thioFalls",
+      "failures": [
+        "alarms worse (chlorine-low, dosing-offline) because of free-chlorine-high"
+      ],
+      "mixed": {
+        "followed": 7.591713178465925,
+        "not": 11.085011173556856
+      },
+      "day": {
+        "followed": 5.833249334470029,
+        "not": 5.7086751584886235
+      },
+      "maxPh": 7.408
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4948,
+      "got": -0.7297,
+      "accuracy": 0.2925
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "accuracy:alkalinity-low",
+      "cause": "acidTakesAlkalinity",
+      "aimed": 33.6871,
+      "got": 28.3911,
+      "accuracy": 0.8428
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighSlow",
+      "failures": ["round 0: alkalinity-high left it worse (2.54 \u2192 4.04)"],
+      "settledAt": 9,
+      "startScore": 2.54,
+      "endScore": 2.286,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 4.044
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.954
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.387
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.387
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.181
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.469
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.501
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.737
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 2.286
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "twin:combined-high",
+      "cause": "shockCaustic",
+      "failures": [
+        "alarms worse (dosing-offline) because of combined-chlorine-high",
+        "alarms worse (chlorine-low, dosing-offline) because of combined-chlorine-high"
+      ],
+      "mixed": {
+        "followed": 0.12044447672920262,
+        "not": 0.40743455328107686
+      },
+      "day": {
+        "followed": 0.12663897723777107,
+        "not": 0.203789962280962
+      },
+      "maxPh": 7.449
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:ph-high+alkalinity-low",
+      "cause": "phIntegralUndershoot",
+      "failures": [
+        "round 1: ph overshoots",
+        "round 2: ph oscillates (high then low)",
+        "round 2: ph overshoots"
+      ],
+      "settledAt": 4,
+      "startScore": 5.298,
+      "endScore": 2.789,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 4.795
+        },
+        {
+          "advice": "alkalinity-low",
+          "score": 3.719
+        },
+        {
+          "advice": "ph-low",
+          "score": 3.364
+        },
+        {
+          "advice": "ph-low",
+          "score": 2.789
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:scaling",
+      "cause": "phIntegralUndershoot",
+      "failures": [
+        "round 3: ph overshoots",
+        "round 4: ph oscillates (high then low)"
+      ],
+      "settledAt": 5,
+      "startScore": 5.71,
+      "endScore": 3.585,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.302
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.24
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.762
+        },
+        {
+          "advice": "balance-scaling",
+          "score": 3.795
+        },
+        {
+          "advice": "ph-low",
+          "score": 3.585
+        }
+      ]
+    },
+    {
+      "pool": "pool_01",
+      "open": true,
+      "co2": false,
+      "check": "loop:aggressive",
+      "cause": "sampleSeesFeed",
+      "failures": ["round 0: ph overshoots far"],
+      "settledAt": 2,
+      "startScore": 5.937,
+      "endScore": 1.561,
+      "rounds": [
+        {
+          "advice": "alkalinity-low",
+          "score": 3.642
+        },
+        {
+          "advice": "calcium-hardness-low",
+          "score": 1.561
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "loop:chlorine-low",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 3.596,
+      "endScore": 1.62,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 3.851
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.796
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.62
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "twin:chlorine-high",
+      "cause": "dmhThioBackfire",
+      "failures": ["backfired by 24 h (3.61 against 2.62)"],
+      "mixed": {
+        "followed": 2.5534992531863048,
+        "not": 10.065999084641719
+      },
+      "day": {
+        "followed": 3.6127892378204796,
+        "not": 2.623816537118164
+      },
+      "maxPh": 7.372
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.64 \u2192 3.82)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 2.642,
+      "endScore": 1.56,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 3.816
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.541
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.56
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4953,
+      "got": -1.5276,
+      "accuracy": 0.6122
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighOlympic",
+      "failures": [
+        "round 0: alkalinity-high left it worse (2.30 \u2192 3.71)",
+        "not settled in 10 rounds"
+      ],
+      "settledAt": null,
+      "startScore": 2.299,
+      "endScore": 5.718,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 3.708
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.849
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.341
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.03
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.849
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.362
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.706
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.31
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.959
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.718
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "loop:ph-low+alkalinity-low",
+      "cause": "bicarbLiftsPh",
+      "failures": [
+        "round 0: ph overshoots",
+        "round 1: ph oscillates (low then high)"
+      ],
+      "settledAt": 2,
+      "startScore": 7.454,
+      "endScore": 1.513,
+      "rounds": [
+        {
+          "advice": "alkalinity-low",
+          "score": 1.73
+        },
+        {
+          "advice": "ph-high",
+          "score": 1.513
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "loop:aggressive",
+      "cause": "bicarbLiftsPh",
+      "failures": [
+        "round 0: ph overshoots",
+        "round 1: ph oscillates (low then high)"
+      ],
+      "settledAt": 3,
+      "startScore": 5.945,
+      "endScore": 1.718,
+      "rounds": [
+        {
+          "advice": "alkalinity-low",
+          "score": 3.505
+        },
+        {
+          "advice": "ph-high",
+          "score": 3.311
+        },
+        {
+          "advice": "calcium-hardness-low",
+          "score": 1.718
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": false,
+      "co2": false,
+      "check": "loop:scaling",
+      "cause": "scalingOlympic",
+      "failures": ["not settled in 10 rounds"],
+      "settledAt": null,
+      "startScore": 5.569,
+      "endScore": 5.111,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.875
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.292
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.269
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.556
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.08
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.368
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.536
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.008
+        },
+        {
+          "advice": "ph-high",
+          "score": 4.584
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.111
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "loop:chlorine-low",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 3.596,
+      "endScore": 1.62,
+      "rounds": [
+        {
+          "advice": "free-chlorine-low",
+          "score": 3.851
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.796
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.62
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "loop:chlorine-high",
+      "cause": "thioFalls",
+      "failures": ["round 0: freeChlorine overshoots far"],
+      "settledAt": 2,
+      "startScore": 13.512,
+      "endScore": 1.144,
+      "rounds": [
+        {
+          "advice": "free-chlorine-high",
+          "score": 5.571
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.144
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "twin:chlorine-high",
+      "cause": "dmhThioBackfire",
+      "failures": ["backfired by 24 h (4.28 against 2.62)"],
+      "mixed": {
+        "followed": 6.500348369259363,
+        "not": 10.065999084641719
+      },
+      "day": {
+        "followed": 4.276639334313321,
+        "not": 2.623816537118164
+      },
+      "maxPh": 7.391
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "accuracy:chlorine-high",
+      "cause": "thioAccuracy",
+      "aimed": -2.4953,
+      "got": -0.7269,
+      "accuracy": 0.2913
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "loop:alkalinity-high",
+      "cause": "alkalinityHighOlympic",
+      "failures": [
+        "round 0: alkalinity-high left it worse (2.30 \u2192 3.71)",
+        "not settled in 10 rounds"
+      ],
+      "settledAt": null,
+      "startScore": 2.299,
+      "endScore": 5.718,
+      "rounds": [
+        {
+          "advice": "alkalinity-high",
+          "score": 3.708
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 3.849
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.341
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.03
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.849
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.362
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.706
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.31
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 4.959
+        },
+        {
+          "advice": "alkalinity-high",
+          "score": 5.718
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "loop:hypochlorite-tripped",
+      "cause": "dmhChlorineOvershoot",
+      "failures": [
+        "round 0: freeChlorine overshoots far",
+        "round 0: freeChlorine overshoots",
+        "round 0: hypochlorite-offline left it worse (2.64 \u2192 3.82)",
+        "round 1: free-chlorine oscillates (low then high)",
+        "round 1: freeChlorine overshoots far",
+        "round 1: freeChlorine overshoots"
+      ],
+      "settledAt": 3,
+      "startScore": 2.642,
+      "endScore": 1.56,
+      "rounds": [
+        {
+          "advice": "hypochlorite-offline",
+          "score": 3.816
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 2.541
+        },
+        {
+          "advice": "free-chlorine-high",
+          "score": 1.56
+        }
+      ]
+    },
+    {
+      "pool": "pool_02",
+      "open": true,
+      "co2": false,
+      "check": "loop:scaling",
+      "cause": "scalingOlympic",
+      "failures": ["not settled in 10 rounds"],
+      "settledAt": null,
+      "startScore": 5.569,
+      "endScore": 5.111,
+      "rounds": [
+        {
+          "advice": "ph-high",
+          "score": 5.875
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.292
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.269
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.556
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.08
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.368
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.536
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.008
+        },
+        {
+          "advice": "ph-high",
+          "score": 4.584
+        },
+        {
+          "advice": "ph-high",
+          "score": 5.111
+        }
+      ]
+    }
+  ]
+}

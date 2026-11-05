@@ -82,7 +82,9 @@ const BULK: Record<Chemical, number> = { hypochlorite: 3, acid: 1 };
  * outlet's, and a framed day tank's actuated inlet and outlet valves.
  */
 export const EQUIPMENT_VALVES: ReadonlySet<string> = new Set([
+  // The Olympic's DMH pumps' integral relief and bleed valves, on their heads.
   'PL2.hypo.return.bleed',
+  'PL2.acid.return.bleed',
   ...CHEMICALS.flatMap((c) => [
     ...Array.from({ length: BULK[c] }, (_, k) => {
       const v = bulkTankValves(c, k + 1);

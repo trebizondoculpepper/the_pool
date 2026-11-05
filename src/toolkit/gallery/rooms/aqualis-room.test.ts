@@ -337,12 +337,8 @@ describe('dev58’s host: First Aid', () => {
     start(host, 'chlorine-down');
     host.step(1);
     expect(host.outputs().hypochlorite).toBe(0);
-    expect(
-      host.advice().find((a) => a.id === 'free-chlorine-high')?.additive,
-    ).toBe('thiosulphate');
-    expect(
-      host.advice().find((a) => a.id === 'free-chlorine-high')?.direction,
-    ).not.toContain('First Aid');
+    expect(host.advice()[0]).toMatchObject({ id: 'first-aid' });
+    expect(host.advice()[0].direction).toBe('Keep the pool closed.');
   });
 
   it('points a high combined chlorine at Breakpoint shock', () => {

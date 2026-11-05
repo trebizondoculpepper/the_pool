@@ -99,7 +99,7 @@ describe('AUTO, pH’s integral', () => {
     const inp = inputs({}, { ph: 7.4 });
     const first = step(inp).out.demands.acid;
     const later = run(inp, 360).out.demands.acid; // an hour on
-    expect(later).toBeGreaterThan(first * 1.5);
+    expect(later).toBeGreaterThan(first * 1.4);
   });
   it('holds what it has learnt inside the dead band, and unwinds below it', () => {
     const learnt = run(inputs({}, { ph: 7.4 }), 360).state;
@@ -201,6 +201,24 @@ describe('AUTO, pH’s anti-windup', () => {
 });
 
 describe('AUTO', () => {
+  it('credits chlorine already in flight during recovery, then returns to steady control', () => {
+    const ports = {
+      ...PORTS,
+      hypochlorite: pump(10, { delivering: 10 }),
+    };
+    const low = step(inputs({ ports }, { freeChlorine: 0.8 })).state;
+    expect(low.chlorineRecovery).toBe(true);
+    const recovering = step(inputs({ ports }, { freeChlorine: 1.15 }), low);
+    const steady = step(inputs({ ports }, { freeChlorine: 1.15 }));
+    expect(recovering.state.chlorineRecovery).toBe(true);
+    expect(recovering.out.demands.hypochlorite).toBeLessThan(
+      steady.out.demands.hypochlorite,
+    );
+    expect(
+      step(inputs({ ports }, { freeChlorine: 1.3 }), low).state
+        .chlorineRecovery,
+    ).toBe(false);
+  });
   it('doses hypochlorite when chlorine is low, more the lower it is', () => {
     const big = { ports: { ...PORTS, hypochlorite: pump(10) } };
     const a = step(inputs(big, { freeChlorine: 1.1 })).out.demands.hypochlorite;

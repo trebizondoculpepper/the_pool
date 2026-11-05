@@ -36,7 +36,10 @@ const TOLERANCE = 0.25;
  * predicted improvement would need the dose arithmetic on request.
  */
 const KNOWN: Record<string, true> = {
-  'alkalinity-low+hardness-low+tds-high': true,
+  // The Lounge only: since mission 207 (the Olympic's correctly sized acid
+  // pump, and bicarbonate worked out allowing for it) the Olympic ranks
+  // these three in the order of their improvements.
+  'pool_01:alkalinity-low+hardness-low+tds-high': true,
   // Since mission 118 (the Olympic's water at alkalinity 120, its CO₂ loss
   // held to Wojtowicz's range): the dilution for TDS ranks first, by its
   // distance, and improves the score 0.84; calcium chloride, after it,

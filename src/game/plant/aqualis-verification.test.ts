@@ -53,9 +53,13 @@ const EDGES = DIAGNOSED.flatMap((k) => {
   if (t[k].low > 0 || k === 'lsi') out.push({ k, edge: 'low' });
   return out;
 });
-/** A small step past an edge: a hundredth of the reading's half-band. */
+/**
+ * A small step past an edge: a hundredth of the reading's half-band; for
+ * pH, one digit of the meter (0.01), since the advice reads the pH as the
+ * Trio shows it, to two places (mission 207).
+ */
 const eps = (k: (typeof DIAGNOSED)[number]) =>
-  Math.max(1e-3, (t[k].high - t[k].low) / 200);
+  k === 'ph' ? 0.01 : Math.max(1e-3, (t[k].high - t[k].low) / 200);
 
 describe('1. diagnosis at every band edge, both pools, open and closed', () => {
   for (const pool of POOLS)

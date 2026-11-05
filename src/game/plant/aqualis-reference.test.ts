@@ -55,11 +55,12 @@ describe('reference: sodium bicarbonate per 10 mg/l of alkalinity', () => {
     const d = dose(water(), { bicarbonate: 1679 }, V, T);
     expect(rel(d.alkalinity - 100, 10)).toBeLessThan(0.01);
   });
-  it('Show dose: 60 → 120 mg/l in 100 m³ is 10.07 kg (±3 %)', () => {
-    // At pH 7.3: with the pH above its band the bicarbonate waits for it.
+  it('Show dose includes the online acid pump’s alkalinity allowance', () => {
+    // The chemical amount is 10.07 kg; while the acid pump holds pH, its
+    // 12% allowance makes the operational prescription about 11.28 kg.
     const a = showDose({ alkalinity: 60, ph: 7.3 }, 'alkalinity-low');
     expect(a.dose?.unit).toBe('kg');
-    expect(rel(a.dose!.amount, 10.07)).toBeLessThan(0.03);
+    expect(rel(a.dose!.amount, 10.07 * 1.12)).toBeLessThan(0.03);
   });
   it('raises the pH a little: +10 mg/l at pH 7.2, alkalinity 80 → pH 7.25 (±0.02)', () => {
     const d = dose(
@@ -143,11 +144,11 @@ describe('reference: sodium thiosulphate per 1 mg/l of chlorine removed', () => 
   // PWTAG TN23: 5 g of the pentahydrate per m³ per mg/l (the model is fitted
   // to it). Stoichiometry to sulphate alone is 0.875 g/m³; US trade figures
   // 1.2 to 2 g/m³. Show dose takes it to the top of its band (it falls the
-  // rest on its own): 4.0 → 1.5 mg/l in 100 m³, 2.5 × 100 × 5 = 1.25 kg.
-  it('Show dose: 4.0 → 1.5 mg/l in 100 m³ is 1.25 kg (±3 %)', () => {
-    const a = showDose({ freeChlorine: 4 }, 'free-chlorine-high');
+  // rest on its own): 8.0 → 1.5 mg/l in 100 m³, 6.5 × 100 × 5 = 3.25 kg.
+  it('Show dose: 8.0 → 1.5 mg/l in 100 m³ is 3.25 kg (±3 %)', () => {
+    const a = showDose({ freeChlorine: 8 }, 'free-chlorine-high');
     expect(a.additive).toBe('thiosulphate');
-    expect(rel(a.dose!.amount, 1.25)).toBeLessThan(0.03);
+    expect(rel(a.dose!.amount, 3.25)).toBeLessThan(0.03);
   });
 });
 

@@ -83,7 +83,7 @@ export const FIRST_AID: Record<FirstAidId, FirstAidProgramme> = {
     id: 'chlorine-down',
     name: 'Bring chlorine down',
     use: 'After an overdose or a hyperchlorination',
-    says: 'No more hypochlorite until the chlorine is back in its band. Sodium thiosulphate will hurry it along.',
+    says: 'No more hypochlorite until the chlorine is back in its band. Let it fall naturally, or use sodium thiosulphate at extreme readings.',
     closePool: true,
   },
   'dosing-pause': {

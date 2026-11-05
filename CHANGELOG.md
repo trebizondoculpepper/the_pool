@@ -19,10 +19,16 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - Every kind a room layout places now has a magic room and CAD views with no work of its own: the magic room falls back to the rooms' own item builder (`buildRoomItem`) at the layout item's size and mount, in a throwaway world, covering 38 more kinds (the balance, break and backwash tanks, desks, cupboards, mimics, dosing and chemical equipment among them); 17 kinds drawn outside the layouts (valves, pipework, pumps, switch-fuses) are listed as known gaps in a test.
 - Audit data and JSON (mission 167): every room and kind's audit as machine-readable JSON (audit/index.json, audit/room/<id>.json, audit/kind/<kind>.json) on the dev server and the static build, from one pure audit model with evidence and coverage states; the room and item audit pages open from data with no scene, building the room only on Verify this room.
 - Mission 158's typed registry affordances and resolver for every equipment kind: interaction, portability, solidity, bounding shape, supporting surface and seat metadata, with no change to room controls yet.
+- Bounds models: an object may carry a simpler version beside its high- and low-poly ones, a few boxes and cylinders, and with the `bounds-model` trait its tops come from them, not from rays cast on its drawn body. The engineer's desk declares its board, so things put on it use the whole 1.6 × 0.8 m top; the item audit's CAD views have a BOUNDS toggle (mission 208).
+- The PC tower and monitor on the engineer's desk are components of their own, each with its item audit and CAD views; the desk's magic room and CAD views show just the desk, its own model at last (mission 208).
+- The `bin-like` trait: a skip takes what is thrown at it in any room, through one shared bin tossing, and what lands can be picked out again; dev5 adds nothing by hand (mission 205, first step).
+- A thing of a holdable kind can be picked up by its trait alone: the stores' spill kits and the control room's water test kit can now be carried (mission 189).
 
 ### Changed
 
 - Carrying follows the object registry's traits in every room (missions 189 and 181, first step): a thing of a holdable kind can be picked up, and things let go of rest on the derived tops of supportable objects. The engineer's office no longer decides carrying by its room name, and its desk's hidden top marker is gone.
+- The Olympic acid pump is a commissioned 102 l/h motor-driven DMH with local controls, a modelled bleed return, and a migrated save state; its fault relay lights the Olympic annunciator in the plant and old control room (mission 207).
+- Dr Aqualis now closes a pool with moderately excessive chlorine and lets it fall naturally, uses thiosulphate for extreme readings, prescribes staged mains-water replacement for high alkalinity and CO₂-controlled scaling water, and allows for the acid pump while calculating bicarbonate (mission 207).
 - The pool walker now leaves shallow water over a reachable edge and uses steps or ladders to leave deep water. Empty and partly drained basins block deck entries that would drop more than 1 m.
 - Every room starter, including magic rooms, now obtains its first-person controller through one room factory (mission 159). The factory passes the existing options through unchanged and gives later room-wide behaviour work one entry point.
 - Applied mission 176's approved traits to 107 registered kinds; the engineers' desk and two storage cupboards are now operable non-plant fixtures with permanent installation IDs and office model nodes.
@@ -33,8 +39,11 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The Trio's chlorine recovery now accounts for dose still in the circulation, avoiding low-chlorine overshoot, while pH control responds to turnover and alkalinity and holds its learned correction during hand feeding. All 71 previously marked Aqualis verification failures are ordinary checks again; the world power-loss test is restored (mission 207).
 - The walker fell into the pool plant rooms' tanks at the top of the ladder (the landing and roof heights were scaled twice); the roof's edge guard now measures its drop to the room's floor. A caged ladder's hoops are fixed to its stiles instead of floating clear of them, and the climber's eye follows a line 0.4 m out, inside the cage, not against the rungs.
 - PL1’s freshwater feed now runs from the south-wall boosted make-up supply to the balance tank, instead of ending in mid-air above it.
+- A box let go while held low over the engineer's desk lands on it rather than falling through it to the floor; one whose middle is past the edge still falls (mission 181).
+- Nothing of the engineer's PC goes below the desk: the keyboard no longer sinks 5.6 mm into it, and its leads no longer swing up to 12 mm into it between their points.
 
 ## [0.14.0] - 2026-11-04
 

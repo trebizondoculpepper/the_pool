@@ -25,7 +25,7 @@ import type { DosingPump, PumpState } from './dosing-pumps';
  * | --- | --- | --- | --- | --- | --- |
  * | `solenoid` (DMX 1602) | its P key at AUTO | P at MANUAL: its ▲ ▼ rate | STOP | flow (gas-lock, its flow monitor): until acknowledged at its keys; level: clears itself as the tank is filled | 2.1 l/h |
  * | `stepper` (DDS 7.5-16) | as the DMX | as the DMX | STOP | as the DMX (it deaerates itself standing by) | 7.5 l/h |
- * | `motor` (DMH 21-10) | EXT (4–20 mA) | MAN | STOP (a flow trip stops it too, but is reported as the fault, not OFF) | flow: until its STOP/START; level clears itself; diaphragm until changed | its stroke dial × 21 l/h (60 %: 12.6 l/h) |
+ * | `motor` (DMH 21-10 hypochlorite; DMH 102-10 Olympic acid) | EXT (4–20 mA) | MAN | STOP (a flow trip stops it too, but is reported as the fault, not OFF) | flow: until its STOP/START; level clears itself; diaphragm until changed | its stroke dial × nameplate rate (12.6 l/h hypo commissioned, 102 l/h acid) |
  * | `peristaltic` (PERI 30) | AUTO | MANUAL | off | stall: until reset at its keys; leak: until its tube is changed; level clears itself | 30 l/h (nominal: a worn tube gives less a turn, unseen by its controller) |
  * | `ideal` | always (it has no keys) | never | never | none | its rating |
  *

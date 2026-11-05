@@ -2,8 +2,10 @@ import {
   idealPump,
   keyedDiaphragmPump,
   motorPump,
+  motorPumpFor,
   peristalticPump,
 } from '../../toolkit/components/plant/logic/metering-pump';
+import { DMH_ACID } from '../../toolkit/components/plant/logic/motor-dosing-pump';
 import type {
   KeyedDiaphragmState,
   MeteringInputs,
@@ -52,7 +54,8 @@ import type { Chemical } from './chemicals';
  * - The lounge's hypochlorite: the DMX 1602 (`solenoid`), 2.1 l/h.
  * - The Olympic's hypochlorite: one DMH 21-10 (`motor`), its stroke dial
  *   commissioned at 60 % for 12.6 l/h at full controller output.
- * - Their acid: the DDS 7.5-16 (`stepper`), 7.5 l/h.
+ * - The lounge's acid: the DDS 7.5-16 (`stepper`), 7.5 l/h.
+ * - The Olympic's acid: a DMH 102-10 (`motor`), 102 l/h at full stroke.
  * - The spa cabinets' heads stay ideal at their sizes until their pumps are
  *   chosen (mission 101, question 8).
  *
@@ -67,7 +70,7 @@ import type { Chemical } from './chemicals';
 /** Each pool's pumps' kinds. */
 export const POOL_PUMP_KINDS: Record<PoolId, Record<Chemical, MeteringKind>> = {
   pool_01: { hypochlorite: 'solenoid', acid: 'stepper' },
-  pool_02: { hypochlorite: 'motor', acid: 'stepper' },
+  pool_02: { hypochlorite: 'motor', acid: 'motor' },
   pool_03: { hypochlorite: 'ideal', acid: 'ideal' },
   pool_04: { hypochlorite: 'ideal', acid: 'ideal' },
 };
@@ -115,7 +118,9 @@ export function pumpModel(id: PoolId, c: Chemical): MeteringPump<PumpState> {
       : kind === 'peristaltic'
         ? peristalticPump
         : kind === 'motor'
-          ? motorPump
+          ? id === 'pool_02' && c === 'acid'
+            ? motorPumpFor(DMH_ACID, 1)
+            : motorPump
           : keyedDiaphragmPump(kind);
   const made = model as unknown as MeteringPump<PumpState>;
   MODELS.set(`${id}.${c}`, made);

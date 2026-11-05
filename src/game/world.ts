@@ -369,7 +369,7 @@ import type {
   LiftState,
 } from '../toolkit/gallery/logic/freight-lift';
 
-export const WORLD_VERSION = 79;
+export const WORLD_VERSION = 80;
 
 const POOL_PRIMARY_ISOLATORS = {
   pool_01: {

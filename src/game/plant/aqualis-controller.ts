@@ -29,19 +29,17 @@ import { CONTROLLER } from './water-treatment';
  * - **Free chlorine**: PI, its proportional band 0.5 mg/l and integral 6 h
  *   at a three-hour turnover, locked out with pH more than 0.4 from its set
  *   point (DEPOLOX's switch-off range). Its output u (the bench's
- *   `(error + integral) / band`) is a dose rate: u = 1 is the rate that
- *   would lift the entered volume by one band in `CHLORINE_CORRECTION_HOURS`, so a
- *   bigger pool doses proportionally more, and a wrongly entered volume
- *   mis-doses. The entered turnover (volume ÷ filtration rate) is the loop's
- *   dead time, so the integral time is stretched with it (a slow loop is
- *   integrated slowly, or it overshoots). The integral is bounded (`INTEGRAL_REACH`),
+ *   `(error + integral) / band`) is a dose rate: u = 1 lifts the entered
+ *   volume by one band in `CHLORINE_CORRECTION_HOURS`, so a bigger pool doses
+ *   proportionally more. The integral time is stretched with turnover.
+ *   It is bounded (`INTEGRAL_REACH`),
  *   held outside AUTO, while inhibited, locked out, with chlorine's
  *   channel offline or unconnected, inside the dead band, and while the
  *   demand is pinned at 1 (anti-windup).
  * - **pH**: PI, downward only (acid and CO₂ both only lower it), full
  *   scale 0.3 above its set point, the full-scale rate `ACID_G_PER_M3` of
  *   HCl per cubic metre of the entered volume an hour; its integral
- *   (`PH_INTEGRAL_HOURS` at the reference turnover, stretched with it like
+ *   (`PH_INTEGRAL_HOURS`, two hours at the reference turnover, stretched with it like
  *   chlorine's) learns the steady acid demand of a pool that degasses or is
  *   fed bicarbonate, so the pH comes back to its set point rather than
  *   sitting above it (`doc/plans/aqualis-advice-verification.md`, Part 4).
@@ -84,20 +82,17 @@ import { CONTROLLER } from './water-treatment';
  */
 export const INTEGRAL_REACH = 6;
 /**
- * Chlorine's correction time, h: u = 1 lifts the entered volume one band in
- * a quarter of an hour, so a 0.5 mg/l shortfall runs a pump sized for its
- * pool (the rig's 2 l/h for 150 m³, about 280 g/h) near flat out. At an
- * hour the proportional part was too timid to hold a busy session.
+ * Chlorine's correction time, h: one band at full output in a quarter hour.
  */
 export const CHLORINE_CORRECTION_HOURS = 0.25;
 /** The correction time behind the full-scale rates, h. */
 export const CORRECTION_HOURS = 1;
 /** The turnover the bench's integral time was tuned at, h. */
 export const REFERENCE_TURNOVER_HOURS = 3;
-/** HCl at pH's full scale, g per m³ of the entered volume an hour: 750 g/h (about 7.2 l/h of 10 %) for 500 m³, the bench's acid pump. */
-export const ACID_G_PER_M3 = 1.5;
+/** HCl at pH's full scale, g per m³ of entered volume an hour: 950 g/h for 500 m³. */
+export const ACID_G_PER_M3 = 1.9;
 /** pH's integral time at the reference turnover, h. */
-export const PH_INTEGRAL_HOURS = 1;
+export const PH_INTEGRAL_HOURS = 2;
 /** How far pH's integral may climb, in bands (its steady demand up to this many full scales, the pump's own most permitting). */
 export const PH_INTEGRAL_REACH = 4;
 /**
@@ -121,6 +116,8 @@ export const NOT_DELIVERING_AFTER = 180;
 export interface ControllerState {
   /** Chlorine's integral, mg/l, bounded below by its band and above by `INTEGRAL_REACH` bands. */
   integral: number;
+  /** A low-chlorine recovery is still in flight until the sample reaches its set point. */
+  chlorineRecovery?: boolean;
   /** pH's integral, pH, from nought to `PH_INTEGRAL_REACH` bands (or what the acid and CO₂ online can carry, if less). */
   phIntegral: number;
   /** Seconds left of pH's integral hold after a hand dose's feed (`ControllerInputs.feeding`, `PH_HOLD_TURNOVERS`). */
@@ -143,6 +140,8 @@ export interface ControllerInputs {
   pause?: boolean;
   /** A First Aid programme forbidding hypochlorite (`firstAidNoHypochlorite`): its demand held at nought. */
   noHypochlorite?: boolean;
+  /** A deliberate First Aid target, whose chlorine programme owns the correction. */
+  firstAid?: boolean;
   /**
    * A hand dose's chemical being fed into this pool's circuit (the
    * world's `treatment.charges`): a known disturbance at the sample, so
@@ -174,6 +173,7 @@ const clamp01 = (x: number) => clamp(x, 0, 1);
 export function newController(): ControllerState {
   return {
     integral: 0,
+    chlorineRecovery: false,
     phIntegral: 0,
     phHold: 0,
     demands: perChannel(() => 0),
@@ -253,6 +253,7 @@ export function stepController(
             : null;
 
   let integral = s.integral;
+  let chlorineRecovery = s.chlorineRecovery ?? false;
   let phIntegral = s.phIntegral ?? 0;
   // A feed's hold: `PH_HOLD_TURNOVERS` of a turnover (the entered volume
   // over its flow) from the feed's end, as an operator dosing by hand
@@ -284,7 +285,33 @@ export function stepController(
     const phT = settings.targets.ph;
     lockout = Math.abs(r.ph - phT.set) > CONTROLLER.pHLockout;
     const error = deadBandError(r.freeChlorine, settings.targets.freeChlorine);
-    const u = (error + s.integral) / band;
+    if (inp.firstAid) chlorineRecovery = false;
+    else if (
+      r.freeChlorine <
+      settings.targets.freeChlorine.low -
+        (settings.targets.freeChlorine.set -
+          settings.targets.freeChlorine.low) /
+          2
+    )
+      chlorineRecovery = true;
+    else if (r.freeChlorine >= settings.targets.freeChlorine.set)
+      chlorineRecovery = false;
+    // A sample at the balance tank lags chlorine already in the loop.
+    // Credit at most 84 minutes of the pump's measured delivery against
+    // the proportional correction; the integral still sees the real error
+    // and learns ongoing bather demand.
+    const pendingChlorine =
+      error > 0 && !inp.firstAid && chlorineRecovery && ports.hypochlorite
+        ? (ports.hypochlorite.delivering *
+            CHANNELS.hypochlorite.gramsPerUnit *
+            Math.min(1.4, turnover / 4 + 0.15)) /
+          Math.max(1, volume)
+        : 0;
+    // Keep a small live correction while chlorine is still below target;
+    // the forecast must not silence a controller seeing a genuine deficit.
+    const futureError =
+      error - Math.min(pendingChlorine, Math.max(0, error * 0.9));
+    const u = (futureError + s.integral) / band;
     const fullCl = (volume * band) / CHLORINE_CORRECTION_HOURS;
     const hypoDemand = lockout
       ? 0
@@ -300,7 +327,7 @@ export function stepController(
       !pinned
     ) {
       integral = clamp(
-        s.integral + (error * dt) / 3600 / integralHours,
+        s.integral + (futureError * dt) / 3600 / integralHours,
         -band,
         band * INTEGRAL_REACH,
       );
@@ -309,18 +336,44 @@ export function stepController(
     // pH: PI, downward only, g/h of HCl, CO₂ first.
     const above = -deadBandError(r.ph, phT);
     const phBand = CONTROLLER.pHBand;
-    const fullHcl = (volume * ACID_G_PER_M3) / CORRECTION_HOURS;
+    // Slow mixing calls for a gentler pH correction. At low alkalinity the
+    // same grams of acid move pH further, so the slow circuits also trim
+    // their gain by the measured buffer relative to the 150 mg/l upper
+    // working band: the conservative commissioning reference.
+    const lagGain = Math.min(1, REFERENCE_TURNOVER_HOURS / turnover);
+    const bufferGain =
+      turnover > REFERENCE_TURNOVER_HOURS
+        ? clamp(r.alkalinity / 150, 0.25, 1)
+        : 1;
+    const fullHcl =
+      (volume * ACID_G_PER_M3 * lagGain * bufferGain) / CORRECTION_HOURS;
     const hcl =
-      (clamp01(above / phBand) + Math.max(0, phIntegral) / phBand) * fullHcl;
+      (clamp01(above / phBand) +
+        (inp.feeding ? 0 : Math.max(0, phIntegral) / phBand)) *
+      fullHcl;
     // Anti-windup: what acid and CO₂ online can give between them, in HCl
     // g/h; the integral bounded to what that can carry, not integrated
     // further up while the demand is past it, and not wound up at all
     // while a hand dose is fed (and `PH_HOLD_TURNOVERS` after). With
     // nothing online it is held as it is.
-    const capacity =
-      (online('acid') && ports.acid
+    // Weakly buffered water can cross the pH band before the acid has mixed.
+    // Ramp the acid allowance from the old 7.5 l/h commissioning rate at
+    // 50 mg/l to the installed pump's full rating at 120 mg/l.
+    const installedAcidGh =
+      online('acid') && ports.acid
         ? ports.acid.most * CHANNELS.acid.gramsPerUnit
-        : 0) + (online('co2') && ports.co2 ? ports.co2.most / CO2_PER_HCL : 0);
+        : 0;
+    const acidFloorGh = Math.min(
+      installedAcidGh,
+      7.5 * CHANNELS.acid.gramsPerUnit,
+    );
+    const acidAllowanceGh =
+      acidFloorGh +
+      (installedAcidGh - acidFloorGh) * clamp((r.alkalinity - 50) / 70, 0, 1);
+    const co2Allowance =
+      (ports.co2?.most ?? 0) * clamp((r.alkalinity - 50) / 70, 0.25, 1);
+    const capacity =
+      acidAllowanceGh + (online('co2') ? co2Allowance / CO2_PER_HCL : 0);
     const reach =
       phBand *
       (fullHcl > 0
@@ -337,9 +390,11 @@ export function stepController(
             Math.max(0.25, turnover / REFERENCE_TURNOVER_HOURS));
       phIntegral = clamp(phIntegral, 0, reach);
     }
-    const co2Most = ports.co2 ? ports.co2.most : 0;
-    const co2Gh = Math.min(hcl * CO2_PER_HCL, Math.max(0, co2Most));
-    const acidGh = Math.max(0, hcl - (online('co2') ? co2Gh / CO2_PER_HCL : 0));
+    const co2Gh = Math.min(hcl * CO2_PER_HCL, co2Allowance);
+    const acidGh = Math.min(
+      acidAllowanceGh,
+      Math.max(0, hcl - (online('co2') ? co2Gh / CO2_PER_HCL : 0)),
+    );
     wanted = {
       hypochlorite: hypoDemand,
       acid: toDemand('acid', acidGh, ports.acid),
@@ -362,7 +417,7 @@ export function stepController(
   });
   const demands = perChannel((id) => channels[id].demand);
   return {
-    state: { integral, phIntegral, phHold, demands, starved },
+    state: { integral, chlorineRecovery, phIntegral, phHold, demands, starved },
     out: { demands, channels, inhibit, lockout },
   };
 }
