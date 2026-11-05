@@ -12,13 +12,19 @@ The owner, 2026-11-05: "When objects are picked up or placed, that should be ani
 - Picking up: the thing goes straight into the hand's frame and is pulled the rest of the way by an exponential smoothing (`held.grab.lerp(…, dt * 12)` in `controls/input/object-handling.ts`): it eases out, not in, and has no set duration. Inspecting (117) swings it to the middle of the view the same way.
 - Putting down: aimed at a place that takes it (its home slot, a socket, a carton), it snaps in at once; otherwise it falls from the hand by its drop profile onto the floor or a supportable top (`logic/support-landing.ts`). Nothing is placed with a move of its own.
 
+## Settled with the owner (2026-11-05)
+
+1. Picking up and putting down each take about half a second, easing in and out. The object follows the most direct route between its starting place and the hand, or between the hand and its destination. These are deliberate hand-guided moves, not throws.
+2. Once started, either animation completes even if the walker moves or turns. A placement destination is chosen when the action starts and stays fixed in the world; later movement does not redirect it. Placement has no bounce, ricochet or other physics effect.
+3. Placement resolves an aimed valid place, allowing a snap to a nearby valid position. If there is no valid position, the object stays in hand and no placement begins. Throwing or dropping without a valid placement target belongs to [211](211-let-go-throw-use-while-holding.md).
+4. Keep these animations silent for now; sound can be added later.
+
 ## Proposed, still to settle (one question at a time)
 
-- **Picking up:** an eased (in and out) move of about 0.3 s from where the thing rests to the hand, position and turn together, by one pure tween (`controls/logic/`, tested); while it moves it cannot be let go of or inspected.
-- **Putting down:** the same move reversed, from the hand to where it will rest (a place that takes it, or a supportable surface aimed at within reach), ending flat on it; what decides that it is put down rather than dropped or thrown is 211's.
-- **Interrupted:** what happens if the walker moves or turns during the move (the target follows the hand, so it never lags off screen).
+- **During the move:** whether the thing can be inspected or let go of before the animation completes, and how the hand's endpoint follows a moving walker during pick-up.
+- **Placement target:** how close a valid position must be to the aimed spot for the snap to count, and how to indicate that no valid placement is available.
 - **The same for every portable** in every room, the rooms' own snaps (put-back, sockets, the carton) included.
-- Open: the duration (fixed, or by distance), an arc over things in the way, and a sound at the start and end (the drop profile's material).
+- **Implementation:** one pure tween (`controls/logic/`, tested) for position and turn; placing ends flat on its chosen support.
 
 ## Records
 
