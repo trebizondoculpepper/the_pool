@@ -122,6 +122,16 @@ export const PRIMITIVES = {
       },
     },
   },
+  // Mission 208 (the owner, 2026-11-05): a simpler parallel version beside
+  // high and low poly. Gameplay: what is put on it, or stands on it, rests
+  // on its true top, cheaply, however its drawn model is made.
+  'bounds-model': {
+    facet: 'surface',
+    words:
+      'its bounds model (a few boxes and cylinders its builder declares), not its drawn body, gives its tops; without one, a box fitted to its body',
+    implies: ['supportable'],
+    needs: 'form',
+  },
   walkable: {
     facet: 'surface',
     words: 'its top bears the player',

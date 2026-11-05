@@ -46,6 +46,11 @@ import {
 import type { PolyVariant, VisualCost } from '../logic/visual-cost';
 import { lastMeasurement, lowVersionOf } from './visual-cost';
 import { showInFull } from '../../components/core/views/display-reach';
+import {
+  createBoundsView,
+  findBoundsModel,
+} from '../../components/core/views/bounds-model';
+import { boxBetween } from '../../components/core/logic/bounds-model';
 import { cadLights } from './cad-sheet';
 import { ITEM_AUDIT_SECTIONS } from './item-audit-page';
 import type { MagicAdapter } from './magic-adapters';
@@ -156,7 +161,7 @@ function builtFingerprint(object: Object3D): string {
 }
 
 /** The item as its adapter builds it, at its representative state, in metres. */
-function buildItem(adapter: MagicAdapter, variant: string) {
+function buildItem(adapter: MagicAdapter, variant: string, bounds = false) {
   const kit = createPanelKit();
   const item = adapter.build(kit);
   if (adapter.looks[0]) item.setLook?.(adapter.looks[0].id);
@@ -170,9 +175,26 @@ function buildItem(adapter: MagicAdapter, variant: string) {
     holder.remove(item.object);
     holder.add(low.object);
   }
+  // The BOUNDS toggle (mission 208): its bounds model drawn over it, orange
+  // where its builder declared one, grey where only a fitted box stands in.
+  const declared = bounds ? findBoundsModel(item.object) : undefined;
+  let overlay: ReturnType<typeof createBoundsView> | null = null;
+  if (bounds) {
+    const b = new Box3().setFromObject(holder);
+    overlay = declared
+      ? createBoundsView(declared)
+      : b.isEmpty()
+        ? null
+        : createBoundsView([boxBetween(b.min, b.max)], { fitted: true });
+    if (overlay) holder.add(overlay.object);
+  }
   return {
     holder,
     dispose() {
+      if (overlay) {
+        holder.remove(overlay.object);
+        overlay.dispose();
+      }
       if (low) {
         disposeKit(kit, holder);
         low.dispose();
@@ -201,14 +223,19 @@ const boundsOf = (o: Object3D): Bounds => {
  */
 export async function renderCadViews(
   adapter: MagicAdapter,
-  { variant = 'default' }: { variant?: string } = {},
+  {
+    variant = 'default',
+    bounds = false,
+  }: { variant?: string; bounds?: boolean } = {},
 ): Promise<CadSheet & { fromCache: boolean }> {
-  const { holder, dispose } = buildItem(adapter, variant);
+  const { holder, dispose } = buildItem(adapter, variant, bounds);
+  // The bounds overlay is its own sheet, cached apart.
+  const sheetVariant = bounds ? `${variant}+bounds` : variant;
   try {
-    const id = cadEntryId(adapter.kind, variant);
+    const id = cadEntryId(adapter.kind, sheetVariant);
     const key = cadCacheKey({
       kind: adapter.kind,
-      variant,
+      variant: sheetVariant,
       version: String(import.meta.env.VITE_VERSION ?? ''),
       build: String(import.meta.env.VITE_BUILD ?? ''),
       builder: `${adapter.source}:${builtFingerprint(holder)}`,
@@ -342,12 +369,24 @@ function cadSection(adapter: MagicAdapter | undefined, kind: string) {
     buttons.set(v, b);
     poly.append(b);
   }
+  // BOUNDS (mission 208): a toggle, over whichever version is shown.
+  const boundsButton = document.createElement('button');
+  boundsButton.type = 'button';
+  boundsButton.textContent = 'BOUNDS';
+  boundsButton.title =
+    'Overlay its bounds model: orange where declared, grey where a fitted box stands in';
+  boundsButton.addEventListener('click', () => {
+    state.bounds = !state.bounds;
+    show(state.variant);
+  });
+  poly.append(boundsButton);
   const cost = document.createElement('p');
   cost.className = 'cad-cost';
   section.append(poly, cost, note, grid);
   const state = {
     kind,
     variant: 'high' as PolyVariant,
+    bounds: false,
     done: false,
     fromCache: false,
     key: '',
@@ -374,6 +413,7 @@ function cadSection(adapter: MagicAdapter | undefined, kind: string) {
     state.variant = variant;
     state.done = false;
     for (const [v, b] of buttons) b.classList.toggle('is-on', v === variant);
+    boundsButton.classList.toggle('is-on', state.bounds);
     costLine(variant);
     note.textContent = 'Drawing its views (first visit since it changed)…';
     const figures = new Map<CadViewName, HTMLElement>();
@@ -382,7 +422,7 @@ function cadSection(adapter: MagicAdapter | undefined, kind: string) {
       const f = document.createElement('figure');
       const label = document.createElement('span');
       label.className = 'label';
-      label.textContent = `${v.label} · ${VARIANT_LABEL[variant]}`;
+      label.textContent = `${v.label} · ${VARIANT_LABEL[variant]}${state.bounds ? ' · BOUNDS' : ''}`;
       const wait = document.createElement('span');
       wait.className = 'wait';
       wait.textContent = 'drawing…';
@@ -392,7 +432,7 @@ function cadSection(adapter: MagicAdapter | undefined, kind: string) {
     }
     // After the page has painted its frames: drawing takes a moment.
     setTimeout(() => {
-      void renderCadViews(adapter, { variant })
+      void renderCadViews(adapter, { variant, bounds: state.bounds })
         .then((sheet) => {
           if (ticket !== drawing) return;
           for (const v of CAD_VIEWS) {

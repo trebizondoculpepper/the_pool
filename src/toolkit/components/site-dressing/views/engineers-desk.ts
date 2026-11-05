@@ -21,6 +21,8 @@ import { createPortableBoard } from '../../../controls/logic/portable-board';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import { markEquipmentKind } from '../../core/views/equipment-kind';
 import { markNonBody } from '../../core/views/non-body';
+import { setBoundsModel } from '../../core/views/bounds-model';
+import { boxBetween } from '../../core/logic/bounds-model';
 import { createPutBack } from '../logic/put-back';
 import type { Pose } from '../logic/put-back';
 import { SOFTWARE_TITLES } from '../logic/software-boxes';
@@ -290,9 +292,17 @@ export function createEngineersDesk(
     .catch(() => {});
 
   // The desk's top is where a dropped box lands because the desk's kind is
-  // supportable: the room derives the top from the desk's body (missions
-  // 175, 181), so no hidden marker is laid over it. One let go over it
-  // lands there, one whose middle is past its edge falls to the floor (the
+  // supportable. Its bounds model (mission 208), declared here beside the
+  // drawn model, gives that top: the whole 1.6 × 0.8 m board at 0.73 m,
+  // where rays cast on the drawn desk found only 0.62 m of its depth. No
+  // hidden marker is laid over it.
+  setBoundsModel(group, [
+    boxBetween(
+      { x: -DESK.w / 2, y: DESK.h - 0.03, z: -DESK.d / 2 },
+      { x: DESK.w / 2, y: DESK.h, z: DESK.d / 2 },
+    ),
+  ]);
+  // One let go over it lands there, one whose middle is past its edge falls to the floor (the
   // owner, 2026-10-31).
 
   // It boots DOS (the game's `dos` boot sequence) when its power is pressed.

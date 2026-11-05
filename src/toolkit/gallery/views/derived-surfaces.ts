@@ -7,6 +7,12 @@ import {
   resolveMeta,
 } from '../../../game/plant/traits';
 import { isNonBody } from '../../components/core/views/non-body';
+import { boundsModelOf } from '../../components/core/views/bounds-model';
+import {
+  boxBetween,
+  primitiveTop,
+} from '../../components/core/logic/bounds-model';
+import type { BoundsModel } from '../../components/core/logic/bounds-model';
 import { deriveSurface, planeSurface } from '../logic/derived-surface';
 import type { DerivedSurface, SurfaceSample } from '../logic/derived-surface';
 
@@ -36,6 +42,8 @@ function surfaceTraitsOf(kind: string) {
   const meta = resolveMeta(k.traits, k.meta ?? {}, composites).values;
   return {
     walkable: ps.includes('walkable'),
+    // Mission 208: its tops from its bounds model, not rays on its body.
+    bounded: ps.includes('bounds-model'),
     mode: meta.surface === 'plane' ? ('plane' as const) : ('raycast' as const),
     surfaceY: typeof meta.surfaceY === 'number' ? meta.surfaceY : undefined,
   };
@@ -57,6 +65,66 @@ function bodyMeshes(object: Object3D): Mesh[] {
   };
   walk(object);
   return meshes;
+}
+
+/**
+ * A bounds-modelled object's surfaces (mission 208): each shape's flat top,
+ * carried into the room by the object's world matrix (its scale, turn and
+ * the room's metre), as the axis-aligned footprint of its four corners. A
+ * kind with the trait but an object with no declared model gets one box
+ * fitted to its body, in its own frame.
+ */
+export function boundedSurfaces(
+  object: Object3D,
+  walkable: boolean,
+): DerivedSurface[] {
+  object.updateWorldMatrix(true, true);
+  // Declared on the object, or on the built item a room has wrapped.
+  let holder: Object3D = object;
+  let model: BoundsModel | undefined;
+  object.traverse((o) => {
+    if (model) return;
+    model = boundsModelOf(o);
+    if (model) holder = o;
+  });
+  if (!model) {
+    const meshes = bodyMeshes(object);
+    if (!meshes.length) return [];
+    const inverse = object.matrixWorld.clone().invert();
+    const box = new Box3();
+    for (const m of meshes) {
+      m.geometry.computeBoundingBox();
+      const b = m.geometry.boundingBox!.clone();
+      b.applyMatrix4(m.matrixWorld).applyMatrix4(inverse);
+      box.union(b);
+    }
+    model = [boxBetween(box.min, box.max)];
+  }
+  const surfaces: DerivedSurface[] = [];
+  const corner = new Vector3();
+  for (const p of model) {
+    const t = primitiveTop(p);
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minZ = Infinity;
+    let maxZ = -Infinity;
+    let y = 0;
+    for (const [x, z] of [
+      [t.minX, t.minZ],
+      [t.maxX, t.minZ],
+      [t.minX, t.maxZ],
+      [t.maxX, t.maxZ],
+    ] as const) {
+      corner.set(x, t.y, z).applyMatrix4(holder.matrixWorld);
+      minX = Math.min(minX, corner.x);
+      maxX = Math.max(maxX, corner.x);
+      minZ = Math.min(minZ, corner.z);
+      maxZ = Math.max(maxZ, corner.z);
+      y = corner.y;
+    }
+    surfaces.push(planeSurface({ minX, maxX, minZ, maxZ }, y, walkable));
+  }
+  return surfaces;
 }
 
 /** One object's surface, from its body, in the room's scene units. */
@@ -141,6 +209,10 @@ export function roomSurfaces(root: Object3D, metre: number): DerivedSurface[] {
     if (!kind) return;
     const traits = surfaceTraitsOf(kind);
     if (!traits) return;
+    if (traits.bounded) {
+      surfaces.push(...boundedSurfaces(o, traits.walkable));
+      return;
+    }
     const s = objectSurface(o, metre, traits);
     if (s) surfaces.push(s);
   });

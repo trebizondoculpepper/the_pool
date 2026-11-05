@@ -320,3 +320,27 @@ describe.each(['plant_pool_01', 'wet_hall'] as const)(
     });
   },
 );
+
+it('takes the engineer’s desk’s top from its bounds model: the whole board, 0.73 m up (mission 208)', () => {
+  const built = createRoomEquipment(createPanelKit(), 'engineers_office');
+  built.group.updateMatrixWorld(true);
+  let desk: Object3D | undefined;
+  built.group.traverse((o) => {
+    if (o.name === 'Engineer’s desk') desk = o;
+  });
+  const at = new Vector3().setFromMatrixPosition(desk!.matrixWorld);
+  const tops = roomSurfaces(built.group, 1).filter(
+    (s) => at.x > s.minX && at.x < s.maxX && at.z > s.minZ && at.z < s.maxZ,
+  );
+  expect(tops.length).toBe(1);
+  const top = tops[0];
+  expect(top.top - at.y).toBeCloseTo(0.73, 2);
+  // Turned a quarter or not, the board is 1.6 by 0.8 m.
+  const spans = [top.maxX - top.minX, top.maxZ - top.minZ].sort(
+    (a, b) => a - b,
+  );
+  expect(spans[0]).toBeCloseTo(0.8, 2);
+  expect(spans[1]).toBeCloseTo(1.6, 2);
+  expect(top.walkable).toBe(false);
+  built.dispose();
+});
