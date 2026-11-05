@@ -14,7 +14,7 @@ import {
   Vector2,
   Vector3,
 } from 'three';
-import { assertDropProfile } from '../logic/drop-profile';
+import { assertDropProfile, boxRestAngle } from '../logic/drop-profile';
 import type { Material, Object3D, PerspectiveCamera } from 'three';
 import type { createPortableBoard } from '../logic/portable-board';
 import { createBoardFall } from '../logic/portable-board';
@@ -1126,10 +1126,9 @@ export function createObjectHandling(
             if (profile.shape === 'box') {
               const speed = Math.hypot(previous.vx, previous.vz);
               const snap = previous.grounded ? Math.max(0, 1 - speed / 0.2) : 0;
-              angle +=
-                ((Math.round(angle / (Math.PI / 2)) * Math.PI) / 2 - angle) *
-                snap;
-              // Box corners turn about a principal axis and finish on a face.
+              angle += (boxRestAngle(angle) - angle) * snap;
+              // Box corners turn about a principal axis and finish on the
+              // face it lies flat on (its largest), either way up.
               object.quaternion
                 .setFromAxisAngle(new Vector3(0, 0, 1), angle)
                 .multiply(fall.flat);

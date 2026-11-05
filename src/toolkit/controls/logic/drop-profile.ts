@@ -97,3 +97,12 @@ export const DEFAULT_BOARD_DROP = createDropProfile(
   'board',
   0.015,
 );
+
+/**
+ * The tumble angle a box settles to (the owner, 2026-11-05): a half turn,
+ * never a quarter, so it comes to rest on the face it lies flat on (a box
+ * rests on its largest face, mission 177), either way up, not on an edge.
+ */
+export function boxRestAngle(angle: number): number {
+  return Math.round(angle / Math.PI) * Math.PI;
+}

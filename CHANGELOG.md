@@ -47,6 +47,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- A dropped box comes to rest on its large flat face, either way up, never on a short side.
+
 - The engineer's desk boxes can be picked up again after one is dropped, thrown or put down: the hands now tell a held thing's owner whenever it leaves them, not only through the room's own release.
 
 - The Trio's chlorine recovery now accounts for dose still in the circulation, avoiding low-chlorine overshoot, while pH control responds to turnover and alkalinity and holds its learned correction during hand feeding. All 71 previously marked Aqualis verification failures are ordinary checks again; the world power-loss test is restored (mission 207).
