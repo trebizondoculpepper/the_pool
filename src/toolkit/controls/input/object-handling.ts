@@ -1,4 +1,7 @@
 import { footprintOn, handMove } from '../logic/hand-move';
+import { launch, stepThrow } from '../logic/throw';
+import type { ThrowState } from '../logic/throw';
+import type { Footprint } from '../logic/walk-collision';
 import { landingGround } from '../logic/support-landing';
 import type { Release } from '../logic/support-landing';
 import {
@@ -154,6 +157,11 @@ export function createObjectHandling(
   ) => TargetFeedback,
   /** A part is being picked up, before it leaves its place (a spark, a notice). */
   onPickUp?: (object: Object3D, portable: PortableObject) => void,
+  /**
+   * The room's solid things on the floor plan (its walls, cabinets), in
+   * scene units: what a throw rebounds off (mission 211).
+   */
+  walls: () => readonly Footprint[] = () => [],
 ) {
   const fixedSupports: SupportSurface[] = [];
   root.updateMatrixWorld(true);
@@ -209,6 +217,17 @@ export function createObjectHandling(
     /** On its way from where it rested to the hand (mission 210). */
     move: { age: number; from: Vector3; fromQ: Quaternion } | null;
   } | null = null;
+  // Things thrown, in flight until they come down (mission 211).
+  const throwing = new Map<
+    Object3D,
+    {
+      portable: PortableObject;
+      state: ThrowState;
+      centre: Vector3;
+      half: number;
+      halfHeight: number;
+    }
+  >();
   // Things on their way from the hand to a place on a top (mission 210).
   const placing = new Map<
     Object3D,
@@ -514,9 +533,69 @@ export function createObjectHandling(
     fall(object, portable);
   };
   /** Let the held thing go from the hand, to fall by its drop profile (until 211's throw). */
-  const fall = (object: Object3D, portable: PortableObject) => {
+  /** A thing's middle and size in its own frame, scaled, in metres. */
+  const middleAndSize = (object: Object3D) => {
+    const bounds = ownBounds(object);
+    return {
+      centre: bounds
+        .getCenter(new Vector3())
+        .multiply(object.scale)
+        .divideScalar(metre),
+      size: bounds
+        .getSize(new Vector3())
+        .multiply(object.scale)
+        .divideScalar(metre),
+    };
+  };
+  /**
+   * LET GO with nothing to take it (mission 211): thrown from the hand the
+   * way it is aimed, at the one leisurely speed, rebounding off the room's
+   * solid sides, until it comes down on the floor or a top; then it falls
+   * and settles as anything let go does. Aimed down, a short drop.
+   */
+  const throwFrom = (object: Object3D, portable: PortableObject) => {
     portable.component.drop();
     if (divert?.(object, portable)) {
+      records.delete(object);
+      held = null;
+      return;
+    }
+    const { centre, size } = middleAndSize(object);
+    const at = object.position
+      .clone()
+      .divideScalar(metre)
+      .add(centre.clone().applyQuaternion(object.quaternion));
+    const aim = camera.getWorldDirection(new Vector3());
+    const start = launch(at, aim);
+    const placed = redirectDrop?.({
+      x: start.x,
+      y: start.y,
+      z: start.z,
+      vx: start.vx,
+      vz: start.vz,
+    });
+    if (placed) Object.assign(start, placed);
+    object.position
+      .set(start.x, start.y, start.z)
+      .sub(centre.clone().applyQuaternion(object.quaternion))
+      .multiplyScalar(metre);
+    throwing.set(object, {
+      portable,
+      state: start,
+      centre,
+      half: Math.max(size.x, size.z) / 2,
+      halfHeight: size.y / 2,
+    });
+    held = null;
+  };
+  const fall = (
+    object: Object3D,
+    portable: PortableObject,
+    /** Where a throw came down, and how it was going: it falls on from there. */
+    landing?: { x: number; y: number; z: number; vx: number; vz: number },
+  ) => {
+    if (!landing) portable.component.drop();
+    if (!landing && divert?.(object, portable)) {
       // The room's to move from now on: it is not put back where it was
       // picked up, even if it is installed again somewhere else.
       records.delete(object);
@@ -526,8 +605,8 @@ export function createObjectHandling(
     const profile = portable.component.dropProfile;
     assertDropProfile(profile);
     const forward = camera.getWorldDirection(new Vector3());
-    const vx = forward.x * 0.65 + 0.12;
-    const vz = forward.z * 0.65;
+    const vx = landing?.vx ?? forward.x * 0.65 + 0.12;
+    const vz = landing?.vz ?? forward.z * 0.65;
     const axis = new Vector3(vz, 0, -vx).normalize();
     if (axis.lengthSq() === 0) axis.set(1, 0, 0);
     const flat = lyingFlat(portable);
@@ -569,13 +648,14 @@ export function createObjectHandling(
       .clone()
       .divideScalar(metre)
       .add(centre.clone().applyQuaternion(original));
-    const placed = redirectDrop?.({
-      x: position.x,
-      y: position.y,
-      z: position.z,
-      vx,
-      vz,
-    }) ?? { x: position.x, y: position.y, z: position.z, vx, vz };
+    const placed = landing ??
+      redirectDrop?.({
+        x: position.x,
+        y: position.y,
+        z: position.z,
+        vx,
+        vz,
+      }) ?? { x: position.x, y: position.y, z: position.z, vx, vz };
     position.set(placed.x, placed.y, placed.z);
     object.position
       .copy(position)
@@ -649,6 +729,7 @@ export function createObjectHandling(
       : local.getSize(new Vector3()).multiply(object.scale);
     inspectScale = 1;
     placing.delete(object);
+    throwing.delete(object);
     held = {
       object,
       // Straight for the hand (mission 210): the move eases it there.
@@ -828,10 +909,10 @@ export function createObjectHandling(
     /** Use at a point: whether the hands took it (else the room's use runs). */
     use: (x: number, y: number) => resolve(x, y).run(),
     /**
-     * LET GO at a point (mission 211's input; the owner, 2026-11-05): a bin
-     * aimed at within reach takes it, as a use would (209); anything else,
-     * it leaves the hand and falls (211's throw is to come). Whether it was
-     * let go of.
+     * LET GO at a point (mission 211; the owner, 2026-11-05): a bin aimed
+     * at within reach takes it, as a use would (209); anywhere else it is
+     * thrown the way it is aimed, a short drop when aimed down. Whether it
+     * was let go of.
      */
     letGo(x: number, y: number) {
       if (!held || held.move || inspecting) return false;
@@ -845,9 +926,11 @@ export function createObjectHandling(
         held = null;
         return true;
       }
-      fall(object, portable);
+      throwFrom(object, portable);
       return true;
     },
+    /** Whether a thing is in flight, thrown (mission 211). */
+    thrown: (object: Object3D) => throwing.has(object),
     /** Whether a thing is on its way to the hand or to a top. */
     moving: () => Boolean(held?.move) || placing.size > 0,
     /**
@@ -877,6 +960,7 @@ export function createObjectHandling(
       records.delete(object);
       falling.delete(object);
       placing.delete(object);
+      throwing.delete(object);
       if (held?.object === object) held = null;
     },
     /** Whether the hands have something, or something at the centre can be lifted now. */
@@ -899,6 +983,8 @@ export function createObjectHandling(
         object.quaternion.copy(record.rotation);
         object.scale.copy(record.scale);
         falling.delete(object);
+        throwing.delete(object);
+        placing.delete(object);
         if (held?.object === object) held = null;
         records.delete(object);
       }
@@ -958,6 +1044,41 @@ export function createObjectHandling(
           }
           held.object.position.copy(start).addScaledVector(travel, safe);
         } else held.object.position.copy(target);
+      }
+      for (const [object, flight] of throwing) {
+        const sides = walls().map((w) => ({
+          minX: w.minX / metre,
+          maxX: w.maxX / metre,
+          minZ: w.minZ / metre,
+          maxZ: w.maxZ / metre,
+        }));
+        const was = flight.state;
+        flight.state = stepThrow(was, dt, sides, flight.half);
+        const s = flight.state;
+        // Down on the floor, or on a top it comes down onto from above (181).
+        const ground = landingGround(
+          [...fixedSupports, ...supports()],
+          s.x,
+          s.z,
+          was.y - flight.halfHeight,
+          floorY / metre,
+        );
+        const landed = s.y - flight.halfHeight <= ground;
+        const y = landed ? ground + flight.halfHeight : s.y;
+        object.position
+          .set(s.x, y, s.z)
+          .sub(flight.centre.clone().applyQuaternion(object.quaternion))
+          .multiplyScalar(metre);
+        if (!landed) continue;
+        throwing.delete(object);
+        // It falls on from where it came down, a little slower, and settles.
+        fall(object, flight.portable, {
+          x: s.x,
+          y,
+          z: s.z,
+          vx: s.vx * 0.5,
+          vz: s.vz * 0.5,
+        });
       }
       for (const [object, move] of placing) {
         move.age += dt;
@@ -1055,6 +1176,7 @@ export function createObjectHandling(
       records.clear();
       falling.clear();
       placing.clear();
+      throwing.clear();
       held = null;
     },
   };

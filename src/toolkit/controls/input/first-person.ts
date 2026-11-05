@@ -370,6 +370,8 @@ export function createFirstPerson(options: FirstPersonOptions) {
         options.allowPickup,
         options.targetFeedback,
         options.onPickUp,
+        // What a throw rebounds off (211): what the walker cannot walk through.
+        () => options.solids?.() ?? [],
       )
     : null;
   const use = (x: number, y: number) => {

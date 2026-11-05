@@ -94,3 +94,5 @@ Checked against the code on 2026-11-05. Questions are numbered so they can be an
 4. **LET GO at a bin that refuses.** Hall 5's bin takes only the finds. Today LET GO at it with anything else keeps the thing in hand, and the cue is red. Should it instead be thrown, and bounce off?
 5. **While inspecting.** LET GO does nothing while the thing is held up to look at (X, INSPECT or Y held). Is that right, or should it let go from there?
 6. **Ladders.** These already work with something in hand: a use at a ladder mounts it before the hands are asked. Nothing more is needed for "use a ladder while holding", unless the held thing should be hidden while climbing.
+
+**Built 2026-11-05 (ahnaa_dmitrieva), on the defaults proposed above, each for the owner to overrule:** rebounds use the room's floor-plan solids now (1); there is no angle for a drop, one rule covers both (2); dropped and thrown things keep their material sounds for now, since the neutral sound waits on the owner's answer to 3; LET GO at a bin that refuses keeps the thing in hand (4); LET GO does nothing while inspecting (5); ladders needed nothing (6).

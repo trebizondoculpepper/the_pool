@@ -532,3 +532,78 @@ it('leaves a use at the floor to the room, the thing kept in hand (mission 211)'
   expect(f.handling.holding()).toBe(true);
   f.handling.dispose();
 });
+
+it('throws on LET GO: off a solid wall it rebounds, and it comes to rest on the floor this side (mission 211)', () => {
+  const scene = new Scene();
+  const object = new Mesh(
+    new BoxGeometry(0.1, 0.1, 0.1),
+    new MeshBasicMaterial(),
+  );
+  object.position.set(0, 1, -0.6);
+  scene.add(object);
+  const component = createPortableBoard();
+  object.userData.portable = { component, flat: 'upright', detach() {} };
+  const camera = new PerspectiveCamera(52, 1, 0.05, 20);
+  camera.position.set(0, 1.5, 0);
+  camera.lookAt(0, 1, -0.6);
+  const wall = { minX: -5, maxX: 5, minZ: -1.6, maxZ: -1.5 };
+  const handling = createObjectHandling(
+    scene,
+    camera,
+    1,
+    0,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    undefined,
+    () => [wall],
+  );
+  handling.use(0, 0);
+  handling.update(0.6);
+  camera.lookAt(0, 1.6, -2);
+  expect(handling.letGo(0, 0)).toBe(true);
+  expect(handling.thrown(object)).toBe(true);
+  let furthest = 0;
+  for (let i = 0; i < 400; i++) {
+    handling.update(1 / 60);
+    furthest = Math.min(furthest, object.position.z);
+  }
+  expect(handling.thrown(object)).toBe(false);
+  expect(component.phase.value).toBe('settled');
+  // Never through the wall, and back on this side of it.
+  expect(furthest).toBeGreaterThan(-1.5);
+  expect(object.position.z).toBeGreaterThan(-1.5);
+  expect(new Box3().setFromObject(object).min.y).toBeCloseTo(0, 2);
+  handling.dispose();
+});
+
+it('a throw that comes down onto a top rests on it (mission 211, 181)', () => {
+  const scene = new Scene();
+  const object = new Mesh(
+    new BoxGeometry(0.1, 0.1, 0.1),
+    new MeshBasicMaterial(),
+  );
+  object.position.set(0, 1, -0.6);
+  scene.add(object);
+  const component = createPortableBoard();
+  object.userData.portable = { component, flat: 'upright', detach() {} };
+  const camera = new PerspectiveCamera(52, 1, 0.05, 20);
+  camera.position.set(0, 1.5, 0);
+  camera.lookAt(0, 1, -0.6);
+  const top = { minX: -1, maxX: 1, minZ: -3, maxZ: -1, top: 0.73 };
+  const handling = createObjectHandling(scene, camera, 1, 0, () => [top]);
+  handling.use(0, 0);
+  handling.update(0.6);
+  // Lobbed up, to come down onto the top rather than hit its side.
+  camera.lookAt(0, 2.4, -2);
+  handling.update(1 / 60);
+  handling.letGo(0, 0);
+  for (let i = 0; i < 400; i++) handling.update(1 / 60);
+  expect(component.phase.value).toBe('settled');
+  expect(new Box3().setFromObject(object).min.y).toBeCloseTo(0.73, 2);
+  handling.dispose();
+});
