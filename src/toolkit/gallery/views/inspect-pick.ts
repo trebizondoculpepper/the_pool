@@ -4,16 +4,27 @@ import type { World } from '../../../game/world';
 import { inspectComponent } from '../../../game/plant/component-inspection';
 import { owningComponent } from '../../components/core/views/component-identity';
 import type { ComponentIdentity } from '../../components/core/views/component-identity';
+import {
+  equipmentKindOf,
+  kindOwnerOf,
+  BOUND_THING,
+} from '../../components/core/views/equipment-kind';
+import { EQUIPMENT_KINDS, isKindId } from '../../../game/plant/equipment-kinds';
+import { kindFiles } from '../../../game/plant/kind-files';
 import { INSPECT_REACH_METRES } from '../../controls/logic/inspection';
 import type { InspectionTarget } from '../../controls/logic/inspection';
+import { useRoomInspector } from '../../controls/input/room-controller';
 
 /**
  * What the information overlay names at a point of the view (prompt 061):
  * the first surface the aim meets, within reach, blocks what is behind it
  * (a wall, a closed cabinet door); its nearest marked owner up its parents
- * is the component named (`component-identity.ts`), or nothing. Hidden
- * meshes are passed through, except a deliberate pick mesh
- * (`userData.pick`); lines and points never block. Inspecting only looks.
+ * is the component named (`component-identity.ts`), or nothing. Where a
+ * thing has no identity but a registered kind (mission 160), it is named
+ * by the kind's type, with the binding's thing as its tag when the object
+ * carries it. Hidden meshes are passed through, except a deliberate pick
+ * mesh (`userData.pick`); lines and points never block. Inspecting only
+ * looks.
  */
 
 const shown = (object: Object3D) => {
@@ -93,16 +104,84 @@ export function createInspector(options: InspectorOptions) {
       const identity = owner?.identity.part
         ? owner.identity
         : (options.identify?.(hit.object) ?? owner?.identity);
-      if (!identity) return null;
-      const lines = inspectComponent(identity, options.world?.());
-      // A part with nothing more to say: what it is on (prompt 068).
-      if (lines && identity.part && !lines.detail && owner?.object.parent) {
-        const whole = owningComponent(owner.object.parent)?.identity;
-        const on = whole && !whole.part ? inspectComponent(whole) : null;
-        if (on) return { ...lines, detail: `On ${on.title}.` };
+      if (identity) {
+        const lines = inspectComponent(identity, options.world?.());
+        // A part with nothing more to say: what it is on (prompt 068).
+        if (lines && identity.part && !lines.detail && owner?.object.parent) {
+          const whole = owningComponent(owner.object.parent)?.identity;
+          const on = whole && !whole.part ? inspectComponent(whole) : null;
+          if (on) return { ...lines, detail: `On ${on.title}.` };
+        }
+        return lines;
       }
-      return lines;
+      // No identity: a registered kind names the thing (mission 160), by
+      // its kind's type, with the binding's thing as its tag when the
+      // object carries one. Anything else stays silent and still blocks.
+      const kind = equipmentKindOf(hit.object);
+      return kind ? kindTarget(kind, hit.object) : null;
     }
     return null;
   };
 }
+
+/**
+ * What a hit with a registered kind but no identity is called (mission
+ * 160): the kind's own name (`type`), the registry's bound thing as its
+ * tag where the object carries one (the desk's software boxes are bound
+ * by their title's id), the object's own bound tag where a placed item
+ * keeps it.
+ */
+function kindTarget(kind: string, object: Object3D): InspectionTarget | null {
+  if (!isKindId(kind)) return null;
+  const item = EQUIPMENT_KINDS[kind];
+  const tag = boundTag(kind, object);
+  return { key: tag ? `thing:${tag}` : `kind:${kind}`, title: item.type };
+}
+
+/**
+ * The registry's bound things, once per kind (mission 160): the kind
+ * files' `bindings` are static and shared, so they are gathered once, not
+ * on every hit; `kindFiles()` rebuilding the whole record every call is
+ * why this cache exists.
+ */
+const boundThings = new Map<string, Set<string>>();
+function boundThingsOf(kind: string): Set<string> {
+  let things = boundThings.get(kind);
+  if (!things) {
+    things = new Set((kindFiles()[kind]?.bindings ?? []).map((b) => b.thing));
+    boundThings.set(kind, things);
+  }
+  return things;
+}
+
+/**
+ * The registry's bound thing for `object` of `kind`: the kind-carrying
+ * object's own `boundThing` mark where the builder set it (the desk's
+ * software boxes are bound by their title's id), when that thing is one
+ * of the kind's bindings. Nothing is guessed: a value read only from the
+ * marker that set the kind, never from any object's other data.
+ */
+function boundTag(kind: string, object: Object3D): string | null {
+  const owner = kindOwnerOf(object);
+  const thing = owner?.userData[BOUND_THING];
+  if (typeof thing !== 'string' || !thing) return null;
+  return boundThingsOf(kind).has(thing) ? thing : null;
+}
+
+/**
+ * Register the information overlay for every room (mission 160): the game
+ * calls this once (`main.ts`, along with `installRoomTraits`), and every
+ * room's controller builds its inspector from its own scene, camera and
+ * metre plus the room's `world` and `identify` data. Rooms stop passing
+ * `inspect` themselves.
+ */
+export const installRoomInspector = () =>
+  useRoomInspector(({ scene, camera, metre, world, identify }) =>
+    createInspector({
+      root: scene,
+      camera,
+      metre,
+      world: world as () => World | undefined,
+      identify: identify as (object: Object3D) => ComponentIdentity | undefined,
+    }),
+  );

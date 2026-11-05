@@ -81,7 +81,6 @@ import {
 } from '../../components/core/views/eighties-controls';
 import { useOnHit } from '../../controls/input/touch-point';
 import { partAudio } from '../../components/core/audio/part-audio';
-import { createInspector } from '../views/inspect-pick';
 import { localNow } from '../logic/museum-time';
 import { HALL_EXHIBITS } from './museum/exhibits';
 import { createFarVersion } from '../../components/core/views/far-version';
@@ -352,8 +351,7 @@ export function startMuseumHallRoom(
       ].map(toScene),
     use: (x, y) => useAt(x, y)?.(),
     aimed: () => Boolean(useAt(0, 0)),
-    // The information overlay: each thing says only what it shows itself.
-    inspect: createInspector({ root: scene, camera, metre }),
+    // The overlay is the factory's (mission 160), from this scene.
   });
 
   // The freight lift's floor-4 landing on Hall 0's west wall (mission 108):

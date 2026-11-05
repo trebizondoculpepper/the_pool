@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import { BoxGeometry, Group, Mesh, PerspectiveCamera, Scene } from 'three';
 import { createInspector } from './inspect-pick';
 import { markComponent } from '../../components/core/views/component-identity';
+import { markEquipmentKind } from '../../components/core/views/equipment-kind';
 
 /** A scene looking down −z from the origin, with a marked valve 2 m ahead. */
 function scene() {
@@ -74,5 +75,59 @@ describe('picking what is aimed at', () => {
     tank.add(s.valve);
     s.update();
     expect(s.inspect(0, 0)?.key).toBe('PL3-BT1-IV1');
+  });
+
+  it('names a kind-only thing by its registered kind, not its absence of identity (160)', () => {
+    const root = new Scene();
+    const camera = new PerspectiveCamera(60, 1, 0.01, 100);
+    camera.position.set(0, 0, 0);
+    camera.lookAt(0, 0, -1);
+    // A software box: a kind mark but no component identity.
+    const box = markEquipmentKind(new Group(), 'software-box', 'the-pool');
+    box.position.z = -2;
+    const shell = new Mesh(new BoxGeometry(0.2, 0.2, 0.1));
+    box.add(shell);
+    root.add(box);
+    root.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    const inspect = createInspector({ root, camera, metre: 1 });
+    const named = inspect(0, 0);
+    // Named by the kind's type; its bound thing is its tag.
+    expect(named?.title).toBe('Software box');
+    expect(named?.key).toBe('thing:the-pool');
+  });
+
+  it('a kind-only thing with no bound instance is named by its kind, with the kind key (160)', () => {
+    const root = new Scene();
+    const camera = new PerspectiveCamera(60, 1, 0.01, 100);
+    camera.position.set(0, 0, 0);
+    camera.lookAt(0, 0, -1);
+    const shelf = markEquipmentKind(new Group(), 'office-shelf');
+    shelf.position.z = -2;
+    const board = new Mesh(new BoxGeometry(1, 0.05, 0.2));
+    shelf.add(board);
+    root.add(shelf);
+    root.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    const inspect = createInspector({ root, camera, metre: 1 });
+    expect(inspect(0, 0)).toEqual({
+      key: 'kind:office-shelf',
+      title: 'Office wall shelf',
+    });
+  });
+
+  it('an unregistered, unidentified thing stays silent and still blocks (160)', () => {
+    const root = new Scene();
+    const camera = new PerspectiveCamera(60, 1, 0.01, 100);
+    camera.position.set(0, 0, 0);
+    camera.lookAt(0, 0, -1);
+    const thing = new Group();
+    thing.position.z = -2;
+    thing.add(new Mesh(new BoxGeometry(0.2, 0.2, 0.2)));
+    root.add(thing);
+    root.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    const inspect = createInspector({ root, camera, metre: 1 });
+    expect(inspect(0, 0)).toBeNull();
   });
 });

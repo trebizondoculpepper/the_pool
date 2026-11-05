@@ -1,7 +1,8 @@
-import type { Object3D } from 'three';
+import type { Camera, Object3D } from 'three';
 import { createFirstPerson, firstPersonOn } from './first-person';
 import type { FirstPersonOptions } from './first-person';
 import type { PortableObject, SupportSurface } from './object-handling';
+import type { InspectionTarget } from '../logic/inspection';
 
 /** A named room style may be approved later; every room uses the standard style now. */
 export type RoomStyle = 'standard';
@@ -49,7 +50,50 @@ export const useRoomTraits = (traits: RoomTraits | null) => {
   registered = traits;
 };
 
-export interface RoomControllerOptions extends FirstPersonOptions {
+/**
+ * The information overlay (prompt 061), as the factory installs it for
+ * every room (mission 160): how what the aim meets is named. This layer
+ * imports nothing of ours, so the game registers the builder once
+ * (`useRoomInspector`, from `gallery/views/inspect-pick.ts`'s
+ * `installRoomInspector`) and every room's controller asks it, exactly as
+ * it does the carrying traits.
+ */
+export interface RoomInspectorOptions {
+  /** What to look among: the room's scene. */
+  scene: Object3D;
+  camera: Camera;
+  /** Scene units per metre. */
+  metre: number;
+  /** The world whose live state the second line reads, if the room has one. */
+  world?: () => unknown;
+  /** Another way to know a hit object, for a room whose things are not marked (dev0). */
+  identify?: (object: Object3D) => unknown;
+}
+
+export type RoomInspectorFactory = (
+  options: RoomInspectorOptions,
+) => ((x: number, y: number) => InspectionTarget | null) | null;
+
+let inspectorFactory: RoomInspectorFactory | null = null;
+
+/** Register the information overlay's builder for every room made after this. */
+export const useRoomInspector = (factory: RoomInspectorFactory | null) => {
+  inspectorFactory = factory;
+};
+
+/**
+ * The overlay a room's controller installs (mission 160): the registered
+ * factory's inspector for the room's own scene, camera and metre, or null
+ * where none is registered. Kept apart from the controller so a fast test
+ * can check the factory is asked.
+ */
+export const roomInspectorFor = (options: RoomInspectorOptions) =>
+  inspectorFactory ? inspectorFactory(options) : null;
+
+export interface RoomControllerOptions extends Omit<
+  FirstPersonOptions,
+  'inspect'
+> {
   roomStyle?: RoomStyle;
   /**
    * Whether the owner of a thing of a holdable kind lets it go now (a desk
@@ -58,6 +102,14 @@ export interface RoomControllerOptions extends FirstPersonOptions {
    * room's `allowPickup`.
    */
   ownerAllows?: (object: Object3D, portable: PortableObject) => boolean | null;
+  /**
+   * The world whose live state the information overlay's second line reads
+   * (mission 160): a room's own data, not behaviour, given to the factory's
+   * inspector. A room with no world of its own omits it.
+   */
+  world?: () => unknown;
+  /** Another way to know a hit object, for a room whose things are not marked (dev0). */
+  identify?: (object: Object3D) => unknown;
 }
 
 /**
@@ -65,13 +117,35 @@ export interface RoomControllerOptions extends FirstPersonOptions {
  * registry's traits registered and the room carrying things (`objects`),
  * a thing's kind decides whether it may be picked up (holdable or not; its
  * owner may still say not now), and things let go of rest on the room's
- * supportable tops besides any supports the room gives.
+ * supportable tops besides any supports the room gives. The information
+ * overlay (mission 160) is installed for every room from its own scene,
+ * camera and metre, so what is aimed at is named wherever the registry or
+ * the identity marks say so; a room no longer passes `inspect` itself.
  */
 export function createRoomController(options: RoomControllerOptions) {
   const traits = registered;
   const root = options.objects;
+  // The information overlay, one per room (mission 160): built by the
+  // registered inspector from what the controller already has, so every
+  // room names what is aimed at, and no room starter passes `inspect`
+  // (it is not in `RoomControllerOptions`; the factory is the only way).
+  const roomRoot = options.scene ?? root;
+  const inspect =
+    roomRoot !== undefined
+      ? roomInspectorFor({
+          scene: roomRoot,
+          camera: options.camera,
+          metre: options.metre,
+          world: options.world,
+          identify: options.identify,
+        })
+      : null;
+  const overlay: FirstPersonOptions = {
+    ...options,
+    ...(inspect !== null ? { inspect } : {}),
+  };
   if (!traits || !root)
-    return Object.assign(createFirstPerson(options), {
+    return Object.assign(createFirstPerson(overlay), {
       bins: null as RoomBins | null,
     });
   const scene = options.scene ?? root;
@@ -79,7 +153,7 @@ export function createRoomController(options: RoomControllerOptions) {
   const bins = traits.bins?.(scene, options.metre);
   traits.holdables?.(scene, options.metre);
   const walker = createFirstPerson({
-    ...options,
+    ...overlay,
     allowPickup(object, portable) {
       const holdable = traits.holdable(object);
       if (holdable === false) return false;

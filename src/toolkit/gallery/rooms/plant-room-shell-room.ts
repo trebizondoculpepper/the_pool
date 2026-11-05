@@ -4,7 +4,6 @@ import {
   markComponent,
 } from '../../components/core/views/component-identity';
 import { schematicNodeOfKind } from '../../../game/plant/model-valves';
-import { createInspector } from '../views/inspect-pick';
 import { createZoneMusicRack } from '../../components/sound/parts/zone-music-rack';
 import { createMusicThroughWall } from '../../components/sound/parts/music-speaker';
 import { JACUZZI_MUSIC } from '../audio/jacuzzi-music';
@@ -425,13 +424,8 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     ],
     use: (x, y) => usableAt(x, y)?.(),
     aimed: () => Boolean(usableAt(0, 0)),
-    // What is aimed at, named in the help line (prompt 061).
-    inspect: createInspector({
-      root: rooms,
-      camera,
-      metre,
-      world: () => roomWorld().world.value,
-    }),
+    // The overlay is the factory's (mission 160); the room gives it its world.
+    world: () => roomWorld().world.value,
   });
   const resizeTo = (width: number, height: number) => {
     if (!width || !height) return;

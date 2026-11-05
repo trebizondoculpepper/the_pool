@@ -48,7 +48,6 @@ import type {
 import { GAS_IDS } from '../../components/plant/logic/gas-cylinders';
 import { createMeshCagePart } from '../../components/architectural/parts/mesh-cage';
 import type { MeshCageSpec } from '../../components/architectural/logic/mesh-cage';
-import { createInspector } from '../views/inspect-pick';
 import { markComponent } from '../../components/core/views/component-identity';
 
 /** The tarmac's reach: solid to `solid`, faded into the overcast by `edge`, metres. */
@@ -404,8 +403,8 @@ export function startCo2CageRoom(canvas: HTMLCanvasElement) {
     ],
     use: (x, y) => usableAt(x, y)?.(),
     aimed: () => Boolean(usableAt(0, 0)),
-    // What is aimed at, named in the help line: each cylinder's gas and tag.
-    inspect: createInspector({ root: room, camera, metre: m }),
+    // The overlay is the factory's (mission 160), from this scene: each
+    // cylinder's gas and tag are named.
   });
   const resize = () => {
     const { width, height } = layoutSize(canvas);

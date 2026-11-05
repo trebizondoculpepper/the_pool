@@ -1,6 +1,5 @@
 import { bindRoomLights } from '../views/room-lights';
 import { zoneOfRoom } from '../../../game/plant/lighting';
-import { createInspector } from '../views/inspect-pick';
 import {
   AmbientLight,
   BoxGeometry,
@@ -207,12 +206,8 @@ export function startTankHall(canvas: HTMLCanvasElement) {
     ],
     use: (x, y) => useAt(x, y)?.(),
     aimed: () => Boolean(useAt(0, 0)),
-    inspect: createInspector({
-      root: room,
-      camera,
-      metre: m,
-      world: () => store.world.value,
-    }),
+    // The overlay is the factory's (mission 160); the room gives it its world.
+    world: () => store.world.value,
   });
   const raycaster = new Raycaster();
   const pointer = new Vector2();

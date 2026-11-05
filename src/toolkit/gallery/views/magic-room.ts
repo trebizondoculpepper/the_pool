@@ -28,6 +28,7 @@ import {
 } from '../../components/core/parts/render-style';
 import { createRoomController } from '../../controls/input/room-controller';
 import { installRoomTraits } from './room-traits';
+import { installRoomInspector } from './inspect-pick';
 import { useOnHit } from '../../controls/input/touch-point';
 import type { Footprint } from '../../controls/logic/walk-collision';
 import { WALL_THICKNESS, devWalls } from '../logic/dev-room-links';
@@ -477,6 +478,7 @@ export function runMagicRoom(root: HTMLElement) {
     })),
   ];
   installRoomTraits(); // the registry's carrying traits (189, 181)
+  installRoomInspector(); // the information overlay, for every room (160)
   const walk = createRoomController({
     scene,
     canvas,

@@ -95,9 +95,12 @@ import {
   LOOK_MODES,
 } from './toolkit/gallery/logic/look-ref';
 import { installRoomTraits } from './toolkit/gallery/views/room-traits';
+import { installRoomInspector } from './toolkit/gallery/views/inspect-pick';
 
-// The registry's traits drive every room's carrying (missions 189, 181).
+// The registry's traits drive every room's carrying (missions 189, 181),
+// and the information overlay is the factory's for every room (160).
 installRoomTraits();
+installRoomInspector();
 
 // Which build this is, until the title screen shows it.
 console.info(`Pool Plant ${versionLabel()}`);

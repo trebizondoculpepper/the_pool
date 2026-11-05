@@ -52,6 +52,14 @@ export function stubBrowser() {
         createRadialGradient: gradient,
         createLinearGradient: gradient,
         getImageData: () => ({ data: new Uint8ClampedArray(4) }),
+        // Textures (the torch's beam) write into the image's pixels and
+        // put it back; a big enough array, so `createFirstPerson` can run.
+        createImageData: () => ({
+          width: 0,
+          height: 0,
+          data: new Uint8ClampedArray(64 * 64 * 4),
+        }),
+        putImageData: () => {},
       },
       {
         get: (target, key) =>

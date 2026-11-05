@@ -448,8 +448,9 @@ export function createEngineersDesk(
     if (!t) return;
     const box = createSoftwareBox(kit, t);
     box.userData.softwareBox = t.id;
-    // A software box is holdable by its kind (mission 189), not by the room.
-    markEquipmentKind(box, 'software-box');
+    // A software box is holdable by its kind (mission 189), not by the
+    // room; its bound thing is its title's id, the overlay's tag (160).
+    markEquipmentKind(box, 'software-box', t.id);
     const portable = createPortableBoard(
       createDropProfile('box', softwareBoxSize(t).h, 'board'),
     );

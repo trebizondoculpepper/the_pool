@@ -1,4 +1,3 @@
-import { createInspector } from '../views/inspect-pick';
 import {
   createSwitchFuse,
   useSwitchFuse,
@@ -589,22 +588,18 @@ export function startControlsRoom(canvas: HTMLCanvasElement) {
     useWhileHolding: (_object, x, y) => use(x, y),
     // Its twin: whether that use would find anything, without working it.
     useWhileHoldingAt: (_object, x, y) => usableAt(x, y) !== null,
-    // What is aimed at, named in the help line (prompt 061): dev0's trial.
-    // Its exhibits carry no plant tags: a control is named by its part's
-    // name, the nearest control up the parents (a switch over its board).
-    inspect: createInspector({
-      root: scene,
-      camera,
-      metre: m,
-      identify: (object) => {
-        for (let o: Object3D | null = object; o; o = o.parent)
-          if (uses.has(o)) {
-            const name = partName(o);
-            return name ? { name } : undefined;
-          }
-        return undefined;
-      },
-    }),
+    // The overlay is the factory's (mission 160); dev0's trial gives it
+    // its own way of knowing a control. Its exhibits carry no plant tags:
+    // a control is named by its part's name, the nearest control up the
+    // parents (a switch over its board).
+    identify: (object) => {
+      for (let o: Object3D | null = object; o; o = o.parent)
+        if (uses.has(o)) {
+          const name = partName(o);
+          return name ? { name } : undefined;
+        }
+      return undefined;
+    },
   });
   const notes = document.createElement('div');
   notes.textContent = `DEV0 · Controls and Displays: controls, displays and boot sequences on the north wall, switch-fuse and distribution board on the south wall, machine components on ${MACHINE_GALLERY_LAYOUT.length} plinths and plant fittings on ${PLANT_GALLERY_LAYOUT.length}, plus ${EMPTY_GALLERY_LAYOUT.length} temporarily empty exhibits · Portals: the training room west, dev1 east`;

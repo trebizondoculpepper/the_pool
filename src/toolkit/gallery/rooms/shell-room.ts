@@ -21,7 +21,6 @@ import {
 } from '../views/dock-fittings';
 import { SHELL_WALL } from '../logic/shell-rooms';
 import { createDockOutside } from '../views/dock-outside';
-import { createInspector } from '../views/inspect-pick';
 import { addControlRoomPendants } from '../views/control-room-pendants';
 import { useOnHit } from '../../controls/input/touch-point';
 import { computed, signal } from '@preact/signals-core';
@@ -817,13 +816,9 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     ],
     use: (x, y) => usableAt(x, y)?.(),
     aimed: () => Boolean(usableAt(0, 0)),
-    // What is aimed at, named in the help line (prompt 061).
-    inspect: createInspector({
-      root: rooms,
-      camera,
-      metre,
-      world: () => roomWorld().world.value,
-    }),
+    // The information overlay is the factory's (mission 160); the room
+    // only gives it its world. What is aimed at is named in the help line.
+    world: () => roomWorld().world.value,
   });
   // A development handle for the console, as the plant rooms' is: stand
   // anywhere, in metres, and use what is at (x, y) on the screen (−1 to 1).
