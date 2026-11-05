@@ -53,5 +53,5 @@ export default defineKind({
       thing: 'the-pool',
     },
   ],
-  traits: ['box-like', 'holdable-small'],
+  traits: ['box-like', 'holdable-small', 'rackable', 'stackable'],
 });

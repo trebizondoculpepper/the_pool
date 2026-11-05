@@ -259,6 +259,66 @@ export const PRIMITIVES = {
     words:
       'things thrown at it from within reach fly in through its opening and stay, until picked out again',
   },
+  // Mission 206 (the owner, 2026-11-05). Gameplay: a rack stores many
+  // inspectable things in a compact, legible row (the engineer's shelf of
+  // software boxes), so a player can browse a library of machinery
+  // documentation. A designated shelf or rack target carries `rack`; an item
+  // that can stand stably in an orderly row carries `rackable`. Alignment
+  // happens only when a rackable item is placed on a rack.
+  rack: {
+    facet: 'use',
+    words:
+      'a designated one-row rack: holds a compact, centred row of rackable items',
+    needs: 'form',
+    meta: {
+      rowWidth: {
+        type: 'number',
+        default: 0.28,
+        words: 'its usable row width along the row, metres',
+      },
+      rowDepth: {
+        type: 'number',
+        default: 0.1,
+        words:
+          "its usable row depth, metres; every item's four bottom corners must fit it",
+      },
+      facing: {
+        type: 'enum',
+        values: DIRS,
+        default: '+z',
+        words: "the local face the row's labels turn toward the room",
+      },
+      gap: {
+        type: 'number',
+        default: 0.006,
+        words: 'the gap between items in the row, metres',
+      },
+    },
+  },
+  rackable: {
+    facet: 'use',
+    words:
+      'can stand stably in an orderly row on a rack; its label face turns to the room',
+    needs: 'form',
+    meta: {
+      outward: {
+        type: 'enum',
+        values: DIRS,
+        default: '+z',
+        words: 'the local face carrying its label to show from the rack',
+      },
+    },
+  },
+  // Mission 212 (the owner, 2026-11-05). Gameplay: tidying up — a suitable
+  // box-like item on a supportable top, then another on it, to make a pile.
+  // Its top is supportable so the pile can grow. Racking (206) is separate.
+  stackable: {
+    facet: 'use',
+    words:
+      'a box-like item that can be placed on any supportable top, another loose item too, in a slightly imperfect pile',
+    needs: 'form',
+    implies: ['supportable'],
+  },
   'safety-gear': {
     facet: 'role',
     words:
