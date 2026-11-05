@@ -110,6 +110,8 @@ export const OTHER_KIND_IDS = [
   'footbath',
   'gas-ball-valve',
   'level-transmitter',
+  'pc-monitor',
+  'pc-tower',
   'penstock',
   'pipework',
   'plant-room',

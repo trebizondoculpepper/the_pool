@@ -14,6 +14,7 @@ import { createOfficeChair } from '../../components/site-dressing/views/office-c
 import { createSoftwareBox } from '../../components/site-dressing/views/software-box';
 import { createFloppyDisk } from '../../components/site-dressing/views/floppy-disk';
 import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
+import { createDesk } from '../../components/site-dressing/views/engineers-desk';
 import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
 import type { ItemSize } from '../logic/magic-room-layout';
 
@@ -31,10 +32,18 @@ import type { ItemSize } from '../logic/magic-room-layout';
 export interface KindBuilder {
   title: string;
   size: ItemSize;
+  /**
+   * Used even where a room places the kind: the room builds it as part of
+   * an assembly (the desk with its PC), the magic room and CAD views the
+   * thing alone (the owner, 2026-11-05: "make the desk just a desk").
+   */
+  alone?: boolean;
   build(kit: PanelKit): {
     object: Object3D;
     parts?: PartSet;
     update?(delta: number): void;
+    /** Resolves once anything it loads is in (a model file). */
+    ready?: Promise<unknown>;
   };
 }
 
@@ -137,6 +146,23 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
       group.add(pc.monitor, pc.tower, pc.keyboard, pc.mouse);
       return { object: group };
     },
+  },
+  desk: {
+    title: 'Desk',
+    size: { w: 1.6, d: 0.8, h: 0.73, mount: 'floor' },
+    alone: true,
+    build: (kit) => createDesk(kit),
+  },
+  // Components of their own, though the desk lays them out (the owner, 2026-11-05).
+  'pc-tower': {
+    title: 'Computer (Gateway 3000 tower)',
+    size: { w: 0.19, d: 0.45, h: 0.43, mount: 'floor' },
+    build: (kit) => ({ object: createPeriodPc(kit).tower }),
+  },
+  'pc-monitor': {
+    title: 'CRT monitor',
+    size: { w: 0.4, d: 0.42, h: 0.4, mount: 'floor' },
+    build: (kit) => ({ object: createPeriodPc(kit).monitor }),
   },
   pump: {
     title: 'End-suction pump',

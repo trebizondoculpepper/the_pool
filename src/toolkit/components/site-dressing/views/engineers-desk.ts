@@ -248,6 +248,50 @@ export interface EngineersDeskOptions extends PeriodPcOptions {
 }
 
 /**
+ * Just the desk (the owner, 2026-11-05): the pedestal desk model, fitted to
+ * 1.6 × 0.8 × 0.73 m, and its bounds model (mission 208), its board, which
+ * gives its top: rays cast on the drawn desk found only 0.62 m of its
+ * depth. Origin the middle of its footprint on the floor, its user's side
+ * +z. `ready` resolves with the model once it is in (null if it failed).
+ */
+export function createDesk(kit: PanelKit): {
+  object: Group;
+  ready: Promise<Object3D | null>;
+} {
+  const object = new Group();
+  object.name = 'Desk';
+  setBoundsModel(object, [
+    boxBetween(
+      { x: -DESK.w / 2, y: DESK.h - 0.03, z: -DESK.d / 2 },
+      { x: DESK.w / 2, y: DESK.h, z: DESK.d / 2 },
+    ),
+  ]);
+  const ready = new GLTFLoader()
+    .loadAsync(deskUrl)
+    .then((gltf) => {
+      const scene = gltf.scene;
+      scene.traverse((o) => {
+        if (!(o instanceof Mesh)) return;
+        const material = o.material as MeshStandardMaterial;
+        const map = material.map ? beechTexture(material.map) : null;
+        if (map) {
+          material.map = map;
+          kit.textures.push(map);
+        }
+        material.metalness = 0;
+        material.roughness = 0.6;
+        kit.materials.push(material as Material);
+      });
+      const model = fitTo(scene, new Vector3(DESK.w, DESK.h, DESK.d));
+      model.name = 'Desk model';
+      object.add(model);
+      return model as Object3D;
+    })
+    .catch(() => null);
+  return { object, ready };
+}
+
+/**
  * The engineer's desk (the owner, 2026-10-31), late 1990s: a pedestal desk
  * from a free model library (CreativeTrio's "Desk", CC0, `resources/models/
  * office/`), in beech-effect laminate, with its Gateway 3000 PC
@@ -267,41 +311,13 @@ export function createEngineersDesk(
   group.name = 'Engineer’s desk';
   const top = DESK.h;
   let deskModel: Object3D | null = null;
-  // The desk itself, once its model is in.
-  const ready = new GLTFLoader()
-    .loadAsync(deskUrl)
-    .then((gltf) => {
-      const scene = gltf.scene;
-      scene.traverse((o) => {
-        if (!(o instanceof Mesh)) return;
-        const material = o.material as MeshStandardMaterial;
-        const map = material.map ? beechTexture(material.map) : null;
-        if (map) {
-          material.map = map;
-          kit.textures.push(map);
-        }
-        material.metalness = 0;
-        material.roughness = 0.6;
-        kit.materials.push(material as Material);
-      });
-      const desk = fitTo(scene, new Vector3(DESK.w, DESK.h, DESK.d));
-      desk.name = 'Desk';
-      group.add(desk);
-      deskModel = desk;
-    })
-    .catch(() => {});
-
-  // The desk's top is where a dropped box lands because the desk's kind is
-  // supportable. Its bounds model (mission 208), declared here beside the
-  // drawn model, gives that top: the whole 1.6 × 0.8 m board at 0.73 m,
-  // where rays cast on the drawn desk found only 0.62 m of its depth. No
-  // hidden marker is laid over it.
-  setBoundsModel(group, [
-    boxBetween(
-      { x: -DESK.w / 2, y: DESK.h - 0.03, z: -DESK.d / 2 },
-      { x: DESK.w / 2, y: DESK.h, z: DESK.d / 2 },
-    ),
-  ]);
+  // The desk itself: just a desk, a component of its own (the owner,
+  // 2026-11-05); what stands on and around it is added below.
+  const desk = createDesk(kit);
+  group.add(desk.object);
+  const ready = desk.ready.then((model) => {
+    deskModel = model;
+  });
   // One let go over it lands there, one whose middle is past its edge falls to the floor (the
   // owner, 2026-10-31).
 
@@ -319,6 +335,12 @@ export function createEngineersDesk(
   pc.mouse.position.set(0.17, top, 0.24);
   pc.mouse.rotation.y = 0.1;
   group.add(pc.monitor, pc.tower, pc.keyboard, pc.mouse);
+  // The tower and monitor are components of their own, standing on the
+  // desk, not part of it (the owner, 2026-11-05).
+  markEquipmentKind(pc.tower, 'pc-tower');
+  markEquipmentKind(pc.monitor, 'pc-monitor');
+  markNonBody(pc.tower);
+  markNonBody(pc.monitor);
   // The leads behind: tower to monitor, keyboard and mouse.
   group.add(
     createLead(kit, [

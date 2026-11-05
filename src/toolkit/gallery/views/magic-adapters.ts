@@ -55,6 +55,8 @@ export interface MagicItem {
   setLook?(id: string): void;
   /** Show one of its display pages. */
   setPage?(id: string): void;
+  /** Resolves once anything it loads is in: the CAD views wait for it. */
+  ready?: Promise<unknown>;
 }
 
 export interface MagicAdapter {
@@ -234,6 +236,8 @@ function fromLayoutItem(kind: string, item: Item, room: string): MagicAdapter {
 export function adapterFor(kind: string): MagicAdapter | undefined {
   if (Object.hasOwn(EXPLICIT, kind)) return EXPLICIT[kind];
   if (Object.hasOwn(MODELS, kind)) return fromModel(kind, MODELS[kind]);
+  if (Object.hasOwn(KIND_BUILDERS, kind) && KIND_BUILDERS[kind].alone)
+    return fromBuilder(kind, KIND_BUILDERS[kind]);
   const placed = layoutItemOf(kind);
   if (placed) return fromLayoutItem(kind, placed.item, placed.room);
   return Object.hasOwn(KIND_BUILDERS, kind)

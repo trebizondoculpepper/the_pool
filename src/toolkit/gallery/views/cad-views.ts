@@ -190,6 +190,7 @@ function buildItem(adapter: MagicAdapter, variant: string, bounds = false) {
   }
   return {
     holder,
+    ready: item.ready,
     dispose() {
       if (overlay) {
         holder.remove(overlay.object);
@@ -228,10 +229,12 @@ export async function renderCadViews(
     bounds = false,
   }: { variant?: string; bounds?: boolean } = {},
 ): Promise<CadSheet & { fromCache: boolean }> {
-  const { holder, dispose } = buildItem(adapter, variant, bounds);
+  const { holder, ready, dispose } = buildItem(adapter, variant, bounds);
   // The bounds overlay is its own sheet, cached apart.
   const sheetVariant = bounds ? `${variant}+bounds` : variant;
   try {
+    // A model loaded from a file is drawn once it is in.
+    await ready;
     const id = cadEntryId(adapter.kind, sheetVariant);
     const key = cadCacheKey({
       kind: adapter.kind,
