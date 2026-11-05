@@ -125,7 +125,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
         (x, z) => donutPoolFloorAt(x / metre, z / metre) * metre,
       ),
     solids: () => walls,
-    use: () => {},
   });
   const resize = () => {
     const { width, height } = layoutSize(canvas);

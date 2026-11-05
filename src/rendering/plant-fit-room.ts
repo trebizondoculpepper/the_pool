@@ -331,7 +331,7 @@ export function startPlantFitRoom(canvas: HTMLCanvasElement, side: number) {
     objects: scene,
     start: { ...start, x: start.x * m, z: start.z * m },
     solids: () => solids,
-    use: () => {},
+
     aimed: () => false,
   });
 

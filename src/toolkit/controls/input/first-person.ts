@@ -273,8 +273,8 @@ export interface FirstPersonOptions {
   onPickUp?: (object: Object3D, portable: PortableObject) => void;
   /** A held thing left the hands without `heldAction` (LET GO, a put-down on a top). */
   onLetGo?: (object: Object3D, portable: PortableObject) => void;
-  /** Use whatever is at a normalised screen point (centre is 0, 0). */
-  use: (x: number, y: number) => void;
+  /** Use whatever is at a normalised screen point (centre is 0, 0). A room may omit it (mission 161; the resolver replaces it later). */
+  use?: (x: number, y: number) => void;
   /** Operate a separate control while carrying, without releasing the part. */
   useWhileHolding?: (object: Object3D, x: number, y: number) => boolean;
   /**
@@ -455,7 +455,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
             : 'W: climb · S: descend';
       return;
     }
-    if (!handling?.use(x, y)) options.use(x, y);
+    if (!handling?.use(x, y)) options.use?.(x, y);
   };
   /** LET GO (mission 211): what is held leaves the hand, into a bin aimed at or falling. */
   const letGo = () => {

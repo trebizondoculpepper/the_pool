@@ -32,11 +32,25 @@ export interface UseQuery {
  */
 export type Usable = (at: UseQuery) => UseAnswer | null;
 
-/** Mark `object` as usable; returns the unmarking, for its disposal. */
-export function markUsable(object: Object3D, usable: Usable) {
+/**
+ * What a use on the marked thing does (mission 161, the one click handler):
+ * run on the click, on the same `UseQuery` the cue answered, so cue and
+ * click cannot disagree. Kept apart from the side-effect-free `Usable`
+ * answer, which is asked by the probe and never acted on.
+ */
+export type UseAction = (at: UseQuery) => void;
+
+/** Mark `object` as usable, with the action a click runs; returns the unmarking. */
+export function markUsable(
+  object: Object3D,
+  usable: Usable,
+  action?: UseAction,
+) {
   object.userData.usable = usable;
+  if (action) object.userData.useAction = action;
   return () => {
     if (object.userData.usable === usable) delete object.userData.usable;
+    if (object.userData.useAction === action) delete object.userData.useAction;
   };
 }
 
@@ -47,6 +61,21 @@ export function usableOf(
   for (let o: Object3D | null = object; o; o = o.parent) {
     const usable = o.userData.usable as Usable | undefined;
     if (usable) return { object: o, usable };
+  }
+  return null;
+}
+
+/**
+ * The click's action on the marked thing `object` is part of, or null: the
+ * same first visible hit the cue used (mission 161). The action runs on the
+ * click; the answer stays the probe's.
+ */
+export function useActionOf(
+  object: Object3D,
+): { object: Object3D; action: UseAction } | null {
+  for (let o: Object3D | null = object; o; o = o.parent) {
+    const action = o.userData.useAction as UseAction | undefined;
+    if (action) return { object: o, action };
   }
   return null;
 }

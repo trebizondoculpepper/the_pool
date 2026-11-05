@@ -164,7 +164,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
           ? GREEN_ROOM.floorY
           : WHITE_CORRIDOR.floorY)) * metre,
     solids: () => walls,
-    use: () => {},
   });
   const resize = () => {
     const { width, height } = layoutSize(canvas);

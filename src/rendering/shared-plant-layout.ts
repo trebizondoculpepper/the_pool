@@ -435,7 +435,7 @@ export function startSharedPlantLayout(canvas: HTMLCanvasElement) {
     },
     // Guardrails are raised; their plan footprints must not block ground walkers.
     solids: () => (camera.position.y >= 5 * METRE ? upperSolids : solids),
-    use: () => {},
+
     aimed: () => false,
   });
   const gantryView = () =>

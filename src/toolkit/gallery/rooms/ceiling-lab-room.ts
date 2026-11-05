@@ -117,7 +117,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     },
     floorAt: () => 0,
     solids: () => walls,
-    use: () => {},
   });
   const resize = () => {
     const { width, height } = layoutSize(canvas);
