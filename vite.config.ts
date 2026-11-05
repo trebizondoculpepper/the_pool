@@ -184,6 +184,8 @@ export default defineConfig({
       'typescript/unbound-method': 'off',
     },
     overrides: [
+      // Mission 216: the landing page's plain script runs in a browser.
+      { files: ['site/**/*.js'], env: { browser: true } },
       {
         files: ['**/*.ts', '**/*.tsx', '**/*.mts', '**/*.cts'],
         rules: {
