@@ -1,4 +1,11 @@
+import { Box3, Group, Vector3 } from 'three';
 import type { Object3D } from 'three';
+import {
+  createPanelKit,
+  disposeKit,
+} from '../../components/core/views/eighties-controls';
+import { EQUIPMENT_KINDS, isKindId } from '../../../game/plant/equipment-kinds';
+import { compositeTraits, expand } from '../../../game/plant/traits';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import type { PartSet } from '../../components/core/parts/parts';
 import type { BrandId } from '../../components/core/logic/brands';
@@ -245,12 +252,58 @@ export function adapterFor(kind: string): MagicAdapter | undefined {
     : undefined;
 }
 
+/**
+ * How a kind stands, from its support trait: floor-standing on the floor,
+ * wall-mounted on a wall, ceiling-mounted hanging; anything else (carried,
+ * in-line) on the floor.
+ */
+export function kindMount(kind: string): ItemSize['mount'] {
+  if (!isKindId(kind)) return 'floor';
+  const traits = expand(EQUIPMENT_KINDS[kind].traits ?? [], compositeTraits())
+    .primitives as readonly string[];
+  if (traits.includes('wall-mounted')) return 'wall';
+  if (traits.includes('ceiling-mounted')) return 'hanging';
+  return 'floor';
+}
+
+/**
+ * A builder's size, unless it gives one: its built object measured (its
+ * builders are in metres) and mounted by the kind's support trait. Built
+ * once, on first asking, with a kit of its own.
+ */
+function kindItemSize(kind: string, b: KindBuilder): ItemSize {
+  if (b.size) return b.size;
+  const kit = createPanelKit();
+  const holder = new Group();
+  try {
+    const built = b.build(kit);
+    holder.add(built.object);
+    const box = new Box3().setFromObject(built.object);
+    const size = box.isEmpty()
+      ? new Vector3(0.5, 0.5, 0.5)
+      : box.getSize(new Vector3());
+    const mount = kindMount(kind);
+    return {
+      w: size.x,
+      d: size.z,
+      h: size.y,
+      mount,
+      ...(mount === 'wall' ? { y: 1.5 } : {}),
+    };
+  } finally {
+    disposeKit(kit, holder);
+  }
+}
+
 /** An adapter from a standalone builder (`magic-builders.ts`). */
 function fromBuilder(kind: string, b: KindBuilder): MagicAdapter {
+  let size: ItemSize | undefined = b.size;
   return {
     kind,
-    title: b.title,
-    size: b.size,
+    title: b.title ?? (isKindId(kind) ? EQUIPMENT_KINDS[kind].type : kind),
+    get size() {
+      return (size ??= kindItemSize(kind, b));
+    },
     looks: [],
     pages: [],
     devRooms: [],

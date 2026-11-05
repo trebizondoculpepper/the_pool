@@ -25,15 +25,23 @@ import type { ItemSize } from '../logic/magic-room-layout';
  * 130's magic room and 133's CAD views; the owner, 2026-11-04): the
  * plumber's valves and meters, the feeders' switch-fuses, a cascade's
  * single boiler. Each is the game's own builder called with one
- * representative set of arguments; its size here only sizes the magic
- * room (the CAD views measure the built object). Kinds that exist only as
+ * representative set of arguments, and that is all an entry needs: its
+ * title is the kind's registered type, its size is measured from what it
+ * builds and its mounting follows the kind's support trait (the owner,
+ * 2026-11-05). A title or size is given only where it says more. Kinds that exist only as
  * part of an assembly, or only in the model, are listed in
  * `NO_STANDALONE_FORM` with the reason. Views only.
  */
 
 export interface KindBuilder {
-  title: string;
-  size: ItemSize;
+  /** Only where it says more than the kind's registered type (a valve's size and how it is worked). */
+  title?: string;
+  /**
+   * Only where measuring would mislead (a wall item's height on its wall);
+   * otherwise the magic room measures the built object and mounts it by the
+   * kind's support trait (`kindItemSize` in `magic-adapters.ts`).
+   */
+  size?: ItemSize;
   /**
    * Used even where a room places the kind: the room builds it as part of
    * an assembly (the desk with its PC), the magic room and CAD views the
@@ -71,7 +79,6 @@ const noop = () => {};
 export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   'butterfly-valve': {
     title: 'Butterfly valve, DN100, lever operated',
-    size: { w: 0.4, d: 0.4, h: 0.45, mount: 'floor' },
     build: (kit) =>
       objectOf(
         createWaterButterflyValve(kit, 100, 'x', 'Butterfly valve', {
@@ -81,27 +88,21 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
       ),
   },
   'gas-ball-valve': {
-    title: 'Gas ball valve',
-    size: { w: 0.3, d: 0.25, h: 0.25, mount: 'floor' },
     build: (kit) => objectOf(createGasBallValve(kit, {})),
   },
   boiler: {
     title: 'Condensing boiler, 300 kW',
-    size: { w: 0.8, d: 0.66, h: 1.66, mount: 'floor' },
     build: (kit) => objectOf(createCondensingBoiler(kit)),
   },
   'level-transmitter': {
     title: 'Radar level transmitter',
-    size: { w: 0.15, d: 0.15, h: 0.3, mount: 'floor' },
     build: (kit) => objectOf(createLevelTransmitter(kit, true)),
   },
   flowmeter: {
     title: 'Electromagnetic flowmeter',
-    size: { w: 0.45, d: 0.35, h: 0.4, mount: 'floor' },
     build: (kit) => objectOf(createMagFlowmeter(kit, { od: 0.11, tag: 'FT1' })),
   },
   'switch-fuse': {
-    title: 'Switch-fuse',
     size: {
       w: SWITCH_FUSE.w,
       d: SWITCH_FUSE.d,
@@ -112,23 +113,18 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
     build: (kit) => objectOf(createSwitchFuse(kit)),
   },
   'ozone-monitor': {
-    title: 'Ozone-in-air monitor',
     size: { w: 0.3, d: 0.12, h: 0.3, mount: 'wall', y: 1.5 },
     build: (kit) =>
       objectOf(createOzoneMonitor(kit, { test: noop, reset: noop })),
   },
   'office-chair': {
     title: 'Office chair',
-    size: { w: 0.65, d: 0.65, h: 1.1, mount: 'floor' },
     build: () => objectOf(createOfficeChair(1)),
   },
   'software-box': {
-    title: 'Software box',
-    size: { w: 0.3, d: 0.1, h: 0.35, mount: 'floor' },
     build: (kit) => objectOf(createSoftwareBox(kit, SOFTWARE_TITLES[0])),
   },
   'floppy-disk': {
-    title: 'Floppy disk',
     // 90 × 94 × 3.3 mm, displayed standing on a plinth in the magic room.
     size: { w: 0.09, d: 0.094, h: 0.1, mount: 'wall', y: 1.1 },
     build: (kit) =>
@@ -136,7 +132,6 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   },
   'office-computer': {
     title: 'Office computer',
-    size: { w: 0.6, d: 0.6, h: 0.6, mount: 'floor' },
     build: (kit) => {
       // The PC comes as its parts, laid out by the desk; set them out as on one.
       const pc = createPeriodPc(kit);
@@ -151,34 +146,26 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   },
   skip: {
     title: 'Mini skip',
-    size: { w: 1.9, d: 1.3, h: 1, mount: 'floor' },
     build: (kit) => ({ object: createSkip(kit).group }),
   },
   dustbin: {
-    title: 'Waste bin',
-    size: { w: 0.56, d: 0.56, h: 0.7, mount: 'floor' },
     build: (kit) => ({ object: createWasteBin(kit).group }),
   },
   desk: {
-    title: 'Desk',
-    size: { w: 1.6, d: 0.8, h: 0.73, mount: 'floor' },
     alone: true,
     build: (kit) => createDesk(kit),
   },
   // Components of their own, though the desk lays them out (the owner, 2026-11-05).
   'pc-tower': {
     title: 'Computer (Gateway 3000 tower)',
-    size: { w: 0.19, d: 0.45, h: 0.43, mount: 'floor' },
     build: (kit) => ({ object: createPeriodPc(kit).tower }),
   },
   'pc-monitor': {
     title: 'CRT monitor',
-    size: { w: 0.4, d: 0.42, h: 0.4, mount: 'floor' },
     build: (kit) => ({ object: createPeriodPc(kit).monitor }),
   },
   pump: {
     title: 'End-suction pump',
-    size: { w: 1.2, d: 0.5, h: 0.6, mount: 'floor' },
     build: (kit) => objectOf(createEndSuctionPump(kit)),
   },
 };

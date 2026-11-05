@@ -23,6 +23,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - The PC tower and monitor on the engineer's desk are components of their own, each with its item audit and CAD views; the desk's magic room and CAD views show just the desk, its own model at last (mission 208).
 - The `bin-like` trait: a skip takes what is thrown at it in any room, through one shared bin tossing, and what lands can be picked out again; dev5 adds nothing by hand (mission 205, first step).
 - The `dustbin` kind, and every room's bins from the trait: the repair room's scrap skip, the skimmer reveal's skip and Hall 5's waste bin are thrown into through the room's one shared bin tossing, each placement saying what it takes and keeps (mission 205).
+- A kind's magic-room builder needs only its build: its title is the kind's registered type, its size is measured from the built object, and it is mounted by the kind's support trait; a title or size is written only where it says more.
 - A thing of a holdable kind can be picked up by its trait alone: the stores' spill kits and the control room's water test kit can now be carried (mission 189).
 
 ### Changed

@@ -1,7 +1,7 @@
 import { expect, test } from 'vite-plus/test';
 import { kindCatalogue } from '../logic/kind-catalogue';
 import { placedRoomItems } from '../logic/room-usage';
-import { adapterFor } from './magic-adapters';
+import { adapterFor, kindMount } from './magic-adapters';
 import { KIND_BUILDERS, NO_STANDALONE_FORM } from './magic-builders';
 
 /**
@@ -36,4 +36,10 @@ test('a layout-built kind uses the rooms’ builder at the layout item’s size'
   expect(tank?.source).toBe('layout');
   expect(tank?.size.mount).toBe('floor');
   expect(tank?.size.w).toBeGreaterThan(1);
+});
+
+test('a standalone builder needs only its build: title from the registry, mount from the support trait', () => {
+  expect(kindMount('dustbin')).toBe('floor');
+  expect(kindMount('ozone-monitor')).toBe('wall');
+  expect(adapterFor('dustbin')?.title).toBe('Dustbin');
 });
