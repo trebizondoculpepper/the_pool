@@ -21,6 +21,12 @@ export interface RoomTraits {
    * fly into it. Made once per room; found among `root`'s objects.
    */
   bins?(root: Object3D, camera: Camera, metre: number): RoomBins;
+  /**
+   * Make every thing of a holdable kind in `root` carryable (mission 189),
+   * where its builder did not: cheap when nothing has changed, so it is
+   * asked every frame.
+   */
+  holdables?(root: Object3D, metre: number): void;
 }
 
 /** Throwing into a room's bin-like objects, as the walker sees it. */
@@ -69,6 +75,7 @@ export function createRoomController(options: RoomControllerOptions) {
   const scene = options.scene ?? root;
   const roomSupports = options.supports;
   const bins = traits.bins?.(scene, options.camera, options.metre);
+  traits.holdables?.(scene, options.metre);
   const walker = createFirstPerson({
     ...options,
     // A room's own bins first, then the registry's bin-like objects.
@@ -97,13 +104,13 @@ export function createRoomController(options: RoomControllerOptions) {
       ...traits.supports(scene, options.metre),
     ],
   });
-  if (!bins) return Object.assign(walker, { bins: null });
   const step = walker.update.bind(walker);
   walker.update = (delta: number) => {
+    traits.holdables?.(scene, options.metre);
     step(delta);
-    bins.update(delta);
+    bins?.update(delta);
   };
-  return Object.assign(walker, { bins });
+  return Object.assign(walker, { bins: bins ?? null });
 }
 
 /** The controller attached by a starter, for the main room-mount seam. */

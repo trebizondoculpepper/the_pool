@@ -1,4 +1,7 @@
-import { Vector3 } from 'three';
+import { Box3, Vector3 } from 'three';
+import { createPortableBoard } from '../../controls/logic/portable-board';
+import { createDropProfile } from '../../controls/logic/drop-profile';
+import type { PortableObject } from '../../controls/input/object-handling';
 import type { Camera, Object3D } from 'three';
 import {
   BIN_MARK,
@@ -137,6 +140,39 @@ function bodySignature(root: Object3D): string {
 }
 
 const signatures = new WeakMap<Object3D, string>();
+const holdableSignatures = new WeakMap<Object3D, string>();
+
+/**
+ * Every thing of a holdable kind in `root` made carryable (mission 189; the
+ * owner, 2026-11-05: "I just want to get holdable working"): one whose
+ * builder gave it no carrying of its own gets a plain one, sized from its
+ * body, so a kind gains carrying by its trait alone. Returns how many it made.
+ */
+export function makeHoldablesPortable(root: Object3D, metre: number): number {
+  const signature = bodySignature(root);
+  if (holdableSignatures.get(root) === signature) return 0;
+  holdableSignatures.set(root, signature);
+  let made = 0;
+  const size = new Vector3();
+  root.traverse((o) => {
+    if (o.userData.portable) return;
+    const kind = o.userData[EQUIPMENT_KIND] as string | undefined;
+    if (!kind || !kindIsHoldable(kind)) return;
+    // Inside something already carried (a disk in its box) it goes with it.
+    for (let at = o.parent; at; at = at.parent)
+      if (at.userData.portable) return;
+    o.updateWorldMatrix(true, true);
+    new Box3().setFromObject(o).getSize(size).divideScalar(metre);
+    const span = Math.max(0.02, size.x, size.y, size.z);
+    o.userData.portable = {
+      component: createPortableBoard(createDropProfile('box', span, 'plastic')),
+      flat: 'upright',
+      detach: () => {},
+    } satisfies PortableObject;
+    made++;
+  });
+  return made;
+}
 
 export const roomTraits: RoomTraits = {
   holdable(object) {
@@ -161,6 +197,9 @@ export const roomTraits: RoomTraits = {
     }));
   },
   bins: roomBins,
+  holdables: (root, metre) => {
+    makeHoldablesPortable(root, metre);
+  },
 };
 
 /** Give every room's controller the registry's carrying behaviour. */
