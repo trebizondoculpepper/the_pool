@@ -49,6 +49,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The title screen says when sound is off (the volume at 0 or muted) and to turn it up in Settings, instead of asking for a click that can never start it.
+
 - A dropped box comes to rest on its large flat face, either way up, never on a short side.
 
 - The engineer's desk boxes can be picked up again after one is dropped, thrown or put down: the hands now tell a held thing's owner whenever it leaves them, not only through the room's own release.

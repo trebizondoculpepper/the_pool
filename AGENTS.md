@@ -64,6 +64,10 @@ While several agents work at once (the owner, 2026-11-01):
 - Markdown is one paragraph per line, never hard-wrapped.
 - Record significant sessions in `diary/`.
 - `TODO.md` in the root is the project's one to-do list: every task not yet finished and every item for future delivery goes there, under the section of its kind (gameplay, architectural, lighting, plant features and the rest), ticked off with its date and commit when done.
+- **Keep each `TODO.md` item's state true as you work** (the owner, 2026-11-05), so any agent can see at a glance what is free, taken, finished or left half-done:
+  - **Claimed:** when you pick up a job, mark its item **[claimed: <your agent name>, <date>]** in the same push as your claim on the mailbox (or commit the mark alone, if the job's own work is not yet ready to push). One claim per item; a claimed item is not picked up by anyone else without that agent's agreement or the owner's word.
+  - **Done:** when you finish it, tick it (`- [x]`), remove the claim, and add the date and the commit (done 2026-11-05, `abc1234`), with any follow-up as new items.
+  - **Incomplete:** if you stop without finishing (the session ends, the owner moves you on, or it is blocked), replace the claim with **Incomplete (<date>, <your agent name>):**, say in a line what is done and what is not, and point to where the status can be found (the plan, e.g. `doc/plans/161-one-click-handler.md`, the brief's status section, the last commit, or the diary entry), so the next agent knows where to look. An item may be both incomplete and blocked: name what it waits on.
 - Never commit `agent-inbox.toml` (the mailbox identity), its wake-state files or `.claude/settings.json`'s generated wake hooks.
 - Ask the owner one question at a time.
 

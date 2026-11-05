@@ -120,10 +120,18 @@ export function createTitleScreen(actions: TitleActions) {
     }
   });
 
-  // The sound hint, until sound runs.
+  // The sound hint, until sound runs; with the volume at 0 (or muted) the
+  // audio never starts, so it says where to turn it up instead (the
+  // owner, 2026-11-05: a saved volume of 0 looked like broken sound).
   const watchSound = () => {
     requestAnimationFrame(watchSound);
-    if (showing()) soundHint.hidden = partAudio.running();
+    if (!showing()) return;
+    const off = partAudio.silent();
+    const text = off
+      ? 'Sound is off: turn the volume up in Settings'
+      : 'Click or press a key for sound';
+    if (soundHint.textContent !== text) soundHint.textContent = text;
+    soundHint.hidden = !off && partAudio.running();
   };
   requestAnimationFrame(watchSound);
   // The gamepad, through the control scheme's menu input (`menu-input.ts`):
