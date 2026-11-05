@@ -343,18 +343,28 @@ export function createEngineersDesk(
   markNonBody(pc.monitor);
   // The leads behind: tower to monitor, keyboard and mouse.
   group.add(
-    createLead(kit, [
-      new Vector3(-0.6, top + 0.2, -0.36),
-      new Vector3(-0.45, top + 0.01, -0.38),
-      new Vector3(-0.25, top + 0.01, -0.36),
-      new Vector3(-0.22, top + 0.12, -0.3),
-    ]),
-    createLead(kit, [
-      new Vector3(-0.6, top + 0.15, -0.36),
-      new Vector3(-0.42, top + 0.005, -0.3),
-      new Vector3(-0.2, top + 0.005, 0.12),
-      new Vector3(-0.2, top + 0.015, 0.145),
-    ]),
+    createLead(
+      kit,
+      [
+        new Vector3(-0.6, top + 0.2, -0.36),
+        new Vector3(-0.45, top + 0.01, -0.38),
+        new Vector3(-0.25, top + 0.01, -0.36),
+        new Vector3(-0.22, top + 0.12, -0.3),
+      ],
+      0.003,
+      top,
+    ),
+    createLead(
+      kit,
+      [
+        new Vector3(-0.6, top + 0.15, -0.36),
+        new Vector3(-0.42, top + 0.005, -0.3),
+        new Vector3(-0.2, top + 0.005, 0.12),
+        new Vector3(-0.2, top + 0.015, 0.145),
+      ],
+      0.003,
+      top,
+    ),
     createLead(
       kit,
       [
@@ -364,6 +374,7 @@ export function createEngineersDesk(
         new Vector3(0.19, top + 0.02, 0.18),
       ],
       0.0022,
+      top,
     ),
   );
 

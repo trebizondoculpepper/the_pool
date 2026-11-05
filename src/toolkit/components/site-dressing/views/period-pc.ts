@@ -868,7 +868,9 @@ function buildKeyboard(kit: PanelKit, group: Group) {
     new RoundedBoxGeometry(W, 0.03, D, 2, 0.006),
     kitPaint(kit, BEIGE),
     0,
-    0.016,
+    // Tilted on its feet, it is lifted so its lowest edge rests on the
+    // desk, not 6 mm into it: half its height and half its depth, turned.
+    0.015 * Math.cos(0.07) + (D / 2) * Math.sin(0.07),
     0,
   );
   body.rotation.x = 0.07;
@@ -1110,10 +1112,32 @@ export function createPcCarton(
   return group;
 }
 
-/** The leads from the tower to the monitor, keyboard and mouse: a few tubes along `points`. */
-export function createLead(kit: PanelKit, points: Vector3[], radius = 0.003) {
+/**
+ * The leads from the tower to the monitor, keyboard and mouse: a few tubes
+ * along `points`. A spline through them can swing below its points between
+ * them; where it lies on something, `above` (the height of that surface)
+ * holds every point of the tube on or over it (the owner, 2026-11-05).
+ */
+export function createLead(
+  kit: PanelKit,
+  points: Vector3[],
+  radius = 0.003,
+  above?: number,
+) {
+  let curve = new CatmullRomCurve3(points, false, 'centripetal');
+  if (above !== undefined) {
+    // Half a millimetre to spare: the second spline rounds between samples.
+    const floor = above + radius + 0.0005;
+    curve = new CatmullRomCurve3(
+      curve
+        .getPoints(48)
+        .map((p) => (p.y < floor ? new Vector3(p.x, floor, p.z) : p)),
+      false,
+      'centripetal',
+    );
+  }
   const lead = new Mesh(
-    new TubeGeometry(new CatmullRomCurve3(points), 24, radius, 6, false),
+    new TubeGeometry(curve, 48, radius, 6, false),
     kitPaint(kit, '#d2c9b0'),
   );
   lead.name = 'Lead';

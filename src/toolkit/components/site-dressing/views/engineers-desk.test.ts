@@ -11,7 +11,7 @@ import {
 } from './engineers-desk';
 import { WALL_SHELF } from './office-wall-shelf';
 import { createOfficeChair } from './office-chair';
-import { bootSequenceScreen } from './period-pc';
+import { bootSequenceScreen, createPeriodPc } from './period-pc';
 import { seatDeclared } from '../../../controls/input/seating';
 import { bootFrame, bootScript } from '../../core/logic/boot-sequence';
 
@@ -157,4 +157,28 @@ it('boots its PC through the dos boot sequence, redrawing only when the picture 
   // Far fewer pictures than frames: at most ten a second.
   expect(keys.size).toBeLessThan(screen.seconds * 10 + 10);
   expect(keys.size).toBeGreaterThan(3);
+});
+
+it('keeps every piece of the PC above the plane it stands on, and its leads on the desk (the owner, 2026-11-05)', () => {
+  const pc = createPeriodPc(createPanelKit());
+  for (const part of ['monitor', 'tower', 'keyboard', 'mouse'] as const) {
+    pc[part].updateMatrixWorld(true);
+    const low = new Box3().setFromObject(pc[part]).min.y;
+    expect(
+      low,
+      `${part} reaches ${low} m below its foot`,
+    ).toBeGreaterThanOrEqual(-1e-6);
+  }
+  const desk = createEngineersDesk(createPanelKit());
+  desk.group.updateMatrixWorld(true);
+  const leads: number[] = [];
+  desk.group.traverse((o) => {
+    if (o.name === 'Lead') leads.push(new Box3().setFromObject(o).min.y);
+  });
+  expect(leads.length).toBe(3);
+  for (const low of leads)
+    expect(
+      low,
+      `a lead dips ${DESK.h - low} m into the desk`,
+    ).toBeGreaterThanOrEqual(DESK.h - 1e-6);
 });
