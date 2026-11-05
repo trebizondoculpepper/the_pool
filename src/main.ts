@@ -41,6 +41,7 @@ import {
 import { clockStopped, paused } from './toolkit/controls/logic/paused';
 import { createConsole } from './toolkit/console/console-view';
 import { consoleOpen } from './toolkit/controls/logic/console-open';
+import { phoneOpen } from './toolkit/controls/logic/phone-open';
 import { noclip } from './toolkit/controls/logic/noclip';
 import { renderScale } from './toolkit/settings/logic/settings';
 import {
@@ -340,7 +341,11 @@ const pauseMenu = createPauseMenu({
   // Not on the title screen or the room list: only in a room; and not
   // while the console is down (its Esc is the console's). While the
   // panels are on, the settings panel answers Esc and Start instead.
-  canOpen: () => current !== undefined && !consoleOpen.value && !panelsOn(),
+  canOpen: () =>
+    current !== undefined &&
+    !consoleOpen.value &&
+    !phoneOpen.value &&
+    !panelsOn(),
   devPanel: () => goTo('?dev'),
   noclip,
   setNoclip(on) {
@@ -397,7 +402,10 @@ if (panelsWanted)
         build: buildLine(),
         development: import.meta.env.DEV,
         canOpen: () =>
-          panelsOn() && current !== undefined && !consoleOpen.value,
+          panelsOn() &&
+          current !== undefined &&
+          !consoleOpen.value &&
+          !phoneOpen.value,
         onFail: panelsFail,
       });
       menuPanel = {
@@ -437,9 +445,11 @@ settingsButton.setAttribute('aria-label', 'Menu');
 settingsButton.addEventListener('pointerdown', (event) =>
   event.stopPropagation(),
 );
-settingsButton.addEventListener('click', () =>
-  menuPanel ? menuPanel.open() : pauseMenu.open(),
-);
+settingsButton.addEventListener('click', () => {
+  if (phoneOpen.value) return;
+  if (menuPanel) menuPanel.open();
+  else pauseMenu.open();
+});
 
 /** Go to a page of the app (`?room=…`, `?dev`, or '' for the title) without reloading. */
 const goTo = (search: string) => {

@@ -4,7 +4,7 @@ The program is licensed under the GNU General Public License, version 3 or later
 
 ## Phone model
 
-"Mobile phone" (https://skfb.ly/oosCE) by Ilia_S is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/). Supplied by the owner on 2026-11-05 (downloaded from Sketchfab, `mobile_phone.zip`, glTF) and kept unchanged in `resources/models/phone/mobile-phone/` with its `license.txt`, for mission 213.
+"Mobile phone" (https://skfb.ly/oosCE) by Ilia_S is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/). Supplied by the owner on 2026-11-05 (downloaded from Sketchfab, `mobile_phone.zip`, glTF) and kept unchanged in `resources/models/phone/mobile-phone/` with its `license.txt`, for mission 213. The game uses a derivative with a smaller colour texture, simpler shading and a black screen; see `doc/reuse-inventory.md`.
 
 ## Weather data
 

@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A compact 3D phone can be raised with M, gamepad D-pad Up or the touch phone icon (mission 213). It keeps the plant running while holding movement and use input, leaves carried objects in hand but out of view, and has a black screen for the later message interface.
 - Picking up and putting down are animated (mission 210): a thing eases from where it rests to the hand in about half a second, and use on a clear spot of a desk or other supportable top puts it down there, flat, the same way; anywhere else, use works what is aimed at and the thing stays in hand.
 - LET GO is its own input (mission 211's controls): Q, the gamepad's B, or the LET GO button on touch, shown in the carrying help line; the gamepad's crouch moves to the right stick's click.
 - Things can be thrown (mission 211): LET GO while holding a thing up to look at it (inspecting) sends it off the way it is aimed at one leisurely speed, on a parabola, rebounding off walls and solid things with a quarter of its speed lost, until it comes down on the floor or a top; LET GO while only carrying it drops it, and aimed at a bin, either way, tosses it in.

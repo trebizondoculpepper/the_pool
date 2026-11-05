@@ -24,6 +24,7 @@ export type ControlAction =
   | 'zoom'
   | 'crouch'
   | 'torch'
+  | 'phone'
   | 'eye'
   | 'console'
   | 'release'
@@ -83,6 +84,11 @@ const POINTER_SCHEME: Record<
     mouse: 'F: torch',
     touch: 'Torch icon: torch',
     gamepad: 'X: torch',
+  },
+  phone: {
+    mouse: 'M: raise / lower phone',
+    touch: 'Phone icon: raise / lower phone',
+    gamepad: 'D-pad Up: raise / lower phone',
   },
   eye: {
     mouse: 'Alt+wheel: eye height',
@@ -152,6 +158,7 @@ const ORDER: readonly ControlAction[] = [
   'zoom',
   'crouch',
   'torch',
+  'phone',
   'eye',
   'console',
   'copyReference',
@@ -218,6 +225,7 @@ export const PAD = {
   /** The right stick's click (the owner, 2026-11-05: B is LET GO now). */
   crouch: 11,
   torch: 2,
+  phone: 12,
   knobDown: 4,
   knobUp: 5,
   /** Y: in noclip, levels a rolled view. */

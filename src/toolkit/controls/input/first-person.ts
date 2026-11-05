@@ -84,10 +84,13 @@ import { settings } from '../../settings/settings-store';
 import { paused } from '../logic/paused';
 import { consoleOpen } from '../logic/console-open';
 import { menuOpen } from '../logic/menu-open';
+import { phoneOpen } from '../logic/phone-open';
+import { createPhoneView } from './phone-view';
 import { requestCopy, requestNoclipToggle } from './copy-actions';
 
 /** Whether the walker is to take no input: paused, the console down, or a menu panel open. */
-const inputHeld = () => paused.value || consoleOpen.value || menuOpen.value;
+const inputHeld = () =>
+  paused.value || consoleOpen.value || menuOpen.value || phoneOpen.value;
 // Capability and last active device survive room changes, not browser sessions.
 let sessionInput: InputState | null = null;
 
@@ -355,6 +358,13 @@ export function carriedName(object: Object3D) {
 
 export function createFirstPerson(options: FirstPersonOptions) {
   const { canvas, camera, metre, floorY } = options;
+  const phoneView = createPhoneView(
+    options.scene ?? options.objects,
+    camera,
+    metre,
+  );
+  let phoneRaised = false;
+  let concealed: { object: Object3D; visible: boolean } | null = null;
   // The torch's light, in this room's scene, lit while the torch is on.
   const torchLight = createTorchLight(metre);
   options.scene?.add(torchLight.light, torchLight.target);
@@ -858,6 +868,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
   torchIcon.addEventListener('pointerdown', (event) => event.stopPropagation());
   torchIcon.addEventListener('click', () => torch.toggle());
   tools.append(torchIcon);
+  const phoneButton = hudButton('☎', 'Phone (M)', 'hud-phone');
+  phoneButton.addEventListener('pointerdown', (event) =>
+    event.stopPropagation(),
+  );
+  phoneButton.addEventListener('click', () => togglePhone());
+  tools.append(phoneButton);
   canvas.parentElement?.append(tools);
   // At the top left, under the room's name: the simulation's speed, how
   // much of the world's time each moment of real time is. Not yet worked:
@@ -977,6 +993,11 @@ export function createFirstPerson(options: FirstPersonOptions) {
     Math.max(-PITCH_LIMIT, Math.min(PITCH_LIMIT, pitch));
 
   const keydown = (event: KeyboardEvent) => {
+    if (event.code === 'KeyM' && !event.repeat && !typing(event)) {
+      event.preventDefault();
+      togglePhone();
+      return;
+    }
     if (!current() || inputHeld() || typing(event)) return;
     // A room may hold the eye for a cinematic, but its screenshot still
     // belongs to the player's view. Other controls remain held still.
@@ -1044,8 +1065,38 @@ export function createFirstPerson(options: FirstPersonOptions) {
     flightUp = 0;
     flightRoll = 0;
   };
+  const concealHeld = () => {
+    const object = phoneRaised ? handling?.heldObject() : null;
+    if (concealed?.object === object) return;
+    if (concealed) concealed.object.visible = concealed.visible;
+    concealed = object ? { object, visible: object.visible } : null;
+    if (concealed) concealed.object.visible = false;
+  };
+  const togglePhone = () => {
+    if (
+      !current() ||
+      holding ||
+      paused.value ||
+      consoleOpen.value ||
+      menuOpen.value
+    )
+      return;
+    phoneRaised = !phoneRaised;
+    phoneOpen.value = phoneRaised;
+    phoneView.setRaised(phoneRaised);
+    forget();
+    handling?.inspect(false);
+    concealHeld();
+  };
+  const phoneEscape = (event: KeyboardEvent) => {
+    if (event.key !== 'Escape' || !phoneRaised || !current()) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    togglePhone();
+  };
+  window.addEventListener('keydown', phoneEscape, true);
   const look = (event: MouseEvent) => {
-    if (!locked()) return;
+    if (!locked() || inputHeld()) return;
     setInput('mouse');
     if (holding) return;
     // Looking slows as the view zooms in, so small controls stay easy to aim at.
@@ -1129,6 +1180,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     return Math.hypot(a.x - b.x, a.y - b.y);
   };
   const down = (event: PointerEvent) => {
+    if (inputHeld()) return;
     if (event.pointerType === 'touch') {
       fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
       canvas.setPointerCapture(event.pointerId);
@@ -1212,7 +1264,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     const slop = event.pointerType === 'mouse' ? 5 : 12;
     if (Math.hypot(dx, dy) > slop) drag.moved = true;
     // A held use stays where it was pressed: the view does not swing.
-    if (!drag.moved || holding || drag.used) return;
+    if (!drag.moved || holding || drag.used || inputHeld()) return;
     if (!noclip.value && touchInspect && handling?.holding()) {
       handling.rotate(
         (event.clientX - drag.previousX) * 0.004,
@@ -1243,6 +1295,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
   // page.
   const wheel = (event: WheelEvent) => {
     event.preventDefault();
+    if (inputHeld()) return;
     const scale = event.deltaMode === WheelEvent.DOM_DELTA_LINE ? 16 : 1;
     if (event.altKey) {
       walker.eyeOffset = Math.max(
@@ -1315,6 +1368,15 @@ export function createFirstPerson(options: FirstPersonOptions) {
         ? [...navigator.getGamepads()].find((p) => p?.mapping === 'standard')
         : undefined;
     if (!pad) {
+      holds.release('pad');
+      return idle;
+    }
+    const phoneDown = pad.buttons[PAD.phone]?.pressed ?? false;
+    const phoneWent = phoneDown && !pressed.has(PAD.phone);
+    if (phoneDown) pressed.add(PAD.phone);
+    else pressed.delete(PAD.phone);
+    if (phoneWent) {
+      togglePhone();
       holds.release('pad');
       return idle;
     }
@@ -1636,6 +1698,8 @@ export function createFirstPerson(options: FirstPersonOptions) {
         settings.value.onScreenControls,
       );
       const controlsActive = current() && !holding && !inputHeld();
+      phoneButton.hidden =
+        !current() || paused.value || consoleOpen.value || menuOpen.value;
       movement.hidden = !controlsActive || !hud.movement;
       if (container)
         container.dataset.movementPad = movement.hidden ? 'hidden' : 'shown';
@@ -1998,18 +2062,22 @@ export function createFirstPerson(options: FirstPersonOptions) {
         !flying && (keys.has('KeyX') || touchInspect || pad.inspect),
       );
       if (!flying) handling?.update(delta);
+      concealHeld();
+      phoneView.update(delta);
       const cursorAim =
         (input === 'mouse' || input === 'keyboard') && !locked();
-      crosshair.hidden = !(
-        locked() ||
-        input === 'gamepad' ||
-        // On a touch screen too: what is at the centre is what the USE
-        // button works (the owner, 2026-11-01, on an iPad).
-        // Not while a finger drags the view round, when it would only be in
-        // the way; with the twin sticks it is shown.
-        (input === 'touch' && !drag?.moved) ||
-        handling?.holding()
-      );
+      crosshair.hidden =
+        inputHeld() ||
+        !(
+          locked() ||
+          input === 'gamepad' ||
+          // On a touch screen too: what is at the centre is what the USE
+          // button works (the owner, 2026-11-01, on an iPad).
+          // Not while a finger drags the view round, when it would only be in
+          // the way; with the twin sticks it is shown.
+          (input === 'touch' && !drag?.moved) ||
+          handling?.holding()
+        );
       if (!crosshair.hidden) {
         // The ring from the probe's one answer (mission 116): larger for a
         // socket, today's red × where a place refuses what is carried.
@@ -2100,6 +2168,10 @@ export function createFirstPerson(options: FirstPersonOptions) {
       }
     },
     dispose() {
+      if (concealed) concealed.object.visible = concealed.visible;
+      if (phoneRaised) phoneOpen.value = false;
+      phoneView.dispose();
+      window.removeEventListener('keydown', phoneEscape, true);
       altitude.remove();
       flightReadout.remove();
       handling?.dispose();
