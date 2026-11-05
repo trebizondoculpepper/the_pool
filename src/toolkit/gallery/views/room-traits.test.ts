@@ -1,10 +1,21 @@
-import { BoxGeometry, Group, Mesh } from 'three';
+import { BoxGeometry, Group, Mesh, PerspectiveCamera } from 'three';
+import type { Object3D } from 'three';
+import {
+  binRules,
+  emptyBin,
+  markBin,
+} from '../../components/site-dressing/parts/bin-tossing';
+import { WASTE_BIN_SHAPE } from '../../components/site-dressing/views/waste-bin';
+import { createDropProfile } from '../../controls/logic/drop-profile';
+import { createPortableBoard } from '../../controls/logic/portable-board';
+import type { PortableObject } from '../../controls/input/object-handling';
 import { expect, test } from 'vite-plus/test';
 import { markEquipmentKind } from '../../components/core/views/equipment-kind';
 import {
   kindIsBinLike,
   kindIsHoldable,
   makeHoldablesPortable,
+  roomBins,
   roomTraits,
 } from './room-traits';
 
@@ -46,4 +57,51 @@ test('a thing of a holdable kind is made carryable by its trait alone (mission 1
 test('a skip is bin-like by its kind (mission 205)', () => {
   expect(kindIsBinLike('skip')).toBe(true);
   expect(kindIsBinLike('desk')).toBe(false);
+});
+
+test('a dustbin is bin-like by its kind (mission 205)', () => {
+  expect(kindIsBinLike('dustbin')).toBe(true);
+});
+
+test("a placed bin's own rules come from its placement, not a room's tossing (mission 205)", () => {
+  const scene = new Group();
+  // A dustbin as its builder marks it (the model itself draws on a canvas).
+  const group = markBin(markEquipmentKind(new Group(), 'dustbin'), {
+    shape: WASTE_BIN_SHAPE,
+    footprint: { x: 0.56, z: 0.56 },
+  });
+  group.name = 'bin';
+  group.position.set(2, 0.15, -1);
+  const find = new Group();
+  find.add(new Mesh(new BoxGeometry(0.1, 0.1, 0.1)));
+  const stray = new Group();
+  stray.add(new Mesh(new BoxGeometry(0.1, 0.1, 0.1)));
+  const landed: Object3D[] = [];
+  binRules(group, {
+    keep: true,
+    takes: (o) => o === find,
+    onLanded: (o) => landed.push(o),
+  });
+  scene.add(group, find, stray);
+  const camera = new PerspectiveCamera();
+  camera.position.set(2, 1.6, 0);
+  const bins = roomBins(scene, camera, 1);
+  const portable = (o: Object3D) => {
+    void o;
+    const component = createPortableBoard(createDropProfile('box', 0.1));
+    return { component, flat: 'upright', detach() {} } satisfies PortableObject;
+  };
+  find.position.set(2, 1, -0.5);
+  stray.position.set(2, 1, -0.5);
+  expect(bins.divert(stray, portable(stray))).toBe(false);
+  const p = portable(find);
+  expect(bins.divert(find, p)).toBe(true);
+  for (let i = 0; i < 40; i++) bins.update(0.05);
+  expect(landed).toEqual([find]);
+  expect(bins.filled().bin).toBe(1);
+  expect(p.component.locked.value).toBe(true);
+  // Landed on its floor, raised with its foot.
+  expect(find.position.y).toBeGreaterThan(0.15);
+  emptyBin(group);
+  expect(bins.filled().bin).toBe(0);
 });

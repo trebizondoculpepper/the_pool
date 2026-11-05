@@ -1,3 +1,5 @@
+import { markEquipmentKind } from '../../core/views/equipment-kind';
+import { markBin } from '../parts/bin-tossing';
 import {
   CylinderGeometry,
   DoubleSide,
@@ -129,6 +131,9 @@ export function createWasteBin(kit: PanelKit) {
   );
   name.position.y = nameY;
   group.add(name);
+  // A dustbin, bin-like by its kind (mission 205): rooms need not add it.
+  markEquipmentKind(group, 'dustbin');
+  markBin(group, { shape: WASTE_BIN_SHAPE, footprint: { x: TOP, z: TOP } });
   return {
     group,
     shape: WASTE_BIN_SHAPE,

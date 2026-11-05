@@ -16,6 +16,7 @@ import { createFloppyDisk } from '../../components/site-dressing/views/floppy-di
 import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
 import { createDesk } from '../../components/site-dressing/views/engineers-desk';
 import { createSkip } from '../../components/site-dressing/views/skip';
+import { createWasteBin } from '../../components/site-dressing/views/waste-bin';
 import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
 import type { ItemSize } from '../logic/magic-room-layout';
 
@@ -152,6 +153,11 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
     title: 'Mini skip',
     size: { w: 1.9, d: 1.3, h: 1, mount: 'floor' },
     build: (kit) => ({ object: createSkip(kit).group }),
+  },
+  dustbin: {
+    title: 'Waste bin',
+    size: { w: 0.56, d: 0.56, h: 0.7, mount: 'floor' },
+    build: (kit) => ({ object: createWasteBin(kit).group }),
   },
   desk: {
     title: 'Desk',

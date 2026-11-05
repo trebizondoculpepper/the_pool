@@ -41,7 +41,7 @@ import { createCircuitBreaker } from '../../components/industrial-control/logic/
 import { machineComponent } from '../../components/industrial-control/parts/machine-components';
 import type { MachineDevice } from '../../components/industrial-control/parts/machine-components';
 import { createSkip } from '../../components/site-dressing/views/skip';
-import { createBinTossing } from '../../components/site-dressing/parts/bin-tossing';
+import { binRules } from '../../components/site-dressing/parts/bin-tossing';
 import { createRoomController } from '../../controls/input/room-controller';
 import { isHeldPortableHit } from '../../controls/input/object-handling';
 import type { PortableObject } from '../../controls/input/object-handling';
@@ -372,19 +372,11 @@ export function startRepairRoom(canvas: HTMLCanvasElement) {
     const place = shelf.find((entry) => entry.item === object);
     if (place && place.due <= 0) place.due = RESTOCK;
   };
-  const tossing = createBinTossing({
-    camera,
-    metre: m,
-    onLanded: (object) => used(object),
-  });
-  const skip = tossing.add({
-    name: 'scrap skip',
-    ...createSkip(kit),
-    x: SKIP_AT.x,
-    z: SKIP_AT.z,
-  });
-  // Where the tossing and the walls think it is: it was drawn at the
-  // room's middle, so nothing carried to it could be thrown in.
+  // The scrap skip: bin-like by its kind (mission 205), so the room's
+  // controller throws things into it; what lands stays, and is restocked.
+  const skip = createSkip(kit);
+  skip.group.name = 'scrap skip';
+  binRules(skip.group, { keep: true, onLanded: (object) => used(object) });
   skip.group.position.set(SKIP_AT.x, 0, SKIP_AT.z);
   room.add(skip.group);
   label('SCRAP · ACTION WITHIN 2 M', SKIP_AT.x, 1.07, SKIP_AT.z + 0.75, 2.2);
@@ -638,8 +630,6 @@ export function startRepairRoom(canvas: HTMLCanvasElement) {
   const params = new URLSearchParams(location.search);
   const walk = createRoomController({
     scene,
-    nearbyTargetFeedback: tossing.targetFeedback,
-    divert: tossing.divert,
     canvas,
     camera,
     metre: m,
@@ -699,7 +689,7 @@ export function startRepairRoom(canvas: HTMLCanvasElement) {
               ? 'blown'
               : null,
       },
-      scrap: skip.filled,
+      scrap: walk.bins?.filled()['scrap skip'] ?? 0,
       restocking: shelf.filter((place) => place.due > 0).length,
       bench: shelf.length,
     }),
@@ -728,7 +718,6 @@ export function startRepairRoom(canvas: HTMLCanvasElement) {
     last = time;
     ps1Uniforms.time.value = time / 1000;
     walk.update(delta);
-    tossing.update(delta);
     parts.update(delta);
     fuse.update(delta);
     arc.update(delta, reducedMotion());

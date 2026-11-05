@@ -21,10 +21,11 @@ import {
   lifebuoyStickerMaterial,
 } from '../../views/museum-hall';
 import { createWasteBin } from '../../../components/site-dressing/views/waste-bin';
-import { createBinTossing } from '../../../components/site-dressing/parts/bin-tossing';
-import type { TossBin } from '../../../components/site-dressing/parts/bin-tossing';
+import {
+  binRules,
+  emptyBin,
+} from '../../../components/site-dressing/parts/bin-tossing';
 import { objectImpact } from '../../../components/core/audio/object-impact';
-import { METRE } from '../../../components/core/logic/units';
 import { createPortableBoard } from '../../../controls/logic/portable-board';
 import { createDropProfile } from '../../../controls/logic/drop-profile';
 import type { DropProfile } from '../../../controls/logic/drop-profile';
@@ -1120,10 +1121,11 @@ export function buildHallExhibit(kit: PanelKit): CarryingExhibit {
     } satisfies PortableObject;
     return component;
   };
-  // The bin: finds tossed in land and count.
-  const tossing = createBinTossing({
-    camera: new PerspectiveCamera(),
-    metre: METRE,
+  // The bin: bin-like by its kind (mission 205), so the hall's controller
+  // throws finds into it; it takes the finds only, keeps them, and counts.
+  binRules(binGroup, {
+    keep: true,
+    takes: (o) => props.includes(o as Group),
     onLanded: (o) => {
       const i = props.indexOf(o as Group);
       if (i < 0) return;
@@ -1134,16 +1136,6 @@ export function buildHallExhibit(kit: PanelKit): CarryingExhibit {
       }
     },
   });
-  const bin: TossBin = {
-    name: 'bin',
-    group: binGroup,
-    shape: binModel.shape,
-    footprint: binModel.footprint,
-    x: sp.x,
-    z: sp.z,
-    takes: (o) => props.includes(o as Group),
-  };
-  tossing.add(bin);
   // Using the skimmer: the lid off and aside, the next find out, as the
   // game's own steps; in the hall walked in, as a film, the lid going
   // back on at its end.
@@ -1200,8 +1192,7 @@ export function buildHallExhibit(kit: PanelKit): CarryingExhibit {
     // Everything out of the hands and back in its place; the basket full.
     placeLid(0);
     well.sludge(true);
-    tossing.remove(bin);
-    tossing.add(bin);
+    emptyBin(binGroup);
     for (const p of props) {
       hands?.forget(p);
       p.removeFromParent();
@@ -1468,8 +1459,6 @@ export function buildHallExhibit(kit: PanelKit): CarryingExhibit {
         hands = h;
         view = v ?? null;
       },
-      divert: (o, p) => tossing.divert(o, p),
-      nearbyTargetFeedback: (o) => tossing.targetFeedback(o),
     },
     update(delta) {
       sinceReset += delta;
@@ -1482,8 +1471,6 @@ export function buildHallExhibit(kit: PanelKit): CarryingExhibit {
         card.mesh.position.copy(object.worldToLocal(p));
         card.mesh.quaternion.copy(parentQ).multiply(cam.quaternion);
       }
-      // Finds on their way into the skip.
-      tossing.update(delta);
       // The caption card: freshly said, shown a few seconds.
       if (game.saidCount !== cardFor) {
         cardFor = game.saidCount;

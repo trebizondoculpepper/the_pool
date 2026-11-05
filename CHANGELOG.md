@@ -22,6 +22,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - Bounds models: an object may carry a simpler version beside its high- and low-poly ones, a few boxes and cylinders, and with the `bounds-model` trait its tops come from them, not from rays cast on its drawn body. The engineer's desk declares its board, so things put on it use the whole 1.6 × 0.8 m top; the item audit's CAD views have a BOUNDS toggle (mission 208).
 - The PC tower and monitor on the engineer's desk are components of their own, each with its item audit and CAD views; the desk's magic room and CAD views show just the desk, its own model at last (mission 208).
 - The `bin-like` trait: a skip takes what is thrown at it in any room, through one shared bin tossing, and what lands can be picked out again; dev5 adds nothing by hand (mission 205, first step).
+- The `dustbin` kind, and every room's bins from the trait: the repair room's scrap skip, the skimmer reveal's skip and Hall 5's waste bin are thrown into through the room's one shared bin tossing, each placement saying what it takes and keeps (mission 205).
 - A thing of a holdable kind can be picked up by its trait alone: the stores' spill kits and the control room's water test kit can now be carried (mission 189).
 
 ### Changed

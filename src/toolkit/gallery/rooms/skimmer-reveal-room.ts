@@ -45,7 +45,7 @@ import {
 } from '../logic/skimmer-cinematic';
 import type { CinematicPhase, Pose } from '../logic/skimmer-cinematic';
 import { createSkimmerCaustics } from '../views/skimmer-caustics';
-import { createBinTossing } from '../../components/site-dressing/parts/bin-tossing';
+import { binRules } from '../../components/site-dressing/parts/bin-tossing';
 import { createSkip } from '../../components/site-dressing/views/skip';
 import { createSkimmerWell, drawOver } from '../views/skimmer-well';
 import { revealCue } from './museum/hall-5-reveal-music';
@@ -454,8 +454,12 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
   };
 
   // ---- The skip, for throwing finds away (`bin-tossing.ts`) ---------------
-  const tossing = createBinTossing({ camera, metre: m, random });
-  const skip = tossing.add({ name: 'skip', ...createSkip(kit), ...SKIP });
+  // Bin-like by its kind (mission 205): the room's controller throws finds
+  // into it, where they stay.
+  const skip = createSkip(kit);
+  skip.group.name = 'skip';
+  binRules(skip.group, { keep: true });
+  skip.group.position.set(SKIP.x, 0, SKIP.z);
   room.add(skip.group);
 
   // ---- Walking and working ------------------------------------------------
@@ -481,8 +485,6 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
   const params = new URLSearchParams(location.search);
   const walk = createRoomController({
     scene,
-    nearbyTargetFeedback: tossing.targetFeedback,
-    divert: tossing.divert,
     // Nothing is picked up while the film runs.
     allowPickup: () => !film,
     canvas,
@@ -493,12 +495,12 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
     start: views[params.get('view') ?? ''] ?? views.skimmer,
     solids: () => [
       ...outer,
-      ...tossing.bins.map((bin) => ({
-        minX: (bin.x - bin.footprint.x / 2 - 0.05) * m,
-        maxX: (bin.x + bin.footprint.x / 2 + 0.05) * m,
-        minZ: (bin.z - bin.footprint.z / 2 - 0.05) * m,
-        maxZ: (bin.z + bin.footprint.z / 2 + 0.05) * m,
-      })),
+      {
+        minX: (SKIP.x - skip.footprint.x / 2 - 0.05) * m,
+        maxX: (SKIP.x + skip.footprint.x / 2 + 0.05) * m,
+        minZ: (SKIP.z - skip.footprint.z / 2 - 0.05) * m,
+        maxZ: (SKIP.z + skip.footprint.z / 2 + 0.05) * m,
+      },
     ],
     use: (x, y) => usableAt(x, y)?.(),
     aimed: () => Boolean(usableAt(0, 0)),
@@ -538,7 +540,7 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
     /** The basket dirty, full of sludge, or clean. */
     sludge: (dirty: boolean) => well.sludge(dirty),
     /** How many things are in the skip. */
-    inSkip: () => skip.filled,
+    inSkip: () => walk.bins?.filled().skip ?? 0,
     /** Choose the next film's find, by id. */
     choose(id: string) {
       nextFind = id;
@@ -571,7 +573,6 @@ export function startSkimmerRevealRoom(canvas: HTMLCanvasElement) {
     // The walker's controller sets its own field of view: the film's wins.
     useLens();
     well.seenFrom(skimmer.worldToLocal(eyeAt.copy(camera.position)));
-    tossing.update(delta);
     parts.update(delta);
     partAudio.listen(camera, m, scene);
     renderer.render(scene, camera);

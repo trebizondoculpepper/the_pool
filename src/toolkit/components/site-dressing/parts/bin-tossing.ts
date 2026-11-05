@@ -22,8 +22,14 @@ export interface TossBin {
   footprint: { x: number; z: number };
   x: number;
   z: number;
+  /** The height of its foot above the floor, metres (0 if on the floor). */
+  y?: number;
   /** What it takes, if not everything (a skip for the skimmer's finds only). */
   takes?: (object: Object3D) => boolean;
+  /** Whether what lands stays locked in; the tossing's own rule if unset. */
+  keep?: boolean;
+  /** Called as each object lands in this bin. */
+  onLanded?: (object: Object3D) => void;
 }
 
 /**
@@ -35,10 +41,36 @@ export const BIN_MARK = 'bin';
 export interface BinMark {
   shape: BinShape;
   footprint: { x: number; z: number };
+  /** A placement's own rules (`binRules`): what it takes, whether it keeps it, what follows a landing. */
+  takes?: (object: Object3D) => boolean;
+  keep?: boolean;
+  onLanded?: (object: Object3D) => void;
 }
 export function markBin<T extends Object3D>(group: T, mark: BinMark): T {
   group.userData[BIN_MARK] = mark;
   return group;
+}
+
+/**
+ * A placed bin's own rules, as its placement's metadata (mission 205): the
+ * room that placed it says what it takes (the skimmer's finds only), whether
+ * what lands stays locked in, and what a landing sets off (a count, a
+ * restock). The room's shared bin tossing reads them; no room makes one.
+ */
+export function binRules<T extends Object3D>(
+  group: T,
+  rules: Pick<BinMark, 'takes' | 'keep' | 'onLanded'>,
+): T {
+  const mark = group.userData[BIN_MARK] as BinMark | undefined;
+  if (!mark) throw new Error(`${group.name || 'object'} is not a bin`);
+  group.userData[BIN_MARK] = { ...mark, ...rules };
+  return group;
+}
+
+const BIN_EMPTY = 'binEmpty';
+/** Empty a placed bin, as a reset does: it counts from nothing again. */
+export function emptyBin(group: Object3D) {
+  (group.userData[BIN_EMPTY] as (() => void) | undefined)?.();
 }
 
 // Landing in a steel skip: a hollow clang.
@@ -107,7 +139,11 @@ export function createBinTossing({
       .add(centre.clone().applyQuaternion(object.quaternion))
       .divideScalar(m);
     const rest = binRest(bin.filled++, bin.shape, random);
-    const to = { x: bin.x + rest.x, y: rest.y + 0.02, z: bin.z + rest.z };
+    const to = {
+      x: bin.x + rest.x,
+      y: (bin.y ?? 0) + rest.y + 0.02,
+      z: bin.z + rest.z,
+    };
     // Lying flat (its thinnest side up) with its length along the bin,
     // then tipped up at the end as the bin fills, and turned a little.
     const turned = object.quaternion.clone();
@@ -193,6 +229,11 @@ export function createBinTossing({
         },
       };
       entry.group.userData.placementTarget = target;
+      entry.group.userData[BIN_EMPTY] = () => {
+        entry.filled = 0;
+        for (let i = tosses.length - 1; i >= 0; i--)
+          if (tosses[i].bin === entry) tosses.splice(i, 1);
+      };
       return entry;
     },
     /** Take a bin away; anything on its way into it lands nowhere. */
@@ -201,6 +242,7 @@ export function createBinTossing({
       if (at >= 0) {
         bins.splice(at, 1);
         delete bin.group.userData.placementTarget;
+        delete bin.group.userData[BIN_EMPTY];
       }
       for (let i = tosses.length - 1; i >= 0; i--)
         if (tosses[i].bin === bin) tosses.splice(i, 1);
@@ -240,8 +282,9 @@ export function createBinTossing({
         t.portable.component.settle();
         // It stays in, but can be picked out again (the owner, 2026-11-05),
         // unless the room's bins keep what they are given.
-        if (keep) t.portable.component.setLocked(true);
+        if (t.bin.keep ?? keep) t.portable.component.setLocked(true);
         partAudio.play(clang, t.object);
+        t.bin.onLanded?.(t.object);
         onLanded(t.object, t.bin);
       }
     },

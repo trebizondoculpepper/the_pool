@@ -7,6 +7,7 @@ import {
   BIN_MARK,
   createBinTossing,
 } from '../../components/site-dressing/parts/bin-tossing';
+import type { BinShape } from '../../components/site-dressing/logic/bin-toss';
 import type {
   BinMark,
   TossBin,
@@ -63,12 +64,13 @@ export function roomBins(
 ): RoomBins {
   const tossing = createBinTossing({ camera, metre, keep: false });
   const known = new WeakSet<Object3D>();
-  let signature = '';
   const at = new Vector3();
+  const scale = new Vector3();
+  // Looked for again now and then, so a bin a room adds later is found.
+  let since = Infinity;
   const find = () => {
-    const now = String(root.children.length);
-    if (now === signature) return;
-    signature = now;
+    if (since < 0.5) return;
+    since = 0;
     root.traverse((o) => {
       if (known.has(o)) return;
       const kind = o.userData[EQUIPMENT_KIND] as string | undefined;
@@ -77,19 +79,26 @@ export function roomBins(
       known.add(o);
       if (o.userData.placementTarget) return;
       o.getWorldPosition(at);
+      // Its shape is in its own metres; in a scaled hall, in the hall's.
+      const s = o.getWorldScale(scale).x / metre;
       const bin: TossBin = {
         name: o.name || kind,
         group: o,
-        shape: mark.shape,
-        footprint: mark.footprint,
+        shape: s === 1 ? mark.shape : scaleShape(mark.shape, s),
+        footprint: { x: mark.footprint.x * s, z: mark.footprint.z * s },
         x: at.x / metre,
+        y: at.y / metre,
         z: at.z / metre,
+        takes: mark.takes,
+        keep: mark.keep,
+        onLanded: mark.onLanded,
       };
       tossing.add(bin);
     });
   };
   return {
     divert(object, portable) {
+      since = Infinity;
       find();
       return tossing.divert(object, portable);
     },
@@ -98,6 +107,7 @@ export function roomBins(
       return tossing.targetFeedback(object);
     },
     update(delta) {
+      since += delta;
       find();
       tossing.update(delta);
     },
@@ -109,6 +119,15 @@ export function roomBins(
       if (bin) tossing.toss(object, portable, bin.name);
     },
   };
+}
+
+function scaleShape(shape: BinShape, s: number): BinShape {
+  return Object.fromEntries(
+    Object.entries(shape).map(([k, v]) => [
+      k,
+      typeof v === 'number' ? v * s : v,
+    ]),
+  ) as unknown as BinShape;
 }
 
 /** Whether a registered kind is holdable, by its expanded traits. */
