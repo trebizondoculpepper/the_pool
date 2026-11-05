@@ -14,20 +14,21 @@ One optical model for all water, extending `src/toolkit/components/pool/logic/wa
 - **Later, as the model gains them** (the research's list): algae (green, then blue-green), dissolved organic colour (tea-brown tannins), iron (rust brown), manganese (grey-brown), copper (green-blue), silt (brown, settling toward the floor), foam and surface films. Each is a coefficient, not a special case.
 - **Pure:** the per-pool coefficients from the water's condition, in `logic/`, tested (clean water stays as now; 0.5 NTU still shows the deep floor; 2 NTU loses it; 10 NTU is about half a metre of visibility); the views only upload uniforms.
 
-## The owner's layers idea, and the choice to make
+## The owner's visual choice (settled 2026-11-05)
 
 The owner suggested rendering a series of translucent, semi-opaque layers into the body of water to stand in for suspended particles. Two ways:
 
 1. **Analytic** (the research's recommendation): integrate the absorption and scattering along each line of sight in the shader, per pixel, from the path length through the water: exact, cheap, smooth, and one formula for clean and dirty water alike.
 2. **Layered slices** (the owner's idea): a stack of camera-facing or horizontal semi-transparent slices through the water volume, each tinted by the coefficients: cheaper to reason about, can show silt settling in bands or a cloud drifting, but costs overdraw and can band.
 
-Proposed: the analytic model as the base, with a few slices added only where the look needs structure the analytic model cannot show (silt settling toward the floor, a drifting cloud after a backwash). The owner decides.
+Use the existing analytic distance-based water fog as the base for overall loss of visibility. Add a small number of vertical, translucent Perlin-noise silt planes for visible structure in dirty water. The planes are purely visual: they do not change the water state or the game's interactions. Place candidate planes in the pool, then draw at most three sufficiently distant planes whose surfaces face the viewer most squarely (their normals roughly align with the view direction). Animate the noise slowly sideways, across an axis of the pool, recalling the Quake-style sky treatment but with vertical planes. Fade planes as they become edge-on or near, and crossfade selected planes as the camera turns so the choice does not pop. Their opacity increases with suspended particulates; draw none in clean water or below a tunable particulate threshold. The exact threshold, distances, drift speed and opacity are visual tuning values to settle in the browser, not new simulation variables. Low graphics quality may use the base fog alone.
 
 ## Acceptance
 
 - A pool's water changes appearance with its condition in the world state: clean water as today; rising turbidity hides the deep floor (PWTAG's test fails visibly); dirty water reads brown or silty.
 - Seen from above, from below (203) and through the portholes, by the same coefficients.
 - Within the frame-rate missions' budgets; on Low quality, the analytic model alone.
+- With particulate below the tuned threshold, no silt planes draw. In dirty water, no more than three sufficiently distant, nearly face-on vertical planes draw, with smooth selection as the camera turns.
 
 ## Records
 

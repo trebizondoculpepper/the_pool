@@ -13,7 +13,7 @@ The owner, 2026-11-05: "I want the use button to not drop an object, so we can u
 
 1. **Let go is its own action** (the owner, 2026-11-05): keyboard **Q**, the gamepad's **B**, and a **LET GO** button on touch while carrying (mouse players use Q; right-click is left alone, as Minecraft players expect it to use or place). General use never invokes a drop or general throw: with something in hand, use works whatever is aimed at (a ladder, a door, a knob), the thing staying in hand. USE or LET GO targeting a bin starts the guaranteed toss governed by 209.
 2. **The overlay shows it while something is held** (the owner, 2026-11-05): the let-go control is flashed on the overlay when something is picked up, and shown while it is held (the carrying help line, `carryingHelp`, for each input).
-3. **Placement and general throwing are different inputs** (the owner, 2026-11-05): USE at a clear aimed spot on a valid supportable top starts 210's direct, eased hand movement. USE at a wall, floor, occupied or otherwise invalid spot leaves the thing in hand. Socket and plug placement are entirely outside these features; preserve their current behaviour without designing the future traits here. LET GO releases the item: aimed down it behaves as a drop, aimed outward as a throw. There is no separate drop input. USE or LET GO targeting a bin starts 209's guaranteed toss.
+3. **Placement, drop and throw** (the owner, 2026-11-05): USE at a clear aimed spot on a valid supportable top starts 210's direct, eased hand movement. USE at a wall, floor, occupied or otherwise invalid spot leaves the thing in hand. Socket and plug placement are entirely outside these features; preserve their current behaviour without designing the future traits here. Q / gamepad B / touch LET GO while normally carrying drops the item; the same input while inspecting it up close throws it approximately where the player looks. A targeted bin takes either release as 209's guaranteed bin toss. USE on a targeted bin also starts that toss.
 4. **General throw flight** (the owner, 2026-11-05): launch initially approximately toward the aimed target and follow a parabolic arc until ground contact. On hitting a vertical solid's bounding box, ricochet with roughly 20–30% momentum loss per impact, tuned by feel as in mission 209's bin interior. Do not yet add rolling by shape, bouncing by material, metallic clatter, or other material-specific behaviour; those can follow later when shape and material traits support them.
 5. **Held items only** (the owner, 2026-11-05): throwing, dropping and bin tossing require a picked-up `holdable` item. `Luggable` objects cannot be picked up, so none of these actions applies to them.
 6. **Gamepad crouch** (the owner, 2026-11-05): B is LET GO during play, so crouch moves to the right stick's click. B remains Back in menus.
@@ -23,17 +23,17 @@ The owner, 2026-11-05: "I want the use button to not drop an object, so we can u
 10. **Supportable tops** (the owner, 2026-11-05): when a thrown object's flight reaches a desk, shelf or other supportable top, the existing support-landing rule applies; it may rest there instead of passing through to the floor.
 11. **Room boundary** (the owner, 2026-11-05): carrying or throwing objects between rooms is a later feature. This version keeps a thrown item in its current room; it does not transfer the item through a doorway into another scene.
 12. **Persistence** (the owner, 2026-11-05): saving an item's loose location is a future mission. This version retains today's room-reset behaviour when the player leaves and returns.
-13. **Landing sound** (the owner, 2026-11-05): use one neutral sound for a general throw or drop landing. Trait-based material sounds are later work. Mission 210's deliberate pick-up and placement stay silent.
+13. **Landing sound** (the owner's later ruling, 2026-11-05): reuse the existing rough drop and clatter sounds, even where they do not precisely fit the item or surface. Do not record new sounds for this mission. A richer model considering the item's material and shape and the impact surface belongs to later work. Mission 210's deliberate pick-up and placement stay silent.
 14. **Mouse-only LET GO** (the owner, 2026-11-05): defer a pointer-operated LET GO button on desktop. This version uses Q on keyboard, B on gamepad and the touch LET GO button; mouse-only access can be added later.
 
 ## Implementation notes and deferrals
 
-- **What let go does, by what is aimed at:** a targeted bin gets 209's guaranteed toss; otherwise LET GO throws. USE handles deliberate generic surface placement. Existing socket and plug uses remain until their own traits are designed.
+- **What let go does, by state and target:** a targeted bin gets 209's guaranteed toss; otherwise LET GO drops during normal carrying and throws while inspecting. USE handles deliberate generic surface placement. Existing socket and plug uses remain until their own traits are designed.
 - **Throw tuning:** choose a fixed leisurely launch speed for the room scale and tune the 20–30% wall rebound loss by feel. Supportable tops stop a descending throw as in mission 181; other solid collisions may use the simplest consistent response.
-- **Dropping:** LET GO aimed down makes a short release toward the floor; it is the same projectile action as throwing outward, not 210's deliberate placement.
+- **Dropping:** LET GO while normally carrying releases the item to settle nearby, regardless of aim. It is not 210's deliberate placement. Inspection is the explicit general-throw mode.
 - **Use while holding:** ordinary use (ladders, doors, knobs, buttons) works with something in hand. Keep existing room `useWhileHolding` cases until their future traits are designed; do not add another room-specific exception.
 - **Pure parts:** the arc and its bounces, and the choice of action by aim, pure logic in `controls/logic/`, tested; the views only move objects.
-- **Cues:** use the existing carrying glyphs where they fit: put down for valid USE placement, toss for a targeted bin, throw for LET GO elsewhere, and an impossible-action cue for invalid USE. Fragility, shape and material responses are later work, outside this mission's first throwing mechanic.
+- **Cues:** use the existing carrying glyphs where they fit: put down for valid USE placement, toss for a targeted bin, drop for LET GO while normally carrying, throw for LET GO while inspecting, and an impossible-action cue for invalid USE. Fragility, shape and material responses are later work, outside this mission's first throwing mechanic.
 
 ## Records
 
@@ -82,7 +82,7 @@ Checked against the code on 2026-11-05. Questions are numbered so they can be an
 8. **Tops in flight — answered:** apply the support rule; thrown things can land on supportable tops.
 9. **Doorways — answered:** no cross-room transfer in this version; the object remains in its current room. Cross-room carrying and throwing are later work.
 10. **Persistence — answered:** item-location persistence is a future mission; reset loose positions with the room as now.
-11. **Existing drop sounds — answered:** one neutral landing sound for general throws and drops; trait-based sounds later.
+11. **Existing drop sounds — superseded by later owner ruling:** keep using the existing rough drop and clatter sounds for general throws and drops; the richer impact sound model is later work.
 
 ## Review after 209 and 210 were built (ahnaa_dmitrieva, 2026-11-05)
 
@@ -96,3 +96,5 @@ Checked against the code on 2026-11-05. Questions are numbered so they can be an
 6. **Ladders.** These already work with something in hand: a use at a ladder mounts it before the hands are asked. Nothing more is needed for "use a ladder while holding", unless the held thing should be hidden while climbing.
 
 **Built 2026-11-05 (ahnaa_dmitrieva), on the defaults proposed above, each for the owner to overrule:** rebounds use the room's floor-plan solids now (1); there is no angle for a drop, one rule covers both (2); dropped and thrown things keep their material sounds for now, since the neutral sound waits on the owner's answer to 3; LET GO at a bin that refuses keeps the thing in hand (4); LET GO does nothing while inspecting (5); ladders needed nothing (6).
+
+**Owner's later control ruling, 2026-11-05:** Q / B / touch LET GO while inspecting is the general throw; the same action during normal carrying is a drop. The earlier inspection no-op and aim-angle rule above describe the shipped default, not the desired final behaviour. Any targeted bin gets a bin toss from either state. Every holdable item is bin tossable for now; a future trait may identify exceptions, but no generic bin refusal rule is needed. Reuse today's rough impact sounds, even if some are inappropriate; a richer clatter model that considers material, impact surface and shape belongs to later work.

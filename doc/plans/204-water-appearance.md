@@ -6,7 +6,7 @@ Brief: `doc/prompts/204-water-that-looks-its-chemistry.md`. The owner, 2026-11-0
 
 - **Per-pool coefficients** (pure, `water-optics.ts`, tested): from the model today — suspended solids → scattering (≈ 1 m⁻¹ per NTU), bathers' organics → a faint yellow-grey absorption cast. Later substances are more coefficients, never special cases.
 - **One formula** drives what is seen from above (tiles), from below (203's fog) and through the portholes: `poolBeer(absorption, scattering, glow, colour, path)`.
-- **The choice:** analytic (integrate along the sight line, the research's recommendation) as the base; a few translucent slices only where structure is needed (silt settling, a drifting cloud). The owner decides — proposed: analytic base + only where needed.
+- **Visual choice settled by the owner, 2026-11-05:** keep analytic, distance-based water fog as the base. For particulate above a tunable clean-water threshold, add vertical translucent Perlin-noise silt planes, purely visual. Select at most three distant candidate planes whose faces are near perpendicular to the view direction; fade near or edge-on planes and crossfade candidates as the camera turns. Drift the noise slowly sideways across the pool. Scale opacity with suspended solids. Draw no planes for clean water or on Low quality.
 
 ## Done (pure, tested)
 
@@ -18,7 +18,7 @@ Brief: `doc/prompts/204-water-that-looks-its-chemistry.md`. The owner, 2026-11-0
 
 ## Pending (rendering)
 
-Uploading the per-pool uniforms and shading above/below/portholes within the benchmark — a visual change; needs a browser to verify (screenshots before/after), which I don't have. Wire it and confirm with the owner or a browser agent.
+Upload the per-pool uniforms and shade above/below/portholes within the benchmark. Add the optional visual silt planes with a small candidate set and a three-plane draw cap. Compare clean, threshold and dirty states from above, below and through portholes in a browser; tune the threshold, near distance, angle fade, drift speed and opacity for legibility without popping. Verify the Low-quality fog-only path and frame budget.
 
 ## Records
 
