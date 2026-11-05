@@ -60,9 +60,9 @@ const POINTER_SCHEME: Record<
     gamepad: 'hold Y while carrying, right stick: turn object',
   },
   use: {
-    mouse: 'click or E: use / pick up / drop',
-    touch: 'Tap: use / pick up / drop',
-    gamepad: 'A: use / pick up / drop',
+    mouse: 'click or E: use / pick up / put down',
+    touch: 'Tap: use / pick up / put down',
+    gamepad: 'A: use / pick up / put down',
   },
   knob: {
     mouse: "click a knob's left or right half: turn it down or up",
@@ -77,7 +77,7 @@ const POINTER_SCHEME: Record<
   crouch: {
     mouse: 'C / V: crouch / lower; again: stand',
     touch: 'Crouch button: crouch',
-    gamepad: 'B: crouch',
+    gamepad: 'right stick click: crouch',
   },
   torch: {
     mouse: 'F: torch',
@@ -181,10 +181,10 @@ export function controlsHelp(mode: InputMode) {
 
 /** How each input turns a carried thing over, in the help line while carrying. */
 const TURN_OVER: Record<InputMode, string> = {
-  keyboard: 'hold X: look closer and turn it, wheel: nearer',
-  mouse: 'hold X: look closer and turn it, wheel: nearer',
-  touch: 'hold INSPECT: look closer and turn it',
-  gamepad: 'hold Y: look closer and turn it',
+  keyboard: 'Q: let go · hold X: look closer and turn it, wheel: nearer',
+  mouse: 'Q: let go · hold X: look closer and turn it, wheel: nearer',
+  touch: 'LET GO: let go · hold INSPECT: look closer and turn it',
+  gamepad: 'B: let go · hold Y: look closer and turn it',
 };
 
 /**
@@ -213,7 +213,10 @@ export function deadZone(x: number, y: number, zone = GAMEPAD_DEAD_ZONE) {
 /** The standard gamepad mapping's buttons, as the scheme uses them. */
 export const PAD = {
   use: 0,
-  crouch: 1,
+  /** B: LET GO while carrying (mission 211); in noclip, down. Back in menus. */
+  letGo: 1,
+  /** The right stick's click (the owner, 2026-11-05: B is LET GO now). */
+  crouch: 11,
   torch: 2,
   knobDown: 4,
   knobUp: 5,

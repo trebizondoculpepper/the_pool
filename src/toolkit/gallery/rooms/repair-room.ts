@@ -373,10 +373,11 @@ export function startRepairRoom(canvas: HTMLCanvasElement) {
     if (place && place.due <= 0) place.due = RESTOCK;
   };
   // The scrap skip: bin-like by its kind (mission 205), so the room's
-  // controller throws things into it; what lands stays, and is restocked.
+  // controller throws things into it; what lands is restocked, and can be
+  // picked out again (209).
   const skip = createSkip(kit);
   skip.group.name = 'scrap skip';
-  binRules(skip.group, { keep: true, onLanded: (object) => used(object) });
+  binRules(skip.group, { onLanded: (object) => used(object) });
   skip.group.position.set(SKIP_AT.x, 0, SKIP_AT.z);
   room.add(skip.group);
   label('SCRAP · ACTION WITHIN 2 M', SKIP_AT.x, 1.07, SKIP_AT.z + 0.75, 2.2);

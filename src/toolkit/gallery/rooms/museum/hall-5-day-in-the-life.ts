@@ -1122,9 +1122,8 @@ export function buildHallExhibit(kit: PanelKit): CarryingExhibit {
     return component;
   };
   // The bin: bin-like by its kind (mission 205), so the hall's controller
-  // throws finds into it; it takes the finds only, keeps them, and counts.
+  // throws finds into it; it takes the finds only, and counts them.
   binRules(binGroup, {
-    keep: true,
     takes: (o) => props.includes(o as Group),
     onLanded: (o) => {
       const i = props.indexOf(o as Group);

@@ -1,4 +1,5 @@
-import { BoxGeometry, Group, Mesh, PerspectiveCamera } from 'three';
+import { BoxGeometry, Group, Mesh } from 'three';
+import type { PlacementTarget } from '../../controls/input/placement-target';
 import type { Object3D } from 'three';
 import {
   binRules,
@@ -83,9 +84,11 @@ test("a placed bin's own rules come from its placement, not a room's tossing (mi
     onLanded: (o) => landed.push(o),
   });
   scene.add(group, find, stray);
-  const camera = new PerspectiveCamera();
-  camera.position.set(2, 1.6, 0);
-  const bins = roomBins(scene, camera, 1);
+  const bins = roomBins(scene, 1);
+  // Found as the room steps: then it is a placement target (209).
+  bins.update(0);
+  const target = group.userData.placementTarget as PlacementTarget;
+  expect(target.letGo).toBe(true);
   const portable = (o: Object3D) => {
     void o;
     const component = createPortableBoard(createDropProfile('box', 0.1));
@@ -93,10 +96,12 @@ test("a placed bin's own rules come from its placement, not a room's tossing (mi
   };
   find.position.set(2, 1, -0.5);
   stray.position.set(2, 1, -0.5);
-  expect(bins.divert(stray, portable(stray))).toBe(false);
+  expect(target.accepts(stray, portable(stray))).toBe(false);
   const p = portable(find);
-  expect(bins.divert(find, p)).toBe(true);
-  for (let i = 0; i < 40; i++) bins.update(0.05);
+  expect(target.accepts(find, p)).toBe(true);
+  p.component.pickUp();
+  target.place(find, p);
+  for (let i = 0; i < 60; i++) bins.update(0.05);
   expect(landed).toEqual([find]);
   expect(bins.filled().bin).toBe(1);
   expect(p.component.locked.value).toBe(true);

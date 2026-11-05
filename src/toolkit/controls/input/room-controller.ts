@@ -1,4 +1,4 @@
-import type { Camera, Object3D } from 'three';
+import type { Object3D } from 'three';
 import { createFirstPerson, firstPersonOn } from './first-person';
 import type { FirstPersonOptions } from './first-person';
 import type { PortableObject, SupportSurface } from './object-handling';
@@ -20,7 +20,7 @@ export interface RoomTraits {
    * The room's bins (mission 205): things let go near a bin-like object
    * fly into it. Made once per room; found among `root`'s objects.
    */
-  bins?(root: Object3D, camera: Camera, metre: number): RoomBins;
+  bins?(root: Object3D, metre: number): RoomBins;
   /**
    * Make every thing of a holdable kind in `root` carryable (mission 189),
    * where its builder did not: cheap when nothing has changed, so it is
@@ -30,9 +30,11 @@ export interface RoomTraits {
 }
 
 /** Throwing into a room's bin-like objects, as the walker sees it. */
+/**
+ * A room's bins (mission 205): each is a placement target, aimed at to
+ * put a held thing in by use or let go (209).
+ */
 export interface RoomBins {
-  divert(object: Object3D, portable: PortableObject): boolean;
-  targetFeedback(object: Object3D): 'accept' | null;
   update(delta: number): void;
   /** How many things have gone into each bin so far, by name. */
   filled(): Readonly<Record<string, number>>;
@@ -74,24 +76,10 @@ export function createRoomController(options: RoomControllerOptions) {
     });
   const scene = options.scene ?? root;
   const roomSupports = options.supports;
-  const bins = traits.bins?.(scene, options.camera, options.metre);
+  const bins = traits.bins?.(scene, options.metre);
   traits.holdables?.(scene, options.metre);
   const walker = createFirstPerson({
     ...options,
-    // A room's own bins first, then the registry's bin-like objects.
-    divert:
-      bins || options.divert
-        ? (object, portable) =>
-            Boolean(options.divert?.(object, portable)) ||
-            Boolean(bins?.divert(object, portable))
-        : undefined,
-    nearbyTargetFeedback:
-      bins || options.nearbyTargetFeedback
-        ? (object, ...rest) =>
-            options.nearbyTargetFeedback?.(object, ...rest) ??
-            bins?.targetFeedback(object) ??
-            null
-        : undefined,
     allowPickup(object, portable) {
       const holdable = traits.holdable(object);
       if (holdable === false) return false;

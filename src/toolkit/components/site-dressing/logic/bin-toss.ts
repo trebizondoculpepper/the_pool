@@ -161,3 +161,121 @@ export function binRest(
     tilt: (0.15 + 0.85 * full) * (0.25 + random() * 0.75) * (Math.PI / 2.4),
   };
 }
+
+/** Gravity, metres per second squared. */
+export const GRAVITY = 9.81;
+
+/**
+ * A bin's target zone (mission 209): a level disc that every toss carries
+ * the thing's middle down through. `y` is its height above the bin's foot,
+ * `radius` its size; it is centred over the middle of the bin's inside.
+ */
+export interface TargetZone {
+  y: number;
+  radius: number;
+}
+
+/** A bin's target zone, given or made from its inside: at its rim, within its narrower half. */
+export function targetZone(shape: BinShape, zone?: TargetZone): TargetZone {
+  return (
+    zone ?? { y: shape.rim, radius: 0.8 * Math.min(shape.halfX, shape.halfZ) }
+  );
+}
+
+/** How much speed an object keeps when it glances off the inside of a bin. */
+export const BIN_REBOUND_KEEP = 0.75;
+
+/** A toss's path: where the thing is at any time, and how long it flies. */
+export interface TossPath {
+  seconds: number;
+  /** Where its middle is `t` seconds after it is let go (held at the end after). */
+  at(t: number): Point3;
+}
+
+/**
+ * The underarm lob into a bin (mission 209; the owner, 2026-11-05): from
+ * `from`, up and over, down through the middle of the target disc at
+ * `entry` (world metres, its height the disc's), under gravity, so a
+ * higher lob takes longer. The lob rises `lift` above the higher of the
+ * hand and the disc: more for a longer toss, so it comes down steeply,
+ * though steep is only preferred, never required, and no ceiling is
+ * asked. Below the disc it keeps falling inside the bin, glancing off the
+ * inside's walls (half-sizes `inside`, about `entry`) with a quarter of
+ * its speed lost at each, until its middle reaches `restY`, where it
+ * settles. Pure.
+ */
+export function binTossPath(
+  from: Point3,
+  entry: Point3,
+  restY: number,
+  inside: { halfX: number; halfZ: number },
+  gravity = GRAVITY,
+): TossPath {
+  const dx = entry.x - from.x;
+  const dz = entry.z - from.z;
+  const across = Math.hypot(dx, dz);
+  const lift = Math.min(1.2, Math.max(0.25, 0.6 * across));
+  const top = Math.max(from.y, entry.y) + lift;
+  const up = Math.sqrt(2 * gravity * (top - from.y));
+  // Down through the disc, after the top: the later root.
+  const reach =
+    (up + Math.sqrt(Math.max(0, up * up - 2 * gravity * (entry.y - from.y)))) /
+    gravity;
+  const vx = dx / reach;
+  const vz = dz / reach;
+  // Inside the bin: keep falling from the disc, glancing off its walls.
+  const samples: Point3[] = [];
+  const step = 1 / 120;
+  let x = entry.x;
+  let z = entry.z;
+  let y = entry.y;
+  let wx = vx;
+  let wz = vz;
+  let wy = up - gravity * reach;
+  const minX = entry.x - inside.halfX;
+  const maxX = entry.x + inside.halfX;
+  const minZ = entry.z - inside.halfZ;
+  const maxZ = entry.z + inside.halfZ;
+  samples.push({ x, y, z });
+  for (let i = 0; i < 2400 && y > restY; i++) {
+    x += wx * step;
+    z += wz * step;
+    wy -= gravity * step;
+    y = Math.max(restY, y + wy * step);
+    if (x < minX || x > maxX) {
+      x = x < minX ? 2 * minX - x : 2 * maxX - x;
+      wx *= -BIN_REBOUND_KEEP;
+      wz *= BIN_REBOUND_KEEP;
+    }
+    if (z < minZ || z > maxZ) {
+      z = z < minZ ? 2 * minZ - z : 2 * maxZ - z;
+      wz *= -BIN_REBOUND_KEEP;
+      wx *= BIN_REBOUND_KEEP;
+    }
+    samples.push({ x, y, z });
+  }
+  const inBin = (samples.length - 1) * step;
+  return {
+    seconds: reach + inBin,
+    at(t: number) {
+      if (t <= reach) {
+        const s = Math.max(0, t);
+        return {
+          x: from.x + vx * s,
+          y: from.y + up * s - (gravity * s * s) / 2,
+          z: from.z + vz * s,
+        };
+      }
+      const k = Math.min(samples.length - 1, (t - reach) / step);
+      const i = Math.floor(k);
+      const a = samples[i];
+      const b = samples[Math.min(samples.length - 1, i + 1)];
+      const f = k - i;
+      return {
+        x: a.x + (b.x - a.x) * f,
+        y: a.y + (b.y - a.y) * f,
+        z: a.z + (b.z - a.z) * f,
+      };
+    },
+  };
+}

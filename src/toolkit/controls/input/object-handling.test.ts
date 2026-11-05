@@ -54,6 +54,15 @@ function fixture(
     undefined,
     targetFeedback,
   );
+  // A pick-up takes half a second to reach the hand (mission 210): a use
+  // that picks up is followed here by that half second.
+  const use = handling.use.bind(handling);
+  handling.use = (x: number, y: number) => {
+    const before = handling.holding();
+    const done = use(x, y);
+    if (!before && handling.holding()) handling.update(0.6);
+    return done;
+  };
   return {
     scene,
     object,
@@ -112,7 +121,8 @@ it('brings a carried object to arm length when the camera moves and turns', () =
 it('releases anywhere, lands above the floor and can be picked up again', () => {
   const f = fixture();
   f.handling.use(0, 0);
-  f.handling.use(0.9, -0.9);
+  // LET GO, not use, lets it go (mission 211).
+  f.handling.letGo(0.9, -0.9);
   for (let i = 0; i < 180; i++) f.handling.update(1 / 60);
   f.scene.updateMatrixWorld(true);
   expect(f.component.phase.value).toBe('settled');
@@ -128,7 +138,7 @@ it('releases anywhere, lands above the floor and can be picked up again', () => 
 it('applies a room redirect before the released board starts falling', () => {
   const f = fixture((placement) => ({ ...placement, z: 1, vz: 0.8 }));
   f.handling.use(0, 0);
-  f.handling.use(0, 0);
+  f.handling.letGo(0, 0);
   f.scene.updateMatrixWorld(true);
   expect(
     new Box3().setFromObject(f.object).getCenter(new Vector3()).z / 2,
@@ -153,7 +163,7 @@ it('restores an exhibit to its original parent, position, orientation and scale 
   const rotation = f.object.quaternion.clone();
   const scale = f.object.scale.clone();
   f.handling.use(0, 0);
-  f.handling.use(0, 0);
+  f.handling.letGo(0, 0);
   f.handling.update(0.1);
   f.component.reset();
   f.handling.update(0.01);
@@ -278,14 +288,14 @@ it('gives an object straight into the hands, then drops it like any other', () =
   expect(f.detached()).toBe(true);
   expect(events).toEqual(['pick-up']);
   expect(f.handling.heldObject()).toBe(f.object);
-  for (let i = 0; i < 20; i++) f.handling.update(1 / 60);
+  for (let i = 0; i < 40; i++) f.handling.update(1 / 60);
   const ahead = f.object.position.clone().sub(f.camera.position).normalize();
   expect(ahead.dot(f.camera.getWorldDirection(new Vector3()))).toBeGreaterThan(
     0.8,
   );
   // Full hands take nothing more.
   expect(f.handling.give(f.object)).toBe(false);
-  f.handling.use(0.9, -0.9);
+  f.handling.letGo(0.9, -0.9);
   expect(f.component.phase.value).toBe('falling');
   f.handling.dispose();
 });
@@ -391,9 +401,134 @@ it('draws what is held over the world, and its own materials again once let go',
   expect(f.handling.use(0, 0)).toBe(true);
   expect(f.handling.holding()).toBe(true);
   f.handling.inspect(false);
-  expect(f.handling.use(0, 0)).toBe(true);
+  expect(f.handling.letGo(0, 0)).toBe(true);
   expect(f.handling.holding()).toBe(false);
   f.handling.update(1 / 60);
   expect(f.object.material).toBe(own);
+  f.handling.dispose();
+});
+
+/** A board on a desk top at 0.73 m, the eye above the desk's near half (mission 210). */
+function deskFixture() {
+  const scene = new Scene();
+  const desk = new Mesh(
+    new BoxGeometry(1.6, 0.73, 0.8),
+    new MeshBasicMaterial(),
+  );
+  desk.position.set(0, 0.365, -1);
+  scene.add(desk);
+  const object = new Mesh(
+    new BoxGeometry(0.2, 0.05, 0.3),
+    new MeshBasicMaterial(),
+  );
+  object.position.set(-0.5, 0.755, -1);
+  scene.add(object);
+  const component = createPortableBoard();
+  object.userData.portable = { component, flat: 'upright', detach() {} };
+  const camera = new PerspectiveCamera(52, 1, 0.05, 20);
+  camera.position.set(0, 1.6, 0);
+  const top = { minX: -0.8, maxX: 0.8, minZ: -1.4, maxZ: -0.6, top: 0.73 };
+  const handling = createObjectHandling(scene, camera, 1, 0, () => [top]);
+  const aim = (x: number, z: number) => {
+    camera.lookAt(x, 0.73, z);
+    camera.updateMatrixWorld(true);
+  };
+  return { scene, desk, object, component, camera, handling, aim };
+}
+
+it('eases a thing picked up from where it rests into the hand in about half a second', () => {
+  const f = deskFixture();
+  f.aim(-0.5, -1);
+  const from = f.object.position.clone();
+  expect(f.handling.use(0, 0)).toBe(true);
+  f.handling.update(0.05);
+  const early = f.object.position.distanceTo(from);
+  f.handling.update(0.2);
+  const middle = f.object.position.distanceTo(from);
+  // Eased in: it has hardly moved early on, and is well on its way half way.
+  expect(early).toBeLessThan(middle / 4);
+  // Nothing else happens to it until it is in the hand.
+  expect(f.handling.resolve(0, 0).answer).toBeNull();
+  f.handling.update(0.3);
+  expect(f.handling.moving()).toBe(false);
+  f.handling.dispose();
+});
+
+it('puts a thing down on a top where aimed, flat and still, in about half a second', () => {
+  const f = deskFixture();
+  f.aim(-0.5, -1);
+  f.handling.use(0, 0);
+  f.handling.update(0.6);
+  f.aim(0.3, -1.1);
+  expect(f.handling.resolve(0, 0).answer).toEqual({
+    gesture: 'put-down',
+    possible: true,
+  });
+  expect(f.handling.use(0, 0)).toBe(true);
+  expect(f.handling.holding()).toBe(false);
+  f.handling.update(0.25);
+  expect(f.handling.moving()).toBe(true);
+  f.handling.update(0.3);
+  expect(f.handling.moving()).toBe(false);
+  expect(f.component.phase.value).toBe('settled');
+  f.scene.updateMatrixWorld(true);
+  const box = new Box3().setFromObject(f.object);
+  expect(box.min.y).toBeCloseTo(0.73, 3);
+  const middle = box.getCenter(new Vector3());
+  expect(middle.x).toBeCloseTo(0.3, 1);
+  expect(middle.z).toBeCloseTo(-1.1, 1);
+  f.handling.dispose();
+});
+
+it('refuses a put-down that would overhang the edge or land on another thing, keeping it in hand', () => {
+  const f = deskFixture();
+  f.aim(-0.5, -1);
+  f.handling.use(0, 0);
+  f.handling.update(0.6);
+  // Its middle near the edge: a corner would hang over.
+  f.aim(0.78, -1);
+  expect(f.handling.resolve(0, 0).answer).toEqual({
+    gesture: 'put-down',
+    possible: false,
+    refused: true,
+  });
+  expect(f.handling.use(0, 0)).toBe(true);
+  expect(f.handling.holding()).toBe(true);
+  // Where another thing already rests.
+  const other = new Mesh(
+    new BoxGeometry(0.2, 0.1, 0.2),
+    new MeshBasicMaterial(),
+  );
+  other.position.set(0.25, 0.78, -1.05);
+  other.userData.portable = {
+    component: createPortableBoard(),
+    flat: 'upright',
+    detach() {},
+  };
+  f.scene.add(other);
+  f.aim(0.2, -1.1);
+  expect(f.handling.resolve(0, 0).answer).not.toEqual({
+    gesture: 'put-down',
+    possible: true,
+  });
+  f.handling.dispose();
+});
+
+it('leaves a use at the floor to the room, the thing kept in hand (mission 211)', () => {
+  const f = deskFixture();
+  f.aim(-0.5, -1);
+  f.handling.use(0, 0);
+  f.handling.update(0.6);
+  const floor = new Mesh(
+    new BoxGeometry(10, 0.01, 10),
+    new MeshBasicMaterial(),
+  );
+  floor.position.set(0, -0.005, 0);
+  f.scene.add(floor);
+  f.camera.lookAt(0, 0, -0.3);
+  f.camera.updateMatrixWorld(true);
+  expect(f.handling.resolve(0, 0).answer).toBe('use');
+  expect(f.handling.use(0, 0)).toBe(false);
+  expect(f.handling.holding()).toBe(true);
   f.handling.dispose();
 });

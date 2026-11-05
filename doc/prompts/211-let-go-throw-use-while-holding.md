@@ -83,3 +83,14 @@ Checked against the code on 2026-11-05. Questions are numbered so they can be an
 9. **Doorways — answered:** no cross-room transfer in this version; the object remains in its current room. Cross-room carrying and throwing are later work.
 10. **Persistence — answered:** item-location persistence is a future mission; reset loose positions with the room as now.
 11. **Existing drop sounds — answered:** one neutral landing sound for general throws and drops; trait-based sounds later.
+
+## Review after 209 and 210 were built (ahnaa_dmitrieva, 2026-11-05)
+
+210 could not ship without a way to let go (USE no longer drops), so **211's input shipped with it**: Q, the pad's B, touch LET GO, crouch on the right stick's click, and the help line. LET GO aimed at a bin tosses it in (209); anywhere else the thing leaves the hand and falls by its drop profile, as before. What 211 still adds is the throw itself. Points for the owner before it is built:
+
+1. **Rebounds need not wait for 208.** Every room already gives the walker its walls and solid things as floor-plan rectangles (`solids`). A throw can rebound off those as vertical faces now, and use 208's bounds models when they exist. Shall the first version do that, instead of waiting?
+2. **"Aimed down is a drop".** The brief gives no angle. At a leisurely fixed speed, a throw aimed steeply down lands about half a metre ahead anyway. Can there simply be no threshold, so that one rule covers both?
+3. **The neutral landing sound is a loss.** Every portable already sounds by its drop profile's material (board, plastic, metal, ceramic) when dropped. One neutral sound would replace those everywhere. Should the existing sounds be kept for drops and rebounds?
+4. **LET GO at a bin that refuses.** Hall 5's bin takes only the finds. Today LET GO at it with anything else keeps the thing in hand, and the cue is red. Should it instead be thrown, and bounce off?
+5. **While inspecting.** LET GO does nothing while the thing is held up to look at (X, INSPECT or Y held). Is that right, or should it let go from there?
+6. **Ladders.** These already work with something in hand: a use at a ladder mounts it before the hands are asked. Nothing more is needed for "use a ladder while holding", unless the held thing should be hidden while climbing.

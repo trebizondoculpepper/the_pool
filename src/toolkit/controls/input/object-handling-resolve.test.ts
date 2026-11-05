@@ -24,7 +24,6 @@ function fixture(
     heldAction?: () => boolean | 'refuse';
     allowPickup?: () => boolean;
     targetFeedback?: () => TargetFeedback;
-    nearby?: () => 'accept' | 'reject' | null;
     divert?: () => boolean;
   } = {},
 ) {
@@ -51,7 +50,6 @@ function fixture(
     heldAction: vi.fn(hooks.heldAction ?? (() => false)),
     allowPickup: vi.fn(hooks.allowPickup ?? (() => true)),
     targetFeedback: vi.fn(hooks.targetFeedback ?? (() => null)),
-    nearby: vi.fn(hooks.nearby ?? (() => null)),
     divert: vi.fn(hooks.divert ?? (() => false)),
     onPickUp: vi.fn((_object: Object3D, _portable: PortableObject) => {}),
   };
@@ -67,7 +65,6 @@ function fixture(
     spies.heldAction,
     spies.allowPickup,
     spies.targetFeedback,
-    spies.nearby,
     spies.onPickUp,
   );
   /** A thing in front, at z (world), seen past the held object. */
@@ -79,6 +76,15 @@ function fixture(
     mesh.position.set(0, 1.2, z);
     scene.add(mesh);
     return mesh;
+  };
+  // A pick-up takes half a second to reach the hand (mission 210): a use
+  // that picks up is followed here by that half second.
+  const use = handling.use.bind(handling);
+  handling.use = (x: number, y: number) => {
+    const before = handling.holding();
+    const done = use(x, y);
+    if (!before && handling.holding()) handling.update(0.6);
+    return done;
   };
   return { scene, object, component, camera, handling, spies, ahead };
 }
@@ -185,8 +191,8 @@ describe('the hands, carrying', () => {
     expect(f.handling.holding()).toBe(true);
   });
 
-  it('names an aimed place by its kind, ahead of a bin near enough', () => {
-    const f = fixture({ nearby: () => 'accept', divert: () => true });
+  it('names an aimed place by its kind', () => {
+    const f = fixture({ divert: () => true });
     f.handling.use(0, 0);
     const place = target(true, 'put-back');
     f.ahead().userData.placementTarget = place;
@@ -199,8 +205,8 @@ describe('the hands, carrying', () => {
     expect(f.spies.divert).not.toHaveBeenCalled();
   });
 
-  it('refuses at an aimed bin that will not take it, though another is near', () => {
-    const f = fixture({ nearby: () => 'accept', divert: () => true });
+  it('refuses at an aimed bin that will not take it', () => {
+    const f = fixture({ divert: () => true });
     f.handling.use(0, 0);
     const skip = target(false, 'put-in');
     f.ahead().userData.placementTarget = skip;
@@ -237,27 +243,21 @@ describe('the hands, carrying', () => {
     });
   });
 
-  it('puts into a bin near enough, and otherwise drops', () => {
-    let near = true;
-    const f = fixture({
-      nearby: () => (near ? 'accept' : null),
-      divert: () => near,
-    });
+  it('leaves a use at nothing of the hands to the room, the thing kept; LET GO lets it fall (211)', () => {
+    const f = fixture();
     f.handling.use(0, 0);
-    expect(f.handling.resolve(0, 0).answer).toEqual({
-      gesture: 'put-in',
-      possible: true,
-    });
-    near = false;
-    expect(f.handling.resolve(0, 0).answer).toBeNull();
-    expect(f.handling.use(0, 0)).toBe(true);
+    expect(f.handling.resolve(0, 0).answer).toBe('use');
+    expect(f.handling.use(0, 0)).toBe(false);
+    expect(f.handling.holding()).toBe(true);
+    expect(f.handling.letGo(0, 0)).toBe(true);
+    expect(f.handling.holding()).toBe(false);
     expect(f.component.phase.value).toBe('falling');
   });
 });
 
 describe('asking', () => {
   it('changes nothing, however often, and calls no acting hook', () => {
-    const f = fixture({ nearby: () => 'accept', divert: () => true });
+    const f = fixture({ divert: () => true });
     const place = target(true, 'put-in');
     f.ahead().userData.placementTarget = place;
     for (let i = 0; i < 1000; i++) f.handling.resolve(0, 0);

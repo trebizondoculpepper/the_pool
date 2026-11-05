@@ -14,6 +14,11 @@ export interface PlacementTarget {
    * place, into a bin or carton, or down on a surface.
    */
   cue?: 'fit' | 'put-back' | 'put-in' | 'put-down';
+  /**
+   * Taken by LET GO as well as by use (mission 209: a bin aimed at takes
+   * what is let go of, as it takes what is used on it).
+   */
+  letGo?: boolean;
 }
 
 /** Contents attached to a plinth remain occupants, including respawn animations. */

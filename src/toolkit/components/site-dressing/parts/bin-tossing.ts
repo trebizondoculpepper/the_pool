@@ -1,14 +1,8 @@
 import { Box3, Matrix4, Quaternion, Vector3 } from 'three';
-import type { Camera, Object3D } from 'three';
+import type { Object3D } from 'three';
 import { click, partAudio } from '../../core/audio/part-audio';
-import {
-  BIN_MAGNET_REACH,
-  distanceToBin,
-  arcSeconds,
-  binArc,
-  binRest,
-} from '../logic/bin-toss';
-import type { BinShape, Point3 } from '../logic/bin-toss';
+import { binRest, binTossPath, targetZone } from '../logic/bin-toss';
+import type { BinShape, TargetZone, TossPath } from '../logic/bin-toss';
 import type { PortableObject } from '../../../controls/input/object-handling';
 import type { PlacementTarget } from '../../../controls/input/placement-target';
 
@@ -24,6 +18,8 @@ export interface TossBin {
   z: number;
   /** The height of its foot above the floor, metres (0 if on the floor). */
   y?: number;
+  /** Its target disc (mission 209); made from its inside if not given. */
+  zone?: TargetZone;
   /** What it takes, if not everything (a skip for the skimmer's finds only). */
   takes?: (object: Object3D) => boolean;
   /** Whether what lands stays locked in; the tossing's own rule if unset. */
@@ -41,6 +37,8 @@ export const BIN_MARK = 'bin';
 export interface BinMark {
   shape: BinShape;
   footprint: { x: number; z: number };
+  /** Its target disc, above its foot (mission 209); made from `shape` if not given. */
+  zone?: TargetZone;
   /** A placement's own rules (`binRules`): what it takes, whether it keeps it, what follows a landing. */
   takes?: (object: Object3D) => boolean;
   keep?: boolean;
@@ -83,22 +81,22 @@ const clang = click({
 });
 
 /**
- * Throwing things into bins, for any room (`src/toolkit/components/site-dressing/logic/bin-toss.ts` is the
- * rule): pass `divert` to `createFirstPerson`, and a released object let
- * go within two metres of the nearest edge of a bin's opening flies in a
- * parabola into the nearest bin, turning to lie flat along it, and
- * lands with a clang on whatever is already there, where it stays,
- * locked. Bins can be added at any time, so a room may conjure one up.
+ * Throwing things into bins, for any room (`logic/bin-toss.ts` is the
+ * rule; mission 209): each bin added is a placement target, so a thing
+ * held and aimed at the bin within use reach goes in by use or let go
+ * alike, never one merely let go near it. It is lobbed underarm through
+ * the bin's target disc under gravity, turning to lie flat, glances off
+ * the inside, and lands with a clang on whatever is already there, where
+ * it can be picked out again (unless the bin keeps it). Bins can be added
+ * at any time, so a room may conjure one up.
  * Objects are in the scene's frame, `metre` units to the metre.
  */
 export function createBinTossing({
-  camera,
   metre: m,
   random = Math.random,
   onLanded = () => {},
-  keep = true,
+  keep = false,
 }: {
-  camera: Camera;
   metre: number;
   random?: () => number;
   /** Whether what lands stays locked in (true), or may be picked out again. */
@@ -110,16 +108,13 @@ export function createBinTossing({
   const tosses: {
     object: Object3D;
     portable: PortableObject;
-    from: Point3;
-    to: Point3;
+    path: TossPath;
     fromQ: Quaternion;
     toQ: Quaternion;
     centre: Vector3;
     age: number;
-    seconds: number;
     bin: TossBin;
   }[] = [];
-  const eye = new Vector3();
   /** Where an object's middle is, in its own frame, scaled. */
   const middleOf = (object: Object3D) => {
     object.updateMatrixWorld(true);
@@ -139,11 +134,27 @@ export function createBinTossing({
       .add(centre.clone().applyQuaternion(object.quaternion))
       .divideScalar(m);
     const rest = binRest(bin.filled++, bin.shape, random);
-    const to = {
-      x: bin.x + rest.x,
-      y: (bin.y ?? 0) + rest.y + 0.02,
-      z: bin.z + rest.z,
+    const zone = targetZone(bin.shape, bin.zone);
+    const foot = bin.y ?? 0;
+    // Its inside about its middle, turned with the bin a quarter turn or not.
+    const quarter = Math.abs(Math.sin(bin.group.rotation.y)) > 0.7;
+    const margin = 0.02;
+    const inside = {
+      halfX: Math.max(
+        0,
+        (quarter ? bin.shape.halfZ : bin.shape.halfX) - margin,
+      ),
+      halfZ: Math.max(
+        0,
+        (quarter ? bin.shape.halfX : bin.shape.halfZ) - margin,
+      ),
     };
+    const path = binTossPath(
+      { x: start.x, y: start.y, z: start.z },
+      { x: bin.x, y: foot + zone.y, z: bin.z },
+      foot + rest.y + 0.02,
+      inside,
+    );
     // Lying flat (its thinnest side up) with its length along the bin,
     // then tipped up at the end as the bin fills, and turned a little.
     const turned = object.quaternion.clone();
@@ -169,17 +180,14 @@ export function createBinTossing({
         new Quaternion().setFromAxisAngle(new Vector3(0, 0, 1), rest.tilt),
       )
       .multiply(lay);
-    const from = { x: start.x, y: start.y, z: start.z };
     tosses.push({
       object,
       portable,
-      from,
-      to,
+      path,
       fromQ: object.quaternion.clone(),
       toQ,
       centre,
       age: 0,
-      seconds: arcSeconds(Math.hypot(start.x - to.x, start.z - to.z)),
       bin,
     });
   };
@@ -189,39 +197,21 @@ export function createBinTossing({
       if (!at.visible) return false;
     return true;
   };
-  const distance = (object: Object3D, bin: TossBin) => {
-    const centre = new Box3()
-      .setFromObject(object)
-      .getCenter(new Vector3())
-      .divideScalar(m);
-    return distanceToBin(centre, bin, bin.footprint, bin.group.rotation.y);
-  };
-  /** Shared by the cue, the aimed placement and the magnetic release. */
+  /** Whether a bin takes this thing now: it is in the scene, shown, and takes it. */
   const accepts = (object: Object3D, bin: TossBin) =>
-    available(bin) &&
-    (bin.takes?.(object) ?? true) &&
-    distance(object, bin) <= BIN_MAGNET_REACH;
-  const nearest = (object: Object3D) => {
-    camera.getWorldPosition(eye).divideScalar(m);
-    return bins
-      .filter((bin) => accepts(object, bin))
-      .sort(
-        (a, b) =>
-          distance(object, a) - distance(object, b) ||
-          Math.hypot(a.x - eye.x, a.z - eye.z) -
-            Math.hypot(b.x - eye.x, b.z - eye.z),
-      )[0];
-  };
+    available(bin) && (bin.takes?.(object) ?? true);
   return {
     bins: bins as readonly (TossBin & { filled: number })[],
     /** Add a bin to throw things into; it must already be in the scene. */
     add(bin: TossBin) {
       const entry = Object.assign(bin, { filled: 0 });
       bins.push(entry);
+      // Aimed at within use reach, by use or let go (mission 209): the
+      // only way in; nothing near a bin is drawn into it.
       const target: PlacementTarget = {
-        reach: Infinity,
         cue: 'put-in',
-        inRange: (object) => accepts(object, entry),
+        letGo: true,
+        inRange: () => available(entry),
         accepts: (object) => accepts(object, entry),
         place: (object, portable) => {
           portable.component.drop();
@@ -249,16 +239,6 @@ export function createBinTossing({
     },
     /** Whether anything is on its way into `bin`. */
     incoming: (bin: TossBin) => tosses.some((t) => t.bin === bin),
-    /** For `createFirstPerson`: take a released object into a bin, or not. */
-    divert(object: Object3D, portable: PortableObject) {
-      const bin = nearest(object);
-      if (!bin) return false;
-      toss(object, portable, bin);
-      return true;
-    },
-    /** Green whenever the ordinary magnetic release would take this object. */
-    targetFeedback: (object: Object3D) =>
-      nearest(object) ? ('accept' as const) : null,
     /** Throw `object` straight into the named bin (for development). */
     toss(object: Object3D, portable: PortableObject, name: string) {
       const bin = bins.find((b) => b.name === name) ?? bins[0];
@@ -269,8 +249,8 @@ export function createBinTossing({
       for (let i = tosses.length - 1; i >= 0; i--) {
         const t = tosses[i];
         t.age += delta;
-        const k = Math.min(1, t.age / t.seconds);
-        const at = binArc(t.from, t.to, k);
+        const k = Math.min(1, t.age / t.path.seconds);
+        const at = t.path.at(t.age);
         t.object.quaternion.copy(t.fromQ).slerp(t.toQ, k);
         t.object.position
           .set(at.x * m, at.y * m, at.z * m)

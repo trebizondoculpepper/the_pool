@@ -28,7 +28,7 @@ function fixture() {
   const camera = new PerspectiveCamera(55, 1, 0.01, 100);
   camera.position.set(0, 1.2, 2);
   camera.lookAt(0, 1.2, 0);
-  const tossing = createBinTossing({ camera, metre: 1, random: () => 0.5 });
+  const tossing = createBinTossing({ metre: 1, random: () => 0.5 });
   const group = new Group();
   group.add(new Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial()));
   group.position.set(0, 0.5, -1.5);
@@ -48,21 +48,10 @@ function fixture() {
       heap: 0.2,
     },
   });
-  const handling = createObjectHandling(
-    scene,
-    camera,
-    1,
-    0,
-    undefined,
-    tossing.divert,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    undefined,
-    tossing.targetFeedback,
-  );
+  const handling = createObjectHandling(scene, camera, 1, 0);
   handling.use(0, 0);
+  // On its way to the hand (mission 210): there in half a second.
+  handling.update(0.6);
   camera.lookAt(0, 0.5, -1.5);
   return { scene, object, portable, camera, tossing, bin, handling };
 }
@@ -77,36 +66,61 @@ it('shows green and tosses into an aimed skip, with feedback matching the actual
   f.handling.dispose();
 });
 
-it('leaves the normal crosshair for an out-of-range bin and releases normally', () => {
+it('tosses into an aimed skip on LET GO as on use (mission 209)', () => {
+  const f = fixture();
+  expect(f.handling.letGo(0, 0)).toBe(true);
+  expect(f.tossing.incoming(f.bin)).toBe(true);
+  f.handling.dispose();
+});
+
+it('lands in the skip under gravity and can be picked out again', () => {
+  const f = fixture();
+  f.handling.use(0, 0);
+  for (let i = 0; i < 200 && f.tossing.incoming(f.bin); i++)
+    f.tossing.update(0.02);
+  expect(f.tossing.incoming(f.bin)).toBe(false);
+  expect(f.bin.filled).toBe(1);
+  // In the bin: inside its footprint, below its rim.
+  expect(Math.abs(f.object.position.x - f.bin.x)).toBeLessThan(0.5);
+  expect(Math.abs(f.object.position.z - f.bin.z)).toBeLessThan(0.5);
+  expect(f.object.position.y).toBeLessThan(1);
+  expect(f.portable.component.locked.value).toBe(false);
+  f.handling.dispose();
+});
+
+it('takes nothing from out of reach: use keeps it in hand, LET GO lets it fall', () => {
   const f = fixture();
   f.bin.z = -8;
   f.bin.group.position.z = -8;
   f.camera.lookAt(0, 0.5, -8);
   expect(f.handling.targetFeedback(0, 0)).toBeNull();
   f.handling.use(0, 0);
+  expect(f.handling.holding()).toBe(true);
+  f.handling.letGo(0, 0);
   expect(f.handling.holding()).toBe(false);
   expect(f.tossing.incoming(f.bin)).toBe(false);
+  expect(f.portable.component.phase.value).toBe('falling');
   f.handling.dispose();
 });
 
-it('keeps magnetic-range feedback when not aimed at the bin, and forgets removed bins', () => {
+it('has no magnet: let go near a bin but not at it, it falls, and a removed bin is forgotten', () => {
   const f = fixture();
   f.camera.lookAt(5, 1.2, 0);
-  expect(f.handling.targetFeedback(0, 0)).toBe('accept');
-  f.tossing.remove(f.bin);
   expect(f.handling.targetFeedback(0, 0)).toBeNull();
+  f.handling.letGo(0, 0);
+  expect(f.tossing.incoming(f.bin)).toBe(false);
+  f.tossing.remove(f.bin);
   expect(f.bin.group.userData.placementTarget).toBeUndefined();
   f.handling.dispose();
 });
 
-it('lets a bin refuse what it does not take: it is dropped beside it', () => {
+it('lets a bin refuse what it does not take: red, and kept in hand', () => {
   const f = fixture();
   f.bin.takes = (o) => o !== f.object;
-  expect(f.handling.targetFeedback(0, 0)).toBeNull();
+  expect(f.handling.targetFeedback(0, 0)).toBe('reject');
   f.handling.use(0, 0);
-  expect(f.handling.holding()).toBe(false);
+  expect(f.handling.holding()).toBe(true);
   expect(f.tossing.incoming(f.bin)).toBe(false);
-  expect(f.portable.component.phase.value).toBe('falling');
   f.bin.takes = () => true;
   f.handling.dispose();
 });

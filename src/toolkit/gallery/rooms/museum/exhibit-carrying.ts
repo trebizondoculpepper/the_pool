@@ -50,10 +50,6 @@ export interface ExhibitCarrying {
   /** Called once, when the exhibit is loaded into the hall walked in. */
   bind(hands: ExhibitHands, view?: ExhibitView): void;
   divert?(object: Object3D, portable: PortableObject): boolean;
-  nearbyTargetFeedback?(
-    object: Object3D,
-    portable: PortableObject,
-  ): 'accept' | 'reject' | null;
 }
 
 /** A hall exhibit that may carry things. */

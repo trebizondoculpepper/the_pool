@@ -8,6 +8,8 @@ import {
   arcSeconds,
   binArc,
   binRest,
+  binTossPath,
+  targetZone,
   overBin,
 } from './bin-toss';
 import type { BinShape } from './bin-toss';
@@ -129,5 +131,74 @@ describe('letting go over a bin', () => {
     expect(overBin({ x: 1.05, z: 0 }, { x: 0, z: 0 }, skip, turned)).toBe(
       false,
     );
+  });
+});
+
+describe('the underarm lob (mission 209)', () => {
+  const inside = { halfX: 0.16, halfZ: 0.16 };
+  it('passes down through the middle of the target disc', () => {
+    const from = { x: 0, y: 1.1, z: 0 };
+    const entry = { x: 1.4, y: 0.7, z: -0.3 };
+    const path = binTossPath(from, entry, 0.1, inside);
+    // Find when it is at the disc's height on the way down.
+    let crossing = null as null | { x: number; z: number };
+    let before = path.at(0);
+    for (let t = 0.01; t <= path.seconds; t += 0.002) {
+      const p = path.at(t);
+      if (before.y > entry.y && p.y <= entry.y) crossing = p;
+      before = p;
+    }
+    expect(crossing).not.toBeNull();
+    expect(
+      Math.hypot(crossing!.x - entry.x, crossing!.z - entry.z),
+    ).toBeLessThan(0.02);
+    // It rose first: an underarm lob, not a dart.
+    expect(
+      Math.max(...[0.1, 0.2, 0.3].map((t) => path.at(t).y)),
+    ).toBeGreaterThan(from.y);
+  });
+  it('takes longer from further away, timed by gravity', () => {
+    const near = binTossPath(
+      { x: 0, y: 1, z: 0 },
+      { x: 0.6, y: 0.7, z: 0 },
+      0.1,
+      inside,
+    );
+    const far = binTossPath(
+      { x: 0, y: 1, z: 0 },
+      { x: 2.5, y: 0.7, z: 0 },
+      0.1,
+      inside,
+    );
+    expect(far.seconds).toBeGreaterThan(near.seconds);
+  });
+  it('stays inside the bin below the disc and comes to rest at the pile', () => {
+    const entry = { x: 2, y: 1, z: 0 };
+    const path = binTossPath({ x: 0, y: 1.2, z: 0 }, entry, 0.2, inside);
+    const end = path.at(path.seconds + 1);
+    expect(end.y).toBeCloseTo(0.2);
+    for (let t = 0; t <= path.seconds; t += 0.005) {
+      const p = path.at(t);
+      if (p.y < entry.y - 0.01) {
+        expect(Math.abs(p.x - entry.x)).toBeLessThanOrEqual(
+          inside.halfX + 1e-6,
+        );
+        expect(Math.abs(p.z - entry.z)).toBeLessThanOrEqual(
+          inside.halfZ + 1e-6,
+        );
+      }
+    }
+  });
+  it('makes a target disc from the inside when a bin gives none', () => {
+    const zone = targetZone({
+      halfX: 0.5,
+      halfZ: 0.3,
+      floor: 0.05,
+      rim: 1,
+      layer: 0.05,
+      heap: 0.1,
+    });
+    expect(zone.y).toBe(1);
+    expect(zone.radius).toBeCloseTo(0.24);
   });
 });

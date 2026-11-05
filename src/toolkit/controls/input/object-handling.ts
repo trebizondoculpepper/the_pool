@@ -1,3 +1,4 @@
+import { footprintOn, handMove } from '../logic/hand-move';
 import { landingGround } from '../logic/support-landing';
 import type { Release } from '../logic/support-landing';
 import {
@@ -151,11 +152,6 @@ export function createObjectHandling(
     x: number,
     y: number,
   ) => TargetFeedback,
-  /** Whether `divert` would take the held object now (a bin near enough). Pure. */
-  nearbyTargetFeedback?: (
-    object: Object3D,
-    portable: PortableObject,
-  ) => 'accept' | 'reject' | null,
   /** A part is being picked up, before it leaves its place (a spark, a notice). */
   onPickUp?: (object: Object3D, portable: PortableObject) => void,
 ) {
@@ -210,7 +206,22 @@ export function createObjectHandling(
     rotation: Quaternion;
     /** Half the diagonal of its bounds, metres: how big it looks. */
     radius: number;
+    /** On its way from where it rested to the hand (mission 210). */
+    move: { age: number; from: Vector3; fromQ: Quaternion } | null;
   } | null = null;
+  // Things on their way from the hand to a place on a top (mission 210).
+  const placing = new Map<
+    Object3D,
+    {
+      portable: PortableObject;
+      age: number;
+      from: Vector3;
+      fromQ: Quaternion;
+      to: Vector3;
+      toQ: Quaternion;
+      locked: boolean;
+    }
+  >();
   // Held up close to look at (mission 117): while inspecting, the held
   // thing swings to the middle of the view, at a distance that fits it,
   // scaled by `inspectScale`, which the wheel changes.
@@ -349,6 +360,138 @@ export function createObjectHandling(
     }
     return null;
   };
+  /** A thing's bounds in its own frame (unscaled), from its meshes. */
+  const ownBounds = (object: Object3D) => {
+    object.updateMatrixWorld(true);
+    const inverse = object.matrixWorld.clone().invert();
+    const bounds = new Box3();
+    object.traverse((child) => {
+      if (!(child instanceof Mesh)) return;
+      child.geometry.computeBoundingBox();
+      if (child.geometry.boundingBox)
+        bounds.union(
+          child.geometry.boundingBox
+            .clone()
+            .applyMatrix4(
+              new Matrix4().multiplyMatrices(inverse, child.matrixWorld),
+            ),
+        );
+    });
+    return bounds;
+  };
+  /** How a portable lies when it rests flat (its `flat` side down). */
+  const lyingFlat = (portable: PortableObject) =>
+    portable.flat === 'upright'
+      ? new Quaternion()
+      : new Quaternion().setFromAxisAngle(
+          portable.flat === 'side'
+            ? new Vector3(0, 0, 1)
+            : new Vector3(1, 0, 0),
+          portable.flat === 'side' ? Math.PI / 2 : -Math.PI / 2,
+        );
+  /**
+   * Where a use at a screen point would put the held thing down on a top
+   * (mission 210; the owner, 2026-11-05): at the exact spot aimed at, on
+   * the upper face of a supportable top within reach, lying flat and
+   * turned square to the eye, wholly on the top (no corner over its edge)
+   * and clear of anything already there. Null when not aimed at a top; a
+   * refusal when aimed at one where it will not go. No nearby spot is
+   * looked for. Pure.
+   */
+  const spotOnTop = (
+    object: Object3D,
+    portable: PortableObject,
+    hit: ReturnType<typeof hitAt> | null,
+  ): { to: Vector3; toQ: Quaternion } | 'refused' | null => {
+    if (!hit || hit.distance > 3.2 * metre || !hit.face) return null;
+    const normal = hit.face.normal
+      .clone()
+      .transformDirection(hit.object.matrixWorld);
+    if (normal.y < 0.7) return null;
+    const px = hit.point.x / metre;
+    const py = hit.point.y / metre;
+    const pz = hit.point.z / metre;
+    const top = [...fixedSupports, ...supports()].find(
+      (s) =>
+        px >= s.minX &&
+        px <= s.maxX &&
+        pz >= s.minZ &&
+        pz <= s.maxZ &&
+        Math.abs(s.top - py) <= 0.03,
+    );
+    if (!top) return null;
+    // Lying flat, turned about the vertical to square with the eye.
+    const forward = camera.getWorldDirection(new Vector3());
+    const yaw = Math.atan2(-forward.x, -forward.z);
+    const toQ = new Quaternion()
+      .setFromAxisAngle(new Vector3(0, 1, 0), yaw)
+      .multiply(lyingFlat(portable));
+    const local = ownBounds(object);
+    if (local.isEmpty()) return 'refused';
+    local.min.multiply(object.scale);
+    local.max.multiply(object.scale);
+    const turned = local
+      .clone()
+      .applyMatrix4(new Matrix4().makeRotationFromQuaternion(toQ));
+    const size = turned.getSize(new Vector3()).divideScalar(metre);
+    const footprint = {
+      minX: px - size.x / 2,
+      maxX: px + size.x / 2,
+      minZ: pz - size.z / 2,
+      maxZ: pz + size.z / 2,
+    };
+    if (!footprintOn(footprint, top)) return 'refused';
+    // Where its origin goes: its turned bounds' middle over the spot, its
+    // bottom on the top.
+    const middle = turned.getCenter(new Vector3());
+    const to = new Vector3(
+      hit.point.x - middle.x,
+      top.top * metre - turned.min.y,
+      hit.point.z - middle.z,
+    );
+    // Clear of anything already resting there.
+    const room = new Box3(
+      new Vector3(
+        footprint.minX,
+        top.top + 0.002,
+        footprint.minZ,
+      ).multiplyScalar(metre),
+      new Vector3(
+        footprint.maxX,
+        top.top + size.y,
+        footprint.maxZ,
+      ).multiplyScalar(metre),
+    ).expandByScalar(-0.002 * metre);
+    let clear = true;
+    root.traverse((other) => {
+      if (!clear || other === object) return;
+      const theirs = other.userData.portable as PortableObject | undefined;
+      if (!theirs || theirs.component.phase.value === 'held') return;
+      if (!visible(other)) return;
+      if (new Box3().setFromObject(other).intersectsBox(room)) clear = false;
+    });
+    return clear ? { to, toQ } : 'refused';
+  };
+  /** Start putting the held thing down at `spot` (mission 210): it is no longer held. */
+  const putDown = (spot: { to: Vector3; toQ: Quaternion }) => {
+    if (!held) return;
+    const { object } = held;
+    const portable = records.get(object)!.portable;
+    const locked = portable.component.locked.value;
+    portable.component.drop();
+    // Nothing takes it up again until it is down.
+    portable.component.setLocked(true);
+    placing.set(object, {
+      portable,
+      age: 0,
+      from: object.position.clone(),
+      fromQ: object.quaternion.clone(),
+      to: spot.to,
+      toQ: spot.toQ,
+      locked,
+    });
+    held = null;
+  };
   const release = (x: number, y: number) => {
     if (!held) return;
     const { object } = held;
@@ -368,6 +511,10 @@ export function createObjectHandling(
       held = null;
       return;
     }
+    fall(object, portable);
+  };
+  /** Let the held thing go from the hand, to fall by its drop profile (until 211's throw). */
+  const fall = (object: Object3D, portable: PortableObject) => {
     portable.component.drop();
     if (divert?.(object, portable)) {
       // The room's to move from now on: it is not put back where it was
@@ -383,15 +530,7 @@ export function createObjectHandling(
     const vz = forward.z * 0.65;
     const axis = new Vector3(vz, 0, -vx).normalize();
     if (axis.lengthSq() === 0) axis.set(1, 0, 0);
-    const flat =
-      portable.flat === 'upright'
-        ? new Quaternion()
-        : new Quaternion().setFromAxisAngle(
-            portable.flat === 'side'
-              ? new Vector3(0, 0, 1)
-              : new Vector3(1, 0, 0),
-            portable.flat === 'side' ? Math.PI / 2 : -Math.PI / 2,
-          );
+    const flat = lyingFlat(portable);
     if (profile.shape === 'round')
       flat.setFromUnitVectors(
         new Vector3(
@@ -509,9 +648,16 @@ export function createObjectHandling(
       ? new Vector3()
       : local.getSize(new Vector3()).multiply(object.scale);
     inspectScale = 1;
+    placing.delete(object);
     held = {
       object,
-      grab: camera.worldToLocal(object.localToWorld(middle.clone())),
+      // Straight for the hand (mission 210): the move eases it there.
+      grab: new Vector3(0.18 * metre, -0.18 * metre, -0.65 * metre),
+      move: {
+        age: 0,
+        from: object.position.clone(),
+        fromQ: object.quaternion.clone(),
+      },
       offset: middle,
       rotation: cameraRotation
         .clone()
@@ -537,14 +683,16 @@ export function createObjectHandling(
    * the step that does it (mission 116): the click and the crosshair's cue
    * both come from here, so they cannot disagree. Asking changes nothing:
    * it calls only the pure hooks (`allowPickup`, `targetFeedback`,
-   * `nearbyTargetFeedback`, a target's `inRange` and `accepts`), never
+   * a target's `inRange` and `accepts`), never
    * `heldAction`, `divert`, `place` or a pick-up. Its order is the use's.
    *
    * Carrying: the room's `targetFeedback` (what its `heldAction` will do);
    * else a `useWhileCarrying` part aimed at (not the hands'); else a
    * placement target or surface aimed at (fit, put down, put back, put
-   * in, or refused, when the thing is kept, without trying a bin); else a
-   * bin near enough (`divert`: put in); else a drop.
+   * in a bin, or refused, when the thing is kept); else a clear spot on a
+   * supportable top aimed at (put down there, eased, mission 210), or a
+   * refusal where it will not go; else the room's use, after its
+   * `heldAction`, the thing kept in hand (211: only LET GO lets go).
    *
    * Not carrying: a portable thing under the aim, in reach, is a lift,
    * possible or not; a fixed one, or nothing, is not the hands'.
@@ -553,6 +701,8 @@ export function createObjectHandling(
     // Held up to look at: nothing is placed or dropped, and no cue says
     // otherwise, until it is back in the hand (mission 117).
     if (held && inspecting) return { answer: null, run: () => true };
+    // On its way to the hand: nothing else until it is there (mission 210).
+    if (held?.move) return { answer: null, run: () => true };
     if (held) {
       const object = held.object;
       const portable = records.get(object)!.portable;
@@ -577,19 +727,43 @@ export function createObjectHandling(
             : { gesture: destination.cue, possible: false, refused: true },
           run: releaseHere,
         };
+      // Down on a top aimed at, where it fits (mission 210).
+      const spot = spotOnTop(object, portable, hit);
+      if (spot === 'refused')
+        return {
+          answer: { gesture: 'put-down', possible: false, refused: true },
+          run: () => true,
+        };
+      if (spot)
+        return {
+          answer: { gesture: 'put-down', possible: true },
+          run: () => {
+            putDown(spot);
+            return true;
+          },
+        };
+      // Anything else is the room's use, the thing staying in hand (211),
+      // after the room's own held action (a part seated where it is aimed).
       return {
-        // A bin near enough takes it; anything else lets it fall.
-        answer:
-          nearbyTargetFeedback?.(object, portable) === 'accept'
-            ? { gesture: 'put-in', possible: true }
-            : null,
-        run: releaseHere,
+        answer: 'use',
+        run: () => {
+          const action = heldAction?.(object, portable, x, y);
+          if (action === 'refuse') return true;
+          if (!action) return false;
+          records.delete(object);
+          held = null;
+          return true;
+        },
       };
     }
     const hit = hitAt(x, y);
     if (!hit || hit.distance > 3.2 * metre) return NOT_THE_HANDS;
     const found = portableAt(hit.object);
-    if (!found || found.portable.component.attachment === 'fixed')
+    if (
+      !found ||
+      found.portable.component.attachment === 'fixed' ||
+      placing.has(found.object)
+    )
       return NOT_THE_HANDS;
     const { object, portable } = found;
     const possible =
@@ -654,6 +828,29 @@ export function createObjectHandling(
     /** Use at a point: whether the hands took it (else the room's use runs). */
     use: (x: number, y: number) => resolve(x, y).run(),
     /**
+     * LET GO at a point (mission 211's input; the owner, 2026-11-05): a bin
+     * aimed at within reach takes it, as a use would (209); anything else,
+     * it leaves the hand and falls (211's throw is to come). Whether it was
+     * let go of.
+     */
+    letGo(x: number, y: number) {
+      if (!held || held.move || inspecting) return false;
+      const { object } = held;
+      const portable = records.get(object)!.portable;
+      const destination = placementAt(x, y);
+      if (destination?.target.letGo) {
+        if (!destination.accepts) return false;
+        destination.target.place(object, portable);
+        if (!destination.retainReset) records.delete(object);
+        held = null;
+        return true;
+      }
+      fall(object, portable);
+      return true;
+    },
+    /** Whether a thing is on its way to the hand or to a top. */
+    moving: () => Boolean(held?.move) || placing.size > 0,
+    /**
      * Put a portable object straight into the hands (a find handed over
      * from a container, which the visitor did not pick off the floor): it
      * must be in the scene under `root`, with `userData.portable`. Held
@@ -679,6 +876,7 @@ export function createObjectHandling(
     forget(object: Object3D) {
       records.delete(object);
       falling.delete(object);
+      placing.delete(object);
       if (held?.object === object) held = null;
     },
     /** Whether the hands have something, or something at the centre can be lifted now. */
@@ -727,7 +925,15 @@ export function createObjectHandling(
           .sub(worldPosition);
         const travel = target.clone().sub(start);
         const solids = carrySolids();
-        if (solids.length) {
+        if (held.move) {
+          // Straight from where it rested to the moving hand, eased,
+          // whatever is between (mission 210).
+          held.move.age += dt;
+          const { k, done } = handMove(held.move.age);
+          held.object.position.copy(held.move.from).lerp(target, k);
+          held.object.quaternion.copy(held.move.fromQ).slerp(worldRotation, k);
+          if (done) held.move = null;
+        } else if (solids.length) {
           held.object.updateMatrixWorld(true);
           const startBox = new Box3().setFromObject(held.object);
           const candidate = new Box3();
@@ -752,6 +958,18 @@ export function createObjectHandling(
           }
           held.object.position.copy(start).addScaledVector(travel, safe);
         } else held.object.position.copy(target);
+      }
+      for (const [object, move] of placing) {
+        move.age += dt;
+        const { k, done } = handMove(move.age);
+        object.position.copy(move.from).lerp(move.to, k);
+        object.quaternion.copy(move.fromQ).slerp(move.toQ, k);
+        if (!done) continue;
+        // Down, still: no bounce (mission 210).
+        placing.delete(object);
+        move.portable.component.setLocked(move.locked);
+        move.portable.component.settle();
+        move.portable.component.motion(0, true);
       }
       for (const [object, fall] of falling) {
         const portable = records.get(object)!.portable;
@@ -836,6 +1054,7 @@ export function createObjectHandling(
       for (const [object, record] of records) record.parent.attach(object);
       records.clear();
       falling.clear();
+      placing.clear();
       held = null;
     },
   };

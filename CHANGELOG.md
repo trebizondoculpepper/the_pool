@@ -6,6 +6,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Picking up and putting down are animated (mission 210): a thing eases from where it rests to the hand in about half a second, and use on a clear spot of a desk or other supportable top puts it down there, flat, the same way; anywhere else, use works what is aimed at and the thing stays in hand.
+- LET GO is its own input (mission 211's controls): Q, the gamepad's B, or the LET GO button on touch, shown in the carrying help line; the gamepad's crouch moves to the right stick's click.
+- The bin toss is a real lob (mission 209): aimed at a bin within use reach, use or LET GO sends a held thing up and over through the bin's target disc under gravity, glancing off its inside onto the pile, where it can be picked out again; nothing near a bin is drawn into it any more.
+
 - Enterable water bodies (mission 202): a `water-body` volume trait on pool, footbath and Jacuzzi kinds; a live surface and local-floor query shared by the pool view and the walker; shallow wading, deep swimming, and ladder entry from the water surface.
 - Tank ladders carry warnings: a fall sign (ISO 7010 W008) and a deep-water, risk of drowning sign on the tank behind the rungs, and a yellow and black hazard border on the floor round the foot. Stepping onto a ladder is eased instead of a jump: from the foot over 6 frames to one rung up, from the top over 10 frames to two rungs down, turning square on to the ladder by the shorter way round.
 - Traits on the bench (mission 174): `bench.html?bench=trait-audit` (every trait by facet, with counts) and `&trait=<t>` (its meaning, metadata, composition tree, what includes it, the kinds with it and how, every object with it by room, and the command that would remove it); the item audit gains an Its traits section and the `?dev` catalogue links each kind's traits; a shared pure trait index behind both the pages and `npm run audit -- traits | trait show [--json]`; the balance tank classified as the worked example.

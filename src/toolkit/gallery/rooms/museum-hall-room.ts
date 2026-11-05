@@ -340,9 +340,6 @@ export function startMuseumHallRoom(
       ),
     divert: (object, portable) =>
       Boolean(active && exhibit?.carrying?.divert?.(object, portable)),
-    nearbyTargetFeedback: (object, portable) =>
-      (active && exhibit?.carrying?.nearbyTargetFeedback?.(object, portable)) ||
-      null,
     solids: () =>
       [
         ...hallSolids(id, seen),

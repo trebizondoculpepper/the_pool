@@ -2,7 +2,7 @@ import { Box3, Vector3 } from 'three';
 import { createPortableBoard } from '../../controls/logic/portable-board';
 import { createDropProfile } from '../../controls/logic/drop-profile';
 import type { PortableObject } from '../../controls/input/object-handling';
-import type { Camera, Object3D } from 'three';
+import type { Object3D } from 'three';
 import {
   BIN_MARK,
   createBinTossing,
@@ -52,17 +52,13 @@ export function kindIsBinLike(kind: string): boolean {
 /**
  * A room's bins (mission 205; the owner, 2026-11-05): every placed object
  * of a `bin-like` kind, found in the room as it fills, given to one shared
- * bin tossing. A thing let go near one, facing it, flies in through its
- * opening (its target plane) and stays, until picked out again. A bin a
- * room still adds by hand (it already has a placement target) is left to
- * that room.
+ * bin tossing. Each is a placement target: a held thing aimed at one
+ * within use reach goes in by use or let go (mission 209), lobbed through
+ * its target disc, and can be picked out again. A bin a room still adds
+ * by hand (it already has a placement target) is left to that room.
  */
-export function roomBins(
-  root: Object3D,
-  camera: Camera,
-  metre: number,
-): RoomBins {
-  const tossing = createBinTossing({ camera, metre, keep: false });
+export function roomBins(root: Object3D, metre: number): RoomBins {
+  const tossing = createBinTossing({ metre });
   const known = new WeakSet<Object3D>();
   const at = new Vector3();
   const scale = new Vector3();
@@ -85,6 +81,9 @@ export function roomBins(
         name: o.name || kind,
         group: o,
         shape: s === 1 ? mark.shape : scaleShape(mark.shape, s),
+        ...(mark.zone
+          ? { zone: { y: mark.zone.y * s, radius: mark.zone.radius * s } }
+          : {}),
         footprint: { x: mark.footprint.x * s, z: mark.footprint.z * s },
         x: at.x / metre,
         y: at.y / metre,
@@ -97,15 +96,6 @@ export function roomBins(
     });
   };
   return {
-    divert(object, portable) {
-      since = Infinity;
-      find();
-      return tossing.divert(object, portable);
-    },
-    targetFeedback(object) {
-      find();
-      return tossing.targetFeedback(object);
-    },
     update(delta) {
       since += delta;
       find();

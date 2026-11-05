@@ -264,10 +264,6 @@ export interface FirstPersonOptions {
     x: number,
     y: number,
   ) => TargetFeedback;
-  nearbyTargetFeedback?: (
-    object: Object3D,
-    portable: PortableObject,
-  ) => 'accept' | 'reject' | null;
   /** Whether a part may be picked up now: a pure question (`createObjectHandling`). */
   allowPickup?: (object: Object3D, portable: PortableObject) => boolean;
   /** A part is being picked up (what that sets off: a spark, a notice). */
@@ -373,7 +369,6 @@ export function createFirstPerson(options: FirstPersonOptions) {
         options.heldAction,
         options.allowPickup,
         options.targetFeedback,
-        options.nearbyTargetFeedback,
         options.onPickUp,
       )
     : null;
@@ -446,6 +441,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
       return;
     }
     if (!handling?.use(x, y)) options.use(x, y);
+  };
+  /** LET GO (mission 211): what is held leaves the hand, into a bin aimed at or falling. */
+  const letGo = () => {
+    if (noclip.value || inputHeld()) return;
+    cueAt = -Infinity;
+    handling?.letGo(0, 0);
   };
   // Every use is also a held input (`logic/use-hold.ts`): held until the
   // button, key or finger that gave it is let go, for a component that
@@ -916,6 +917,16 @@ export function createFirstPerson(options: FirstPersonOptions) {
   inspectButton.addEventListener('pointerup', stopInspect);
   inspectButton.addEventListener('pointercancel', stopInspect);
   container?.append(inspectButton);
+  // LET GO, beside INSPECT while something is carried (mission 211).
+  const letGoButton = document.createElement('button');
+  letGoButton.type = 'button';
+  letGoButton.className = 'touch-crouch touch-let-go';
+  letGoButton.textContent = 'LET GO';
+  letGoButton.addEventListener('pointerdown', (event) => {
+    event.stopPropagation();
+    letGo();
+  });
+  container?.append(letGoButton);
   // One surface for inspection and contextual hints, never a wall of bindings.
   const help = document.createElement('div');
   help.className = 'controls-help';
@@ -1010,6 +1021,8 @@ export function createFirstPerson(options: FirstPersonOptions) {
     if (event.code === 'KeyV' && !noclip.value) stance(true);
     if (event.code === 'KeyR' && noclip.value) walker.roll = 0;
     if (event.code === 'KeyE') heldUse('key', 0, 0);
+    // Q lets go of what is held (mission 211); flying, it rolls instead.
+    if (event.code === 'KeyQ' && !noclip.value) letGo();
     if (event.code === 'KeyF') {
       torch.toggle();
     }
@@ -1334,6 +1347,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     if (went(PAD.knobUp) && !noclip.value) turningKnobs(1, () => use(0, 0));
     if (went(PAD.level) && noclip.value) walker.roll = 0;
     if (went(PAD.crouch) && !noclip.value) stance();
+    if (went(PAD.letGo) && !noclip.value) letGo();
     if (went(PAD.torch)) torch.toggle();
     // A click of the walk stick runs until the stick comes back to centre.
     if (went(PAD.run)) padRun = true;
@@ -1344,7 +1358,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       zoom,
       run: padRun,
       inspect: pad.buttons[3]?.pressed ?? false,
-      up: noclip.value ? button(PAD.use) - button(PAD.crouch) : 0,
+      up: noclip.value ? button(PAD.use) - button(PAD.letGo) : 0,
       roll: noclip.value ? button(PAD.knobUp) - button(PAD.knobDown) : 0,
     };
   };
@@ -1555,6 +1569,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
         movement.hidden = help.hidden = altitude.hidden = true;
         crouchButton.hidden =
           inspectButton.hidden =
+          letGoButton.hidden =
           contextButton.hidden =
             true;
         sticks?.setVisible(false);
@@ -1627,6 +1642,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       crouchButton.hidden = contextButton.hidden =
         !controlsActive || flying || !hud.touch;
       inspectButton.hidden = crouchButton.hidden || !handling?.holding();
+      letGoButton.hidden = inspectButton.hidden;
       // What is aimed at, named instead of the controls (prompt 061), a few
       // times a second: not while flying, climbing or carrying, nor behind
       // the menu or the console, nor while held (the title's shots). Climbing's and carrying's lines come first.
