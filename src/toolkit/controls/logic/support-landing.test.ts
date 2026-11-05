@@ -24,3 +24,13 @@ it('never lifts a thing onto a top from beside it', () => {
   const release = { x: 1.2, z: 0, top: 0.85 };
   expect(landingGround([desk], 0.7, 0, 0.65, 0, release)).toBe(0);
 });
+
+it('lets a thing whose middle is past a top’s edge fall to the floor (the owner, 2026-11-05)', () => {
+  // A box 0.3 m long let go above the desk's edge, mostly over the desk
+  // but its middle (its centre of gravity) 1 cm past the edge.
+  const release = { x: 0.81, z: 0, top: 0.95 };
+  expect(landingGround([desk], 0.81, 0, 0.8, 0, release)).toBe(0);
+  // Its middle 1 cm inside the edge: it stays on the desk.
+  const inside = { x: 0.79, z: 0, top: 0.95 };
+  expect(landingGround([desk], 0.79, 0, 0.8, 0, inside)).toBeCloseTo(0.73);
+});
