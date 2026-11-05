@@ -28,8 +28,12 @@ export type TraitName = PrimitiveName | (typeof TRAIT_IDS)[number];
 export type MetaKey =
   | 'axis'
   | 'base'
+  | 'facing'
+  | 'gap'
   | 'look'
   | 'origin'
+  | 'rowDepth'
+  | 'rowWidth'
   | 'runAxis'
   | 'seatHeight'
   | 'surface'
