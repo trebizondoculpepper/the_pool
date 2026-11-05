@@ -1,3 +1,5 @@
+import { landingGround } from '../logic/support-landing';
+import type { Release } from '../logic/support-landing';
 import {
   Box3,
   Euler,
@@ -197,6 +199,8 @@ export function createObjectHandling(
       axis: Vector3;
       halfHeight: number;
       age: number;
+      /** Where it was let go, for the supports it may land on (181). */
+      release: Release;
     }
   >();
   let held: {
@@ -454,6 +458,7 @@ export function createObjectHandling(
       axis,
       halfHeight: size.y / 2,
       age: 0,
+      release: { x: position.x, z: position.z, top: position.y + size.y / 2 },
     });
     held = null;
   };
@@ -788,21 +793,18 @@ export function createObjectHandling(
           return box.getSize(new Vector3()).y / 2;
         };
         const height = rotate();
-        // Never teleport onto a support from its side.
-        const ceiling = previous.y - fall.halfHeight + 0.035;
-        const groundAt = (x: number, z: number) => {
-          let ground = floorY / metre;
-          for (const surface of [...fixedSupports, ...supports()])
-            if (
-              surface.top <= ceiling &&
-              x >= surface.minX &&
-              x <= surface.maxX &&
-              z >= surface.minZ &&
-              z <= surface.maxZ
-            )
-              ground = Math.max(ground, surface.top);
-          return ground;
-        };
+        // Never teleport onto a support from its side, but one it was let
+        // go over, partly above its top, takes it (181).
+        const bottom = previous.y - fall.halfHeight;
+        const groundAt = (x: number, z: number) =>
+          landingGround(
+            [...fixedSupports, ...supports()],
+            x,
+            z,
+            bottom,
+            floorY / metre,
+            fall.release,
+          );
         fall.motion.step(
           dt,
           (x, z) => groundAt(x, z) + height,

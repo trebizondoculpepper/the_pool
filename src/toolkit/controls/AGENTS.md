@@ -28,6 +28,7 @@ How inputs work. This is the one control scheme every room in every game built o
 - `logic/controls.ts`: the scheme itself, every binding for every input, and the help text.
 - `logic/walk-collision.ts`: footprints and sliding collision.
 - `logic/drop-profile.ts`, `logic/portable-board.ts`: how carried objects fall, and a carried object's state and events.
+- `logic/support-landing.ts`: which support a falling thing lands on: one whose top is at or below its bottom, or one it was let go over with part of itself above the top (mission 181: held low over a desk, it is put on the desk, not dropped through it); never one reached from the side.
 - `logic/hidden-spot.ts`: places out of the player's view.
 - `input/first-person.ts`: the scheme implemented once, for every room.
 - `input/room-controller.ts`: every room starter's entry to that scheme, with a typed room-style slot; `roomControllerOn` lets the main room mount read the controller on its canvas; and, once the game registers the object registry's traits (`useRoomTraits`, from `gallery/views/room-traits.ts`, so this layer still imports nothing of ours), carrying by trait: a thing of a holdable kind may be picked up (its owner, `ownerAllows`, saying whether now), one of a kind that is not may not, a thing of no kind keeps the room's `allowPickup`, and things let go of rest on the derived tops of the room's supportable objects besides the room's own `supports` (missions 189, 181).
