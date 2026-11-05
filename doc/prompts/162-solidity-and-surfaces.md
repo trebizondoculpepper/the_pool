@@ -1,44 +1,49 @@
-# 162: Solidity and surfaces
+# 162: Solidity and surfaces in every room
 
-The owner, 2026-11-04. Part of the one-kind-of-room series (158–165); priority **high**. Brief only; not started until the owner says. Read `CLAUDE.md` and mission 158 first, whose decisions (the registry as gateway, solidity, carrying flags, seats, room styles) this mission follows.
+The owner, 2026-11-04. Part of the one-kind-of-room series (158–165); priority **high**. Replanned 2026-11-05 (nicole_buruaah, at the owner's request): most of the original brief has since been designed or built by missions 175 (derived surfaces), 181 (`supportable`), 182 (`walkable`) and 208 (bounds models and the `solid` trait). What is left is the room-wide half: making every room's walker and hands take their solids and tops from the registry through the room factory, instead of each room's own lists. **Ready to start after 208 stage 2.**
 
-**Needs:** 158 (the flags signed off) and 159.
+**Needs:** 159 (done) and **208 stage 2** (the `solid` trait, its opt-outs and collision shapes from bounds models: open, designed with the owner).
 
-## What it is
+## What it is now
 
-Registered kinds are solid by default (a kind may be flagged non-solid, as many pipes are), their solid shape their bounding box unless the kind declares a better one. Solid sides block the walker and placed objects; solid tops hold placed objects and, where the walker can reach them (a tank roof up its ladder), the walker, as floor does. The room shell's walls and floors are registered. The 1 m drop rule (`CLAUDE.md`) stands at every reachable top's edges. Unregistered things are not solid.
+Every registered kind's traits decide, in every room, whether it blocks the walker (`solid`, opt-out by `open-frame` and the like, 208), whether things put down rest on it (`supportable`, 181) and whether the walker can stand on it (`walkable`, 182); where its sides and top are comes from its bounds model or its derived body (175, 208). The room factory (`createRoomController`) feeds the walker's `solids` and `floorAt` and the hands' `supports` and `carrySolids` from those traits, so a room never lists its own equipment's footprints or tops again. Rooms keep only their fabric (walls, floors, doorway cuts), which is not equipment. The 1 m drop rule (`CLAUDE.md`) holds at every walkable top's edges.
 
-## Findings
+## What is already done (checked 2026-11-05 at `74424dd1`)
 
-- Walk collision is 2D: `src/toolkit/controls/logic/walk-collision.ts:2-55` defines `Footprint`, `overlaps` and `slide`; `src/toolkit/controls/input/first-person.ts:208-225,1360-1383` accepts room-supplied `solids` and `floorAt`. Raised floor/ladder examples are `gallery/rooms/{tank-hall-room:192-202,plant-room:696-712,pool-room:969-984,shell-room:787-810}.ts`. Those call sites must feed the inferred solid/surface registry without losing doorway cuts or existing gantry rules.
-- Carried-object collision is separate: `first-person.ts:228-255` passes `supports` and `carrySolids`; `object-handling.ts:163-175,270-341,720-809` recognises `boardSupport`, `placementSurface` and `placementTarget`, and stops held objects only when `carrySolids` is supplied. A bounding box alone has no doorway opening or underside distinction.
-- Update `walk-collision.test.ts`, `object-handling.test.ts`, `object-handling-resolve.test.ts`, and raised-platform tests beside the room logic. No generic 3D solid-kind derivation exists yet.
+- **Tops things rest on** come from traits in every room: `RoomTraits.supports` (`gallery/views/room-traits.ts`), derived from `derived-surfaces.ts` (rays down on the body, or the bounds model's tops, 208 stage 1), merged by `createRoomController` with any room supports.
+- **Tops the walker stands on** are derived (walkable kinds) in only two starters, `plant-room.ts` and `plant-room-shell-room.ts`, through `roomSurfaces`; the other rooms with raised floors (`tank-hall-room`, `pool-room`, `shell-room`, `pool-hall-room` and others: 22 sources pass `floorAt`) still give their own. `no-special-surface-rules.test.ts` already forbids marker meshes and named lookups.
+- **What blocks the walker** is still each room's `solids` footprints (`controls/logic/walk-collision.ts`: 2D `Footprint`, `slide`). Nothing derives a solid from a kind yet; that is 208 stage 2.
+- **What stops a carried thing** is the room's `carrySolids` (three rooms), and 211's throw rebounds off the walker's `solids`.
 
 ## Approach
 
-1. Add pure logic that converts approved kind flags and object bounds/shape overrides into a walk footprint at the walker's current height, a supporting top, and a carry-solid volume. Keep shell wall/floor registration explicit and cut openings before collision.
-2. Feed those derived volumes through the factory's `solids`, `floorAt`, `supports` and `carrySolids` paths; remove duplicated room geometry only after matching existing movement. Include reachability and the 1 m edge rule for tank roofs and other raised tops.
-3. Test a boxy boiler, desk, ladder-reached tank top, doorway, non-solid pipe and held object against side/top collision. Check generated volumes against the approved inventory, including shell surfaces.
+1. **After 208 stage 2:** add `RoomTraits.solids(root, metre)` beside `supports`: each placed solid object's collision shape from its bounds model (or fitted box), cut to the walker's height band (so overhead pipework and a tank top the walker stands on do not block), as walk footprints. The factory merges them with the room's fabric solids, as it does supports.
+2. **Walkable tops everywhere:** move `roomSurfaces`' walkable tops into the factory (`RoomTraits.floors`), so every room's `floorAt` includes them, with the 1 m edge rule at their unladdered edges; remove the two starters' private wiring.
+3. **Migrate the rooms in batches:** for each room, delete the footprints and floor patches its registered equipment now provides, keeping fabric and doorway cuts; check by walking it (a test per batch comparing the old and new footprints where practical).
+4. **Carried things and throws** take the same derived solids (`carrySolids` and 211's rebounds), so a box cannot be pushed into a boiler's side.
 
 ## Risks
 
-- Current `slide()` sees only X/Z; feeding every bounding box into it would block a walker under overhead pipework and on top of a tank. Animated or open machines need shape updates or approved overrides, and doorway cuts must remain effective.
+- The walker's collision is 2D: a solid must be cut to the band between the walker's feet and head at its current floor, or a tank top would block the walker standing on it.
+- Animated or open machines (a cabinet with its door open, a drawer) need their shape updated or an opt-out trait; 208's open questions cover `open-frame` and `hollow`.
+- Doorway cuts must stay effective; fabric stays the room's.
 
 ## Open questions for the owner
 
-None beyond 158's kind/shape census sign-off; a specific bad bounding box should be proposed there for a shape ruling.
+None of its own: the open questions are 208's (extend the `form` facet or add a bounds facet; whether `run-like` stays walk-through; whether bounds retire `supportable`'s `plane` meta), to settle there first.
 
 ## Acceptance
 
-- A boiler's top, a desk and a tank's roof hold a placed object; an object cannot be put into or through a side.
-- A ladder-reached tank roof supports the walker and blocks a drop over 1 m at its unladdered edge; a doorway remains passable, an overhead non-solid pipe does not block, and walls/floors retain their existing collision.
-- Collider derivation is pure logic in `logic/`, tested.
+- A boiler, a desk and a tank block the walker and a carried thing at their sides, in every room, with no footprint written by the room; an `open-frame` table does not; overhead non-solid pipework does not.
+- A ladder-reached tank roof holds the walker in every room it stands in, and stops a drop over 1 m at its unladdered edges; a doorway stays passable.
+- No room lists solids or floor patches for registered equipment; the derivation is pure logic in `logic/`, tested.
 - The full test suite passes; nothing changes that this brief does not name.
 
 ## Coordination
 
-Touches the walk collision, `object-handling.ts`, `placement-target.ts` and the registry: claim on the mailbox and migrate in batches others can see.
+- Waits for 208 stage 2 (ahnaa_dmitrieva did stage 1; check who takes stage 2). Touches `room-traits.ts`, `room-controller.ts` (sayuri_shantian holds it for 161, 2026-11-05), `walk-collision.ts`, `derived-surfaces.ts` and the room starters: claim on the mailbox, migrate in visible batches.
+- No `WORLD_VERSION` change.
 
 ## Records
 
-`TODO.md`; `CHANGELOG.md` under Unreleased; `doc/agent-tooling.md` where a tool changes; a diary entry.
+`TODO.md`; `CHANGELOG.md` under Unreleased; `doc/agent-tooling.md` ("Rules for objects": solidity from traits); a diary entry.
