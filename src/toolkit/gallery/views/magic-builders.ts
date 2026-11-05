@@ -13,6 +13,7 @@ import { createEndSuctionPump } from '../../components/plant/views/pumps-plant';
 import { createOfficeChair } from '../../components/site-dressing/views/office-chair';
 import { createSoftwareBox } from '../../components/site-dressing/views/software-box';
 import { createFloppyDisk } from '../../components/site-dressing/views/floppy-disk';
+import { createWallShelf } from '../../components/site-dressing/views/office-wall-shelf';
 import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
 import {
   createDesk,
@@ -132,6 +133,10 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
     size: { w: 0.09, d: 0.094, h: 0.1, mount: 'wall', y: 1.1 },
     build: (kit) =>
       objectOf(createFloppyDisk(kit, { label: 'DISK', sub: 'Disk 1 of 3' })),
+  },
+  'office-shelf': {
+    // The wall shelf: a rack for the office's boxed software (mission 206).
+    build: (kit) => objectOf(createWallShelf(kit)),
   },
   'office-computer': {
     title: 'Office computer',
