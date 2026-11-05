@@ -174,24 +174,18 @@ describe('the engineer’s office’s boxed software', () => {
     built.dispose();
   });
 
-  it('leaves the pile’s bottom box while the opened one is on it, and bins what is thrown in the carton', () => {
+  it('leaves the pile’s bottom box while the opened one is on it, and its carton is a bin by its kind', () => {
     const { built, boxes, carton } = build();
     const bottom = boxes.get('coshh-manager-95')!;
     const top = boxes.get('beige-accounting-leisure-centre-ledger')!;
     expect(built.canRemove(bottom)).toBe(false);
     pickUp(top);
-    expect(built.release(top, carton.children[0])).toBe(true);
-    expect(top.parent).toBe(carton);
+    // Let go at the carton: not the desk's to place (the shared bin toss takes it).
+    expect(built.release(top, carton.children[0])).toBeNull();
     expect(built.canRemove(bottom)).toBe(true);
-    pickUp(bottom);
-    expect(built.release(bottom, carton)).toBe(true);
-    // Resting on the first, inside the carton.
-    expect(bottom.position.y).toBeGreaterThan(top.position.y);
-    expect(
-      new Box3()
-        .setFromObject(carton)
-        .containsBox(new Box3().setFromObject(bottom)),
-    ).toBe(true);
+    // The carton is a `bin-like` kind, marked as a bin by its builder (205, 209).
+    expect(carton.userData.equipmentKind).toBe('carton');
+    expect(carton.userData.bin).toBeDefined();
     built.dispose();
   });
 });

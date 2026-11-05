@@ -65,13 +65,10 @@ it('says what letting a box go will do, as its release then does, for every box 
       const cue = d.handling.cue(box, aim);
       // Asking changes nothing.
       expect(d.handling.cue(box, aim)).toEqual(cue);
-      const before = d.handling.binned().length;
       const result = d.handling.release(box, aim);
-      if (cue?.gesture === 'put-in') {
-        expect(aim).toBe(d.cartonMesh);
-        expect(result).toBe(true);
-        expect(d.handling.binned().length).toBe(before + 1);
-      } else if (cue === null) {
+      // The carton is a bin by its kind (missions 205, 209), never the desk's.
+      if (aim === d.cartonMesh) expect(cue).toBeNull();
+      if (cue === null) {
         // Not the desk's to place: it falls where it is let go.
         expect(result).toBeNull();
         portable.component.drop();
@@ -79,7 +76,6 @@ it('says what letting a box go will do, as its release then does, for every box 
       } else if (cue.possible) {
         expect(cue.gesture).toBe('put-back');
         expect(result).toBe(true);
-        expect(d.handling.binned().length).toBe(before);
       } else {
         expect(cue).toEqual({
           gesture: 'put-back',
@@ -89,7 +85,6 @@ it('says what letting a box go will do, as its release then does, for every box 
         expect(result).toBe('refuse');
       }
     }
-  expect(d.handling.binned().length).toBeGreaterThan(0);
 });
 
 it('cannot lift a box with another resting on it', () => {
@@ -98,7 +93,7 @@ it('cannot lift a box with another resting on it', () => {
   expect(stuck.length).toBeGreaterThan(0);
 });
 
-it('lets a box dropped on the desk fall, then takes it from the carton to the shelf', () => {
+it('lets a box dropped on the desk or into the carton go, then takes it to the shelf', () => {
   const d = desk();
   const named = (id: string) =>
     d.boxes.find((box) => box.userData.softwareBox === id)!;
@@ -114,13 +109,14 @@ it('lets a box dropped on the desk fall, then takes it from the carton to the sh
   portableOf(panes).component.settle();
   expect(d.handling.canPickUp(panes)).toBe(true);
 
+  // Into the carton: a bin by its kind, so the shared bin toss takes it;
+  // the desk only lets it go, and it can be picked out again.
   portableOf(panes).component.pickUp();
-  expect(d.handling.cue(panes, d.cartonMesh)).toEqual({
-    gesture: 'put-in',
-    possible: true,
-  });
-  expect(d.handling.release(panes, d.cartonMesh)).toBe(true);
-  expect(d.handling.binned()).toContain('panes-95');
+  expect(d.handling.cue(panes, d.cartonMesh)).toBeNull();
+  expect(d.handling.release(panes, d.cartonMesh)).toBeNull();
+  portableOf(panes).component.drop();
+  portableOf(panes).component.settle();
+  expect(d.handling.canPickUp(panes)).toBe(true);
 
   portableOf(panes).component.pickUp();
   expect(d.handling.cue(panes, shelfBox)).toEqual({
@@ -129,7 +125,6 @@ it('lets a box dropped on the desk fall, then takes it from the carton to the sh
   });
   expect(d.handling.release(panes, shelfBox)).toBe(true);
   expect(panes.position.y).toBeGreaterThan(1.6);
-  expect(d.handling.binned()).not.toContain('panes-95');
 });
 
 it('stands boxes put on the shelf in a tidy row left of the right-most, refusing when it is full', () => {

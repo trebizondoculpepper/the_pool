@@ -33,6 +33,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The engineer's cardboard carton is a real bin (a `carton` kind, `bin-like`): things aimed at it go in on the shared bin toss, as into a skip or dustbin, and can be picked out again; the desk's own carton put-in is gone. The bin toss is gentler: it rises only 0.15 m above the higher of the hand and the bin's opening, just enough to clear the rim (the owner, 2026-11-05).
 - Carrying follows the object registry's traits in every room (missions 189 and 181, first step): a thing of a holdable kind can be picked up, and things let go of rest on the derived tops of supportable objects. The engineer's office no longer decides carrying by its room name, and its desk's hidden top marker is gone.
 - The Olympic acid pump is a commissioned 102 l/h motor-driven DMH with local controls, a modelled bleed return, and a migrated save state; its fault relay lights the Olympic annunciator in the plant and old control room (mission 207).
 - Dr Aqualis now closes a pool with moderately excessive chlorine and lets it fall naturally, uses thiosulphate for extreme readings, prescribes staged mains-water replacement for high alkalinity and CO₂-controlled scaling water, and allows for the acid pump while calculating bicarbonate (mission 207).

@@ -185,6 +185,12 @@ export function targetZone(shape: BinShape, zone?: TargetZone): TargetZone {
 /** How much speed an object keeps when it glances off the inside of a bin. */
 export const BIN_REBOUND_KEEP = 0.75;
 
+/**
+ * How far above the higher of the hand and the bin's target disc a toss
+ * rises, metres: just enough to clear the rim (the owner, 2026-11-05).
+ */
+export const BIN_TOSS_CLEARANCE = 0.15;
+
 /** A toss's path: where the thing is at any time, and how long it flies. */
 export interface TossPath {
   seconds: number;
@@ -195,11 +201,11 @@ export interface TossPath {
 /**
  * The underarm lob into a bin (mission 209; the owner, 2026-11-05): from
  * `from`, up and over, down through the middle of the target disc at
- * `entry` (world metres, its height the disc's), under gravity, so a
- * higher lob takes longer. The lob rises `lift` above the higher of the
- * hand and the disc: more for a longer toss, so it comes down steeply,
- * though steep is only preferred, never required, and no ceiling is
- * asked. Below the disc it keeps falling inside the bin, glancing off the
+ * `entry` (world metres, its height the disc's), under gravity. It is
+ * as gentle as it can be (the owner, 2026-11-05: "just powerful enough to
+ * clip the object into the target"): its top is only `clearance` above
+ * the higher of the hand and the disc, enough to carry the thing over the
+ * rim, however far the bin. Below the disc it keeps falling inside the bin, glancing off the
  * inside's walls (half-sizes `inside`, about `entry`) with a quarter of
  * its speed lost at each, until its middle reaches `restY`, where it
  * settles. Pure.
@@ -210,12 +216,11 @@ export function binTossPath(
   restY: number,
   inside: { halfX: number; halfZ: number },
   gravity = GRAVITY,
+  clearance = BIN_TOSS_CLEARANCE,
 ): TossPath {
   const dx = entry.x - from.x;
   const dz = entry.z - from.z;
-  const across = Math.hypot(dx, dz);
-  const lift = Math.min(1.2, Math.max(0.25, 0.6 * across));
-  const top = Math.max(from.y, entry.y) + lift;
+  const top = Math.max(from.y, entry.y) + clearance;
   const up = Math.sqrt(2 * gravity * (top - from.y));
   // Down through the disc, after the top: the later root.
   const reach =

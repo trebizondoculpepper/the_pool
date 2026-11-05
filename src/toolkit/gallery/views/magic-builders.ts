@@ -14,7 +14,10 @@ import { createOfficeChair } from '../../components/site-dressing/views/office-c
 import { createSoftwareBox } from '../../components/site-dressing/views/software-box';
 import { createFloppyDisk } from '../../components/site-dressing/views/floppy-disk';
 import { createPeriodPc } from '../../components/site-dressing/views/period-pc';
-import { createDesk } from '../../components/site-dressing/views/engineers-desk';
+import {
+  createDesk,
+  createDeskCarton,
+} from '../../components/site-dressing/views/engineers-desk';
 import { createSkip } from '../../components/site-dressing/views/skip';
 import { createWasteBin } from '../../components/site-dressing/views/waste-bin';
 import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
@@ -150,6 +153,15 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   },
   dustbin: {
     build: (kit) => ({ object: createWasteBin(kit).group }),
+  },
+  carton: {
+    build: (kit) => {
+      // The desk sets its carton beside it; here it stands on its own.
+      const carton = createDeskCarton(kit);
+      carton.position.set(0, 0, 0);
+      carton.rotation.y = 0;
+      return { object: carton };
+    },
   },
   desk: {
     alone: true,

@@ -9,6 +9,7 @@ import {
   binArc,
   binRest,
   binTossPath,
+  BIN_TOSS_CLEARANCE,
   targetZone,
   overBin,
 } from './bin-toss';
@@ -157,20 +158,22 @@ describe('the underarm lob (mission 209)', () => {
       Math.max(...[0.1, 0.2, 0.3].map((t) => path.at(t).y)),
     ).toBeGreaterThan(from.y);
   });
-  it('takes longer from further away, timed by gravity', () => {
-    const near = binTossPath(
-      { x: 0, y: 1, z: 0 },
+  it('is as gentle as it can be: its top only just clears the higher of hand and disc', () => {
+    for (const entry of [
       { x: 0.6, y: 0.7, z: 0 },
-      0.1,
-      inside,
-    );
-    const far = binTossPath(
-      { x: 0, y: 1, z: 0 },
       { x: 2.5, y: 0.7, z: 0 },
-      0.1,
-      inside,
-    );
-    expect(far.seconds).toBeGreaterThan(near.seconds);
+      { x: 1, y: 1.4, z: 0.3 },
+    ]) {
+      const from = { x: 0, y: 1, z: 0 };
+      const path = binTossPath(from, entry, 0.1, inside);
+      let top = -Infinity;
+      for (let t = 0; t <= path.seconds; t += 0.002)
+        top = Math.max(top, path.at(t).y);
+      expect(top).toBeCloseTo(
+        Math.max(from.y, entry.y) + BIN_TOSS_CLEARANCE,
+        2,
+      );
+    }
   });
   it('stays inside the bin below the disc and comes to rest at the pile', () => {
     const entry = { x: 2, y: 1, z: 0 };

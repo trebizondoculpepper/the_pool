@@ -103,6 +103,7 @@ export const PLACED_KIND_IDS = [
 export const OTHER_KIND_IDS = [
   'butterfly-valve',
   'cabinet-switch',
+  'carton',
   'cartridge-filter',
   'dosing-set',
   'dustbin',

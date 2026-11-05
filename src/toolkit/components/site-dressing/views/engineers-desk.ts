@@ -21,6 +21,8 @@ import { createPortableBoard } from '../../../controls/logic/portable-board';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import { markEquipmentKind } from '../../core/views/equipment-kind';
 import { markNonBody } from '../../core/views/non-body';
+import { markBin } from '../parts/bin-tossing';
+import type { BinShape } from '../logic/bin-toss';
 import { setBoundsModel } from '../../core/views/bounds-model';
 import { boxBetween } from '../../core/logic/bounds-model';
 import { createPutBack } from '../logic/put-back';
@@ -64,6 +66,19 @@ const CARTON_FLAPS = [-0.06, -0.05, -0.06, 0.42] as const;
 const CARTON_FLAP_REACH =
   (Math.min(CARTON.w, CARTON.d) / 2) * Math.sin(CARTON_FLAPS[3]);
 
+/**
+ * The carton's inside, for things thrown into it (`bin-toss.ts`): square,
+ * the narrower side's width, so it holds whichever way it is turned.
+ */
+const CARTON_BIN_SHAPE: BinShape = {
+  halfX: Math.min(CARTON.w, CARTON.d) / 2 - 0.06,
+  halfZ: Math.min(CARTON.w, CARTON.d) / 2 - 0.06,
+  floor: 0.02,
+  rim: CARTON.h,
+  layer: 0.05,
+  heap: 0.1,
+};
+
 /** The PC's empty carton, beside the desk, in the desk's frame. */
 export function createDeskCarton(kit: PanelKit) {
   const carton = createPcCarton(
@@ -77,6 +92,14 @@ export function createDeskCarton(kit: PanelKit) {
   carton.rotation.y = Math.PI / 2 + CARTON.yaw;
   // Beside the desk, not on it: outside its footprint, a solid of its own.
   carton.userData.beside = true;
+  // A bin by its kind (missions 205 and 209; the owner, 2026-11-05): a
+  // thing held and aimed at it goes in on the shared bin toss, as into a
+  // skip or a dustbin, and can be picked out again. No put-in of its own.
+  markEquipmentKind(carton, 'carton');
+  markBin(carton, {
+    shape: CARTON_BIN_SHAPE,
+    footprint: { x: CARTON.w, z: CARTON.d },
+  });
   return carton;
 }
 
@@ -173,13 +196,6 @@ function faceOut(
     back + size.h * Math.sin(lean) + size.d * Math.cos(lean) + 0.002;
   const offset = new Vector3(0, 0, -size.d / 2).applyQuaternion(q);
   return poseOf(new Vector3(x, y, front).add(offset), q);
-}
-
-/** The carton's `slot`th box thrown in (0 at the bottom), lying on what is under it, in the carton's frame. */
-function inBin(size: BoxSize, slot: number) {
-  const x = ((slot % 3) - 1) * 0.07;
-  const z = ((slot % 2) - 0.5) * 0.08;
-  return flat(size, x, 0.07 + slot * 0.052, z, ((slot * 7) % 5) * 0.15 - 0.3);
 }
 
 /** Beech-effect laminate, the late 1990s' office finish, for the model's dark wood. */
@@ -548,17 +564,13 @@ export function createEngineersDesk(
   }
 
   /** The aimed piece of furniture, including a box already resting on it. */
-  const destination = (
-    target?: Object3D,
-  ): 'carton' | 'shelf' | 'desk' | null => {
+  const destination = (target?: Object3D): 'shelf' | 'desk' | null => {
     for (let o: Object3D | null = target ?? null; o; o = o.parent) {
-      if (o === carton) return 'carton';
       if (o === shelf) return 'shelf';
       if (o === deskModel) return 'desk';
       const id = boxes.get(o);
       if (!id) continue;
       const where = things.where(id);
-      if (where === 'binned') return 'carton';
       if (where === 'shelf' || (where === 'home' && shelfHomes.has(id)))
         return 'shelf';
       if (where === 'desk' || (where === 'home' && deskHomes.has(id)))
@@ -621,20 +633,16 @@ export function createEngineersDesk(
       const id = boxes.get(object);
       return id === undefined ? null : things.canPickUp(id);
     },
-    /** Put a held box in the aimed carton, desk or shelf; otherwise return it home. */
+    /**
+     * Put a held box in its row on the aimed shelf; anywhere else (the
+     * desk, the floor, the carton, which is a bin by its kind) it is let
+     * go and is no longer the desk's to place.
+     */
     release(object: Object3D, target?: Object3D): boolean | 'refuse' | null {
       const id = boxes.get(object);
       if (id === undefined || things.held() !== id) return null;
       const portable = object.userData.portable as PortableObject;
-      const size = softwareBoxSize(byId(id)!);
       const place = destination(target);
-      if (place === 'carton') {
-        const slot = things.bin(id)!;
-        carton.add(object);
-        applyPose(object, inBin(size, slot));
-        portable.component.reset();
-        return true;
-      }
       if (place === 'shelf') {
         const row = shelfRow(id);
         if (!row) return 'refuse';
@@ -660,15 +668,12 @@ export function createEngineersDesk(
       const id = boxes.get(object);
       if (id === undefined || things.held() !== id) return null;
       const place = destination(target);
-      if (place === 'carton') return { gesture: 'put-in', possible: true };
       if (place === 'shelf')
         return shelfRow(id)
           ? { gesture: 'put-back', possible: true }
           : { gesture: 'put-back', possible: false, refused: true };
       return null;
     },
-    /** What is in the carton, bottom first, by title id. */
-    binned: () => things.binned(),
   };
 
   // A chair, pushed back a little, that can be sat in, facing the screen
