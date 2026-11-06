@@ -1,0 +1,36 @@
+name: Mission
+description: A numbered mission; the plan lives in a brief in doc/prompts/, this issue tracks it.
+title: 'NNN: '
+labels: [mission]
+body:
+  - type: input
+    id: brief
+    attributes:
+      label: Brief
+      description: Path to the brief (doc/prompts/NNN-name.md), or "none yet".
+    validations:
+      required: true
+  - type: dropdown
+    id: readiness
+    attributes:
+      label: Readiness
+      options: [ready, needs planning, needs an owner decision]
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What and why
+      description: A few sentences; the reasoning stays in the brief.
+    validations:
+      required: true
+  - type: textarea
+    id: waits
+    attributes:
+      label: Waits on
+      description: Other missions or issues this depends on, and which parts can start now.
+  - type: textarea
+    id: status
+    attributes:
+      label: Status carried over
+      description: When moving a TODO.md item, paste its text and any Incomplete note.

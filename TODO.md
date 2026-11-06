@@ -1,5 +1,7 @@
 # To do
 
+**Moving to GitHub issues (the owner, 2026-11-06):** new work goes straight to an issue, not here; an item below moves to an issue when someone picks it up and is replaced by a one-line pointer (`→ #12`). See `AGENTS.md`, "Work is tracked in GitHub issues".
+
 The project's one to-do list (the owner, 2026-10-23): every task not yet finished, and every item for future delivery, is recorded here. Each item links the prompt that describes it, where there is one. Tick an item off when it is done, with the date and the commit; add new items as they come up, each under the section of its kind.
 
 Flags (2026-11-05): **[needs planning]** marks an item that needs detailed planning or design before anyone builds it; **[needs owner ruling]** marks one waiting on a decision from the owner; **[ready]** marks one planned and ready to build. Items with none are ready to pick up, or are done. State (the owner, 2026-11-05; the rule is in `AGENTS.md`): **[claimed: <agent>, <date>]** marks a job someone has picked up; **Incomplete (<date>, <agent>):** marks one stopped before it was finished, with what is done and where to find its status (its plan, brief or last commit); a ticked item is done, with its date and commit.
