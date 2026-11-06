@@ -6,6 +6,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- The landing page's email sign-up works: it subscribes to the game's Kit list, which sends a confirmation email.
+
 - The site is served at https://thepoolsimulation.xyz/ (mission 217): the landing page at the root and the game at `/game/`, over HTTPS, with DNS at Cloudflare.
 
 - A landing page at the site's root (mission 216): the pitch, pictures from the game, Play now with Low, Medium and High graphics, behind-the-scenes Dev, Simulation and Bench links, and source and issue links. The game moves to `game/`; old links at the root are forwarded. Play now offers an Enter fullscreen button in the game. The bench is published with the game.

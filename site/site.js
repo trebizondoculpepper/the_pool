@@ -1,33 +1,42 @@
-// The landing page's two behaviours (mission 216): the email sign-up, shown
-// only once its Mailchimp destination is configured, and warming the
-// browser's cache with the game's start-up files while the visitor reads.
+// The landing page's two behaviours (mission 216): the email sign-up, sent
+// to the owner's Kit form, and warming the browser's cache with the game's
+// start-up files while the visitor reads.
 
 /**
- * The Mailchimp embedded form's action URL (Audience > Signup forms >
- * Embedded forms, the form's `action`), and its hidden anti-bot field's
- * name (`b_<u>_<id>`). Empty until the owner sets up the list: the page
- * then says sign-up is coming soon and shows no form. To move the list
- * elsewhere, point these at any form endpoint taking `EMAIL`.
+ * The sign-up form's destination: the owner's Kit form "Simulation of
+ * Boring Things" (form 10150541, 2026-11-06), which takes `email_address`,
+ * answers JSON and allows other sites' requests. Kit sends its own
+ * confirmation email. Empty, the page says sign-up is coming soon and shows
+ * no form; to move the list elsewhere, change these two.
  */
-const MAILCHIMP_ACTION = '';
-const MAILCHIMP_HONEYPOT = '';
+const SIGNUP_ACTION = 'https://app.kit.com/forms/10150541/subscriptions';
+const SIGNUP_FIELD = 'email_address';
 
 const form = document.querySelector('.signup');
-if (form && MAILCHIMP_ACTION) {
-  form.action = MAILCHIMP_ACTION;
-  if (MAILCHIMP_HONEYPOT) {
-    const trap = document.createElement('input');
-    Object.assign(trap, {
-      type: 'text',
-      name: MAILCHIMP_HONEYPOT,
-      tabIndex: -1,
-      value: '',
-    });
-    trap.setAttribute('aria-hidden', 'true');
-    trap.style.position = 'absolute';
-    trap.style.left = '-5000px';
-    form.append(trap);
-  }
+if (form && SIGNUP_ACTION) {
+  form.action = SIGNUP_ACTION;
+  form.querySelector('input[type=email]').name = SIGNUP_FIELD;
+  const status = form.querySelector('.note');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const button = form.querySelector('button');
+    button.disabled = true;
+    try {
+      const response = await fetch(SIGNUP_ACTION, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      form.querySelector('.signup-row').remove();
+      status.textContent =
+        'Thank you. Check your email and confirm your subscription.';
+    } catch {
+      button.disabled = false;
+      status.textContent =
+        'That did not go through. Please try again in a moment.';
+    }
+  });
   form.hidden = false;
   document.querySelector('.signup-soon')?.remove();
 }

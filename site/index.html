@@ -131,19 +131,19 @@
           An occasional email when there is something new to play: new rooms,
           new machinery and new things to go wrong.
         </p>
-        <form class="signup" method="post" target="_blank" hidden>
+        <form class="signup" method="post" hidden>
           <label for="email">Email address</label>
           <div class="signup-row">
             <input
               id="email"
               type="email"
-              name="EMAIL"
+              name="email_address"
               autocomplete="email"
               required
             />
             <button type="submit">Subscribe</button>
           </div>
-          <p class="note">
+          <p class="note" aria-live="polite">
             You will be asked to confirm. Unsubscribe at any time.
           </p>
         </form>
