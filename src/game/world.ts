@@ -193,7 +193,10 @@ import type { BathersState } from './bathers';
 import { STORE_CAPACITY, deliver, newChemicalStores } from './plant/chemicals';
 import type { Chemical, ChemicalStores } from './plant/chemicals';
 import type { PoolHeat, PoolId, PoolsState } from './plant/pools';
-import { newPoolTemperatureControl } from './plant/pool-temperature-control';
+import {
+  TEMPERATURE_CONTROL_VALVES,
+  newPoolTemperatureControl,
+} from './plant/pool-temperature-control';
 import type { PoolTemperatureControlState } from './plant/pool-temperature-control';
 import {
   actOnGasZone,
@@ -2056,10 +2059,7 @@ function stepPlant(world: World, delta: number): World {
   const controlledInstalledValves: Record<string, boolean> = {
     ...world.installedValves,
   };
-  const controllerValveIds = {
-    pool_01: 'plant_pool_01.exchanger.primary-flow.temperature-control',
-    pool_02: 'exchanger.primaryFlow.temperature-control',
-  } as const;
+  const controllerValveIds = TEMPERATURE_CONTROL_VALVES;
   for (const pool of ['pool_01', 'pool_02'] as const) {
     const open = water.temperatureControls[pool]!.valvePosition >= 0.5;
     if (controlledInstalledValves[controllerValveIds[pool]] !== open)

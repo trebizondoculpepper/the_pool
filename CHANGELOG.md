@@ -65,6 +65,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Partly open valves say how far open (mission 150, #29): one wording everywhere, "shut" (≤ 2%), "open" (≥ 98%), "part open, 30%", and "opening, 40%" or "closing, 30%" while a modulating valve strokes. The pool exchangers' LTHW control valves (PL1-HX1-CV1, PL2-HX1-CV1) now read their controller's position instead of plain open or shut; the Lounge's actuated valves say their travel; the console's `valves` list and object status use the same words.
+
 - A lever ball valve's turn arrow follows the lever as the player sees it, worked out from the eye (`turnSeen` in the controls), so it is right whether the valve is above or below eye level; the CO₂ emergency isolation valve's arrow pointed the wrong way from above (#25). Hover headings keep acronyms such as CO₂, no longer "cO₂ wall inlet".
 
 - The title screen says when sound is off (the volume at 0 or muted) and to turn it up in Settings, instead of asking for a click that can never start it.

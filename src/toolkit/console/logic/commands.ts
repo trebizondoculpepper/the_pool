@@ -1,3 +1,4 @@
+import { inspectionStatus } from '../../../game/plant/component-status';
 import { applyAction } from '../../../game/world';
 import type { World, WorldAction } from '../../../game/world';
 import type { GameEvent } from '../../../game/events/game-event';
@@ -517,7 +518,8 @@ export const COMMANDS: readonly ConsoleCommand[] = [
         .filter((v) => matching(filter, v.tag, v.id, v.room, v.name))
         .map(
           (v) =>
-            `${v.tag.padEnd(14)}${(v.open ? 'OPEN' : 'SHUT').padEnd(6)}${v.room.padEnd(16)}${v.name}`,
+            // How far open where its position is modelled (#29): "PART OPEN, 30%".
+            `${v.tag.padEnd(14)}${(inspectionStatus(host.world(), v.tag) ?? (v.open ? 'open' : 'shut')).toUpperCase().padEnd(16)}${v.room.padEnd(16)}${v.name}`,
         ),
   },
   ...(['open', 'close'] as const).map((verb): ConsoleCommand => ({

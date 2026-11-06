@@ -81,7 +81,8 @@ describe('the information overlay’s lines', () => {
     // PL1-F1-IV1 is kept under valve-0001.
     w = applyAction(w, { type: 'plant/valve', id: 'valve-0001', open: false });
     w = stepWorld(w, 2);
-    expect(inspectComponent({ tag }, w)?.title).toMatch(/ - part open$/);
+    // How far open, in the one wording (#29).
+    expect(inspectComponent({ tag }, w)?.title).toMatch(/ - part open, \d+%$/);
     w = stepWorld(w, 3);
     expect(inspectComponent({ tag }, w)?.title).toMatch(/ - shut$/);
   });

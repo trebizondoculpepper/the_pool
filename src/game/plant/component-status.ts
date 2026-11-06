@@ -12,7 +12,13 @@ import {
   plantInventory,
 } from './equipment-catalogue';
 import type { InventoryEntry } from './equipment-catalogue';
-import { formatStatus, statusBindingFor } from './component-descriptions';
+import {
+  VALVE_SHUT_AT,
+  formatStatus,
+  statusBindingFor,
+  valveStateWords,
+} from './component-descriptions';
+import { TEMPERATURE_CONTROL_VALVES } from './pool-temperature-control';
 import type {
   DescribedSubject,
   DescriptionContext,
@@ -160,11 +166,22 @@ export function resolveStatus(
     // indicator shows, not where it is commanded (Codex's review of 069).
     const travel = world.loungeValvePositions[id];
     if (typeof travel === 'number')
-      return travel >= 0.98
-        ? { policy: 'valve', open: true }
-        : travel <= 0.02
-          ? { policy: 'valve', open: false }
-          : { policy: 'valve', open: true, partly: true };
+      return { policy: 'valve', open: travel > VALVE_SHUT_AT, opening: travel };
+    // A pool exchanger's modulating LTHW valve (#29): where its actuator
+    // has it, and where its controller is driving it.
+    const pool = (
+      Object.keys(
+        TEMPERATURE_CONTROL_VALVES,
+      ) as (keyof typeof TEMPERATURE_CONTROL_VALVES)[]
+    ).find((p) => TEMPERATURE_CONTROL_VALVES[p] === id);
+    const control = pool && world.poolTemperatureControls[pool];
+    if (control)
+      return {
+        policy: 'valve',
+        open: control.valvePosition > VALVE_SHUT_AT,
+        opening: control.valvePosition,
+        commanded: control.commandedPosition,
+      };
     const installed = world.installedValves[id];
     if (typeof installed === 'boolean')
       return { policy: 'valve', open: installed };
@@ -213,7 +230,6 @@ export function inspectionStatus(
       ? 'On'
       : 'Off';
   const state = resolveStatus(world, subject);
-  if (state?.policy === 'valve')
-    return state.partly ? 'part open' : state.open ? 'open' : 'shut';
+  if (state?.policy === 'valve') return valveStateWords(state);
   return formatStatus(equipmentKind(subject.kind).status, state);
 }
