@@ -1,3 +1,14 @@
+/**
+ * Each pool exchanger's modulating LTHW valve, by the installed valve's
+ * asset id (the register's `PL1-HX1-CV1` and `PL2-HX1-CV1`): the world
+ * steps it from its controller, and its status reads its position from
+ * here (#29).
+ */
+export const TEMPERATURE_CONTROL_VALVES = {
+  pool_01: 'plant_pool_01.exchanger.primary-flow.temperature-control',
+  pool_02: 'exchanger.primaryFlow.temperature-control',
+} as const;
+
 /** The local controller and modulating LTHW valve for a pool exchanger. */
 export interface PoolTemperatureControlState {
   setpoint: number;

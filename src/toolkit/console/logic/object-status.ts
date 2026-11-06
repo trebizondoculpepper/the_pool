@@ -1,7 +1,10 @@
 import type { World } from '../../../game/world';
 import { jacuzziTankDraining } from '../../../game/world';
 import { plantInventory } from '../../../game/plant/equipment-catalogue';
-import { inventoryForWorld } from '../../../game/plant/component-status';
+import {
+  inspectionStatus,
+  inventoryForWorld,
+} from '../../../game/plant/component-status';
 import { INSTALLED_VALVES } from '../../../game/plant/installed-valves';
 import { MOTOR_TAGS } from '../../../game/plant/motor-starters';
 import { JACUZZI_BALANCE_TANK } from '../../../game/plant/spa-balance-tank';
@@ -118,6 +121,10 @@ export function objectStatus(w: World, query: string): string[] {
       `asset = ${valve.assetId}`,
       `normal = ${valve.normal}`,
       `commanded = ${(w.installedValves[valve.assetId] ?? valve.normal === 'open') ? 'open' : 'shut'}`,
+      // Where it stands, in the words every surface uses (#29).
+      ...[inspectionStatus(w, valve.tag)]
+        .filter(Boolean)
+        .map((words) => `status = ${words}`),
       ...(valve.assetId in w.loungeValvePositions
         ? [
             `travel = ${Number(w.loungeValvePositions[valve.assetId].toFixed(3))} (0 shut, 1 open)`,

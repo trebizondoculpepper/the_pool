@@ -1,5 +1,7 @@
 # 150: Partly open valves say how far open
 
+Tracked in #29; done, see `doc/plans/150-valve-opening-status.md`.
+
 The owner, 2026-11-03: "Valves that are partially open should say so, rather than just 'open' or 'closed'." `nicole_buruaah` investigated and wrote this brief. Brief only; not started until the owner says. Fits with mission 149 (the modulating valves' sound); do it after or beside it.
 
 Read first: `CLAUDE.md` (tags, names and descriptions are derived from the model, never written by hand; one world state; displays redraw only on change; pure logic in `src/game/` and `logic/`, tested beside it; the commit rules), `doc/agent-tooling.md` (look links, the room audit). Claim files on agent-inbox before editing; stage only your own hunks through a private index; don't spawn sub-agents without the owner's permission.

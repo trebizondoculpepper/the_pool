@@ -68,7 +68,14 @@ export type ResolvedStatus =
     }
   | { policy: 'booster'; running: boolean; tripped: boolean }
   | { policy: 'switch'; on: boolean }
-  | { policy: 'valve'; open: boolean; partly?: true }
+  | {
+      policy: 'valve';
+      open: boolean;
+      /** Where it is, 0 shut to 1 open, for a valve whose position is modelled (#29). */
+      opening?: number;
+      /** Where its actuator is driving it, for a modulating valve (#29). */
+      commanded?: number;
+    }
   | { policy: 'gas'; shown: string }
   | { policy: 'uv'; lit: boolean }
   | { policy: 'filter'; condition: FilterCondition };
@@ -254,6 +261,39 @@ export function valvePurpose(
   return `Isolates ${route.medium} flowing from ${route.from} to ${route.to}.`;
 }
 
+/** At or below this opening a valve is said to be shut (#29). */
+export const VALVE_SHUT_AT = 0.02;
+/** At or above this opening a valve is said to be open (#29). */
+export const VALVE_OPEN_AT = 0.98;
+/** How far apart where a valve is and where it is driven must be to say it is moving. */
+const STROKING = 0.005;
+
+/**
+ * A valve's state in words, the one wording every surface uses (mission
+ * 150, #29; the owner, 2026-11-03: "Valves that are partially open should
+ * say so"). A valve whose position is modelled says how far open it is:
+ * "shut" at or below 2%, "open" at or above 98%, otherwise "part open,
+ * 30%"; a modulating valve on its way somewhere says so, "opening, 40%" or
+ * "closing, 30%". A valve with only open or shut says that.
+ */
+export function valveStateWords(valve: {
+  open: boolean;
+  opening?: number;
+  commanded?: number;
+}): string {
+  const at = valve.opening;
+  if (at === undefined) return valve.open ? 'open' : 'shut';
+  const percent = `${Math.round(Math.min(1, Math.max(0, at)) * 100)}%`;
+  if (
+    valve.commanded !== undefined &&
+    Math.abs(valve.commanded - at) > STROKING
+  )
+    return `${valve.commanded > at ? 'opening' : 'closing'}, ${percent}`;
+  if (at <= VALVE_SHUT_AT) return 'shut';
+  if (at >= VALVE_OPEN_AT) return 'open';
+  return `part open, ${percent}`;
+}
+
 /** An isolator's description. */
 export const powerPurpose = (destination: string) =>
   `Isolates power for ${destination}.`;
@@ -348,9 +388,7 @@ export function describeComponent(
     const purpose = valvePurpose(subject.route) ?? '';
     const state = context.status?.(subject);
     const now =
-      state?.policy === 'valve'
-        ? `Currently ${state.partly ? 'part open' : state.open ? 'open' : 'shut'}.`
-        : '';
+      state?.policy === 'valve' ? `Currently ${valveStateWords(state)}.` : '';
     return [purpose, now].filter(Boolean).join(' ');
   }
   if (template === 'power' || subject.powerFor)
