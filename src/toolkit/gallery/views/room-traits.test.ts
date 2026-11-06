@@ -110,3 +110,28 @@ test("a placed bin's own rules come from its placement, not a room's tossing (mi
   emptyBin(group);
   expect(bins.filled().bin).toBe(0);
 });
+
+test('a rack registers its shared placement target by kind alone (mission 206)', () => {
+  const scene = new Group();
+  // A wall shelf, as the office builds it (a rack, not drawn here).
+  const rack = markEquipmentKind(new Group(), 'office-shelf');
+  rack.name = 'Wall shelf';
+  scene.add(rack);
+  expect(rack.userData.placementTarget).toBeUndefined();
+  roomTraits.racks?.(scene, 1);
+  const target = rack.userData.placementTarget as PlacementTarget | undefined;
+  expect(target).toBeTruthy();
+  // It accepts only rackable things (a software box fits; a floppy disk not).
+  const box = markEquipmentKind(new Group(), 'software-box');
+  box.add(new Mesh(new BoxGeometry(0.05, 0.2, 0.04)));
+  box.updateMatrixWorld(true);
+  const flat = markEquipmentKind(new Group(), 'floppy-disk');
+  flat.add(new Mesh(new BoxGeometry(0.09, 0.003, 0.094)));
+  flat.updateMatrixWorld(true);
+  expect(target!.accepts(box)).toBe(true);
+  expect(target!.accepts(flat)).toBe(false);
+  // Nothing without the rack trait gains one.
+  const desk = markEquipmentKind(new Group(), 'desk');
+  scene.add(desk);
+  expect(desk.userData.placementTarget).toBeUndefined();
+});

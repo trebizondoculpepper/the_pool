@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A `rack`-kind object is a placement target (mission 206, the shared resolver wiring): the room factory registers every rack's shared racking — a held `rackable` item aimed at the rack within reach goes on it, and the rack's whole row compacts, centred, with the new item to a randomly chosen end (`registerRacks` through `roomTraits.racks`). The engineer's desk still uses its own shelf code for now; its migration to the shared rack is the mission's remaining step.
 - Things are solid by their traits (mission 208, stage 2): every kind is solid unless it opts out (`open-frame`, a new trait for a slab on pole legs the player can pass under, or `run-like`, or decoration). A solid kind with a bounds model blocks the walker, and what is thrown, from its declared shapes in every room, through the room factory; the engineer's desk is the first. The magic panel has a BOUNDS knob to show an item's bounds model, and a test checks a declared model still fits its drawn object.
 
 - The landing page's email sign-up works: it subscribes to the game's Kit list, which sends a confirmation email.

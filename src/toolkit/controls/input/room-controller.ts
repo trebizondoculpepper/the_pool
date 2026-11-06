@@ -35,6 +35,12 @@ export interface RoomTraits {
    * thrown rebounds off the same footprints (211).
    */
   solids?(root: Object3D, metre: number): readonly Footprint[];
+  /**
+   * The room's racks (mission 206): every placed `rack`-kind object's
+   * placement target, registered on the object. Built once per room; found
+   * among `root`'s objects.
+   */
+  racks?(root: Object3D, metre: number): void;
 }
 
 /** Throwing into a room's bin-like objects, as the walker sees it. */
@@ -160,6 +166,7 @@ export function createRoomController(options: RoomControllerOptions) {
   const roomSolids = options.solids;
   const bins = traits.bins?.(scene, options.metre);
   traits.holdables?.(scene, options.metre);
+  traits.racks?.(scene, options.metre);
   const walker = createFirstPerson({
     ...overlay,
     allowPickup(object, portable) {

@@ -22,6 +22,7 @@ import type {
 } from '../../controls/input/room-controller';
 import { surfaceSupports } from '../logic/derived-surface';
 import { forgetSurfaces, roomSolids, roomSurfaces } from './derived-surfaces';
+import { registerRacks } from './rack-placement';
 
 /**
  * The registry's traits as the rooms' carrying behaviour (missions 189 and
@@ -215,6 +216,8 @@ export const roomTraits: RoomTraits = {
     refresh(root);
     return roomSolids(root, metre);
   },
+  // Mission 206: every `rack`-kind object's shared racking placement target.
+  racks: (root) => registerRacks(root),
   bins: roomBins,
   holdables: (root, metre) => {
     makeHoldablesPortable(root, metre);
