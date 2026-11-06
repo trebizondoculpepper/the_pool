@@ -6,6 +6,7 @@ import type { MotorTag } from './motor-starters';
 import { POOL_IDS } from './pools';
 import type { PoolId } from './pools';
 import { equipmentKind } from './equipment-kinds';
+import { compositeTraits, expand } from './traits';
 import type { KindId, StatusPolicy } from './equipment-kinds';
 
 import { filterConditionWords } from './filter-condition';
@@ -256,9 +257,11 @@ const ofKind = new WeakMap<ReadonlyMap<string, number>, Map<string, number>>();
 /** A valve's description, from its route in the enhanced network, or none. */
 export function valvePurpose(
   route: ValveRoute | undefined,
+  /** A modulating valve regulates its flow rather than isolating it (#33). */
+  regulates = false,
 ): string | undefined {
   if (!route) return undefined;
-  return `Isolates ${route.medium} flowing from ${route.from} to ${route.to}.`;
+  return `${regulates ? 'Regulates' : 'Isolates'} ${route.medium} flowing from ${route.from} to ${route.to}.`;
 }
 
 /** At or below this opening a valve is said to be shut (#29). */
@@ -385,7 +388,12 @@ export function describeComponent(
   if (template === 'valve') {
     // What it isolates, and whether it is open now (the owner, 2026-10-25:
     // a thing that can be in several states says which).
-    const purpose = valvePurpose(subject.route) ?? '';
+    // What it does with its flow: a modulating valve regulates it (#33).
+    const traits = kind.traits ?? [];
+    const regulates = (
+      expand(traits, compositeTraits()).primitives as readonly string[]
+    ).includes('modulating');
+    const purpose = valvePurpose(subject.route, regulates) ?? '';
     const state = context.status?.(subject);
     const now =
       state?.policy === 'valve' ? `Currently ${valveStateWords(state)}.` : '';

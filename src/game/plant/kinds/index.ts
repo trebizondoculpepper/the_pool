@@ -107,6 +107,7 @@ export const OTHER_KIND_IDS = [
   'caged-ladder',
   'carton',
   'cartridge-filter',
+  'control-valve',
   'dosing-set',
   'dustbin',
   'floppy-disk',

@@ -241,6 +241,11 @@ export const PRIMITIVES = {
       },
     },
   },
+  modulating: {
+    facet: 'use',
+    words:
+      'a valve its controller positions anywhere between shut and open, to regulate a flow rather than isolate it: it says how far open it is, and its description says it regulates (#33)',
+  },
   operable: {
     facet: 'use',
     words:
