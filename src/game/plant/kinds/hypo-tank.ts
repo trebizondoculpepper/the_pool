@@ -7,5 +7,11 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Stores bulk sodium hypochlorite for pool dosing.',
-  traits: ['container', 'cylindrical', 'fixed', 'floor-standing'],
+  traits: [
+    'container',
+    'cylindrical',
+    'fixed',
+    'floor-standing',
+    'inspectable',
+  ],
 });

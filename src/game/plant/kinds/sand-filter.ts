@@ -8,5 +8,5 @@ export default defineKind({
   status: 'filter',
   purpose: 'Removes suspended solids from circulating pool water.',
   brand: 'lidoluxe',
-  traits: ['filter-like'],
+  traits: ['filter-like', 'inspectable'],
 });
