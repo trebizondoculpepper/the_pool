@@ -70,6 +70,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The dosing pot's valves (BH-DP1-IV1, -IV2, -DV1) report open or shut again (#52, a regression from #48): a valve's status now binds by its kind's description template, so every valve kind has one, the new ball valves and the Olympic tank's penstock included, instead of only the kinds listed by name.
+
 - The boiler house's dosing pot, BH-DP1, is plumbed in (#47): a bypass pot across the pumped LTHW, fed from the flow to the building and returning to the return main, with real lever ball valves on its feed, return and drain (BH-DP1-IV1, -IV2, -DV1, normally shut) in the schematic, the installed-valve register and the pipework, in place of the painted-on valves and a lone chemical link. A new registered kind, `ball-valve`, names them; a register entry may now give its kind instead of having it guessed from its name. A part's hover line gives its whole's live state where the room's world is known.
 
 - Partly open valves say how far open (mission 150, #29): one wording everywhere, "shut" (≤ 2%), "open" (≥ 98%), "part open, 30%", and "opening, 40%" or "closing, 30%" while a modulating valve strokes. The pool exchangers' LTHW control valves (PL1-HX1-CV1, PL2-HX1-CV1) now read their controller's position instead of plain open or shut; the Lounge's actuated valves say their travel; the console's `valves` list and object status use the same words.

@@ -137,6 +137,10 @@ export function statusBindingFor(subject: {
   room?: string;
 }): StatusBinding | undefined {
   const pool = poolOfRoom(subject.room);
+  // Every valve kind, by its description template, not a list of names
+  // (#52: a new kind, ball-valve, was missed by the list and lost its state).
+  if (equipmentKind(subject.kind).template === 'valve')
+    return { valve: subject.tag };
   switch (subject.kind) {
     case 'pump':
       return isMotor(subject.tag) ? { motor: subject.tag } : undefined;
@@ -154,10 +158,6 @@ export function statusBindingFor(subject: {
       return { booster: true };
     case 'jacuzzi-pack':
       return { cabinet: 'jacuzzi' };
-    case 'butterfly-valve':
-    case 'gas-ball-valve':
-    case 'valve':
-      return { valve: subject.tag };
     case 'uv-unit':
       return pool ? { uv: pool } : undefined;
     case 'ozone-monitor':
