@@ -101,6 +101,7 @@ export const PLACED_KIND_IDS = [
 ] as const;
 
 export const OTHER_KIND_IDS = [
+  'ball-valve',
   'butterfly-valve',
   'cabinet-switch',
   'caged-ladder',

@@ -652,6 +652,7 @@ export function createRoomPipework(kit: PanelKit, room: string, floorY = 0) {
           pipeRadius: v.od / 2,
           name: `${installed.tag} · ${v.name}`,
           binding,
+          ...(v.lever ? { lever: v.lever } : {}),
         }),
       );
       const holder = new Group();

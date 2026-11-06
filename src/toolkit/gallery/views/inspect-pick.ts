@@ -109,7 +109,12 @@ export function createInspector(options: InspectorOptions) {
         // A part with nothing more to say: what it is on (prompt 068).
         if (lines && identity.part && !lines.detail && owner?.object.parent) {
           const whole = owningComponent(owner.object.parent)?.identity;
-          const on = whole && !whole.part ? inspectComponent(whole) : null;
+          // The whole's live state too, where it keeps one ("On BH-DP1-IV2
+          // (ball valve) - shut", #47).
+          const on =
+            whole && !whole.part
+              ? inspectComponent(whole, options.world?.())
+              : null;
           if (on) return { ...lines, detail: `On ${on.title}.` };
         }
         return lines;

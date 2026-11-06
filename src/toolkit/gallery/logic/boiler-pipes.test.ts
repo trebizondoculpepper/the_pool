@@ -108,3 +108,23 @@ describe('the boiler house’s flues and gas', () => {
       ).toBe(true);
   });
 });
+
+describe('the dosing pot, BH-DP1, plumbed across the LTHW (#47)', () => {
+  const named = (name: string) => runs.find((r) => r.name === name)!;
+  it('is fed from the flow and returns to the return main, each with its own valve at the pot', () => {
+    const feed = named('Dosing pot feed');
+    const ret = named('Dosing pot return');
+    const drain = named('Dosing pot drain');
+    expect(feed.joins).toContain('LTHW flow to building');
+    expect(ret.joins).toContain('LTHW return main');
+    for (const r of [feed, ret, drain]) {
+      expect(r.valves, r.name).toHaveLength(1);
+      expect(r.valves[0].at[1], r.name).toBeLessThanOrEqual(REACH);
+      // A water lever ball valve: a red lever, not gas yellow.
+      expect(r.valves[0].lever, r.name).toBe('#c42b23');
+    }
+    expect(
+      tees.filter((t) => t.name.startsWith('Dosing pot')).map((t) => t.name),
+    ).toEqual(['Dosing pot feed tee', 'Dosing pot return tee']);
+  });
+});

@@ -110,7 +110,9 @@ export const WORLD_BINDINGS: Readonly<Record<string, WorldBinding>> = {
   pressurisation: todo('the heating circuit’s pressure'),
   calorifier: todo('its stored water’s temperature'),
   'low-loss-header': passive('a vessel: its thermometers are the boilers’'),
-  'dosing-pot': passive('a vessel with valves, used only when dosing by hand'),
+  'dosing-pot': passive(
+    'a vessel, charged by hand; its feed, return and drain valves (BH-DP1-IV1, -IV2, -DV1) are installed valves of their own (#47)',
+  ),
   // The chemical stores and loading bay.
   'chem-bulk': world('its store’s stock'),
   'chem-pump': world(
