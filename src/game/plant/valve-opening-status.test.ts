@@ -103,3 +103,16 @@ it('gives every valve kind its state, by its template, not a list of names (#52)
   expect(inspectionStatus(world, 'BH-B1-IV1')).toBe('open');
   expect(inspectionStatus(world, 'BH-HW1-IV1')).toBe('open');
 });
+
+it('describes the pool exchangers’ modulating valves as regulating control valves (#33)', async () => {
+  const { inspectComponent } = await import('./component-inspection');
+  const world = newWorld();
+  for (const tag of ['PL1-HX1-CV1', 'PL2-HX1-CV1']) {
+    const lines = inspectComponent({ tag }, world)!;
+    expect(lines.title, tag).toContain('modulating control valve');
+    expect(lines.title, tag).not.toContain('butterfly');
+    expect(describeForWorld(world, tag), tag).toMatch(/^Regulates /);
+  }
+  // An isolating valve still isolates.
+  expect(describeForWorld(world, 'PL2-HX1-IV3')).toMatch(/^Isolates /);
+});

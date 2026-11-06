@@ -379,12 +379,14 @@ const HAND_DRAWN_VALVES: Readonly<Record<string, InstalledValve>> = {
   },
   'plant_pool_02|heating-flow|HX LTHW temperature control valve': {
     assetId: 'exchanger.primaryFlow.temperature-control',
+    kind: 'control-valve',
     tag: ['PL2', 'HX1', 'CV1'].join('-'),
     normal: 'closed',
   },
   'plant_pool_01|Heating flow to the heat exchanger|HX LTHW temperature control valve':
     {
       assetId: 'plant_pool_01.exchanger.primary-flow.temperature-control',
+      kind: 'control-valve',
       tag: ['PL1', 'HX1', 'CV1'].join('-'),
       normal: 'closed',
     },
@@ -407,7 +409,16 @@ export const INSTALLED_VALVES: Readonly<Record<string, InstalledValve>> = {
   ...Object.fromEntries(
     MODEL_INSTALLED_VALVES.map((v) => [
       `${v.room}|${v.link}|${v.name}`,
-      { assetId: v.id, tag: v.tag, normal: v.normal },
+      {
+        assetId: v.id,
+        tag: v.tag,
+        normal: v.normal,
+        // A regulating fitting in its room's model is a modulating
+        // control valve (#33).
+        ...(v.kind === 'regulating-valve'
+          ? { kind: 'control-valve' as const }
+          : {}),
+      },
     ]),
   ),
 };
@@ -418,10 +429,11 @@ export interface InstalledValve {
   normal: 'open' | 'closed';
   /**
    * Its registered kind, where its name does not say it (#47: the dosing
-   * pot's lever ball valves); otherwise a gas valve is a gas ball valve
-   * and the rest butterfly valves.
+   * pot's lever ball valves; #33: a modulating control valve, which a
+   * room's model gives its regulating fittings); otherwise a gas valve is
+   * a gas ball valve and the rest butterfly valves.
    */
-  kind?: 'ball-valve';
+  kind?: 'ball-valve' | 'control-valve';
 }
 
 export const installedValveKey = (room: string, run: string, name: string) =>

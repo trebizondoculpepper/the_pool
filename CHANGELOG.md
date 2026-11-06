@@ -69,6 +69,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The pool exchangers' LTHW control valves, PL1-HX1-CV1 and PL2-HX1-CV1, are modulating control valves that regulate the flow, no longer "butterfly valves" that "isolate" it (#33): a new `modulating` trait (a valve positioned between shut and open by its controller) and a registered `control-valve` kind carrying it; a room model's regulating fittings take that kind, and a modulating valve's description says it regulates.
+
 - The dosing pot's valves (BH-DP1-IV1, -IV2, -DV1) report open or shut again (#52, a regression from #48): a valve's status now binds by its kind's description template, so every valve kind has one, the new ball valves and the Olympic tank's penstock included, instead of only the kinds listed by name.
 
 - The boiler house's dosing pot, BH-DP1, is plumbed in (#47): a bypass pot across the pumped LTHW, fed from the flow to the building and returning to the return main, with real lever ball valves on its feed, return and drain (BH-DP1-IV1, -IV2, -DV1, normally shut) in the schematic, the installed-valve register and the pipework, in place of the painted-on valves and a lone chemical link. A new registered kind, `ball-valve`, names them; a register entry may now give its kind instead of having it guessed from its name. A part's hover line gives its whole's live state where the room's world is known.
