@@ -587,8 +587,8 @@ export function createPressurisation(kit: PanelKit) {
 /**
  * A dosing pot, after the Flamco 11 litre (Ø215 × 935 mm, ¾" connections,
  * 16 bar), wall-mounted on brackets, for dosing the LTHW system with
- * inhibitor: a funnel and cap on top, and inlet, outlet and drain valves.
- * Ours is Gorskiy's.
+ * inhibitor: a funnel and cap on top, and its feed, return and drain
+ * stubs, whose valves are the room's pipework's (#47). Ours is Gorskiy's.
  */
 export function createDosingPot(kit: PanelKit) {
   const t = plantTools(kit);
@@ -621,34 +621,16 @@ export function createDosingPot(kit: PanelKit) {
       y,
       z / 2,
     );
-  const brass = t.paint(FINISH.brass, 0.35, 0.7);
+  // Its ¾" copper stubs to its ports (#47): the feed out of its top-left
+  // and up, the return out of its bottom-right, the drain down from its
+  // base. Their valves are the room's pipework's, drawn from the model
+  // (BH-DP1-IV1, -IV2, -DV1), not this view's.
   const copper = t.paint('#b87333', 0.35, 0.8);
-  for (const [y, side] of [
-    [0.32, -1],
-    [-0.38, 1],
-  ] as const) {
-    t.rod(group, copper, [side * R, y, z], [side * 0.3, y, z], 0.011, 10);
-    t.rod(
-      group,
-      copper,
-      [side * 0.3, y, z],
-      [side * 0.3, side > 0 ? -0.6 : 0.6, z],
-      0.011,
-      10,
-    );
-    t.box(
-      group,
-      t.paint('#c42b23', 0.5),
-      0.07,
-      0.012,
-      0.012,
-      side * 0.2,
-      y + 0.03,
-      z,
-    );
-    t.cyl(group, brass, 0.018, 0.05, side * 0.2, y, z, 'x', 10);
-  }
-  t.cyl(group, brass, 0.016, 0.05, 0, -0.5, z, 'y', 10);
+  const stub = 0.0075;
+  t.rod(group, copper, [-R + 0.01, 0.32, z], [-0.3, 0.32, 0.2], stub, 10);
+  t.rod(group, copper, [-0.3, 0.32, 0.2], [-0.3, 0.45, 0.2], stub, 10);
+  t.rod(group, copper, [R - 0.01, -0.38, z], [0.3, -0.38, 0.2], stub, 10);
+  t.rod(group, copper, [0, -0.45, z], [0, -0.53, z], stub, 10);
   wrapOnto(
     badge(kit, group, 'gorskiy', [0, 0.05, z + R], 0.03, '#e9e9e2'),
     [0, z],

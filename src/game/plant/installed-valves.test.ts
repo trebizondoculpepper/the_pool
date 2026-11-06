@@ -172,3 +172,20 @@ describe('installed pipework valves', () => {
     );
   });
 });
+
+it('keeps the dosing pot shut off by its valves in a new world and an old save (#47)', async () => {
+  const { newWorld } = await import('../world');
+  const { deserialiseWorld, serialiseWorld } = await import('../save');
+  const ids = ['valve-0111', 'valve-0112', 'valve-0113'];
+  for (const id of ids) expect(newWorld().installedValves[id], id).toBe(false);
+  // A save from before the pot was plumbed has none of its valves: they
+  // load shut, the register's normal, with no migration.
+  const saved = JSON.parse(serialiseWorld(newWorld(), 0));
+  const world = saved.world ?? saved;
+  for (const id of ids) delete world.installedValves[id];
+  const loaded = deserialiseWorld(JSON.stringify(saved));
+  expect(loaded.ok, JSON.stringify(loaded).slice(0, 200)).toBe(true);
+  if (loaded.ok)
+    for (const id of ids)
+      expect(loaded.world.installedValves[id], id).toBe(false);
+});
