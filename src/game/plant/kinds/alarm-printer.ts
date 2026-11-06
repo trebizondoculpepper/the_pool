@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Prints plant alarm records.',
-  traits: ['box-like', 'fixed', 'floor-standing', 'readable'],
+  traits: ['box-like', 'fixed', 'floor-standing', 'inspectable', 'readable'],
 });

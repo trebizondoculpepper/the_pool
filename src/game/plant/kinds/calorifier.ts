@@ -7,5 +7,11 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Stores domestic hot water heated by the boiler plant.',
-  traits: ['container', 'cylindrical', 'fixed', 'floor-standing'],
+  traits: [
+    'container',
+    'cylindrical',
+    'fixed',
+    'floor-standing',
+    'inspectable',
+  ],
 });
