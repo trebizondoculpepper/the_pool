@@ -170,14 +170,7 @@ export function createRoomController(options: RoomControllerOptions) {
           identify: options.identify,
         })
       : null;
-  // The factory's ladders (#18), for every room with a scene, whether or
-  // not it carries things: a room that still lists its own (`ladders`)
-  // keeps them while the rooms migrate.
-  const ladderRoot = options.scene ?? root;
-  const factoryLadders =
-    traits?.ladders && ladderRoot && !options.ladders
-      ? () => traits.ladders!(ladderRoot, options.metre, options.ladderFloorAt)
-      : undefined;
+  const factoryLadders = roomLaddersFor(traits, options);
   const overlay: FirstPersonOptions = {
     ...options,
     ...(factoryLadders ? { ladders: factoryLadders } : {}),
@@ -220,6 +213,26 @@ export function createRoomController(options: RoomControllerOptions) {
     bins?.update(delta);
   };
   return Object.assign(walker, { bins: bins ?? null });
+}
+
+/**
+ * The ladders a room's controller climbs (#18): the registered traits'
+ * ladders, found in the room's scene, for every room with a scene, whether
+ * or not it carries things. A room that still lists its own (`ladders`)
+ * keeps them while the rooms migrate; with no traits, none. Pure: asking
+ * builds nothing.
+ */
+export function roomLaddersFor(
+  traits: RoomTraits | null,
+  options: Pick<
+    RoomControllerOptions,
+    'scene' | 'objects' | 'metre' | 'ladders' | 'ladderFloorAt'
+  >,
+): (() => readonly LadderZone[]) | undefined {
+  const root = options.scene ?? options.objects;
+  const ladders = traits?.ladders;
+  if (!ladders || !root || options.ladders) return undefined;
+  return () => ladders(root, options.metre, options.ladderFloorAt);
 }
 
 /** The controller attached by a starter, for the main room-mount seam. */
