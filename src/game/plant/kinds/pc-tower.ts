@@ -7,5 +7,11 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: "The engineer's late-1990s PC: boots DOS when its power is pressed.",
-  traits: ['box-like', 'fixed', 'floor-standing', 'operable'],
+  traits: ['box-like', 'fixed', 'floor-standing', 'operable', 'supportable'],
+  bindings: [
+    {
+      room: 'engineers_office',
+      thing: 'tower',
+    },
+  ],
 });

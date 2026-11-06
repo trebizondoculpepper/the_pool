@@ -51,6 +51,10 @@ function surfaceTraitsOf(kind: string) {
     walkable: ps.includes('walkable'),
     // Mission 208: its tops from its bounds model, not rays on its body.
     bounded: ps.includes('bounds-model'),
+    // Mission 177: a box-like thing's bounding box is its shape — its top
+    // is the box's own, found without raycasting its (or its decoration's)
+    // meshes, exactly as a bounds-model with no declared model is.
+    boxed: ps.includes('box-like'),
     mode: meta.surface === 'plane' ? ('plane' as const) : ('raycast' as const),
     surfaceY: typeof meta.surfaceY === 'number' ? meta.surfaceY : undefined,
   };
@@ -227,7 +231,15 @@ export function roomSurfaces(root: Object3D, metre: number): DerivedSurface[] {
     if (!kind) return;
     const traits = surfaceTraitsOf(kind);
     if (!traits) return;
-    if (traits.bounded) {
+    // A declared plane (`surface=plane`, `surfaceY`) wins over both the
+    // raycast and the box-like/bounds box: it says exactly where the top
+    // is (bala_qasim's point on PR #27).
+    if (traits.mode === 'plane') {
+      const s = objectSurface(o, metre, traits);
+      if (s) surfaces.push(s);
+      return;
+    }
+    if (traits.bounded || traits.boxed) {
       surfaces.push(...boundedSurfaces(o, traits.walkable));
       return;
     }

@@ -12,6 +12,7 @@ import { createPortableBoard } from '../../controls/logic/portable-board';
 import type { PortableObject } from '../../controls/input/object-handling';
 import { expect, test } from 'vite-plus/test';
 import { markEquipmentKind } from '../../components/core/views/equipment-kind';
+import { roomSurfaces } from './derived-surfaces';
 import {
   kindIsBinLike,
   kindIsHoldable,
@@ -141,4 +142,48 @@ test('a rack registers its shared placement target by kind alone (mission 206)',
   const desk = markEquipmentKind(new Group(), 'desk');
   scene.add(desk);
   expect(desk.userData.placementTarget).toBeUndefined();
+});
+
+test('a box-like thing has a top from its own box, not a room special rule (issue #11)', () => {
+  // The PC tower and monitor stand on the desk as their own kinds. A
+  // box-like thing's bounding box is its shape: its top is found from its
+  // own box (a fitted box, as a bounds-model with no declared model), so
+  // things can rest on it. Built origin-at-base, as a floor-standing
+  // object is.
+  const scene = new Group();
+  const tower = markEquipmentKind(new Group(), 'pc-tower');
+  const body = new Mesh(new BoxGeometry(0.2, 0.45, 0.4));
+  body.position.y = 0.225; // the box rises from the tower's feet
+  tower.add(body);
+  scene.add(tower);
+  scene.updateMatrixWorld(true);
+  const tops = roomSurfaces(scene, 1);
+  expect(tops.length).toBeGreaterThanOrEqual(1);
+  // Its top is its box's, at the height of its feet plus its height.
+  expect(Math.max(...tops.map((s) => s.top))).toBeCloseTo(0.45, 1);
+});
+
+test('a box-like thing has a top from its own box, not a room special rule (issue #11)', () => {
+  // The PC tower/monitor stand on the desk as their own kinds. A box-like
+  // thing's bounding box is its shape: its top is found from its own box,
+  // even without a declared bounds model. Built origin-at-base, as a
+  // floor-standing object is.
+  const scene = new Group();
+  const desk = markEquipmentKind(new Group(), 'desk');
+  const board = new Mesh(new BoxGeometry(1.6, 0.04, 0.8));
+  board.position.y = 0.02; // a bench height for the test
+  desk.add(board);
+  const tower = markEquipmentKind(new Group(), 'pc-tower');
+  tower.position.set(0.4, board.position.y + 0.04, 0);
+  const body = new Mesh(new BoxGeometry(0.2, 0.45, 0.4));
+  body.position.y = 0.225; // origin-at-base: the box rises from the tower's feet
+  tower.add(body);
+  desk.add(tower);
+  scene.add(desk);
+  scene.updateMatrixWorld(true);
+  const tops = roomSurfaces(scene, 1);
+  const heights = tops.map((s) => s.top);
+  // The desk's bench top and the tower's box top standing on it.
+  expect(heights.length).toBeGreaterThanOrEqual(2);
+  expect(Math.max(...heights)).toBeCloseTo(board.position.y + 0.04 + 0.45, 1);
 });
