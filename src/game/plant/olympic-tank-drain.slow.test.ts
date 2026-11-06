@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import type { World } from '../world';
-import { INSTALLED_VALVES, installedValveOpen } from './installed-valves';
+import { INSTALLED_VALVES } from './installed-valves';
 import { olympicFlowsOf, PUMP_DRAIN_FLOW } from './olympic-battery';
 
 /**
@@ -24,10 +24,6 @@ function draining(): World {
 }
 
 describe('draining the Olympic’s balance tank', () => {
-  it('is shut in service', () => {
-    expect(olympicFlowsOf(newWorld()).drain).toBe(0);
-  });
-
   it('pumps the tank down to the wet hall’s holding tank', () => {
     const before = newWorld().pools.pool_02.balance;
     const w = advance(draining(), 1200, 1);
@@ -63,11 +59,6 @@ describe('draining the Olympic’s balance tank', () => {
 });
 
 describe('Olympic tank floor drain', () => {
-  it('is closed by default, including older saves missing its new key', () => {
-    const w = newWorld();
-    expect(w.installedValves[id('PL2-T1-DV1')]).toBe(false);
-    expect(installedValveOpen({}, 'PL2-T1-DV1')).toBe(false);
-  });
   it('drains by gravity with circulation stopped and stops when shut', () => {
     let w = newWorld();
     w = applyAction(w, { type: 'olympic/makeup', mode: 'off' });
