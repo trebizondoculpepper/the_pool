@@ -51,7 +51,9 @@ export type InteractionClass =
   | 'functional'
   | 'readable'
   | 'inspectable'
-  | 'interactive';
+  | 'interactive'
+  /** Not yet on the ladder; #19 reclassifies these. The audit shows them. */
+  | 'unclassified';
 
 /** The default solid shape is the built object's bounds, in its own frame. */
 export type KindSolidShape =
@@ -177,7 +179,7 @@ export function resolveKindAffordances(kind: EquipmentKind): KindAffordances {
   return {
     interaction:
       declared?.interaction ??
-      (kind.class === 'decorative' ? 'decorative' : 'readable'),
+      (kind.class === 'decorative' ? 'decorative' : 'unclassified'),
     portable: declared?.portable ?? false,
     solid,
     shape: declared?.shape ?? { type: 'bounds' },
@@ -210,19 +212,20 @@ export function affordancesFromTraits(
     !has('open-frame') &&
     !(has('water-body') && !ps.some((p) => PRIMITIVES[p].facet === 'form'));
   // Interaction resolves by precedence (mission 10): interactive >
-  // inspectable > readable > functional > decorative. `interactive`,
-  // `inspectable`, `readable` and `functional` are use-facet traits;
-  // `decorative` conflicts with any use facet (the validator rejects it),
-  // so a decorative kind is inert whatever else it names.
+  // inspectable > readable > functional > decorative. These four are
+  // use-facet traits, so they can't combine with `decorative` (the
+  // validator rejects it): a decorative name is inert whatever else it
+  // names. A kind with traits but none of the four is `unclassified` — the
+  // audit shows what #19 has left to do, not an inert plant.
   const precedence: InteractionClass[] = [
     'interactive',
     'inspectable',
     'readable',
     'functional',
-    'decorative',
   ];
   const interaction: InteractionClass =
-    precedence.find((c) => has(c)) ?? 'decorative';
+    precedence.find((c) => has(c)) ??
+    (has('decorative') ? 'decorative' : 'unclassified');
   return {
     interaction,
     portable: has('holdable'),

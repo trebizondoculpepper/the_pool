@@ -265,7 +265,7 @@ export const PRIMITIVES = {
       'its text is constant, to be read: a sign, a book, a plate always say the same thing, whatever the object’s condition',
   },
   // Mission 10 (the owner, 2026-11-06; `doc/plans/10-interactive-trait.md`).
-  // Interaction is a ladder of classes by precedence (interactive >
+  // Interaction is classes resolved by precedence (interactive >
   // inspectable > readable > functional > decorative), resolved in
   // `affordancesFromTraits`. Only `interactive` implies `inspectable`;
   // the other classes are siblings that may coexist. Gameplay reason:

@@ -14,7 +14,7 @@ it('resolves explicit affordance defaults for every kind not yet given traits', 
     const a = kindAffordances(id);
     expect(a.interaction, id).toBe(
       kind.affordances?.interaction ??
-        (kind.class === 'decorative' ? 'decorative' : 'readable'),
+        (kind.class === 'decorative' ? 'decorative' : 'unclassified'),
     );
     expect(a.portable, id).toBe(kind.affordances?.portable ?? false);
     expect(a.solid, id).toBe(kind.affordances?.solid ?? true);

@@ -168,7 +168,7 @@ describe('the resolver: traits drive affordances', () => {
     expect(
       affordancesFromTraits(['cuboid-tank'], {}, composites),
     ).toMatchObject({
-      interaction: 'decorative',
+      interaction: 'unclassified',
       portable: false,
       solid: true,
       surface: true,
@@ -199,8 +199,12 @@ describe('the resolver: traits drive affordances', () => {
         composites,
       ).interaction,
     ).toBe('functional');
-    // An imperative is not implied by any of the above (the default).
-    expect(interaction(['decorative'])).toBe('decorative');
+    // A decoration is decorative; a kind with none of the classes is
+    // unclassified (the audit shows #19 what is left).
+    expect(interaction(['decorative', 'panel-like', 'wall-mounted'])).toBe(
+      'decorative',
+    );
+    expect(interaction(['box-like', 'floor-standing'])).toBe('unclassified');
   });
 
   test('an office chair seats, at its composite’s height; a software box is portable', () => {
