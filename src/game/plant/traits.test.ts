@@ -184,6 +184,11 @@ describe('the resolver: traits drive affordances', () => {
       'interactive',
     );
     expect(interaction(['sittable', 'box-like', 'fixed'])).toBe('interactive');
+    // Anything the player can affect is interactive (mission 10): picked
+    // up, carried, shifted or slid.
+    expect(interaction(['holdable', 'box-like'])).toBe('interactive');
+    expect(interaction(['luggable', 'box-like', 'fixed'])).toBe('interactive');
+    expect(interaction(['slidable', 'box-like', 'fixed'])).toBe('interactive');
     // interactive implies inspectable; readable and functional are separate.
     expect(
       affordancesFromTraits(['operable'], {}, composites).interaction,

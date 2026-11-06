@@ -221,11 +221,17 @@ export const PRIMITIVES = {
   luggable: {
     facet: 'handling',
     words: 'large or heavy, shifted rather than carried',
+    // A thing the player shifts is something the player can affect
+    // (mission 10's rule), so it is interactive, as holdable is.
+    implies: ['interactive'],
   },
   slidable: {
     facet: 'handling',
     words:
       'moves in a limited straight run along a line (a drawer); a fixed thing cannot slide',
+    // A drawer the player moves is interactive (mission 10: anything the
+    // player can affect), independent of what it holds.
+    implies: ['interactive'],
     meta: {
       slideAxis: {
         type: 'enum',

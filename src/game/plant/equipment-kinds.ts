@@ -45,14 +45,19 @@ export type StatusPolicy =
  */
 export type DescriptionTemplate = 'valve' | 'power' | 'equipment';
 
-/** What aiming at a registered kind can offer, independently of plant status. */
+/**
+ * What aiming at a registered kind can offer, independently of plant status.
+ * The classes are siblings resolved by precedence in
+ * `affordancesFromTraits`, not a ladder: a kind is one of them, with
+ * `interactive` implying `inspectable` and nothing else implied.
+ */
 export type InteractionClass =
   | 'decorative'
   | 'functional'
   | 'readable'
   | 'inspectable'
   | 'interactive'
-  /** Not yet on the ladder; #19 reclassifies these. The audit shows them. */
+  /** Not yet classified; #19 reclassifies these. The audit shows them. */
   | 'unclassified';
 
 /** The default solid shape is the built object's bounds, in its own frame. */
