@@ -1,5 +1,7 @@
 # 161: One click handler
 
+Tracked in #8; status lives there.
+
 The owner, 2026-11-04. Part of the one-kind-of-room series (158–165); priority **urgent**. Replanned 2026-11-05 (nicole_buruaah, at the owner's request) against what missions 159, 189, 205, 209, 210 and 211 have since built; **ready to start**. Read `CLAUDE.md` (the rules "New behaviour goes into the game's systems, never a special case" and "Every deviation from regularity is justified and recorded") and mission 158 first, whose decisions (the registry as gateway, solidity, carrying flags, seats, room styles) this mission follows.
 
 **Needs:** 159 (done, `cd4799d0`). **Lands after** 206/212's USE placement (below, Coordination).

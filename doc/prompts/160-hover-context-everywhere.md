@@ -1,5 +1,7 @@
 # 160: Hover context in every room
 
+Tracked in #7; status lives there.
+
 The owner, 2026-11-04. Part of the one-kind-of-room series (158–165); priority **urgent**. Replanned 2026-11-05 (nicole_buruaah, at the owner's request) against what missions 159, 161, 169, 176 and the trait missions have since built; **ready to start**. Read `CLAUDE.md` ("Every object is a registered kind", "New behaviour goes into the game's systems, never a special case") and mission 158 first.
 
 **Needs:** 159 (done, `cd4799d0`). **Works beside** 161 (sayuri_shantian, in progress): both ask "what is the first visible thing under the aim", so they share one hit.
