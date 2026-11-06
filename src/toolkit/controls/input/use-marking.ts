@@ -48,6 +48,7 @@ export function markUsable(
 ) {
   object.userData.usable = usable;
   if (action) object.userData.useAction = action;
+  else delete object.userData.useAction;
   return () => {
     if (object.userData.usable === usable) delete object.userData.usable;
     if (object.userData.useAction === action) delete object.userData.useAction;
@@ -78,6 +79,32 @@ export function useActionOf(
     if (action) return { object: o, action };
   }
   return null;
+}
+
+/** A thing's one registration: its usable answer and its click's action together. */
+export interface UseRegistration {
+  /** The object the mark lives on (itself or an ancestor of the hit). */
+  object: Object3D;
+  /** What a use would do now (the cue's answer, asked purely). */
+  usable: Usable;
+  /** The action a click runs, when the registration carries one. */
+  action?: UseAction;
+}
+
+/**
+ * Resolve a hit to its one registration (mission 161, step 2): the nearest
+ * object carrying `usable`, and — from that same object, never a separate
+ * walk — its action. A registration with an answer but no action means the
+ * click is not the object's (the room's `use` still runs during migration);
+ * a decoration registers nothing at all. The cue answers `usable`; the
+ * click runs `action` only when that answer is possible (the control's own
+ * way of saying "now").
+ */
+export function useRegistrationOf(object: Object3D): UseRegistration | null {
+  const found = usableOf(object);
+  if (!found) return null;
+  const action = found.object.userData.useAction as UseAction | undefined;
+  return action ? { ...found, action } : found;
 }
 
 /** Whether neither `object` nor anything above it is hidden. */

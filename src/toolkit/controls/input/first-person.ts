@@ -7,14 +7,7 @@ import {
   stepInspection,
 } from '../logic/inspection';
 import type { InspectionState, InspectionTarget } from '../logic/inspection';
-import {
-  Box3 as SceneBounds,
-  Matrix4,
-  Raycaster,
-  Vector2,
-  Vector3,
-} from 'three';
-import type { Mesh } from 'three';
+import { Box3 as SceneBounds, Raycaster, Vector2 } from 'three';
 import { noclip, flyCamera, flightHelp, rollCamera } from '../logic/noclip';
 import type { FlightBounds } from '../logic/noclip';
 import { createObjectHandling } from './object-handling';
@@ -61,8 +54,12 @@ import {
 import type { InputState } from '../logic/hud-policy';
 import { claimMenuHint } from './menu-hint';
 import { turningKnobs } from './knob-turning';
-import { usableOf, useActionOf, visibleAll } from './use-marking';
-import type { Usable, UseQuery } from './use-marking';
+import type { UseQuery } from './use-marking';
+import {
+  aimCache,
+  resolveAim as sharedResolveAim,
+  clickOutcome,
+} from './resolve-aim';
 import {
   PLAIN_USE,
   cuePlace,
@@ -459,18 +456,38 @@ export function createFirstPerson(options: FirstPersonOptions) {
       return;
     }
     if (!handling?.use(x, y)) {
-      // Mission 161, step 2: the hit object's registered action runs, the
-      // same first-visible-hit registration the cue shows; only where none
-      // is registered does the room's own `use` run (still accepted,
-      // deprecated, while the rooms migrate).
-      const acted = objectUseAt(
-        x,
-        y,
-        x === 0 && y === 0 ? CENTRE_CUE_REACH : CURSOR_CUE_REACH,
-        input === 'gamepad',
+      // Mission 161, step 2: the hit object's one registration runs, the
+      // same first-visible-hit resolution the cue shows (the same `useAimAt`
+      // rule, so the same reach and cache key — review point 1 on #14);
+      // the click acts only where the registration's own answer says the
+      // use is possible now. It always casts fresh, never on a thing the
+      // cache saw move or be removed within its window (review point 1,
+      // ahnaa_dmitrieva on #14). Where nothing is registered, the room's
+      // own `use` runs (still accepted, deprecated, while the rooms
+      // migrate).
+      const freeAim = (input === 'mouse' || input === 'keyboard') && !locked();
+      const aim = useAimAt(freeAim, [x, y]);
+      const found = resolveAim(
+        aim.x,
+        aim.y,
+        aim.reach,
+        performance.now(),
+        true,
       );
-      if (!acted) options.use?.(x, y);
-      else acted();
+      const registered = found?.registration;
+      if (!registered || !registered.action) {
+        options.use?.(x, y);
+      } else {
+        const at: UseQuery = {
+          object: registered.object,
+          point: found!.point.clone(),
+          camera,
+          x: aim.x,
+          pad: aim.pad,
+        };
+        const answer = registered.usable(at);
+        if (clickOutcome(registered, answer) === 'run') registered.action(at);
+      }
     }
   };
   /** LET GO (mission 211): what is held leaves the hand, into a bin aimed at or falling. */
@@ -637,20 +654,50 @@ export function createFirstPerson(options: FirstPersonOptions) {
   const cuePointer = new Vector2();
   // The last probe's hit, kept while the aim stands still: the thing's own
   // answer is asked afresh every probe (a use changes it without a move).
-  const cueEye = new Matrix4();
-  let cueHit: {
-    x: number;
-    y: number;
-    reach: number;
-    since: number;
-    found: { object: Object3D; usable: Usable } | null;
-    point: Vector3;
-  } | null = null;
+  const cueCache = aimCache(CUE_HIT_KEPT_MS);
   /**
-   * What a use at a normalised screen point would do, as the marked thing
-   * there says: one raycast of the scene, the first visible mesh, and a
-   * walk up its parents to a mark (so something in front hides it).
+   * The aim's coordinates, reach and pad, from whether the free cursor is
+   * being used (a mouse or keyboard, pointer not locked): free, the aim is
+   * the cursor's point at the short 3 m reach; otherwise the centre at 4 m.
+   * The cue (`probeCue`) and the click both take their aim from here, so
+   * they reach the same rule and share the same cache key (mission 161,
+   * step 2; the reach-match was review point 1 on #14).
    */
+  const useAimAt = (free: boolean, at: [number, number]) => ({
+    x: free ? hoverPoint[0] : at[0],
+    y: free ? hoverPoint[1] : at[1],
+    reach: free ? CURSOR_CUE_REACH : CENTRE_CUE_REACH,
+    pad: input === 'gamepad' && !free,
+  });
+  /**
+   * The one first-visible-hit and registration (mission 161, step 2): the
+   * click and the cue share this resolution, so they can never pick
+   * different things. Asking changes nothing.
+   */
+  const resolveAim = (
+    x: number,
+    y: number,
+    reach: number,
+    now: number,
+    fresh = false,
+  ) => {
+    const scene = options.scene;
+    if (!scene) return null;
+    return sharedResolveAim({
+      scene,
+      camera,
+      metre,
+      x,
+      y,
+      reach,
+      now,
+      ray: cueRay,
+      pointer: cuePointer,
+      cache: cueCache,
+      fresh,
+    });
+  };
+  /** What the thing under the aim would do, for the cue: its answer. */
   const usableAt = (
     x: number,
     y: number,
@@ -658,72 +705,15 @@ export function createFirstPerson(options: FirstPersonOptions) {
     pad: boolean,
     now: number,
   ) => {
-    const scene = options.scene;
-    if (!scene) return null;
-    // The eye as it stands now, though the frame is not yet drawn.
-    camera.updateMatrixWorld();
-    const still =
-      cueHit &&
-      cueHit.x === x &&
-      cueHit.y === y &&
-      cueHit.reach === reach &&
-      now - cueHit.since < CUE_HIT_KEPT_MS &&
-      cueEye.equals(camera.matrixWorld);
-    if (!still) {
-      cueRay.setFromCamera(cuePointer.set(x, y), camera);
-      cueRay.far = reach * metre;
-      const first = cueRay
-        .intersectObject(scene, true)
-        .find((h) => (h.object as Mesh).isMesh && visibleAll(h.object));
-      cueEye.copy(camera.matrixWorld);
-      cueHit = {
-        x,
-        y,
-        reach,
-        since: now,
-        found: first ? usableOf(first.object) : null,
-        point: first ? first.point.clone() : new Vector3(),
-      };
-    }
-    const found = cueHit!.found;
-    if (!found || !visibleAll(found.object)) return null;
-    return found.usable({
-      object: found.object,
-      point: cueHit!.point,
+    const found = resolveAim(x, y, reach, now);
+    if (!found) return null;
+    return found.registration.usable({
+      object: found.registration.object,
+      point: found.point,
       camera,
       x,
       pad,
     });
-  };
-
-  /**
-   * The click's action on the object the aim meets (mission 161, step 2):
-   * the same one first-visible-hit raycast and reach rule as the cue,
-   * walked up its parents to a registered action (`useActionOf`, the mark's
-   * click twin). Returns a function to run on the click, or null when
-   * nothing is registered (the room's own `use`, still accepted and
-   * deprecated, runs then); asking changes nothing.
-   */
-  const objectUseAt = (x: number, y: number, reach: number, pad: boolean) => {
-    const scene = options.scene;
-    if (!scene) return null;
-    camera.updateMatrixWorld();
-    cueRay.setFromCamera(cuePointer.set(x, y), camera);
-    cueRay.far = reach * metre;
-    const first = cueRay
-      .intersectObject(scene, true)
-      .find((h) => (h.object as Mesh).isMesh && visibleAll(h.object));
-    if (!first) return null;
-    const acted = useActionOf(first.object);
-    if (!acted || !visibleAll(acted.object)) return null;
-    const at: UseQuery = {
-      object: acted.object,
-      point: first.point.clone(),
-      camera,
-      x,
-      pad,
-    };
-    return () => acted.action(at);
   };
 
   /**
@@ -737,10 +727,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
     free: boolean,
     now: number,
   ): UseAnswer | CarryAnswer | null => {
-    const pad = input === 'gamepad';
-    const [x, y] = free ? hoverPoint : [0, 0];
-    const reach = free ? CURSOR_CUE_REACH : CENTRE_CUE_REACH;
-    const marked = () => usableAt(x, y, reach, pad && !free, now) ?? PLAIN_USE;
+    // The same aim rule as the click (review point 1 on #14): free → the
+    // cursor's point at 3 m; otherwise the centre at 4 m, a gamepad's pad.
+    const aim = useAimAt(free, [0, 0]);
+    const { x, y, reach } = aim;
+    const pad = aim.pad;
+    const marked = () => usableAt(x, y, reach, pad, now) ?? PLAIN_USE;
     if (carrying && handling) {
       const carried = handling.heldObject()!;
       if (options.useWhileHolding) {

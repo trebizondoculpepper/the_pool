@@ -1,0 +1,163 @@
+import { describe, expect, it, vi } from 'vite-plus/test';
+import {
+  BoxGeometry,
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  Raycaster,
+  Scene,
+  Vector2,
+} from 'three';
+import { markUsable, useRegistrationOf } from './use-marking';
+import { aimCache, clickOutcome, resolveAim } from './resolve-aim';
+import type { UseQuery } from './use-marking';
+import type { UseAnswer } from '../logic/use-cue';
+
+/**
+ * The one aim resolution (mission 161, step 2): the click and the cue take
+ * the same first visible hit and the same registration, so they cannot
+ * disagree. An actionable mark answers and runs on the click; nothing is
+ * resolved where the first visible mesh is unmarked; an occluding mesh
+ * stops both.
+ */
+
+const TURN: UseAnswer = { gesture: 'turn', direction: 1, possible: true };
+const turnable = () => TURN;
+
+function fixture() {
+  const scene = new Scene();
+  const camera = new PerspectiveCamera(52, 1, 0.05, 40);
+  camera.position.set(0, 1.2, 2);
+  camera.lookAt(0, 1.2, 0);
+  const inFrontOf = (z = -1) => {
+    const mesh = new Mesh(
+      new BoxGeometry(0.4, 0.4, 0.05),
+      new MeshBasicMaterial(),
+    );
+    mesh.position.set(0, 1.2, z);
+    scene.add(mesh);
+    scene.updateMatrixWorld(true);
+    return mesh;
+  };
+  return { scene, camera, inFrontOf };
+}
+
+const resolve = (scene: Scene, camera: PerspectiveCamera) => {
+  const ray = new Raycaster();
+  const point = new Vector2();
+  const cache = aimCache();
+  return resolveAim({
+    scene,
+    camera,
+    metre: 1,
+    x: 0,
+    y: 0,
+    reach: 4,
+    now: 0,
+    ray,
+    pointer: point,
+    cache,
+  });
+};
+
+describe('the one aim resolution (mission 161)', () => {
+  it('an actionable mark answers (a cue) and resolves to the same target for the click', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    const knob = inFrontOf();
+    let pressed = 0;
+    markUsable(knob, turnable, () => {
+      pressed++;
+    });
+    const found = resolve(scene, camera);
+    expect(found).not.toBeNull();
+    if (!found) return;
+    expect(found.registration.object).toBe(knob);
+    // The cue asks the same registration the resolution gives; the click
+    // runs that registration's action on the same query.
+    const at: UseQuery = {
+      object: found.registration.object,
+      point: found.point,
+      camera,
+      x: 0,
+      pad: false,
+    };
+    expect(found.registration.usable(at)).toBe(TURN);
+    found.registration.action?.(at);
+    expect(pressed).toBe(1);
+  });
+
+  it('an occluder in front stops both the cue and the click', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    const knob = inFrontOf(-2); // behind
+    inFrontOf(-1); // an unmarked mesh in front hides it
+    markUsable(knob, turnable, () => {});
+    expect(resolve(scene, camera)).toBeNull();
+  });
+
+  it('nothing resolves where the first visible mesh is unmarked (a decoration)', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    inFrontOf(); // decoration: no mark at all
+    expect(resolve(scene, camera)).toBeNull();
+  });
+
+  it('caches the same hit while the eye stands still (one raycast)', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    const knob = inFrontOf();
+    markUsable(knob, turnable, () => {});
+    const ray = new Raycaster();
+    const cast = vi.spyOn(ray, 'intersectObject');
+    const point = new Vector2();
+    const cache = aimCache();
+    const options = {
+      scene,
+      camera,
+      metre: 1,
+      x: 0,
+      y: 0,
+      reach: 4,
+      now: 0,
+      ray,
+      pointer: point,
+      cache,
+    } as const;
+    const a = resolveAim(options);
+    expect(a?.registration.object).toBe(knob);
+    // A second probe within the window casts no new ray: the same hit.
+    expect(resolveAim(options)?.registration.object).toBe(knob);
+    expect(cast).toHaveBeenCalledTimes(1);
+    // Move the thing out of the way: within the window, the still aim still
+    // reports the cached registration; a fresh resolution casts again and
+    // sees it gone.
+    scene.remove(knob);
+    scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld();
+    const cached = resolveAim(options);
+    expect(cached?.registration.object).toBe(knob);
+    expect(cast).toHaveBeenCalledTimes(1);
+    const fresh = resolveAim({ ...options, fresh: true });
+    expect(fresh).toBeNull();
+    expect(cast).toHaveBeenCalledTimes(2);
+  });
+
+  it('the click gate: run when possible, nothing when refused, the room when unregistered', () => {
+    // A registration with an action and a possible answer runs.
+    const knob = new Group();
+    markUsable(knob, turnable, () => {});
+    const registration = useRegistrationOf(knob)!;
+    expect(clickOutcome(registration, TURN)).toBe('run');
+    // The same registration refused: nothing (the cue showed it red).
+    const refused: UseAnswer = {
+      gesture: 'turn',
+      direction: 1,
+      possible: false,
+    };
+    expect(clickOutcome(registration, refused)).toBe('nothing');
+    // No registration (or one without an action): the room's `use` still
+    // runs, accepted and deprecated, during migration.
+    expect(clickOutcome(null, null)).toBe('room');
+    const answerOnly = new Group();
+    markUsable(answerOnly, turnable); // no action
+    expect(clickOutcome(useRegistrationOf(answerOnly), TURN)).toBe('room');
+  });
+});

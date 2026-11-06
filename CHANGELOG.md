@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A click and the crosshair's cue now come from the one aim resolution (mission 161, step 2, first cut): `resolveAim` owns the first visible hit, and `useRegistrationOf` resolves it to the one object — its usable answer for the cue and, on the same object, its click action, run only when the answer says possible. The rooms' own `use` still runs where nothing is registered (accepted, deprecated) while they migrate.
 - A `rack`-kind object is a placement target (mission 206, the shared resolver wiring): the room factory registers every rack's shared racking — a held `rackable` item aimed at the rack within reach goes on it, and the rack's whole row compacts, centred, with the new item to a randomly chosen end (`registerRacks` through `roomTraits.racks`). The engineer's office migrating its shelf off the desk's private row code is tracked in #11.
 - Things are solid by their traits (mission 208, stage 2): every kind is solid unless it opts out (`open-frame`, a new trait for a slab on pole legs the player can pass under, or `run-like`, or decoration). A solid kind with a bounds model blocks the walker, and what is thrown, from its declared shapes in every room, through the room factory; the engineer's desk is the first. The magic panel has a BOUNDS knob to show an item's bounds model, and a test checks a declared model still fits its drawn object.
 
