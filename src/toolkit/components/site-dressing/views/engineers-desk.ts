@@ -352,11 +352,12 @@ export function createEngineersDesk(
   pc.mouse.rotation.y = 0.1;
   group.add(pc.monitor, pc.tower, pc.keyboard, pc.mouse);
   // The tower and monitor are components of their own, standing on the
-  // desk, not part of it (the owner, 2026-11-05).
+  // desk, not part of it (the owner, 2026-11-05). Both are `box-like`: a
+  // box-like thing's bounding box is its shape, so its top (a place for
+  // things to rest) is the box's own — found without this override. Their
+  // meshes stay part of the body for that derivation.
   markEquipmentKind(pc.tower, 'pc-tower');
   markEquipmentKind(pc.monitor, 'pc-monitor');
-  markNonBody(pc.tower);
-  markNonBody(pc.monitor);
   // The leads behind: tower to monitor, keyboard and mouse.
   group.add(
     createLead(

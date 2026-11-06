@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vite-plus/test';
-import { stackPose } from './stack';
+import { isPile, stackPose, STACK_PILE_MAX_RATIO } from './stack';
 
 describe('the stack placement (mission 212)', () => {
   it('allows a smaller upper on a larger lower, centred with a small offset', () => {
@@ -57,5 +57,55 @@ describe('the stack placement (mission 212)', () => {
     if (!big.ok || !small.ok) return;
     // A wider upper ⇒ a larger SD on x (5% of the smaller of the two).
     expect(Math.abs(big.x)).toBeGreaterThan(Math.abs(small.x));
+  });
+
+  it('only perilous offsets on a similar-sized lower: book on desk is placement, book on book is a pile (issue #11 ruling, 2026-11-06)', () => {
+    // A box on a desk: the desk's top is many times bigger, so it is put
+    // down centred with no error offset — ordinary placement.
+    const onDesk = stackPose(
+      { width: 0.2, depth: 0.12 },
+      { width: 1.6, depth: 0.8 },
+      () => 0.9, // a large uniform draw, that would give a big offset
+    );
+    expect(onDesk.ok).toBe(true);
+    expect(onDesk.x).toBe(0);
+    expect(onDesk.z).toBe(0);
+    // A box on a similar box: within the pile band, offsets apply.
+    const onBook = stackPose(
+      { width: 0.2, depth: 0.12 },
+      { width: 0.22, depth: 0.13 },
+      () => 0.9,
+    );
+    expect(onBook.ok).toBe(true);
+    expect(onBook.x).not.toBe(0);
+    // The area rule still gates placement on a desk or a pile alike.
+    expect(
+      stackPose({ width: 2, depth: 2 }, { width: 1.6, depth: 0.8 }, () => 0.5)
+        .ok,
+    ).toBe(false);
+  });
+
+  it('isPile is true only within the pile band', () => {
+    // A book on a book: similar, a pile.
+    expect(
+      isPile({ width: 0.2, depth: 0.12 }, { width: 0.22, depth: 0.13 }),
+    ).toBe(true);
+    // A book on a desk: the width ratio is far over the band — not a pile.
+    expect(
+      isPile({ width: 0.2, depth: 0.12 }, { width: 1.6, depth: 0.8 }),
+    ).toBe(false);
+    // Just inside and just outside the band edge.
+    expect(
+      isPile(
+        { width: 0.2, depth: 0.2 },
+        { width: 0.2 * STACK_PILE_MAX_RATIO, depth: 0.2 },
+      ),
+    ).toBe(true);
+    expect(
+      isPile(
+        { width: 0.2, depth: 0.2 },
+        { width: 0.2 * STACK_PILE_MAX_RATIO + 0.001, depth: 0.2 },
+      ),
+    ).toBe(false);
   });
 });
