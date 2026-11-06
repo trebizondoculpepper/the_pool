@@ -352,3 +352,9 @@ The verification suite's previous “What still fails” sections above are hist
 | `shockCaustic`                                                            |      4 | Supervise and repair the pump's real standby gas-lock during the 24-hour shock comparison.                                                         |
 
 **Final check:** pending the complete eight-file and project test runs.
+
+## The mixing score averaged; the Olympic's dilution a known failure (#59, #74)
+
+The follow-against-don't check judged the water score at one instant, three turnovers after the instruction. The pumps' regulated readings ripple about their set points as they cycle; free chlorine's half-band is 0.2 mg/l, so a 0.02 mg/l swing moves the score by a tenth. The Olympic's alkalinity-high check (dilute about 496 m³) passed on main by 0.02 (3.643 against 3.665): noise. The check now averages each copy's score over the hour after mixing, and each run goes on to the end of that hour (`aqualis-advice-runs.test-support.ts`; the owner, 2026-11-06). Across the eight suites this changed no other result (521 pass).
+
+Averaged, the Olympic's dilution scores worse than leaving it, open, closed and closed with CO₂ (3.65 against 3.52, 4.00 against 3.91, 4.36 against 4.33): the water is better in alkalinity and TDS (197 against 212 mg/l, 696 against 769), but the fresh water disturbs the pump-held free chlorine and pH while the controllers take it back, and the score sums every reading. Those three follow checks are known failures (`twin:alkalinity-high`, reason "diluting the Olympic scores worse at mixing"), pending #74: change the advice, or how the score treats readings the pumps hold. The Olympic open with CO₂ and both Lounge variants pass.

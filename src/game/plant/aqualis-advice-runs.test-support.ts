@@ -224,9 +224,16 @@ export function twin(
     (top?.additive === 'thiosulphate' ? 1 : 3) * turnoverS(w0, pool) +
     (c?.done.seconds ?? 0);
   let mixed: TwinResult['mixed'] | null = null;
+  // Each copy's score over the hour after mixing, averaged (#59, #74; the
+  // owner, 2026-11-06): the pumps' regulated readings ripple about their
+  // set points as the pumps cycle (free chlorine's half-band is 0.2 mg/l,
+  // so a 0.02 swing moves the score by a tenth), and one instant would
+  // judge that ripple.
+  const window: { followed: number; not: number }[] = [];
   let aimed: number | null = null;
   let got: number | null = null;
-  const end = Math.max(24 * 3600, mixS + 600);
+  // Run on through the hour its mixing score is averaged over.
+  const end = Math.max(24 * 3600, mixS + 3600);
   const shock = top?.additive === 'superchlorinate';
   for (let time = 600; time <= end; time += 600) {
     followed = advance(followed, 600, 10);
@@ -276,29 +283,38 @@ export function twin(
     if (af.length > Math.max(startAlarms, alarmIds(not, pool).length))
       failures.push(`alarms worse (${af.join(', ')}) because of ${top?.id}`);
     if (!mixed && time >= mixS) {
+      if (window.length === 0) {
+        const k = top ? AIMS[top.id] : undefined;
+        // Dilution changes alkalinity directly, but the live pH controller
+        // also changes its acid dose as the water is replaced. Its physical
+        // amount is checked against `dilute` in the advisor's unit tests;
+        // this comparison judges the net outcome through follow and loop.
+        if (
+          k &&
+          top?.dose &&
+          top.where !== 'automatic' &&
+          !(top.id === 'alkalinity-high' && top.additive === 'dilution')
+        ) {
+          const goal =
+            top.id === 'ph-low'
+              ? (t.ph.low + t.ph.set) / 2
+              : top.id === 'free-chlorine-high'
+                ? t.freeChlorine.high
+                : t[k].set;
+          aimed = (goal - r0[k]) * (top.dose.first / top.dose.amount);
+          got = rf[k] - rn[k];
+        }
+      }
       // A shock is judged by the chloramines it burns off, its chlorine intended.
-      mixed = shock
-        ? { followed: rf.combinedChlorine, not: rn.combinedChlorine }
-        : { followed: score(rf, t), not: score(rn, t) };
-      const k = top ? AIMS[top.id] : undefined;
-      // Dilution changes alkalinity directly, but the live pH controller
-      // also changes its acid dose as the water is replaced. Its physical
-      // amount is checked against `dilute` in the advisor's unit tests;
-      // this comparison judges the net outcome through follow and loop.
-      if (
-        k &&
-        top?.dose &&
-        top.where !== 'automatic' &&
-        !(top.id === 'alkalinity-high' && top.additive === 'dilution')
-      ) {
-        const goal =
-          top.id === 'ph-low'
-            ? (t.ph.low + t.ph.set) / 2
-            : top.id === 'free-chlorine-high'
-              ? t.freeChlorine.high
-              : t[k].set;
-        aimed = (goal - r0[k]) * (top.dose.first / top.dose.amount);
-        got = rf[k] - rn[k];
+      window.push(
+        shock
+          ? { followed: rf.combinedChlorine, not: rn.combinedChlorine }
+          : { followed: score(rf, t), not: score(rn, t) },
+      );
+      if (time + 600 >= mixS + 3600 || time + 600 > end) {
+        const mean = (k: 'followed' | 'not') =>
+          window.reduce((sum, w) => sum + w[k], 0) / window.length;
+        mixed = { followed: mean('followed'), not: mean('not') };
       }
     }
   }
