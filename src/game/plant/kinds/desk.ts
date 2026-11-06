@@ -7,5 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Furnishes the engineer’s office.',
-  traits: ['desk'],
+  traits: ['desk', 'functional'],
 });

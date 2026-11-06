@@ -11,6 +11,7 @@ export default defineKind({
     'box-like',
     'fixed',
     'floor-standing',
+    'functional',
     'operable',
     'readable',
     'supportable',

@@ -8,7 +8,7 @@ export default defineKind({
   status: 'none',
   purpose:
     "The engineer's wall shelf: a rack for its boxed software, one centred row.",
-  traits: ['box-like', 'rack', 'supportable', 'wall-mounted'],
+  traits: ['box-like', 'functional', 'rack', 'supportable', 'wall-mounted'],
   meta: {
     rowWidth: 1.05,
     rowDepth: 0.26,
