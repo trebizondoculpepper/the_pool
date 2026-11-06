@@ -128,8 +128,15 @@ test('a rack registers its shared placement target by kind alone (mission 206)',
   const flat = markEquipmentKind(new Group(), 'floppy-disk');
   flat.add(new Mesh(new BoxGeometry(0.09, 0.003, 0.094)));
   flat.updateMatrixWorld(true);
-  expect(target!.accepts(box)).toBe(true);
-  expect(target!.accepts(flat)).toBe(false);
+  // A rack's `accepts` needs a portable to judge by; the kind decides.
+  const portable = () =>
+    ({
+      component: createPortableBoard(),
+      flat: 'upright',
+      detach() {},
+    }) as PortableObject;
+  expect(target!.accepts(box, portable())).toBe(true);
+  expect(target!.accepts(flat, portable())).toBe(false);
   // Nothing without the rack trait gains one.
   const desk = markEquipmentKind(new Group(), 'desk');
   scene.add(desk);

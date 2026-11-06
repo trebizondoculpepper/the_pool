@@ -61,8 +61,8 @@ import {
 import type { InputState } from '../logic/hud-policy';
 import { claimMenuHint } from './menu-hint';
 import { turningKnobs } from './knob-turning';
-import { usableOf, visibleAll } from './use-marking';
-import type { Usable } from './use-marking';
+import { usableOf, useActionOf, visibleAll } from './use-marking';
+import type { Usable, UseQuery } from './use-marking';
 import {
   PLAIN_USE,
   cuePlace,
@@ -458,7 +458,20 @@ export function createFirstPerson(options: FirstPersonOptions) {
             : 'W: climb · S: descend';
       return;
     }
-    if (!handling?.use(x, y)) options.use?.(x, y);
+    if (!handling?.use(x, y)) {
+      // Mission 161, step 2: the hit object's registered action runs, the
+      // same first-visible-hit registration the cue shows; only where none
+      // is registered does the room's own `use` run (still accepted,
+      // deprecated, while the rooms migrate).
+      const acted = objectUseAt(
+        x,
+        y,
+        x === 0 && y === 0 ? CENTRE_CUE_REACH : CURSOR_CUE_REACH,
+        input === 'gamepad',
+      );
+      if (!acted) options.use?.(x, y);
+      else acted();
+    }
   };
   /** LET GO (mission 211): what is held leaves the hand, into a bin aimed at or falling. */
   const letGo = () => {
@@ -681,6 +694,36 @@ export function createFirstPerson(options: FirstPersonOptions) {
       x,
       pad,
     });
+  };
+
+  /**
+   * The click's action on the object the aim meets (mission 161, step 2):
+   * the same one first-visible-hit raycast and reach rule as the cue,
+   * walked up its parents to a registered action (`useActionOf`, the mark's
+   * click twin). Returns a function to run on the click, or null when
+   * nothing is registered (the room's own `use`, still accepted and
+   * deprecated, runs then); asking changes nothing.
+   */
+  const objectUseAt = (x: number, y: number, reach: number, pad: boolean) => {
+    const scene = options.scene;
+    if (!scene) return null;
+    camera.updateMatrixWorld();
+    cueRay.setFromCamera(cuePointer.set(x, y), camera);
+    cueRay.far = reach * metre;
+    const first = cueRay
+      .intersectObject(scene, true)
+      .find((h) => (h.object as Mesh).isMesh && visibleAll(h.object));
+    if (!first) return null;
+    const acted = useActionOf(first.object);
+    if (!acted || !visibleAll(acted.object)) return null;
+    const at: UseQuery = {
+      object: acted.object,
+      point: first.point.clone(),
+      camera,
+      x,
+      pad,
+    };
+    return () => acted.action(at);
   };
 
   /**
