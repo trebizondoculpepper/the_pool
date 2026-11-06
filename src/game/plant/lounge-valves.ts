@@ -183,6 +183,10 @@ export function loungeValveFlows(
     };
   };
   const f = [filter(1), filter(2)] as const;
+  // Its flows are used as solved: every combination of the valves fully
+  // open or shut converges (`lounge-hydraulics.test.ts` asserts it for
+  // all 256), and the bisected calibration settles too; a part-open valve
+  // only moves a resistance between those cases.
   const net = solveLounge({
     pumps: [pumps.p1 ? at('PL1-P1-IV1') : 0, pumps.p2 ? at('PL1-P2-IV1') : 0],
     filters: f,

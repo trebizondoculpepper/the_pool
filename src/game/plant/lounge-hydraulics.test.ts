@@ -116,6 +116,9 @@ describe('the Lounge circulation, one network (#59)', () => {
             beds: [bed(0.6, 0.1), bed(0.6, 0.1)],
           }),
         );
+        // The solver balanced it (the owner's review of #64): every
+        // combination, the open-to-waste ones that wanted pruning included.
+        expect(n.converged, `${a},${b}`).toBe(true);
         // Water is conserved at every filter: in at its inlet, out of its
         // outlet, backwash and drain (to 0.1 m³/h), and nothing runs wild.
         for (const x of n.branches) {
