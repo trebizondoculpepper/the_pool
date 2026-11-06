@@ -93,3 +93,13 @@ describe('every surface reads a valve where it is (#29)', () => {
     expect(inspectionStatus(shut, 'PL2-HX1-IV3')).toBe('shut');
   });
 });
+
+it('gives every valve kind its state, by its template, not a list of names (#52)', () => {
+  const world = newWorld();
+  // The dosing pot's lever ball valves (kind ball-valve, PR #48), shut.
+  for (const tag of ['BH-DP1-IV1', 'BH-DP1-IV2', 'BH-DP1-DV1'])
+    expect(inspectionStatus(world, tag), tag).toBe('shut');
+  // A gas ball valve and a butterfly valve, as before.
+  expect(inspectionStatus(world, 'BH-B1-IV1')).toBe('open');
+  expect(inspectionStatus(world, 'BH-HW1-IV1')).toBe('open');
+});
