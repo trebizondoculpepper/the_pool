@@ -3,7 +3,6 @@ import {
   DoubleSide,
   Group,
   Mesh,
-  MeshPhysicalMaterial,
   MeshStandardMaterial,
   SphereGeometry,
   TorusGeometry,
@@ -16,12 +15,18 @@ export function createMetalGlobeLight(radius = 1.5): Group {
     metalness: 0.36,
     roughness: 0.16,
   });
-  const diffuser = new MeshPhysicalMaterial({
+  // Its frosted diffuser: glowing and see-through by its opacity alone.
+  // No `transmission` (#45): any transmissive surface in view makes the
+  // renderer draw the whole opaque scene again, every frame, into a
+  // texture for it to refract. Eight of these globes in the Olympic hall
+  // cost ~10 ms of GPU time a frame, in the hall and from its underwater
+  // gallery, where they are not even seen, for a faint refraction their
+  // opacity already gives.
+  const diffuser = new MeshStandardMaterial({
     color: '#fff8e9',
     emissive: '#ffe8c8',
     emissiveIntensity: 0.9,
     roughness: 0.48,
-    transmission: 0.2,
     transparent: true,
     opacity: 0.82,
     depthWrite: false,
