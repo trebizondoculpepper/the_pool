@@ -47,6 +47,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- CI runs faster (#24, batch 1): nine test files that simulate long stretches of game time (the chemical distribution end to end, the Olympic balance tank and its draining, the Olympic main drain, the lounge filters, pump alarm events, the sewer outfall, the backwash pit and the ideal backwash) are now local-only `*.slow.test.ts`, as the project's rule for tests over about 1.5 s asks. They still run with `npm test` before every commit; GitHub skips them.
 - A box-like thing's top is its own bounding box, wherever its meshes sit (issue #11): the PC tower and monitor on the engineer's desk are their own `box-like`, `supportable` kinds now, their tops derived from their fitted box rather than the desk's (the desk's `markNonBody` overrides are gone), and they are bound in the engineer's office.
 - Stacking's precarious centre-of-gravity offset applies only on a similar-sized top (the owner, 2026-11-06, issue #11): placing a box on a desk is ordinary placement, centred with no error offset; only within a pile's size band of the lower item (`isPile`, ratio ≤ 1.6) do the 5% error offsets apply, so a book on a desk is not a book on a book.
 - The object registry is compiled once, when it loads, and never again (the owner, 2026-11-05): `kindFiles()` returns one frozen record shared by every caller, where it rebuilt and sorted the whole registry on every call.
