@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vite-plus/test';
 import {
   BoxGeometry,
+  Group,
   Mesh,
   MeshBasicMaterial,
   PerspectiveCamera,
@@ -8,8 +9,8 @@ import {
   Scene,
   Vector2,
 } from 'three';
-import { markUsable } from './use-marking';
-import { aimCache, resolveAim } from './resolve-aim';
+import { markUsable, useRegistrationOf } from './use-marking';
+import { aimCache, clickOutcome, resolveAim } from './resolve-aim';
 import type { UseQuery } from './use-marking';
 import type { UseAnswer } from '../logic/use-cue';
 
@@ -46,7 +47,18 @@ const resolve = (scene: Scene, camera: PerspectiveCamera) => {
   const ray = new Raycaster();
   const point = new Vector2();
   const cache = aimCache();
-  return resolveAim(scene, camera, 1, 0, 0, 4, 0, ray, point, cache);
+  return resolveAim({
+    scene,
+    camera,
+    metre: 1,
+    x: 0,
+    y: 0,
+    reach: 4,
+    now: 0,
+    ray,
+    pointer: point,
+    cache,
+  });
 };
 
 describe('the one aim resolution (mission 161)', () => {
@@ -89,16 +101,57 @@ describe('the one aim resolution (mission 161)', () => {
     expect(resolve(scene, camera)).toBeNull();
   });
 
-  it('caches the same hit while the eye stands still', () => {
+  it('caches the same hit while the eye stands still (one raycast)', () => {
     const { scene, camera, inFrontOf } = fixture();
     const knob = inFrontOf();
     markUsable(knob, turnable, () => {});
     const ray = new Raycaster();
     const point = new Vector2();
     const cache = aimCache();
-    const a = resolveAim(scene, camera, 1, 0, 0, 4, 0, ray, point, cache);
-    const b = resolveAim(scene, camera, 1, 0, 0, 4, 30, ray, point, cache);
+    const options = {
+      scene,
+      camera,
+      metre: 1,
+      x: 0,
+      y: 0,
+      reach: 4,
+      now: 0,
+      ray,
+      pointer: point,
+      cache,
+    } as const;
+    const a = resolveAim(options);
     expect(a?.registration.object).toBe(knob);
-    expect(b?.registration.object).toBe(knob);
+    // Move the thing out of the way: within the window, the still aim still
+    // reports the cached registration (no new raycast); a fresh resolution
+    // casts again and sees it gone.
+    scene.remove(knob);
+    scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld();
+    const cached = resolveAim(options);
+    expect(cached?.registration.object).toBe(knob);
+    const fresh = resolveAim({ ...options, fresh: true });
+    expect(fresh).toBeNull();
+  });
+
+  it('the click gate: run when possible, nothing when refused, the room when unregistered', () => {
+    // A registration with an action and a possible answer runs.
+    const knob = new Group();
+    markUsable(knob, turnable, () => {});
+    const registration = useRegistrationOf(knob)!;
+    expect(clickOutcome(registration, TURN)).toBe('run');
+    // The same registration refused: nothing (the cue showed it red).
+    const refused: UseAnswer = {
+      gesture: 'turn',
+      direction: 1,
+      possible: false,
+    };
+    expect(clickOutcome(registration, refused)).toBe('nothing');
+    // No registration (or one without an action): the room's `use` still
+    // runs, accepted and deprecated, during migration.
+    expect(clickOutcome(null, null)).toBe('room');
+    const answerOnly = new Group();
+    markUsable(answerOnly, turnable); // no action
+    expect(clickOutcome(useRegistrationOf(answerOnly), TURN)).toBe('room');
   });
 });

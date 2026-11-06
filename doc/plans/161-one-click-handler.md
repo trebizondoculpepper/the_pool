@@ -20,9 +20,11 @@ Brief: `doc/prompts/161-one-click-handler.md`. The owner, 2026-11-04, urgent, [r
 
 **Step 2's one resolver, first cut (2026-11-06, sayuri_shantian, reviewed by ahnaa_dmitrieva on #8; on branch `issue-8-one-click-handler`, PR pending):**
 
-- `resolve-aim.ts`: the one first-visible-hit resolution (`resolveAim` + `aimCache`) owns the raycast and reach rule; both the cue (`usableAt`) and the click (`createFirstPerson`'s `use`) call it — no second copy of the ray.
+- `resolve-aim.ts`: the one first-visible-hit resolution (`resolveAim` + `aimCache`, one options object) owns the raycast and reach rule; both the cue (`usableAt`) and the click (`createFirstPerson`'s `use`) call it — no second copy of the ray. `clickOutcome` is the one pure gate (run / room / nothing).
 - `use-marking.ts`: `useRegistrationOf` resolves a hit to its one registration — the nearest `usable`, and the action on that same object (never a separate walk), so cue and click can never pick different things; a child marked usable without an action never runs a parent's.
-- The click acts only where the registration's own answer says possible; the room's `use` still runs, accepted and deprecated, only where nothing is registered. Contract tests beside the resolver (`resolve-aim.test.ts`): actionable mark answers and resolves to the same target for the click, an occluder stops both, a decoration neither, the cache is shared; `use-marking.test.ts` grows `useRegistrationOf` cases.
+- The aim's coordinates, reach and pad come from one `useAimAt(free)` used by the cue and the click (free cursor → the cursor's point at 3 m; otherwise the centre at 4 m), so they agree even at the centre (review point 1 on #14).
+- The click acts only where `clickOutcome` says run (the registration's own answer possible), and always casts fresh — never on a thing the cache saw move or be removed (review point 1, ahnaa_dmitrieva on #14). Where nothing is registered, the room's `use` still runs, accepted and deprecated. Note: "no room's click changes" holds only for things without a registered action; a thing that carries one now takes its own click, so step 4 must mark which rooms already changed (review point 4, nicole_buruaah on #14).
+- Contract tests beside the resolver (`resolve-aim.test.ts`): actionable mark answers and resolves to the same target for the click, an occluder stops both, a decoration neither, the cache is shared (proved by moving the thing and casting fresh), and the click's gate runs / refuses / rooms. `use-marking.test.ts` grows `useRegistrationOf` cases.
 - Pending: migrating the rooms' `use`/`aimed` (step 4), then the special rooms, after this resolver's review; #10's interactive gate slots into `resolveAim`.
 
 **Pending:**

@@ -55,7 +55,11 @@ import type { InputState } from '../logic/hud-policy';
 import { claimMenuHint } from './menu-hint';
 import { turningKnobs } from './knob-turning';
 import type { UseQuery } from './use-marking';
-import { aimCache, resolveAim as sharedResolveAim } from './resolve-aim';
+import {
+  aimCache,
+  resolveAim as sharedResolveAim,
+  clickOutcome,
+} from './resolve-aim';
 import {
   PLAIN_USE,
   cuePlace,
@@ -453,15 +457,22 @@ export function createFirstPerson(options: FirstPersonOptions) {
     }
     if (!handling?.use(x, y)) {
       // Mission 161, step 2: the hit object's one registration runs, the
-      // same first-visible-hit resolution the cue shows; the click acts
-      // only where the registration's own answer says the use is possible
-      // now. Where nothing is registered, the room's own `use` runs (still
-      // accepted, deprecated, while the rooms migrate).
+      // same first-visible-hit resolution the cue shows (the same `useAimAt`
+      // rule, so the same reach and cache key — review point 1 on #14);
+      // the click acts only where the registration's own answer says the
+      // use is possible now. It always casts fresh, never on a thing the
+      // cache saw move or be removed within its window (review point 1,
+      // ahnaa_dmitrieva on #14). Where nothing is registered, the room's
+      // own `use` runs (still accepted, deprecated, while the rooms
+      // migrate).
+      const freeAim = (input === 'mouse' || input === 'keyboard') && !locked();
+      const aim = useAimAt(freeAim, [x, y]);
       const found = resolveAim(
-        x,
-        y,
-        x === 0 && y === 0 ? CENTRE_CUE_REACH : CURSOR_CUE_REACH,
+        aim.x,
+        aim.y,
+        aim.reach,
         performance.now(),
+        true,
       );
       const registered = found?.registration;
       if (!registered || !registered.action) {
@@ -469,13 +480,13 @@ export function createFirstPerson(options: FirstPersonOptions) {
       } else {
         const at: UseQuery = {
           object: registered.object,
-          point: found!.point,
+          point: found!.point.clone(),
           camera,
-          x,
-          pad: input === 'gamepad',
+          x: aim.x,
+          pad: aim.pad,
         };
         const answer = registered.usable(at);
-        if (answer && answer.possible) registered.action(at);
+        if (clickOutcome(registered, answer) === 'run') registered.action(at);
       }
     }
   };
@@ -645,14 +656,34 @@ export function createFirstPerson(options: FirstPersonOptions) {
   // answer is asked afresh every probe (a use changes it without a move).
   const cueCache = aimCache(CUE_HIT_KEPT_MS);
   /**
+   * The aim's coordinates, reach and pad, from whether the free cursor is
+   * being used (a mouse or keyboard, pointer not locked): free, the aim is
+   * the cursor's point at the short 3 m reach; otherwise the centre at 4 m.
+   * The cue (`probeCue`) and the click both take their aim from here, so
+   * they reach the same rule and share the same cache key (mission 161,
+   * step 2; the reach-match was review point 1 on #14).
+   */
+  const useAimAt = (free: boolean, at: [number, number]) => ({
+    x: free ? hoverPoint[0] : at[0],
+    y: free ? hoverPoint[1] : at[1],
+    reach: free ? CURSOR_CUE_REACH : CENTRE_CUE_REACH,
+    pad: input === 'gamepad' && !free,
+  });
+  /**
    * The one first-visible-hit and registration (mission 161, step 2): the
    * click and the cue share this resolution, so they can never pick
    * different things. Asking changes nothing.
    */
-  const resolveAim = (x: number, y: number, reach: number, now: number) => {
+  const resolveAim = (
+    x: number,
+    y: number,
+    reach: number,
+    now: number,
+    fresh = false,
+  ) => {
     const scene = options.scene;
     if (!scene) return null;
-    return sharedResolveAim(
+    return sharedResolveAim({
       scene,
       camera,
       metre,
@@ -660,10 +691,11 @@ export function createFirstPerson(options: FirstPersonOptions) {
       y,
       reach,
       now,
-      cueRay,
-      cuePointer,
-      cueCache,
-    );
+      ray: cueRay,
+      pointer: cuePointer,
+      cache: cueCache,
+      fresh,
+    });
   };
   /** What the thing under the aim would do, for the cue: its answer. */
   const usableAt = (
@@ -695,10 +727,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
     free: boolean,
     now: number,
   ): UseAnswer | CarryAnswer | null => {
-    const pad = input === 'gamepad';
-    const [x, y] = free ? hoverPoint : [0, 0];
-    const reach = free ? CURSOR_CUE_REACH : CENTRE_CUE_REACH;
-    const marked = () => usableAt(x, y, reach, pad && !free, now) ?? PLAIN_USE;
+    // The same aim rule as the click (review point 1 on #14): free → the
+    // cursor's point at 3 m; otherwise the centre at 4 m, a gamepad's pad.
+    const aim = useAimAt(free, [0, 0]);
+    const { x, y, reach } = aim;
+    const pad = aim.pad;
+    const marked = () => usableAt(x, y, reach, pad, now) ?? PLAIN_USE;
     if (carrying && handling) {
       const carried = handling.heldObject()!;
       if (options.useWhileHolding) {

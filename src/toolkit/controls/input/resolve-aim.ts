@@ -13,14 +13,10 @@ import type { UseRegistration } from './use-marking';
  *
  * The hit is cached while the eye stands still (the aim moves show it); the
  * answer is asked afresh every probe, because a use changes it without a
- * move. #10's interactive gate slots into this one function.
+ * move. A click casts fresh (`fresh: true`) so it never acts on a thing
+ * moved or removed within the cache window; it then refreshes the cache.
+ * #10's interactive gate slots into this one function.
  */
-
-/** Enough of the eye's state to tell whether the aim has moved. */
-export interface AimEye {
-  /** The eye's world matrix when the hit was cast. */
-  matrix: Matrix4;
-}
 
 /** What the aim resolved to: the hit and its registration. */
 export interface AimResolution {
@@ -28,7 +24,7 @@ export interface AimResolution {
   hit: Object3D;
   /** The thing under the aim: how it answers, and what a click does. */
   registration: UseRegistration;
-  /** The world point the ray met. */
+  /** The world point the ray met (the click gets its own copy). */
   point: Vector3;
 }
 
@@ -57,28 +53,39 @@ export function aimCache(keptFor = 500): AimCache {
   };
 }
 
+/** What a resolution is asked with: the scene, the eye and the aim's rule. */
+export interface AimOptions {
+  scene: Object3D;
+  camera: Camera;
+  /** Scene units per metre: the far plane is `reach` metres. */
+  metre: number;
+  /** The normalised screen point of the aim, -1 to 1 (centre 0, 0). */
+  x: number;
+  y: number;
+  /** How far the aim reaches, metres. */
+  reach: number;
+  /** Now, ms: whether the cache is still valid. */
+  now: number;
+  /** The caller's own ray and pointer, so one raycast is shared. */
+  ray: Raycaster;
+  pointer: Vector2;
+  cache: AimCache;
+  /** Cast fresh whatever the cache says (a click, never on a stale hit). */
+  fresh?: boolean;
+}
+
 /**
- * Resolve a use aim at a normalised screen point (centre 0, 0) to the first
- * visible thing and its registration, or null when nothing is met or nothing
- * is registered there. Asking changes nothing. `ray` and `pointer` are the
- * caller's own, so the caller and this function share one raycast when they
- * can: the caller's `cache` is refreshed here and reused by the next call at
- * the same aim.
+ * Resolve a use aim to the first visible thing and its registration, or null
+ * when nothing is met or nothing is registered there. Asking changes nothing.
+ * A resolution's `point` is the cache's own object: ask for a copy with the
+ * same `fresh` reset (a click) before the answer is reused.
  */
-export function resolveAim(
-  scene: Object3D,
-  camera: Camera,
-  metre: number,
-  x: number,
-  y: number,
-  reach: number,
-  now: number,
-  ray: Raycaster,
-  pointer: Vector2,
-  cache: AimCache,
-): AimResolution | null {
+export function resolveAim(options: AimOptions): AimResolution | null {
+  const { scene, camera, metre, x, y, reach, now, ray, pointer, cache } =
+    options;
   camera.updateMatrixWorld();
   const still =
+    !options.fresh &&
     cache.x === x &&
     cache.y === y &&
     cache.reach === reach &&
@@ -109,6 +116,20 @@ export function resolveAim(
   return found;
 }
 
-/** Whether a thing at `hit` would register at all (a decoration never). */
-export const hasRegistration = (object: Object3D) =>
-  useRegistrationOf(object) !== null;
+/**
+ * The click's decision from a resolution (mission 161, step 2): whether the
+ * click runs the registration's action ('run'), runs the room's own `use`
+ * ('room' — nothing is registered; accepted, deprecated, during migration),
+ * or does nothing ('nothing' — the registration's answer says the use is
+ * not possible now, and the cue showed it red). Pure, and the one gate cue
+ * and click share.
+ */
+export type ClickOutcome = 'run' | 'room' | 'nothing';
+
+export function clickOutcome(
+  registered: UseRegistration | null | undefined,
+  answer: ReturnType<UseRegistration['usable']> | null | undefined,
+): ClickOutcome {
+  if (!registered?.action) return 'room';
+  return answer?.possible ? 'run' : 'nothing';
+}
