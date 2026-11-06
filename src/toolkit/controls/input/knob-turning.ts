@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import type { Camera, Object3D } from 'three';
-import { turnSide } from '../logic/use-cue';
+import { turnSense, turnSide } from '../logic/use-cue';
 import type { Turnable } from '../logic/use-cue';
 import { markUsable, turnAt } from './use-marking';
 
@@ -40,6 +40,25 @@ export function knobDirection(shaft: Object3D, point: Vector3, camera: Camera) {
   if (given) return given;
   const centre = shaft.getWorldPosition(new Vector3()).project(camera);
   return turnSide(point.clone().project(camera).x, centre.x);
+}
+
+/**
+ * Which way a turn looks from `camera` (#25), for a turn cue's arrow: the
+ * handle's end going from `from` to `to` about `pivot`, world points.
+ * Seen edge-on, where no way can be told, `fallback`.
+ */
+export function turnSeen(
+  camera: Camera,
+  pivot: Vector3,
+  from: Vector3,
+  to: Vector3,
+  fallback: -1 | 1,
+): -1 | 1 {
+  const seen = (p: Vector3) => {
+    const s = p.clone().project(camera);
+    return [s.x, s.y] as const;
+  };
+  return turnSense(seen(pivot), seen(from), seen(to)) || fallback;
 }
 
 /**

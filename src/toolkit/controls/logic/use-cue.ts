@@ -124,6 +124,35 @@ export type UseCue =
 export const turnSide = (point: number, centre: number): -1 | 1 =>
   point < centre ? -1 : 1;
 
+/** A point on the screen: normalised device x and y, y up. */
+export type ScreenPoint = readonly [number, number];
+
+/**
+ * Which way a turn looks on the screen (#25): a handle's end going from
+ * `from` to `to` about `pivot`, all as the player sees them. Clockwise is
+ * 1 and anticlockwise -1, as the turn arrow draws them; 0 when it is seen
+ * edge-on and no way can be told. A lever turning about a vertical stem
+ * turns one way seen from above and the other from below, so the arrow is
+ * worked out from where the eye is, never fixed by the builder.
+ */
+export function turnSense(
+  pivot: ScreenPoint,
+  from: ScreenPoint,
+  to: ScreenPoint,
+): -1 | 0 | 1 {
+  const ax = from[0] - pivot[0];
+  const ay = from[1] - pivot[1];
+  const bx = to[0] - pivot[0];
+  const by = to[1] - pivot[1];
+  const cross = ax * by - ay * bx;
+  // Relative to the handle's size on the screen, so a far lever is judged
+  // as a near one is.
+  const scale = Math.hypot(ax, ay) * Math.hypot(bx, by);
+  if (!scale || Math.abs(cross) < scale * 0.02) return 0;
+  // With y up, a positive cross product turns anticlockwise.
+  return cross > 0 ? -1 : 1;
+}
+
 /** A knob's answer: the way the side aimed at turns it, and both ways. */
 export function knobAnswer(
   knob: Turnable,

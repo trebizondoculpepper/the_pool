@@ -1,4 +1,5 @@
-import { Group } from 'three';
+import { Group, Vector3 } from 'three';
+import { turnSeen } from '../../../controls/input/knob-turning';
 import type { PanelKit } from '../../core/views/eighties-controls';
 import { beginPart } from '../../core/parts/parts';
 import type { Part } from '../../core/parts/parts';
@@ -64,12 +65,35 @@ export function createGasBallValve(
     if (binding) binding.set(!binding.open());
     else open = !open;
   });
-  // A quarter turn, either way it is (the crosshair's cue, prompt 115).
-  a.cue(handle, () => ({
-    gesture: 'turn',
-    direction: (binding?.open() ?? open) ? -1 : 1,
-    possible: true,
-  }));
+  // A quarter turn, either way it is (the crosshair's cue, prompt 115),
+  // its arrow the way the lever is seen to go (#25): about its upright
+  // stem, open to shut is clockwise from above and anticlockwise from
+  // below, so it is worked out from the eye. Edge-on, as from above, where
+  // a standing player usually sees it.
+  const pivot = new Vector3();
+  const from = new Vector3();
+  const to = new Vector3();
+  /** The lever's end at `turn` radians about its stem, in world space. */
+  const endAt = (turn: number, out: Vector3) =>
+    a.object.localToWorld(
+      out.set(0.12 * Math.cos(turn), lever.position.y, -0.12 * Math.sin(turn)),
+    );
+  a.cue(handle, (at) => {
+    const isOpen = binding?.open() ?? open;
+    a.object.updateWorldMatrix(true, false);
+    a.object.localToWorld(pivot.copy(lever.position));
+    return {
+      gesture: 'turn',
+      direction: turnSeen(
+        at.camera,
+        pivot,
+        endAt(isOpen ? 0 : -Math.PI / 2, from),
+        endAt(isOpen ? -Math.PI / 2 : 0, to),
+        isOpen ? 1 : -1,
+      ),
+      possible: true,
+    };
+  });
   a.updates.push((delta) => {
     const target = (binding?.open() ?? open) ? 0 : -Math.PI / 2;
     angle += (target - angle) * Math.min(1, delta * 8);
