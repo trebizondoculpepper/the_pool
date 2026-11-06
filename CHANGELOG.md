@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- The engineer's office chair is now a registered kind with a seat and a room binding, completing the embedded-object follow-up to mission 169 (#39).
 - The ladder trait (#18): a `ladder` composite trait extends `functional`, and every human ladder (pool, caged, utility and tank-access) is now a registered kind carrying it. The room factory makes every `ladder`-kind object climbable in every room, so the eight rooms that listed their ladders by hand no longer do; a pool hall gives only the shape of its sloping floor (`ladderFloorAt`), on which a pool ladder's foot stands. Ladders now have hover names and a 3D form in the magic room.
 
 - The first twenty registered kinds are reclassified onto the interaction classes (mission 19, batch 1, PR #37): tanks, filters, vessels and alarm read-outs gain `inspectable` (their level and state are live read-outs), the engineer's carton gains `functional` (a bin is a world role, not inert), and `src/game/plant/reclassify.test.ts` locks the batch's classes so a later audit `set` that changes one is seen.
