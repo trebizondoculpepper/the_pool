@@ -14,7 +14,7 @@ it('resolves explicit affordance defaults for every kind not yet given traits', 
     const a = kindAffordances(id);
     expect(a.interaction, id).toBe(
       kind.affordances?.interaction ??
-        (kind.class === 'decorative' ? 'decorative' : 'inspect-only'),
+        (kind.class === 'decorative' ? 'decorative' : 'unclassified'),
     );
     expect(a.portable, id).toBe(kind.affordances?.portable ?? false);
     expect(a.solid, id).toBe(kind.affordances?.solid ?? true);
@@ -32,7 +32,7 @@ it('resolves proposed departures without coupling interaction to plant status', 
     status: 'none',
     purpose: 'Tests the declaration.',
     affordances: {
-      interaction: 'usable',
+      interaction: 'interactive',
       portable: true,
       solid: false,
       shape: { type: 'box', width: 0.5, height: 0.8, depth: 0.5 },
@@ -40,7 +40,7 @@ it('resolves proposed departures without coupling interaction to plant status', 
     },
   };
   expect(resolveKindAffordances(example)).toEqual({
-    interaction: 'usable',
+    interaction: 'interactive',
     portable: true,
     solid: false,
     shape: { type: 'box', width: 0.5, height: 0.8, depth: 0.5 },

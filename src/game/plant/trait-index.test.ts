@@ -105,6 +105,8 @@ describe('one trait', () => {
       'box-like',
       'floor-standing',
       'holdable',
+      'inspectable',
+      'interactive',
       'readable',
     ]);
     expect(traitDetail('boxed-item', ctx).includedBy).toEqual(['boxed-reader']);

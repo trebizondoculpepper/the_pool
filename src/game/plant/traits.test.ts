@@ -48,7 +48,14 @@ describe('expansion', () => {
 
   test('addition only: a kind’s traits are the union of what it names', () => {
     expect(expand(['software-box', 'readable'], composites).primitives).toEqual(
-      ['box-like', 'floor-standing', 'holdable', 'readable'],
+      [
+        'box-like',
+        'floor-standing',
+        'holdable',
+        'inspectable',
+        'interactive',
+        'readable',
+      ],
     );
   });
 
@@ -161,12 +168,48 @@ describe('the resolver: traits drive affordances', () => {
     expect(
       affordancesFromTraits(['cuboid-tank'], {}, composites),
     ).toMatchObject({
-      interaction: 'inspect-only',
+      interaction: 'unclassified',
       portable: false,
       solid: true,
       surface: true,
       seat: null,
     });
+  });
+
+  test('interaction resolves by precedence, interactive implying inspectable (mission 10)', () => {
+    const interaction = (traits: string[]) =>
+      affordancesFromTraits(traits, {}, composites).interaction;
+    // The use classes, by precedence.
+    expect(interaction(['operable', 'panel-like', 'fixed'])).toBe(
+      'interactive',
+    );
+    expect(interaction(['sittable', 'box-like', 'fixed'])).toBe('interactive');
+    // Anything the player can affect is interactive (mission 10): picked
+    // up, carried, shifted or slid.
+    expect(interaction(['holdable', 'box-like'])).toBe('interactive');
+    expect(interaction(['luggable', 'box-like', 'fixed'])).toBe('interactive');
+    expect(interaction(['slidable', 'box-like', 'fixed'])).toBe('interactive');
+    // interactive implies inspectable; readable and functional are separate.
+    expect(
+      affordancesFromTraits(['operable'], {}, composites).interaction,
+    ).toBe('interactive');
+    expect(
+      affordancesFromTraits(['readable', 'panel-like', 'fixed'], {}, composites)
+        .interaction,
+    ).toBe('readable');
+    expect(
+      affordancesFromTraits(
+        ['functional', 'panel-like', 'wall-mounted'],
+        {},
+        composites,
+      ).interaction,
+    ).toBe('functional');
+    // A decoration is decorative; a kind with none of the classes is
+    // unclassified (the audit shows #19 what is left).
+    expect(interaction(['decorative', 'panel-like', 'wall-mounted'])).toBe(
+      'decorative',
+    );
+    expect(interaction(['box-like', 'floor-standing'])).toBe('unclassified');
   });
 
   test('an office chair seats, at its composite’s height; a software box is portable', () => {

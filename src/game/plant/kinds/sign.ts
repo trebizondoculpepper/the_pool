@@ -8,7 +8,7 @@ export default defineKind({
   status: 'none',
   purpose: 'Displays a room notice, safety instruction or warning.',
   affordances: {
-    interaction: 'inspect-only',
+    interaction: 'readable',
     solid: false,
   },
   traits: ['fixed', 'panel-like', 'readable', 'wall-mounted'],

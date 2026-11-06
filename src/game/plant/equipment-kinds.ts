@@ -45,8 +45,20 @@ export type StatusPolicy =
  */
 export type DescriptionTemplate = 'valve' | 'power' | 'equipment';
 
-/** What aiming at a registered kind can offer, independently of plant status. */
-export type InteractionClass = 'decorative' | 'inspect-only' | 'usable';
+/**
+ * What aiming at a registered kind can offer, independently of plant status.
+ * The classes are siblings resolved by precedence in
+ * `affordancesFromTraits`, not a ladder: a kind is one of them, with
+ * `interactive` implying `inspectable` and nothing else implied.
+ */
+export type InteractionClass =
+  | 'decorative'
+  | 'functional'
+  | 'readable'
+  | 'inspectable'
+  | 'interactive'
+  /** Not yet classified; #19 reclassifies these. The audit shows them. */
+  | 'unclassified';
 
 /** The default solid shape is the built object's bounds, in its own frame. */
 export type KindSolidShape =
@@ -172,7 +184,7 @@ export function resolveKindAffordances(kind: EquipmentKind): KindAffordances {
   return {
     interaction:
       declared?.interaction ??
-      (kind.class === 'decorative' ? 'decorative' : 'inspect-only'),
+      (kind.class === 'decorative' ? 'decorative' : 'unclassified'),
     portable: declared?.portable ?? false,
     solid,
     shape: declared?.shape ?? { type: 'bounds' },
@@ -204,12 +216,23 @@ export function affordancesFromTraits(
     !has('run-like') &&
     !has('open-frame') &&
     !(has('water-body') && !ps.some((p) => PRIMITIVES[p].facet === 'form'));
+  // Interaction resolves by precedence (mission 10): interactive >
+  // inspectable > readable > functional > decorative. These four are
+  // use-facet traits, so they can't combine with `decorative` (the
+  // validator rejects it): a decorative name is inert whatever else it
+  // names. A kind with traits but none of the four is `unclassified` — the
+  // audit shows what #19 has left to do, not an inert plant.
+  const precedence: InteractionClass[] = [
+    'interactive',
+    'inspectable',
+    'readable',
+    'functional',
+  ];
+  const interaction: InteractionClass =
+    precedence.find((c) => has(c)) ??
+    (has('decorative') ? 'decorative' : 'unclassified');
   return {
-    interaction: has('decorative')
-      ? 'decorative'
-      : has('operable') || has('sittable')
-        ? 'usable'
-        : 'inspect-only',
+    interaction,
     portable: has('holdable'),
     solid,
     shape: { type: 'bounds' },
