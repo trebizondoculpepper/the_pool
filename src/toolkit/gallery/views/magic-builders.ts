@@ -3,6 +3,7 @@ import type { PanelKit } from '../../components/core/views/eighties-controls';
 import type { PartSet } from '../../components/core/parts/parts';
 import { createWaterButterflyValve } from '../../components/plant/views/water-butterfly-valve';
 import { createGasBallValve } from '../../components/plant/views/gas-fittings';
+import { createInlineFitting } from '../../components/plant/views/inline-fittings';
 import { createCondensingBoiler } from '../../components/plant/views/boiler-plant';
 import { createLevelTransmitter } from '../../components/plant/views/level-instruments';
 import { createMagFlowmeter } from '../../components/plant/views/mag-flowmeter';
@@ -94,6 +95,23 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   },
   'gas-ball-valve': {
     build: (kit) => objectOf(createGasBallValve(kit, {})),
+  },
+  // A pool exchanger's modulating LTHW valve, motorised (#33).
+  'control-valve': {
+    title: 'Modulating control valve, DN65, motorised',
+    build: (kit) =>
+      objectOf(
+        createInlineFitting(
+          kit,
+          {
+            kind: 'isolating-valve',
+            medium: 'water',
+            operator: 'motor',
+            od: 0.0761,
+          },
+          { open: () => true, set: noop },
+        ),
+      ),
   },
   // A water lever ball valve, its lever red (#47: the dosing pot's).
   'ball-valve': {
