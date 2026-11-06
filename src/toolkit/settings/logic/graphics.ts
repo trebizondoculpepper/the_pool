@@ -13,9 +13,11 @@ export type EffectLevel = (typeof EFFECT_LEVELS)[number];
  * draws as many pixels as the window has (so the cost follows the
  * window's size), or the image is drawn no larger than one of the common
  * PC gaming resolutions, or the Steam Deck's, width and height both.
- * Smallest first, the viewport last, as the menu's switch turns.
+ * The viewport first, then smallest to largest, as the menu's switch
+ * turns (the owner, 2026-11-06: the viewport moved from last to first).
  */
 export const RESOLUTION_CAPS = [
+  'native',
   '640x480',
   '1024x768',
   '1280x720',
@@ -29,7 +31,6 @@ export const RESOLUTION_CAPS = [
   '2560x1600',
   '3440x1440',
   '3840x2160',
-  'native',
 ] as const;
 export type ResolutionCap = (typeof RESOLUTION_CAPS)[number];
 

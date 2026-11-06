@@ -39,6 +39,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The resolution switch in Settings starts at Viewport (the window's size), then runs from 640 × 480 upwards; Viewport was the last position.
+
 - Hovering names things in every room, not only the seven starters that wired it (mission 160): the room factory (`createRoomController`) installs the information overlay for every room from its own scene, camera and metre, so the pool halls, the main corridor, the dev rooms and the magic room name what is aimed at too; a thing with a registered kind but no identity is named by its kind's type (with its bound thing as its tag where it carries one). The `INSPECTED_ROOMS` list, its per-room opt-in, the `dev51` gate and the eight room-side `inspect: createInspector(...)` options are gone; the rooms' own data (a world, dev0's identify) passes to the factory instead.
 - Split the planned public website into Mission 216 (landing page and game route on the existing GitHub Pages site) and Mission 217 (later custom-domain DNS and HTTPS); the future API subdomain remains unconfigured.
 - The engineer's cardboard carton is a real bin (a `carton` kind, `bin-like`): things aimed at it go in on the shared bin toss, as into a skip or dustbin, and can be picked out again; the desk's own carton put-in is gone. The bin toss is gentler: it rises only 0.15 m above the higher of the hand and the bin's opening, just enough to clear the rim (the owner, 2026-11-05).
