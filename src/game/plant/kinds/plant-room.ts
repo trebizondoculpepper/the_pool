@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Houses plant.',
-  traits: ['fixed', 'run-like'],
+  traits: ['fixed', 'functional', 'run-like'],
 });

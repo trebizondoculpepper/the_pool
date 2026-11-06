@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Carries a service between pieces of plant.',
-  traits: ['fixed', 'in-line', 'run-like'],
+  traits: ['fixed', 'functional', 'in-line', 'run-like'],
 });

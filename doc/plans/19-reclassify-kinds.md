@@ -28,6 +28,15 @@ Verification: `audit -- check` clean, `audit -- unclassified` empty, fast suite 
 5. **True set-dressing** gets `decorative` explicitly.
 6. Ladders become `functional` via #18's `ladder` trait, not here.
 
+## Final batch (done, this session): the last five kinds, the sweep complete
+
+The five kinds that had no class trait at all, classified by their purpose:
+
+- `functional` (4): `gas-train` (isolates and regulates the boiler gas supply), `pipework` (carries a service between pieces of plant), `plant-room` (houses plant), `safety-shower` (provides emergency drenching and eyewash) — each does a world role, none is interactive or inspectable.
+- `decorative` (1): `tanker-stand` (marks the delivery vehicle standing area) — a pure floor mark, true set-dressing.
+
+**The sweep is complete: all 124 kinds are on one of the five classes, none is left without a class.** Final counts: 77 `inspectable`, 59 `interactive`, 34 `readable`, 18 `functional`, 3 `decorative` (kinds carry several traits, so the counts overlap). `audit -- check` clean; the set difference of all kinds against the five class traits is empty.
+
 ## Verification
 
 - `npm run -s audit -- check` after every batch.
