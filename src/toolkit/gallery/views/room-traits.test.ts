@@ -163,27 +163,39 @@ test('a box-like thing has a top from its own box, not a room special rule (issu
   expect(Math.max(...tops.map((s) => s.top))).toBeCloseTo(0.45, 1);
 });
 
-test('a box-like thing has a top from its own box, not a room special rule (issue #11)', () => {
-  // The PC tower/monitor stand on the desk as their own kinds. A box-like
-  // thing's bounding box is its shape: its top is found from its own box,
-  // even without a declared bounds model. Built origin-at-base, as a
-  // floor-standing object is.
+test('the desk board and the PC tower standing on it each have their own top (issue #11, #31)', () => {
+  // The PC tower stands on the desk as its own kind, beside it in the
+  // room, not inside the desk's group: a fitted box for the desk must be
+  // the desk's alone, or its top would be the tower's (#31: the old
+  // fixture put the tower inside the desk, so the board's own top was
+  // never checked). Built origin-at-base, as a floor-standing object is.
   const scene = new Group();
   const desk = markEquipmentKind(new Group(), 'desk');
   const board = new Mesh(new BoxGeometry(1.6, 0.04, 0.8));
   board.position.y = 0.02; // a bench height for the test
   desk.add(board);
+  scene.add(desk);
+  const boardTop = 0.04;
   const tower = markEquipmentKind(new Group(), 'pc-tower');
-  tower.position.set(0.4, board.position.y + 0.04, 0);
+  tower.position.set(0.4, boardTop, 0);
   const body = new Mesh(new BoxGeometry(0.2, 0.45, 0.4));
   body.position.y = 0.225; // origin-at-base: the box rises from the tower's feet
   tower.add(body);
-  desk.add(tower);
-  scene.add(desk);
+  scene.add(tower);
   scene.updateMatrixWorld(true);
   const tops = roomSurfaces(scene, 1);
-  const heights = tops.map((s) => s.top);
-  // The desk's bench top and the tower's box top standing on it.
-  expect(heights.length).toBeGreaterThanOrEqual(2);
-  expect(Math.max(...heights)).toBeCloseTo(board.position.y + 0.04 + 0.45, 1);
+  // The desk's board: its top at the board's, over the whole board.
+  const benchTop = tops.find((s) => Math.abs(s.top - boardTop) < 0.01);
+  expect(benchTop, JSON.stringify(tops)).toBeTruthy();
+  expect(benchTop!.minX).toBeCloseTo(-0.8, 1);
+  expect(benchTop!.maxX).toBeCloseTo(0.8, 1);
+  expect(benchTop!.minZ).toBeCloseTo(-0.4, 1);
+  expect(benchTop!.maxZ).toBeCloseTo(0.4, 1);
+  // The tower's box top, on the board, over the tower's footprint only.
+  const towerTop = tops.find((s) => Math.abs(s.top - (boardTop + 0.45)) < 0.01);
+  expect(towerTop, JSON.stringify(tops)).toBeTruthy();
+  expect(towerTop!.minX).toBeCloseTo(0.3, 1);
+  expect(towerTop!.maxX).toBeCloseTo(0.5, 1);
+  expect(towerTop!.minZ).toBeCloseTo(-0.2, 1);
+  expect(towerTop!.maxZ).toBeCloseTo(0.2, 1);
 });
