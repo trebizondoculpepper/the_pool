@@ -1,6 +1,6 @@
 # 160 — Hover context in every room: plan and progress
 
-Brief: `doc/prompts/160-hover-context-everywhere.md`. The owner, 2026-11-04, urgent, [ready]; replanned 2026-11-05 against 159, 161, 169 and the trait missions. Hovering over a thing names it, the same in every room: the room factory (`createRoomController`) installs the inspection line (prompt 061) for every room, so every lookable object in every room is named when aimed at.
+Brief: `doc/prompts/done/160-hover-context-everywhere.md`. The owner, 2026-11-04, urgent, [ready]; replanned 2026-11-05 against 159, 161, 169 and the trait missions. Hovering over a thing names it, the same in every room: the room factory (`createRoomController`) installs the inspection line (prompt 061) for every room, so every lookable object in every room is named when aimed at.
 
 ## Approach (the brief's; kept)
 
@@ -33,6 +33,8 @@ Brief: `doc/prompts/160-hover-context-everywhere.md`. The owner, 2026-11-04, urg
 - The leftover empty `inspected-rooms.ts` module is deleted; its history lives in the test header and this plan.
 - The doc comment in `room-controller.ts` names the right registration site (`installRoomInspector` in `inspect-pick.ts`).
 - Coverage pin: the audit's harness (`createRoomEquipment`) can build only the 12 equipment/office rooms it already audits — museum halls, the tank hall, dev0 and the corridor build elsewhere and return empty here, so extending the pin with vacuous zeros would be a lie. Those rooms' coverage is the contract test's job (no starter passes `inspect`). The 12 audited rooms' counts are unchanged (all 0), so the pin does not move.
+
+**Frame time (nicole_buruaah, 2026-11-06), done:** measured in Chrome on this Mac at the look link `?room=plant_pool_02&look=PL2-P1`, each build served alone on its own port, the work done in each animation frame summed over 12–15 s after warming. Still, with nothing hovered: the commit before 160 (`ebb4ffc2^`) 9.0 ms a frame, 160 itself (`ebb4ffc2`) 9.0 ms, both a steady 60 fps. Hovering (pointer on a pump, naming P-101B): the inspector costs 2.08 ms a call before 160 and 2.02 ms with it, searching the same ~7,230 objects and keeping 7 nearby meshes, about ten calls a second. 160 adds nothing: the plant room's inspector already ran before it, and the kind naming runs only on a hit with no identity. A rise of about 1 ms a still frame since then (9.5 ms just before 208, about 10.1 ms at `1390876e`) is later work, not 160's; it is #9.
 
 ## Records
 
