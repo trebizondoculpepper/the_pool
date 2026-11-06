@@ -258,10 +258,14 @@ export function valvePurpose(
 export const powerPurpose = (destination: string) =>
   `Isolates power for ${destination}.`;
 
-/** Common nouns in prose, preserving technical acronyms such as UV and BMS. */
+/**
+ * Common nouns in prose, preserving technical acronyms such as UV, BMS and
+ * CO₂ (#25: "cO₂ wall inlet"): a first word with no lower-case letter is
+ * kept as it is, whatever its digits, subscripts or hyphens.
+ */
 export function equipmentTypeInProse(type: string): string {
   const first = type.split(' ')[0];
-  return /^[A-Z0-9-]+$/.test(first)
+  return first.length > 1 && !/\p{Ll}/u.test(first)
     ? type
     : type[0].toLowerCase() + type.slice(1);
 }

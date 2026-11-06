@@ -65,6 +65,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- A lever ball valve's turn arrow follows the lever as the player sees it, worked out from the eye (`turnSeen` in the controls), so it is right whether the valve is above or below eye level; the CO₂ emergency isolation valve's arrow pointed the wrong way from above (#25). Hover headings keep acronyms such as CO₂, no longer "cO₂ wall inlet".
+
 - The title screen says when sound is off (the volume at 0 or muted) and to turn it up in Settings, instead of asking for a click that can never start it.
 
 - A dropped box comes to rest on its large flat face, either way up, never on a short side.

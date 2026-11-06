@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vite-plus/test';
 import {
   describeComponent,
   equipmentLine,
+  equipmentTypeInProse,
   formatStatus,
   naturalCompare,
   ordinal,
@@ -362,4 +363,12 @@ it('tells the jacuzzi’s sand filter’s status from its programme (the owner, 
   expect(describeForWorld(washing, 'PL3-F1')).toMatch(
     /the tank is (backwashing|standing)/,
   );
+});
+
+it('keeps acronyms, subscripts and all, when a type is put in prose (#25)', () => {
+  expect(equipmentTypeInProse('CO₂ wall inlet')).toBe('CO₂ wall inlet');
+  expect(equipmentTypeInProse('UV unit')).toBe('UV unit');
+  expect(equipmentTypeInProse('LTHW pump set')).toBe('LTHW pump set');
+  expect(equipmentTypeInProse('Wall inlet')).toBe('wall inlet');
+  expect(equipmentTypeInProse('A frame')).toBe('a frame');
 });

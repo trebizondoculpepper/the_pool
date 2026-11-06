@@ -8,6 +8,7 @@ import {
   isCarry,
   cuePlace,
   knobAnswer,
+  turnSense,
   turnSide,
   useCue,
   useCueKey,
@@ -302,5 +303,21 @@ describe('the touch context button', () => {
     expect(
       useCueLabel({ kind: 'both', down: false, up: true }, false).text,
     ).toBe('TURN');
+  });
+});
+
+describe('turnSense: which way a turn looks on the screen (#25)', () => {
+  it('reads a quarter turn clockwise or anticlockwise, y up', () => {
+    // From the right of the pivot down to below it: clockwise.
+    expect(turnSense([0, 0], [1, 0], [0, -1])).toBe(1);
+    // From the right up to above it: anticlockwise.
+    expect(turnSense([0, 0], [1, 0], [0, 1])).toBe(-1);
+  });
+  it('says nothing when the turn is seen edge-on', () => {
+    expect(turnSense([0, 0], [1, 0], [0.5, 0])).toBe(0);
+    expect(turnSense([0, 0], [0, 0], [0, 0])).toBe(0);
+  });
+  it('judges a small, far lever as a near one', () => {
+    expect(turnSense([0.5, 0.5], [0.501, 0.5], [0.5, 0.499])).toBe(1);
   });
 });
