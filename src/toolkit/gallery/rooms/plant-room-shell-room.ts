@@ -47,7 +47,6 @@ import { roomSurfaces } from '../views/derived-surfaces';
 import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
-  humanLadderZones,
 } from '../../components/architectural/views/human-ladder';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import { createPlantRoomShell } from '../views/plant-room-shell';
@@ -407,7 +406,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
             : shellFloorAt(plan, x / metre, z / metre, (previous ?? 0) / metre);
       return standing * metre;
     },
-    ladders: () => humanLadderZones(rooms),
     // What a dropped thing rests on: every supportable object's derived top (mission 181).
     supports: () => surfaceSupports(roomSurfaces(rooms, metre)),
     // Each doorway: its leaf while shut, but never where the walker

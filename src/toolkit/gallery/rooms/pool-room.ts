@@ -21,10 +21,7 @@ import {
 } from '../views/arched-corridor';
 import { createWhiteCorridor } from '../views/white-corridor';
 import { createGreenRoom } from '../views/green-room';
-import {
-  createHumanLadder,
-  humanLadderZones,
-} from '../../components/architectural/views/human-ladder';
+import { createHumanLadder } from '../../components/architectural/views/human-ladder';
 
 /** PR_A's ladder, on the back pool's west side: its middle. */
 const BACK_LADDER = { x: POOL_RECTS[2].minX, z: -6.4 };
@@ -973,7 +970,6 @@ export function startPoolRoom(
           archedFloorAt(x / m, z / m))
         : null) ?? poolFloorAt(x / m, z / m)) * m,
     start: { x: 0, z: 0 },
-    ladders: () => humanLadderZones(room),
     solids: () => [
       ...walls,
       ...solids,

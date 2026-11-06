@@ -22,7 +22,6 @@ import {
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
 import { createRoomController } from '../../controls/input/room-controller';
-import { humanLadderZones } from '../../components/architectural/views/human-ladder';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import {
   ARCHED_CORRIDOR,
@@ -131,11 +130,8 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       yaw: Math.PI,
     },
     floorAt: (x, z) => (archedFloorAt(x / metre, z / metre) ?? 0) * metre,
-    ladders: () =>
-      humanLadderZones(
-        rooms,
-        (x, z) => (archedFloorAt(x / metre, z / metre) ?? 0) * metre,
-      ),
+    // The factory's ladders (#18) stand on the arched rooms' own floor.
+    ladderFloorAt: (x, z) => (archedFloorAt(x / metre, z / metre) ?? 0) * metre,
     solids: () => walls,
   });
   const resize = () => {

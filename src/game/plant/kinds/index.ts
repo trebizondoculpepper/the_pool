@@ -103,6 +103,7 @@ export const PLACED_KIND_IDS = [
 export const OTHER_KIND_IDS = [
   'butterfly-valve',
   'cabinet-switch',
+  'caged-ladder',
   'carton',
   'cartridge-filter',
   'dosing-set',
@@ -119,11 +120,14 @@ export const OTHER_KIND_IDS = [
   'pipework',
   'plant-room',
   'pool',
+  'pool-ladder',
   'pump',
   'skip',
   'software-box',
   'spa',
   'switch-fuse',
+  'tank-access-ladder',
+  'utility-ladder',
   'valve',
 ] as const;
 

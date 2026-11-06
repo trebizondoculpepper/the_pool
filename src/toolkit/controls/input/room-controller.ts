@@ -3,6 +3,7 @@ import { createFirstPerson, firstPersonOn } from './first-person';
 import type { FirstPersonOptions } from './first-person';
 import type { PortableObject, SupportSurface } from './object-handling';
 import type { Footprint } from '../logic/walk-collision';
+import type { LadderZone } from '../logic/ladder-zone';
 import type { InspectionTarget } from '../logic/inspection';
 
 /** A named room style may be approved later; every room uses the standard style now. */
@@ -41,6 +42,16 @@ export interface RoomTraits {
    * among `root`'s objects.
    */
   racks?(root: Object3D, metre: number): void;
+  /**
+   * The room's ladders (#18): every placed object of a `ladder` kind,
+   * climbable from either end, in scene units. `floorAt` is the floor a
+   * pool ladder's foot stands on.
+   */
+  ladders?(
+    root: Object3D,
+    metre: number,
+    floorAt?: (x: number, z: number) => number,
+  ): readonly LadderZone[];
 }
 
 /** Throwing into a room's bin-like objects, as the walker sees it. */
@@ -116,6 +127,12 @@ export interface RoomControllerOptions extends Omit<
    */
   ownerAllows?: (object: Object3D, portable: PortableObject) => boolean | null;
   /**
+   * The floor under a point, in scene units, where it is not flat (a pool's
+   * sloping floor): data for the factory's ladders (#18), which stand a
+   * pool ladder's foot on it.
+   */
+  ladderFloorAt?: (x: number, z: number) => number;
+  /**
    * The world whose live state the information overlay's second line reads
    * (mission 160): a room's own data, not behaviour, given to the factory's
    * inspector. A room with no world of its own omits it.
@@ -153,8 +170,17 @@ export function createRoomController(options: RoomControllerOptions) {
           identify: options.identify,
         })
       : null;
+  // The factory's ladders (#18), for every room with a scene, whether or
+  // not it carries things: a room that still lists its own (`ladders`)
+  // keeps them while the rooms migrate.
+  const ladderRoot = options.scene ?? root;
+  const factoryLadders =
+    traits?.ladders && ladderRoot && !options.ladders
+      ? () => traits.ladders!(ladderRoot, options.metre, options.ladderFloorAt)
+      : undefined;
   const overlay: FirstPersonOptions = {
     ...options,
+    ...(factoryLadders ? { ladders: factoryLadders } : {}),
     ...(inspect !== null ? { inspect } : {}),
   };
   if (!traits || !root)

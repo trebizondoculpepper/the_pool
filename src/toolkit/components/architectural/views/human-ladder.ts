@@ -18,6 +18,7 @@ import {
 } from '../logic/human-ladder';
 import { createPoolLadder } from '../../../gallery/views/pool-ladder';
 import { markNonBody } from '../../core/views/non-body';
+import { markEquipmentKind } from '../../core/views/equipment-kind';
 import { createTankLadder } from '../../plant/views/tank-ladder';
 import { createCagedLadder } from '../../plant/views/railings';
 import { createSafetySign } from '../../general-safety/views/safety-signs';
@@ -72,6 +73,14 @@ function zoneOf(group: Group, layout: HumanLadderLayout): LadderZone {
     topExit: { x: upper.x, z: upper.z },
   };
 }
+
+/** Each kind of human ladder's registered kind (#18), all carrying `ladder`. */
+export const LADDER_KINDS: Readonly<Record<HumanLadderKind, string>> = {
+  pool: 'pool-ladder',
+  caged: 'caged-ladder',
+  utility: 'utility-ladder',
+  'tank-access': 'tank-access-ladder',
+};
 
 /** One public constructor for ladders made for people rather than cables. */
 export function createHumanLadder(
@@ -146,6 +155,9 @@ export function createHumanLadder(
   records.set(group, record);
   // Not a body: a tank's roof is found under its ladder's cage, never on it (mission 175).
   markNonBody(group);
+  // A registered kind carrying the `ladder` trait (#18): the room factory
+  // finds it by its kind and makes it climbable, so no room lists it.
+  markEquipmentKind(group, LADDER_KINDS[kind]);
   return {
     group,
     zone: () => zoneOf(group, layout),
@@ -174,10 +186,13 @@ export function createHumanLadder(
 export function humanLadderZones(
   root: Object3D,
   floorAt?: (x: number, z: number) => number,
+  /** Only ladders this accepts (the factory: those of a `ladder` kind, #18). */
+  include?: (ladder: Object3D) => boolean,
 ): LadderZone[] {
   root.updateWorldMatrix(true, true);
   const zones: LadderZone[] = [];
   for (const object of roomLadders(root)) {
+    if (include && !include(object)) continue;
     const record = records.get(object);
     if (record?.enabled()) {
       const zone = zoneOf(object as Group, record.layout);

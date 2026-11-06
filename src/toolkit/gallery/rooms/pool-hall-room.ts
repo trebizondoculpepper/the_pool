@@ -59,7 +59,6 @@ import { enterDevRoom } from '../logic/dev-room-links';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import { createPoolHall } from '../views/pool-hall';
 import { bakeRoomAo } from '../../baking/baked-ao';
-import { humanLadderZones } from '../../components/architectural/views/human-ladder';
 import { createPanelKit } from '../../components/core/views/eighties-controls';
 import { createPoolInfoSign } from '../../components/pool/views/pool-info-sign';
 import {
@@ -452,13 +451,11 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       );
     },
     waterAt: gallery ? undefined : waterAt,
-    ladders: () =>
-      gallery
-        ? []
-        : humanLadderZones(
-            rooms,
-            (x, z) => hallFloorAt(spec, x / metre, z / metre) * metre,
-          ),
+    // The factory's ladders (#18) stand on the hall's sloping pool floor.
+    // The underwater gallery's walker is kept to the gallery, under the
+    // pool, so no ladder above is climbed from it.
+    ladderFloorAt: (x, z) => hallFloorAt(spec, x / metre, z / metre) * metre,
+    ...(gallery ? { ladders: () => [] } : {}),
     // The plant room doorway: its leaf while shut, but never where the
     // walker stands; a stop just beyond until the plant room is seen.
     // So too the office's doorway.

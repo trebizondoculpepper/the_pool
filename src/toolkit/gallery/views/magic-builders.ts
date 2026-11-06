@@ -21,6 +21,7 @@ import {
 } from '../../components/site-dressing/views/engineers-desk';
 import { createSkip } from '../../components/site-dressing/views/skip';
 import { createWasteBin } from '../../components/site-dressing/views/waste-bin';
+import { createHumanLadder } from '../../components/architectural/views/human-ladder';
 import { SOFTWARE_TITLES } from '../../components/site-dressing/logic/software-boxes';
 import type { ItemSize } from '../logic/magic-room-layout';
 
@@ -137,6 +138,24 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   'office-shelf': {
     // The wall shelf: a rack for the office's boxed software (mission 206).
     build: (kit) => objectOf(createWallShelf(kit)),
+  },
+  // The human ladders (#18): each kind carries `ladder`, climbed where placed.
+  'pool-ladder': {
+    build: () => objectOf(createHumanLadder('pool', 1.2).group),
+  },
+  'caged-ladder': {
+    build: (kit) =>
+      objectOf(createHumanLadder('caged', 3, { kit, landing: false }).group),
+  },
+  'utility-ladder': {
+    build: (kit) =>
+      objectOf(
+        createHumanLadder('utility', 1.5, { kit, landing: false }).group,
+      ),
+  },
+  'tank-access-ladder': {
+    build: (kit) =>
+      objectOf(createHumanLadder('tank-access', 2, { kit }).group),
   },
   'office-computer': {
     title: 'Office computer',

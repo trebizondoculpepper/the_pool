@@ -15,6 +15,7 @@ export const TRAIT_IDS = [
   'heat-like',
   'holdable-small',
   'instrument-like',
+  'ladder',
   'machine-like',
   'mimic',
   'office-furniture-like',

@@ -21,7 +21,6 @@ import { partAudio } from '../../components/core/audio/part-audio';
 import { createRoomController } from '../../controls/input/room-controller';
 import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { doorActor } from '../../components/architectural/logic/door-proximity';
-import { humanLadderZones } from '../../components/architectural/views/human-ladder';
 import { knobDirection } from '../../controls/input/knob-turning';
 import {
   createPs1Material,
@@ -188,7 +187,6 @@ export function startTankHall(canvas: HTMLCanvasElement) {
     start: { x: (TANK.minX + 0.8) * m, z: DOORWAY.z * m, yaw: Math.PI / 2 },
     floorAt: (x, z, previous) =>
       tankHallFloorAt(x / m, z / m, previous / m) * m,
-    ladders: () => humanLadderZones(room),
     solids: () => [
       ...(walk.floorY < -0.5 * m ? fixed.slice(1) : fixed).map(toMetre),
       ...(walk.floorY < -0.5 * m
