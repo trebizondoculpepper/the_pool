@@ -7,5 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'Marks the delivery vehicle standing area.',
-  traits: ['office-furniture-like'],
+  traits: ['decorative', 'office-furniture-like'],
 });

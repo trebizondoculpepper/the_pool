@@ -8,5 +8,11 @@ export default defineKind({
   status: 'none',
   purpose:
     'Stores a dosing chemical in bulk, filled by tanker, for transfer to the day tanks.',
-  traits: ['container', 'cylindrical', 'fixed', 'floor-standing'],
+  traits: [
+    'container',
+    'cylindrical',
+    'fixed',
+    'floor-standing',
+    'inspectable',
+  ],
 });

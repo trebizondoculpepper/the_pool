@@ -7,7 +7,7 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Contains the circulating pool water that the player can enter.',
-  traits: ['fixed', 'water-body'],
+  traits: ['fixed', 'functional', 'water-body'],
   bindings: [
     {
       room: 'pool_01',

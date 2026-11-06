@@ -8,7 +8,7 @@ export default defineKind({
   status: 'none',
   purpose:
     'Contains the shallow disinfecting water that visitors wade through.',
-  traits: ['fixed', 'water-body'],
+  traits: ['fixed', 'functional', 'water-body'],
   bindings: [
     {
       room: 'pool_04',

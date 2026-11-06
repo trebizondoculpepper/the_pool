@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Introduces treatment chemical to the heating circuit.',
-  traits: ['container', 'cylindrical', 'fixed', 'wall-mounted'],
+  traits: ['container', 'cylindrical', 'fixed', 'inspectable', 'wall-mounted'],
 });

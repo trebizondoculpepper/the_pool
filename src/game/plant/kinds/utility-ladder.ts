@@ -8,5 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'A fixed steel ladder without a cage, climbed a short height to a platform.',
-  traits: ['ladder'],
+  traits: ['floor-standing', 'ladder'],
 });

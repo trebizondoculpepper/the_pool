@@ -7,7 +7,14 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: "The PC's CRT monitor: shows what the computer is doing.",
-  traits: ['box-like', 'fixed', 'floor-standing', 'readable', 'supportable'],
+  traits: [
+    'box-like',
+    'fixed',
+    'floor-standing',
+    'functional',
+    'readable',
+    'supportable',
+  ],
   bindings: [
     {
       room: 'engineers_office',

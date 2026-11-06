@@ -8,7 +8,7 @@ export default defineKind({
   status: 'none',
   purpose:
     "The PC's empty carton beside the engineer's desk, a bin that takes what is thrown into it.",
-  traits: ['bin-like', 'box-like', 'fixed', 'floor-standing'],
+  traits: ['bin-like', 'box-like', 'fixed', 'floor-standing', 'functional'],
   bindings: [
     {
       room: 'engineers_office',

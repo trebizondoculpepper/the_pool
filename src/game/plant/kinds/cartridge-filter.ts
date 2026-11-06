@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Removes suspended solids from circulating water.',
-  traits: ['filter-like'],
+  traits: ['filter-like', 'inspectable'],
 });

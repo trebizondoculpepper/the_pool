@@ -7,7 +7,13 @@ export default defineKind({
   class: 'plant',
   status: 'none',
   purpose: 'Contains the hot spa water and its seat, jets and drains.',
-  traits: ['cylindrical', 'fixed', 'floor-standing', 'water-body'],
+  traits: [
+    'cylindrical',
+    'fixed',
+    'floor-standing',
+    'functional',
+    'water-body',
+  ],
   brand: 'lidoluxe',
   bindings: [
     {

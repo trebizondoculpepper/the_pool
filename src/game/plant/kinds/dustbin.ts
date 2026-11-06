@@ -7,5 +7,5 @@ export default defineKind({
   class: 'non-plant',
   status: 'none',
   purpose: 'A waste bin that takes the rubbish and finds thrown into it.',
-  traits: ['bin-like', 'box-like', 'fixed', 'floor-standing'],
+  traits: ['bin-like', 'box-like', 'fixed', 'floor-standing', 'functional'],
 });

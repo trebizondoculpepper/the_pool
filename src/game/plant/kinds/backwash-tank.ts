@@ -7,5 +7,5 @@ export default defineKind({
   class: 'plant',
   status: 'level',
   purpose: 'Holds filter backwash water before discharge.',
-  traits: ['tank-like'],
+  traits: ['inspectable', 'tank-like'],
 });
