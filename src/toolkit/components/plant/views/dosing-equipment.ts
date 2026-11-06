@@ -287,16 +287,19 @@ export function createOlympicHypochloriteBoard(
     [-0.4, returned[1], 0.06],
     [-0.4, 0.48, 0.06],
   ]);
-  // A live discharge gauge on a short tapping from the dose line. The
-  // passive accessories remain an explicit follow-up in mission 102.
+  // A live discharge gauge on a short tapping that rises from the top of
+  // the dose line, the gauge's ½" stem screwed down into it (#49: it hung
+  // below the line, its stem pointing at nothing). The passive accessories
+  // remain an explicit follow-up in mission 102.
+  const TAPPING = { x: 0.41, y: 0.2, z: 0.06, rise: 0.05 };
   t.cyl(
     group,
     t.paint('#ecebe4', 0.4),
     0.008,
-    0.05,
-    0.41,
-    0.175,
-    0.08,
+    TAPPING.rise,
+    TAPPING.x,
+    TAPPING.y + TAPPING.rise / 2,
+    TAPPING.z,
     'y',
     16,
   );
@@ -305,7 +308,11 @@ export function createOlympicHypochloriteBoard(
     max: 16,
     legend: 'DISCHARGE',
   });
-  gauge.group.position.set(0.41, 0.11, 0.11);
+  gauge.group.position.set(
+    TAPPING.x,
+    TAPPING.y + TAPPING.rise + gauge.stemDrop,
+    TAPPING.z + gauge.stemBack,
+  );
   group.add(gauge.group);
   put(group, createTag(t, 'PL2-DP1-P1 · DMH 21-10', 0.32), [0, -0.38, 0.021]);
   put(
