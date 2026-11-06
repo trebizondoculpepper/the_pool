@@ -1,0 +1,57 @@
+import { describe, expect, it } from 'vite-plus/test';
+import { advance, applyAction, newWorld } from '../world';
+import { midSeasonFilters } from '../world.test-support';
+import type { World } from '../world';
+import { BALANCE_TANK } from './balance-tank';
+import { installedValveByCommandId } from './installed-valves';
+import { olympicTankLevel } from './pools';
+import { olympicTankView, tankFloats } from './olympic-tank';
+
+const level = (w: World) => olympicTankLevel(w.pools.pool_02.balance);
+
+/** Every filter backwashing at once: a way to draw the tank down hard. */
+/** Filter 1 alone backwashing, as an operator does one at a time. */
+const backwashOne = (w: World) =>
+  Object.entries({ V1: false, V2: false, V3: true, V4: true }).reduce(
+    (y, [v, open]) =>
+      applyAction(y, {
+        type: 'plant/valve',
+        id: installedValveByCommandId(`PL2-F1-${v}`)!.assetId,
+        open,
+      }),
+    w,
+  );
+
+describe('the Olympic’s balance tank in the world', () => {
+  it('fills by HAND to its weir, and spills over it', () => {
+    let w = applyAction(newWorld(), { type: 'olympic/makeup', mode: 'hand' });
+    w = advance(w, 3 * 3600, 5);
+    expect(olympicTankView(w).makeupOpen).toBe(true);
+    expect(level(w)).toBeGreaterThan(BALANCE_TANK.weir - 0.01);
+    expect(tankFloats(level(w)).high).toBe(true);
+  });
+
+  it('runs down with its make-up OFF and a backwash drawing on it, until LOW LOW trips the pumps', () => {
+    // One filter backwashing; the pit kept empty (an ideal pit: this is
+    // the balance tank's test, not the pit's, which fills and inhibits).
+    // Its beds mid-season, as the draw-down was timed.
+    let w = applyAction(midSeasonFilters(newWorld()), {
+      type: 'olympic/makeup',
+      mode: 'off',
+    });
+    w = backwashOne(w);
+    let low = -1;
+    let tripped = -1;
+    for (let m = 1; m <= 120 && tripped < 0; m++) {
+      w = advance(w, 60, 1);
+      w = { ...w, wetHall: { ...w.wetHall, backwashTank: 0, inhibit: false } };
+      if (low < 0 && tankFloats(level(w)).low) low = m;
+      if (w.pools.pool_02.tripped) tripped = m;
+    }
+    expect(low).toBeGreaterThan(0);
+    expect(tripped).toBeGreaterThan(low);
+    expect(w.wetHall.inhibit).toBe(false);
+    expect(level(w)).toBeLessThan(BALANCE_TANK.lowLow + 0.05);
+    expect(olympicTankView(w).pumps).toBe('tripped');
+  });
+});
