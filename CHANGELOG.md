@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- The engineer's office chair is now a registered kind with a seat and a room binding, completing the embedded-object follow-up to mission 169 (#39).
 - The ladder trait (#18): a `ladder` composite trait extends `functional`, and every human ladder (pool, caged, utility and tank-access) is now a registered kind carrying it. The room factory makes every `ladder`-kind object climbable in every room, so the eight rooms that listed their ladders by hand no longer do; a pool hall gives only the shape of its sloping floor (`ladderFloorAt`), on which a pool ladder's foot stands. Ladders now have hover names and a 3D form in the magic room.
 
 - A click and the crosshair's cue now come from the one aim resolution (mission 161, step 2, first cut): `resolveAim` owns the first visible hit, and `useRegistrationOf` resolves it to the one object — its usable answer for the cue and, on the same object, its click action, run only when the answer says possible. The rooms' own `use` still runs where nothing is registered (accepted, deprecated) while they migrate.

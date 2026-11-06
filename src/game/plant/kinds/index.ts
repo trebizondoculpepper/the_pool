@@ -115,6 +115,7 @@ export const OTHER_KIND_IDS = [
   'footbath',
   'gas-ball-valve',
   'level-transmitter',
+  'office-chair',
   'office-shelf',
   'pc-monitor',
   'pc-tower',
