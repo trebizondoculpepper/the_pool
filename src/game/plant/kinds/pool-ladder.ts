@@ -8,5 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'A stainless steel ladder down into a pool, climbed in and out of the water.',
-  traits: ['ladder'],
+  traits: ['floor-standing', 'ladder'],
 });

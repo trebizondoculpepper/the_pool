@@ -8,5 +8,5 @@ export default defineKind({
   status: 'none',
   purpose:
     'A ladder down into a tank or pit, climbed for inspection and cleaning.',
-  traits: ['ladder'],
+  traits: ['floor-standing', 'ladder'],
 });
