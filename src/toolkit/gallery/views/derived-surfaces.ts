@@ -231,6 +231,14 @@ export function roomSurfaces(root: Object3D, metre: number): DerivedSurface[] {
     if (!kind) return;
     const traits = surfaceTraitsOf(kind);
     if (!traits) return;
+    // A declared plane (`surface=plane`, `surfaceY`) wins over both the
+    // raycast and the box-like/bounds box: it says exactly where the top
+    // is (bala_qasim's point on PR #27).
+    if (traits.mode === 'plane') {
+      const s = objectSurface(o, metre, traits);
+      if (s) surfaces.push(s);
+      return;
+    }
     if (traits.bounded || traits.boxed) {
       surfaces.push(...boundedSurfaces(o, traits.walkable));
       return;

@@ -39,8 +39,13 @@ export const isPile = (upper: StackItem, lower: StackItem): boolean => {
  * band of the upper (`isPile`), independent X and Z offsets, each normally
  * distributed with a standard deviation of 5% of the smaller item's size
  * along that axis. No pile limit; the small errors make taller stacks look
- * imperfect. On a much larger top (book on a desk) the offset is zero: it
- * is put down ordinarily on the roomier surface.
+ * imperfect.
+ *
+ * `ok: false` means "not a stack": the lower is far larger than the upper
+ * (a book on a desk), so it is not a perilous pile — the resolver puts it
+ * down ordinarily, with 210's exact aimed spot, and does not call this at
+ * all (bala_qasim's point on PR #27). The area rule below still refuses an
+ * upper too big for any top.
  */
 export function stackPose(
   upper: StackItem,
@@ -53,20 +58,22 @@ export function stackPose(
   const lowerArea = lower.width * lower.depth;
   if (upperArea > lowerArea * 1.05 + 1e-9)
     return { ok: false, x: 0, z: 0, yaw: 0 };
-  let x = 0;
-  let z = 0;
-  if (isPile(upper, lower)) {
-    const sdX = 0.05 * Math.min(upper.width, lower.width);
-    const sdZ = 0.05 * Math.min(upper.depth, lower.depth);
-    // Box–Muller: a gaussian from the uniform source (two draws at a time);
-    // a fresh 0.5-second draw wastes nothing for a rare one-off call.
-    const gauss = () => {
-      const u = Math.max(1e-12, random());
-      const v = Math.max(1e-12, random());
-      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-    };
-    x = gauss() * sdX;
-    z = gauss() * sdZ;
-  }
-  return { ok: true, x, z, yaw: 0 };
+  // A book on a much larger desk is ordinary placement, not a pile: the
+  // precarious centre-of-gravity offset stays for similar-sized stacks.
+  if (!isPile(upper, lower)) return { ok: false, x: 0, z: 0, yaw: 0 };
+  const sdX = 0.05 * Math.min(upper.width, lower.width);
+  const sdZ = 0.05 * Math.min(upper.depth, lower.depth);
+  // Box–Muller: a gaussian from the uniform source (two draws at a time);
+  // a fresh 0.5-second draw wastes nothing for a rare one-off call.
+  const gauss = () => {
+    const u = Math.max(1e-12, random());
+    const v = Math.max(1e-12, random());
+    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+  };
+  return {
+    ok: true,
+    x: gauss() * sdX,
+    z: gauss() * sdZ,
+    yaw: 0,
+  };
 }

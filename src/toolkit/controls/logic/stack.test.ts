@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vite-plus/test';
 import { isPile, stackPose, STACK_PILE_MAX_RATIO } from './stack';
 
 describe('the stack placement (mission 212)', () => {
-  it('allows a smaller upper on a larger lower, centred with a small offset', () => {
+  it('allows a similar-sized upper on a slightly larger lower, centred with a small offset', () => {
     const p = stackPose(
       { width: 0.2, depth: 0.1 },
-      { width: 0.3, depth: 0.2 },
+      { width: 0.3, depth: 0.15 },
       () => 0.5,
     );
     expect(p.ok).toBe(true);
@@ -45,7 +45,7 @@ describe('the stack placement (mission 212)', () => {
     // A constant 0.5 source gives a fixed gaussian draw; the offset scales.
     const small = stackPose(
       { width: 0.1, depth: 0.1 },
-      { width: 0.3, depth: 0.2 },
+      { width: 0.15, depth: 0.12 },
       () => 0.5,
     );
     const big = stackPose(
@@ -60,16 +60,15 @@ describe('the stack placement (mission 212)', () => {
   });
 
   it('only perilous offsets on a similar-sized lower: book on desk is placement, book on book is a pile (issue #11 ruling, 2026-11-06)', () => {
-    // A box on a desk: the desk's top is many times bigger, so it is put
-    // down centred with no error offset — ordinary placement.
+    // A box on a desk: the desk's top is far bigger, so it is not a lethal
+    // pile — the resolver puts it down ordinarily, with 210's exact aimed
+    // spot; `stackPose` refuses so the caller does not centre it.
     const onDesk = stackPose(
       { width: 0.2, depth: 0.12 },
       { width: 1.6, depth: 0.8 },
       () => 0.9, // a large uniform draw, that would give a big offset
     );
-    expect(onDesk.ok).toBe(true);
-    expect(onDesk.x).toBe(0);
-    expect(onDesk.z).toBe(0);
+    expect(onDesk.ok).toBe(false);
     // A box on a similar box: within the pile band, offsets apply.
     const onBook = stackPose(
       { width: 0.2, depth: 0.12 },
@@ -78,7 +77,7 @@ describe('the stack placement (mission 212)', () => {
     );
     expect(onBook.ok).toBe(true);
     expect(onBook.x).not.toBe(0);
-    // The area rule still gates placement on a desk or a pile alike.
+    // The area rule still gates placement on any top.
     expect(
       stackPose({ width: 2, depth: 2 }, { width: 1.6, depth: 0.8 }, () => 0.5)
         .ok,
