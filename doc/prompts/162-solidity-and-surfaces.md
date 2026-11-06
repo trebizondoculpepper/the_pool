@@ -1,5 +1,7 @@
 # 162: Solidity and surfaces in every room
 
+Tracked in #23; status lives there.
+
 The owner, 2026-11-04. Part of the one-kind-of-room series (158–165); priority **high**. Replanned 2026-11-05 (nicole_buruaah, at the owner's request): most of the original brief has since been designed or built by missions 175 (derived surfaces), 181 (`supportable`), 182 (`walkable`) and 208 (bounds models and the `solid` trait). What is left is the room-wide half: making every room's walker and hands take their solids and tops from the registry through the room factory, instead of each room's own lists. **Ready to start after 208 stage 2.**
 
 **Needs:** 159 (done) and **208 stage 2** (the `solid` trait, its opt-outs and collision shapes from bounds models: open, designed with the owner).
