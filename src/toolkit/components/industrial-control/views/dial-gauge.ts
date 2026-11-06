@@ -60,6 +60,10 @@ export interface DialGaugeOptions {
 
 export interface DialGaugeView {
   group: Group;
+  /** A bottom-entry stem's end, below the gauge's centre, metres (0 for a back entry). */
+  readonly stemDrop: number;
+  /** How far behind the face that stem stands, metres (0 for a back entry). */
+  readonly stemBack: number;
   /** Set the reading, in the gauge's units. */
   set(value: number): void;
   /** Move the pointer: call each frame. */
@@ -258,6 +262,13 @@ export function createDialGauge(
   place();
   return {
     group,
+    /**
+     * How far below its centre a bottom-entry gauge's stem ends, and how
+     * far behind its face the stem stands, metres: a builder seats the
+     * stem's end on its tapping's top (#49). Zero for a back entry.
+     */
+    stemDrop: entry === 'bottom' ? r + 0.05 : 0,
+    stemBack: entry === 'bottom' ? 0.012 : 0,
     set(value) {
       target = value;
     },

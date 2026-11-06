@@ -178,14 +178,19 @@ export function createMotorDosingTrial(kit: PanelKit) {
   t.cyl(damper, pvdf, 0.012, 0.08, 0, -0.04, 0, 'y', 12);
   t.cyl(damper, pvdf, 0.04, 0.13, 0, 0.065, 0, 'y', 24);
   t.cyl(damper, t.paint('#0b4f9c', 0.5), 0.041, 0.012, 0, 0.11, 0, 'y', 24);
-  t.cyl(damper, pvdf, 0.008, 0.06, 0.04, -0.04, 0, 'x', 10);
+  // The gauge's tapping: out of the damper's side and up, the gauge's
+  // stem screwed down into it (#49: it hung beside the stub, its stem
+  // pointing at nothing).
+  const tapX = 0.1;
+  t.cyl(damper, pvdf, 0.008, tapX, tapX / 2, -0.04, 0, 'x', 10);
+  t.cyl(damper, pvdf, 0.008, 0.05, tapX, -0.015, 0, 'y', 10);
   describe(damper, 'NEW DMH: pulsation damper, 0.5 l, PVDF');
   const gauge = createDialGauge(kit, {
     dia: 0.063,
     max: 16,
     legend: 'DISCHARGE',
   });
-  gauge.group.position.set(0.11, -0.04, 0.012);
+  gauge.group.position.set(tapX, 0.01 + gauge.stemDrop, gauge.stemBack);
   damper.add(gauge.group);
   caption('PULSATION DAMPER\nand DISCHARGE GAUGE', damperAt.x + 0.17, 1.62);
 
