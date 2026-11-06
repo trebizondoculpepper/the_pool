@@ -32,4 +32,4 @@ Through `inspectionStatus` and the description prose: the hover line and heading
 
 ## Follow-up
 
-- The control valve's description says it "Isolates heating water …", and its type reads "butterfly valve"; a modulating control valve regulates rather than isolates. A wording/kind fix for its own issue.
+- The control valve's description says it "Isolates heating water …", and its type reads "butterfly valve"; a modulating control valve regulates rather than isolates. A wording/kind fix, #33.
