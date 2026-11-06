@@ -22,7 +22,6 @@ import {
 import { SHELL_WALL } from '../logic/shell-rooms';
 import { createDockOutside } from '../views/dock-outside';
 import { addControlRoomPendants } from '../views/control-room-pendants';
-import { useOnHit } from '../../controls/input/touch-point';
 import { computed, signal } from '@preact/signals-core';
 import {
   actOnZoneMusic,
@@ -44,7 +43,7 @@ import {
   Vector2,
   WebGLRenderTarget,
 } from 'three';
-import type { Camera, Object3D } from 'three';
+import type { Camera } from 'three';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
@@ -60,7 +59,6 @@ import { METRE } from '../../components/core/logic/units';
 import { partAudio } from '../../components/core/audio/part-audio';
 import { createRoomController } from '../../controls/input/room-controller';
 import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
-import { seatDeclared, seatOf } from '../../controls/input/seating';
 import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
@@ -528,25 +526,9 @@ export function runShell(canvas: HTMLCanvasElement, cfg: ShellConfig) {
   rooms.add(machines.group);
   const raycaster = new Raycaster();
   const pointer = new Vector2();
-  const usableAt = (x: number, y: number) => {
-    raycaster.setFromCamera(pointer.set(x, y), camera);
-    const hit = raycaster.intersectObject(rooms, true)[0];
-    if (!hit || hit.distance > 3 * metre) return null;
-    for (let o: Object3D | null = hit.object; o; o = o.parent) {
-      const work = parts.uses.get(o) ?? machines.useOf(o);
-      if (work) {
-        // With the hit known, so a touch surface can ask where it was touched.
-        return useOnHit(hit, o, work, camera);
-      }
-      // A chair that declares a seat: sat on (`controls/logic/seat.ts`).
-      const seat = seatDeclared(o);
-      if (seat) {
-        const chair = o;
-        return () => walk.sit(seatOf(chair, seat));
-      }
-    }
-    return null;
-  };
+  // Mission 161: the room's own use/aimed walk is gone — the parts mark
+  // their uses themselves (registerPartUse), and the shared resolver
+  // (first-person.ts) owns the click and the cue.
   const toMetre = (s: Footprint): Footprint => ({
     minX: s.minX * metre,
     maxX: s.maxX * metre,
@@ -812,10 +794,9 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
         )
         .map(toMetre),
     ],
-    use: (x, y) => usableAt(x, y)?.(),
-    aimed: () => Boolean(usableAt(0, 0)),
-    // The information overlay is the factory's (mission 160); the room
-    // only gives it its world. What is aimed at is named in the help line.
+    // Mission 161: the room no longer carries its own use/aimed — the
+    // shared resolver (first-person.ts) owns the click and the cue, and
+    // the parts carry their uses themselves.
     world: () => roomWorld().world.value,
   });
   // A development handle for the console, as the plant rooms' is: stand
@@ -824,7 +805,7 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
     place(x: number, z: number, yaw = 0, pitch = 0) {
       walk.place(x * metre, z * metre, yaw, pitch);
     },
-    use: (x = 0, y = 0) => usableAt(x, y)?.(),
+    use: (x = 0, y = 0) => walk.use(x, y),
     /** Where the walker is, metres, and the floor it stands on. */
     pose: () => ({
       x: walk.walker.x / metre,

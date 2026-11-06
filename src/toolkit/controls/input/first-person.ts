@@ -1658,6 +1658,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
   const controller = {
     walker,
     metre,
+    /** Use what the aim meets (mission 161): the click's one shared path,
+     * exposed for a room's own dev handle to drive it directly. */
+    use,
     /**
      * The hands of the shared pick-up and carry (`objects` given), for a
      * room that hands things over (`give`) or resets them (`forget`).
