@@ -262,7 +262,7 @@ export function createPoolTemperatureControlTrial(kit: PanelKit) {
       cards
         .map(
           (c) =>
-            `${c.modern ? 'CAL 3300' : 'West 6000'} ${c.temp.toFixed(1)} °C, SP ${c.controller.setpoint.toFixed(1)} °C, ${c.controller.mode.toUpperCase()}, valve ${Math.round(c.controller.valvePosition * 100)}%`,
+            `${c.modern ? 'CAL 3300' : 'West 6000'} ${c.temp.toFixed(1)} °C, SP ${c.controller.setpoint.toFixed(1)} °C, mode ${c.controller.mode.toUpperCase()}, heating valve ${Math.round(c.controller.valvePosition * 100)}% open`,
         )
         .join('; '),
   };

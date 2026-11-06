@@ -258,7 +258,7 @@ export function createPoolTemperatureController(
       parts.update(delta);
     },
     status: () =>
-      `${tag}: ${world().pools[pool].temperature.toFixed(1)} °C; SP ${state().setpoint.toFixed(1)} °C; ${state().mode.toUpperCase()}; valve ${Math.round(state().valvePosition * 100)}%`,
+      `${tag}: ${world().pools[pool].temperature.toFixed(1)} °C; SP ${state().setpoint.toFixed(1)} °C; mode ${state().mode.toUpperCase()}; heating valve ${Math.round(state().valvePosition * 100)}% open`,
   };
 }
 
