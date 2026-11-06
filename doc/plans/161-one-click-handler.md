@@ -31,3 +31,19 @@ Brief: `doc/prompts/161-one-click-handler.md`. The owner, 2026-11-04, urgent, [r
 
 - Step 3 (use while holding on the objects) and the room-by-room migration (shell-room, pool-hall-room, water-room, controls-room, bin-room, repair-room, racks-room, magic-room).
 - The records (`CHANGELOG.md`, `src/toolkit/controls/AGENTS.md`) when the contract ships; a diary entry.
+
+## Step 4 inventory (checked 2026-11-06 at `02fbfa57`, branch `issue-8-one-click-handler`)
+
+36 controllers still pass `use`/`aimed` (the deprecated fallback: `clickOutcome === 'room'` runs the room's own `use`). The resolver, registration and holding all exist on main; the migration is per-room: read the room's `use`, register its clicks on the objects (`markUsable` with an action), delete `use`/`aimed`. Batch order from the brief (biggest first):
+
+1. **shell-room** (use=2, aimed=1) — the biggest, combines parts/machines/seats in one `usableAt`.
+2. **pool-hall-room** (use=1) — the pool halls' equipment, not just the spa/level panels.
+3. **water-room** (use=1, aimed=1) — the ripple as the water's registered use.
+4. **controls-room** (aimed=1) — dev0's boards; useWhileHolding/At to the objects.
+5. **bin-room, repair-room** (use=1 each) — their useWhileHolding/At to the objects.
+6. **racks-room** (use=1) — heldAction/targetFeedback to the objects.
+7. **magic-room** (use=2, aimed=1).
+8. The remaining 29 simple rooms (most are one `usableAt` over the parts).
+9. Step 3: the carrying hooks and the interactive gate (#10) in `resolveAim`.
+
+Each batch: register the room's special clicks as object actions, delete the room's `use`/`aimed`, run the affected fast suites, commit and push; the draft PR (`issue-8-one-click-handler`) shows it all.
