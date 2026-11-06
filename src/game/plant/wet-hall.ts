@@ -42,7 +42,7 @@ export const WET_HALL_PLANT = {
    * (`BACKWASH_PIT`): sized (the owner, 2026-10-26) for two of the
    * Olympic's filters and one of the lounge's washed together, which
    * send about 49 m³ to drain in some eight minutes (backwash and rinse,
-   * measured in the world, `backwash-pit.test.ts`), with room above; then
+   * measured in the world, `backwash-pit.slow.test.ts`), with room above; then
    * made half as deep again, for water slides and a children's pool to
    * come.
    */
