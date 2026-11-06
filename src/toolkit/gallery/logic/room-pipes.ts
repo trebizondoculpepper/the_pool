@@ -92,6 +92,8 @@ export interface Valve {
    * a chemical line's PVC-U ball valve, by hand or motorised (plan 085).
    */
   style?: 'butterfly' | 'gas-ball' | 'chemical-ball' | 'chemical-line';
+  /** A lever ball valve's lever colour: yellow for gas (the default), red for water (#47). */
+  lever?: string;
   /**
    * The way it faces in plan, away from its machine: its lever, open,
    * along a level pipe that way; its neck and lever, on a vertical pipe,
@@ -2370,6 +2372,108 @@ export function boilerHousePipework(): { runs: PipeRun[]; tees: PipeTee[] } {
     0.022,
     { link: 'Pressurisation fill' },
   );
+  // The dosing pot, BH-DP1 (#47), across the pumped LTHW: its feed tees
+  // off the flow to the building under the ceiling and comes along the
+  // south wall in front of the mains, down to the pot's top; its return
+  // goes from the pot's foot into the return main where it drops to the
+  // low-loss header; its drain points down at the floor. Each has its
+  // lever ball valve at the pot, normally shut.
+  const pot = layout.placed.find((p) => p.item.key === 'dosing-pot')!;
+  const potIn = at(pot, 'in');
+  const potOut = at(pot, 'out');
+  const potDrain = at(pot, 'drain');
+  const flowToBuilding = runs.find((r) => r.name === 'LTHW flow to building')!;
+  const flowX = flowToBuilding.points[0][0];
+  const DOSING_LANE = 5.65;
+  const DOSING_DROP = 2.0;
+  const smallBore = 0.015;
+  const redLever = '#c42b23';
+  add({
+    name: 'Dosing pot feed',
+    kind: 'copper',
+    od: smallBore,
+    points: [
+      [flowX, FLOW_MAIN, DOSING_LANE],
+      [potIn[0], FLOW_MAIN, DOSING_LANE],
+      [potIn[0], DOSING_DROP, DOSING_LANE],
+      [potIn[0], DOSING_DROP, potIn[2]],
+      [...potIn],
+    ],
+    joins: ['LTHW flow to building', pot.item.label],
+    service: 'heating flow',
+    label: 'LTHW FLOW',
+    valves: [
+      {
+        at: [potIn[0], (DOSING_DROP + potIn[1]) / 2, potIn[2]],
+        axis: 'y',
+        name: 'Dosing pot feed valve',
+        od: smallBore,
+        operator: 'lever',
+        style: 'gas-ball',
+        lever: redLever,
+        facing: [0, 0, -1],
+      },
+    ],
+  });
+  tee(
+    'Dosing pot feed tee',
+    [flowX, FLOW_MAIN, DOSING_LANE],
+    [0, 0, 1],
+    [-1, 0, 0],
+    smallBore,
+    { link: 'Dosing pot feed' },
+  );
+  const returnDrop = sr[0];
+  add({
+    name: 'Dosing pot return',
+    kind: 'copper',
+    od: smallBore,
+    points: [[...potOut], [returnDrop, potOut[1], potOut[2]]],
+    joins: [pot.item.label, 'LTHW return main'],
+    service: 'heating return',
+    label: 'LTHW RETURN',
+    valves: [
+      {
+        at: [(potOut[0] + returnDrop) / 2, potOut[1], potOut[2]],
+        axis: 'x',
+        name: 'Dosing pot return valve',
+        od: smallBore,
+        operator: 'lever',
+        style: 'gas-ball',
+        lever: redLever,
+        facing: [0, 0, -1],
+      },
+    ],
+  });
+  tee(
+    'Dosing pot return tee',
+    [returnDrop, potOut[1], potOut[2]],
+    [0, 1, 0],
+    [1, 0, 0],
+    smallBore,
+    { link: 'Dosing pot return' },
+  );
+  add({
+    name: 'Dosing pot drain',
+    kind: 'copper',
+    od: smallBore,
+    points: [[...potDrain], [potDrain[0], potDrain[1] - 0.3, potDrain[2]]],
+    joins: [pot.item.label],
+    service: 'heating return',
+    label: 'DRAIN',
+    valves: [
+      {
+        at: [potDrain[0], potDrain[1] - 0.15, potDrain[2]],
+        axis: 'y',
+        name: 'Dosing pot drain valve',
+        od: smallBore,
+        operator: 'lever',
+        style: 'gas-ball',
+        lever: redLever,
+        facing: [0, 0, -1],
+      },
+    ],
+  });
   // The calorifier's own water: the cold feed in from the building, the
   // hot water and its secondary return out to it. The three rise beside
   // the calorifier and run south together over the heating mains, out

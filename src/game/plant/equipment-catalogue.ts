@@ -350,9 +350,11 @@ function inventoryRecords(
       const penstock = valve.tag === 'PL2-T1-DV1';
       const kind: KindId = penstock
         ? 'penstock'
-        : /gas/i.test(name)
-          ? 'gas-ball-valve'
-          : 'butterfly-valve';
+        : valve.kind
+          ? valve.kind
+          : /gas/i.test(name)
+            ? 'gas-ball-valve'
+            : 'butterfly-valve';
       return record(
         {
           assetId: valve.assetId,

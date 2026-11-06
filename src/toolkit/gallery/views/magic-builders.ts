@@ -95,6 +95,18 @@ export const KIND_BUILDERS: Readonly<Record<string, KindBuilder>> = {
   'gas-ball-valve': {
     build: (kit) => objectOf(createGasBallValve(kit, {})),
   },
+  // A water lever ball valve, its lever red (#47: the dosing pot's).
+  'ball-valve': {
+    title: 'Ball valve, DN15, lever operated',
+    build: (kit) =>
+      objectOf(
+        createGasBallValve(kit, {
+          pipeRadius: 0.0075,
+          name: 'Ball valve',
+          lever: '#c42b23',
+        }),
+      ),
+  },
   boiler: {
     title: 'Condensing boiler, 300 kW',
     build: (kit) => objectOf(createCondensingBoiler(kit)),

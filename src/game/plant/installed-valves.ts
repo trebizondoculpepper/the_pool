@@ -126,6 +126,25 @@ const HAND_DRAWN_VALVES: Readonly<Record<string, InstalledValve>> = {
     tag: 'BH-HW1-IV1',
     normal: 'open',
   },
+  // The dosing pot's valves (#47): at the pot, normally shut.
+  'boiler_house|Dosing pot feed|Dosing pot feed valve': {
+    assetId: 'valve-0111',
+    kind: 'ball-valve',
+    tag: 'BH-DP1-IV1',
+    normal: 'closed',
+  },
+  'boiler_house|Dosing pot return|Dosing pot return valve': {
+    assetId: 'valve-0112',
+    kind: 'ball-valve',
+    tag: 'BH-DP1-IV2',
+    normal: 'closed',
+  },
+  'boiler_house|Dosing pot drain|Dosing pot drain valve': {
+    assetId: 'valve-0113',
+    kind: 'ball-valve',
+    tag: 'BH-DP1-DV1',
+    normal: 'closed',
+  },
   // The Olympic pool's plant room, redone by the pipeline (prompt 033, 2026-10-23).
   'plant_pool_02|Suction A|Pump A suction valve': {
     assetId: 'valve-0044',
@@ -397,6 +416,12 @@ export interface InstalledValve {
   assetId: string;
   tag: string;
   normal: 'open' | 'closed';
+  /**
+   * Its registered kind, where its name does not say it (#47: the dosing
+   * pot's lever ball valves); otherwise a gas valve is a gas ball valve
+   * and the rest butterfly valves.
+   */
+  kind?: 'ball-valve';
 }
 
 export const installedValveKey = (room: string, run: string, name: string) =>

@@ -111,6 +111,7 @@ export const BOILER_HOUSE_SCHEMATIC: RoomSchematic = {
     machine('gas-supply', 'gas-supply', 'Gas supply'),
     machine('building', 'building-heating', 'Building heating'),
     machine('water', 'water-service', 'Water service'),
+    machine('gully', 'gully', 'Floor gully'),
     machine('hot-water', 'building-hot-water', 'Building hot water'),
     ...electrics.nodes,
   ],
@@ -225,12 +226,23 @@ export const BOILER_HOUSE_SCHEMATIC: RoomSchematic = {
       ['calorifier', 'secondary-return'],
       'water',
     ),
+    // The dosing pot, BH-DP1 (#47): a bypass pot across the pumped LTHW,
+    // fed from the flow manifold and returning to the return main, so the
+    // circulator's head drives water through it when both its valves are
+    // open; isolated, it is drained and charged with inhibitor by hand.
     link(
-      'Heating circuit dosing',
+      'Dosing pot feed',
+      ['flow-tee', 'dose'],
+      ['dosing-pot', 'in'],
+      'water',
+    ),
+    link(
+      'Dosing pot return',
       ['dosing-pot', 'out'],
       ['return-tee', 'dose'],
-      'chemical',
+      'water',
     ),
+    link('Dosing pot drain', ['dosing-pot', 'drain'], ['gully', 'in'], 'water'),
     ...electrics.links,
   ],
   fittings: [
@@ -238,6 +250,21 @@ export const BOILER_HOUSE_SCHEMATIC: RoomSchematic = {
       valve(`valve-00${36 + k}`, `B-50${k} gas drop`, `gas${k}`),
     ),
     valve('valve-0043', 'LTHW flow riser', 'lthwFlow'),
+    // The dosing pot's isolating valves and drain, normally shut: the pot
+    // is opened to the system only while it is dosed (#47).
+    {
+      ...valve('valve-0111', 'Dosing pot feed', 'dosingFeed'),
+      end: 'target',
+      normally: 'closed',
+    },
+    {
+      ...valve('valve-0112', 'Dosing pot return', 'dosingReturn'),
+      normally: 'closed',
+    },
+    {
+      ...valve('valve-0113', 'Dosing pot drain', 'dosingDrain'),
+      normally: 'closed',
+    },
   ],
   rules: { isolate: new Set(), pumps: new Set() },
 };

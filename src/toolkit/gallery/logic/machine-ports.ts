@@ -826,6 +826,24 @@ export function machinePorts(item: Item): MachinePort[] {
       port('powerA', [0, 0.84, -0.23], [0, 1, 0], 0.0269, 'power'),
       port('powerB', [0, 0.84, 0.23], [0, 1, 0], 0.0269, 'power'),
     ];
+  if (kind === 'dosing-pot')
+    // `createDosingPot` (#47): its ¾" copper stubs, the feed's up out of
+    // its top-left, the return's out of its bottom-right toward the return
+    // main, and the drain straight down from its base, 0.2 m off the wall.
+    return [
+      {
+        ...port('in', [-0.3, 0.45, 0.2], [0, 1, 0], 0.015, 'heating'),
+        drawn: true,
+      },
+      {
+        ...port('out', [0.3, -0.38, 0.2], [1, 0, 0], 0.015, 'heating'),
+        drawn: true,
+      },
+      {
+        ...port('drain', [0, -0.53, 0.17], [0, -1, 0], 0.015, 'heating'),
+        drawn: true,
+      },
+    ];
   if (kind === 'pressurisation')
     // The pressurisation unit's copper fill to the system, up at its side,
     // and its power into the top of its cabinet (`createPressurisation`).
