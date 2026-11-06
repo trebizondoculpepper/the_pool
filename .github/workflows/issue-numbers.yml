@@ -1,0 +1,29 @@
+name: Issue numbers
+
+# Every issue's title starts with POOL<n>, n its own issue number (the
+# owner, 2026-11-06), so new tickets stand apart from the old numbered
+# missions in doc/prompts/ and TODO.md. A title that already starts with
+# its own POOL<n> is left alone; a wrong or missing one is replaced.
+
+on:
+  issues:
+    types: [opened, edited, reopened]
+
+permissions:
+  issues: write
+
+jobs:
+  number:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Start the title with POOL<number>
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          NUMBER: ${{ github.event.issue.number }}
+          TITLE: ${{ github.event.issue.title }}
+        run: |
+          prefix="POOL${NUMBER}: "
+          case "$TITLE" in "$prefix"*) exit 0 ;; esac
+          rest=$(printf '%s' "$TITLE" | sed -E 's/^POOL[0-9]+:?[[:space:]]*//')
+          gh issue edit "$NUMBER" --repo "$REPO" --title "${prefix}${rest}"

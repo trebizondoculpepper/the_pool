@@ -1,13 +1,13 @@
 name: Mission
-description: A numbered mission; the plan lives in a brief in doc/prompts/, this issue tracks it.
-title: 'NNN: '
+description: A mission; its title is numbered POOL<n> on opening, its plan may live in a brief in doc/prompts/, and this issue tracks it.
+title: ''
 labels: [mission]
 body:
   - type: input
     id: brief
     attributes:
       label: Brief
-      description: Path to the brief (doc/prompts/NNN-name.md), or "none yet".
+      description: Path to the brief (doc/prompts/POOL<n>-name.md for a new mission, doc/prompts/NNN-name.md for an old one), or "none yet".
     validations:
       required: true
   - type: dropdown
