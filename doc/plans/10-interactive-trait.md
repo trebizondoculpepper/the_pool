@@ -30,7 +30,7 @@ Owner rulings, 2026-11-06:
 **Open for the owner (one item left; `readable` is settled):**
 
 - **`readable` is kept as its own class** (constant content); the composites whose readouts are state-driven (`instrument-like`, `mimic`, `board-like`) gain `inspectable` explicitly. `sign` stays readable where its words matter — its hover shows the text, no status; a set-dressing poster stays decorative.
-- **`functional` needs gameplay of its own or to be implied.** As written it only _disables_ (no cue, no click, no status); the ladder's climbing comes from ladder zones, not the trait. Give it a job (e.g. hover names it by kind but shows no status; or it is what 165 checks every ladder/stair/lift is), or have it implied by the specific traits that do the work, rather than set by hand.
+- **`functional`'s gameplay (settled 2026-11-06): a `ladder` trait.** A new composite trait `ladder` **extends `functional`** and defines the ladder behaviour (climbing, the mobility aid) — elsewhere, mounts and lets the player climb. It gives `functional` a concrete job and is written through it, so a ladder kind resolves functional not by hand but by carrying `ladder`. Whether other things (stairs, a lift) gain their own `functional`-extending traits is a later decision; step 1 represents `functional` and the `ladder` trait.
 
 ## Hover effect of "inspectable is not a default"
 
@@ -58,12 +58,13 @@ Resolution walks up the hit mesh's parents to the nearest part/component mark, e
 
 **Step 1 — the trait (this PR's eventual scope, self-contained and pure).**
 
-- `traits.ts`: add `functional` (use facet, new), `inspectable` (use facet, new) and `interactive` (use facet, new, `implies: ['inspectable']`). Make `operable`, `openable`, `holdable`, `sittable` imply `interactive` (the issue's rule).
+- `traits.ts`: add `functional` (use facet, new), `inspectable` (use facet, new) and `interactive` (use facet, new, `implies: ['inspectable']`). Make `operable`, `openable`, `holdable`, `sittable` imply `interactive` (the issue's rule). Add the composite trait **`ladder`** extending `functional`, which defines the ladder behaviour (climbing; the mobility aid) and is the first concrete use of `functional`.
 - `equipment-kinds.ts`: `InteractionClass` becomes `decorative | functional | readable | inspectable | interactive` (replacing `decorative | inspect-only | usable`); `affordancesFromTraits` derives the class by precedence (interactive > inspectable > readable > functional > decorative) from the traits; the existing `operable`/`sittable`/etc. now resolve to interactive via their implication; `readable` stays a class of its own (constant content).
 - Update consumers of `InteractionClass` (`audit-data-section.ts`, `room-audit-page.ts`, the `equipment-kinds.test.ts` expectations) and grep string literals (`usable`, `inspect-only`) beyond those three, including audit JSON snapshots.
 - Migrate explicit `affordances.interaction` values through the audit command (`sign.ts` sets `'inspect-only'`), map the kind-class fallback (`resolveKindAffordances`: `decorative` → decorative, else the new default), and reconcile the class-vs-trait `decorative` distinction (class derived for unmarked kinds; trait explicit and never added to every unmarked kind).
 - The composites whose readouts are state-driven gain `inspectable` explicitly: `instrument-like` (10 files), `mimic` (12), `board-like` (8) — through the audit command. `readable` stays on the constant-content kinds that keep it.
-- A fast classification test: a door, a holdable, a seat, an operable and a local-touchscreen kind are interactive; a ladder's kind is functional; a sign (or book) is readable; a gauge, a tank and a pipe run are not clickable. Plus `functional`'s gameplay answer (owner) lands here.
+- A fast classification test: a door, a holdable, a seat, an operable and a local-touchscreen kind are interactive; a ladder's kind is functional (through its `ladder` trait); a sign (or book) is readable; a gauge, a tank and a pipe run are not clickable.
+- Reclassifying the existing kinds onto the new traits (`inspectable` on the state-driven composites, `functional`/`ladder` on ladders and stairs, decorative for true set-dressing) is a separate ticket, raised when step 1 lands — see "What waits on what".
 
 **Step 3 — the mesh index (separate branch, before the gate).**
 
@@ -80,7 +81,8 @@ Resolution walks up the hit mesh's parents to the nearest part/component mark, e
 
 ## What waits on what
 
-- Step 1 (the trait) can start once `functional`'s gameplay is settled (the owner); `readable` is resolved — it stays its own class, and the state-driven composites gain `inspectable`.
+- Step 1 (the trait + the `ladder` composite) can start now — `readable` and `functional` are both settled.
+- Reclassifying the existing kinds onto the new traits is a **separate ticket** (raised 2026-11-06): a sweep that marks each kind's true class once the traits exist.
 - Step 3 (the index) is independent of both and has the biggest payoff; do it before the gate.
 - Step 2 (the gate) lands on #8's resolver, now merged (`3308e64e`), gated by the coverage test.
 
