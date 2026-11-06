@@ -2,6 +2,7 @@ import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3 } from 'three';
 import type { Material, Object3D, PerspectiveCamera, Texture } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { PhoneFrame } from '../logic/phone-menu';
+import { phoneFraming } from '../logic/phone-framing';
 import { createPhoneDisplay } from './phone-display';
 
 const handsetUrl = `${import.meta.env.BASE_URL}models/phone/scene.gltf`;
@@ -15,9 +16,8 @@ export function createPhoneView(
 ) {
   const anchor = new Group();
   anchor.name = 'Held phone';
-  // The supplied glTF has a 0.069 root scale; the enlarged phone reads well
-  // close to the camera, with its lower third below the viewport.
-  anchor.scale.setScalar(3.8 * metre);
+  // The supplied glTF has a 0.069 root scale. Its camera-space scale is
+  // recomputed below so the handset behaves like an overlay across FOVs.
   anchor.visible = false;
   scene?.add(anchor);
   let loaded: Object3D | null = null;
@@ -74,7 +74,9 @@ export function createPhoneView(
       });
       const glass = loaded.getObjectByName('glassFront_low');
       if (glass) {
-        const screenGeometry = new PlaneGeometry(0.575, 0.604);
+        // The glass mesh spans 0.575 × 0.604. Inset the live display inside
+        // the raised bezel so its outer pixels cannot disappear under it.
+        const screenGeometry = new PlaneGeometry(0.53, 0.55);
         const base = new MeshBasicMaterial({ map: display.texture });
         const screen = new Mesh(screenGeometry, foreground(base));
         base.dispose();
@@ -106,11 +108,15 @@ export function createPhoneView(
       anchor.visible = lift > 0.001;
       if (!anchor.visible) return;
       // Model +Z is its face. The camera looks down -Z, so +Z faces the eye.
-      offset.set(
-        camera.aspect < 0.8 ? 0.08 * metre : 0.3 * metre,
-        (-0.8 + 0.58 * lift) * metre,
-        -0.7 * metre,
+      const frame = phoneFraming(
+        camera.fov,
+        camera.zoom,
+        camera.aspect,
+        window.innerWidth / window.innerHeight,
+        lift,
       );
+      anchor.scale.setScalar(frame.scale * metre);
+      offset.set(frame.x * metre, frame.y * metre, frame.z * metre);
       anchor.position
         .copy(camera.position)
         .add(offset.applyQuaternion(camera.quaternion));
