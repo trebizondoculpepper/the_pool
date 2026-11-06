@@ -1,4 +1,5 @@
 import { pruneNetwork, solveNetwork } from '../sim/hydraulics';
+import { FISSURE_RELIEF } from './ideal-filter';
 import type { NetLink, NetNode } from '../sim/hydraulics';
 
 /**
@@ -290,7 +291,7 @@ export function batteryFaceFlows(
       ? BIG_FILTER.bed * (1 + 0.2 * (f.dirt / BIG_FILTER.dirtRef))
       : BIG_FILTER.bed *
         (1 + f.dirt / BIG_FILTER.dirtRef) *
-        (1 - 0.6 * f.fissuring);
+        (1 - FISSURE_RELIEF * f.fissuring);
     nodes.push({ id: n('supply') }, { id: n('top') }, { id: n('bottom') });
     links.push(
       {

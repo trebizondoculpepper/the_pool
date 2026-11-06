@@ -245,6 +245,13 @@ export interface RigFlows {
 }
 
 /**
+ * How much a fully fissured bed's resistance falls (#59; the owner,
+ * 2026-11-06): its channels let water round the sand, but a neglected
+ * filter still clearly loses flow, so a quarter, not more.
+ */
+export const FISSURE_RELIEF = 0.25;
+
+/**
  * How a bed resists, against itself clean and sound (#59): raised by its
  * dirt (doubled at its dirt reference) and lowered by its fissures (water
  * channels round the sand). Every filter takes its own clean resistance
@@ -256,7 +263,7 @@ export function bedResistanceFactor(
   bed: IdealFilterState,
 ): number {
   const z = bedSizing(spec, bed);
-  return (1 + bed.dirt / z.dirtRef) * (1 - 0.6 * bed.fissuring);
+  return (1 + bed.dirt / z.dirtRef) * (1 - FISSURE_RELIEF * bed.fissuring);
 }
 
 const BAR = 1 / 10.2;
