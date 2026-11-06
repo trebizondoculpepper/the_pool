@@ -41,20 +41,17 @@ const binKinds = new Map<string, boolean>();
 const ladderKinds = new Map<string, boolean>();
 
 /**
- * Whether a registered kind carries the `ladder` composite (#18): one of its
- * traits is `ladder`, or reaches `functional` through it.
+ * Whether a registered kind is climbed (#18): its traits reach the
+ * `climbable` primitive (the `ladder` composite gives it).
  */
 export function kindIsLadder(kind: string): boolean {
   if (!isKindId(kind)) return false;
   const known = ladderKinds.get(kind);
   if (known !== undefined) return known;
   const traits = EQUIPMENT_KINDS[kind].traits ?? [];
-  const { via } = expand(traits, compositeTraits());
-  const ladder =
-    traits.includes('ladder') ||
-    Object.values(via).some((paths) =>
-      paths.some((path) => path.split(' → ').includes('ladder')),
-    );
+  const ladder = (
+    expand(traits, compositeTraits()).primitives as readonly string[]
+  ).includes('climbable');
   ladderKinds.set(kind, ladder);
   return ladder;
 }

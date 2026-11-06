@@ -40,6 +40,13 @@ describe('the ladder trait (#18)', () => {
       ).toBe('functional');
   });
 
+  it('a ladder is not solid: the climber stands inside it', () => {
+    for (const kind of Object.values(LADDER_KINDS))
+      expect(kindAffordances(kind as keyof typeof EQUIPMENT_KINDS).solid).toBe(
+        false,
+      );
+  });
+
   it('a built ladder is marked with its kind', () => {
     const ladder = createHumanLadder('pool', 1.2);
     expect(ladder.group.userData[EQUIPMENT_KIND]).toBe('pool-ladder');
