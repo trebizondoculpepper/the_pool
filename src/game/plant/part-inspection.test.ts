@@ -55,11 +55,12 @@ describe('a part’s inspection', () => {
   it('reads a readout live, signed, in the mode shown, and follows a change while aimed at', () => {
     let mode = 'flow';
     const part = P.readout('f2-flow', () => mode)!;
-    expect(describePart(part, running()).title).toBe(
-      'F2 FLOW readout — currently reading 45.0 m³/h.',
+    // About its design half and its wash rate, as the network solves them (#59).
+    expect(describePart(part, running()).title).toMatch(
+      /^F2 FLOW readout — currently reading 4[45]\.\d m³\/h\.$/,
     );
-    expect(describePart(part, backwashing(running())).title).toBe(
-      'F2 FLOW readout — currently reading -34.0 m³/h.',
+    expect(describePart(part, backwashing(running())).title).toMatch(
+      /^F2 FLOW readout — currently reading -3[2-5]\.\d m³\/h\.$/,
     );
     // A mode the readout shows nothing in: no reading claimed.
     mode = 'temperature';
@@ -71,16 +72,18 @@ describe('a part’s inspection', () => {
   it('reads a flowmeter as its display shows it, and says what its arrow indicates between the pipe’s two ends', () => {
     expect(inspectComponent({ tag: 'PL1-F2-FT1' }, running())).toEqual({
       key: 'PL1-F2-FT1',
-      title:
-        'PL1-F2-FT1 (Kessler-Moody Instruments flowmeter) - reading 45.0 m³/h',
+      title: expect.stringMatching(
+        /^PL1-F2-FT1 \(Kessler-Moody Instruments flowmeter\) - reading 4[45]\.\d m³\/h$/,
+      ),
       detail:
         'The direction arrow indicates water is flowing from the lounge pool sand filter 2 to the filter outlet header.',
     });
     expect(
       inspectComponent({ tag: 'PL1-F2-FT1' }, backwashing(running())),
     ).toMatchObject({
-      title:
-        'PL1-F2-FT1 (Kessler-Moody Instruments flowmeter) - reading 34.0 m³/h',
+      title: expect.stringMatching(
+        /^PL1-F2-FT1 \(Kessler-Moody Instruments flowmeter\) - reading 3[2-5]\.\d m³\/h$/,
+      ),
       detail:
         'The direction arrow indicates water is flowing from the filter outlet header to the lounge pool sand filter 2.',
     });

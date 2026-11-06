@@ -1,4 +1,4 @@
-import { solveNetwork } from '../sim/hydraulics';
+import { pruneNetwork, solveNetwork } from '../sim/hydraulics';
 import type { NetLink, NetNode, NetSolution } from '../sim/hydraulics';
 import {
   FILTER_PHYSICS,
@@ -173,74 +173,7 @@ function build(
           r: RETURN_R,
         },
   );
-  return pruned(nodes, links);
-}
-
-/**
- * The circuit water can actually flow round (#59): shut links dropped, and
- * then, again and again, any junction left with a single link (a dead end:
- * a pump running against shut valves, a branch with one way in), since no
- * water flows into a dead end. What is left solves cleanly; what was cut
- * carries nothing.
- */
-function pruned(nodes: NetNode[], links: NetLink[]) {
-  let live = links.filter((l) => l.kind !== 'closed');
-  const reservoir = new Set(
-    nodes.filter((n) => n.head !== undefined).map((n) => n.id),
-  );
-  for (;;) {
-    const degree = new Map<string, number>();
-    for (const l of live)
-      for (const id of [l.from, l.to])
-        degree.set(id, (degree.get(id) ?? 0) + 1);
-    const dead = new Set(
-      [...degree]
-        .filter(([id, d]) => d < 2 && !reservoir.has(id))
-        .map(([id]) => id),
-    );
-    if (!dead.size) break;
-    live = live.filter((l) => !dead.has(l.from) && !dead.has(l.to));
-  }
-  // Then each pocket of junctions between the reservoirs: water flows
-  // through it only if it joins two reservoirs at different heads, or a
-  // pump drives it. A pocket open only to the waste (a filter whose top
-  // and bottom both lead to it) carries nothing.
-  const head = new Map(nodes.map((n) => [n.id, n.head]));
-  const parent = new Map<string, string>();
-  const find = (id: string): string => {
-    const p = parent.get(id) ?? id;
-    if (p === id) return id;
-    const root = find(p);
-    parent.set(id, root);
-    return root;
-  };
-  for (const l of live)
-    if (!reservoir.has(l.from) && !reservoir.has(l.to))
-      parent.set(find(l.from), find(l.to));
-  const pocketOf = (l: NetLink) => find(reservoir.has(l.from) ? l.to : l.from);
-  const touches = new Map<string, Set<number>>();
-  const driven = new Set<string>();
-  for (const l of live) {
-    if (reservoir.has(l.from) && reservoir.has(l.to)) continue;
-    const pocket = pocketOf(l);
-    for (const id of [l.from, l.to])
-      if (reservoir.has(id)) {
-        const set = touches.get(pocket) ?? new Set<number>();
-        set.add(head.get(id)!);
-        touches.set(pocket, set);
-      }
-    if (l.kind === 'pump') driven.add(pocket);
-  }
-  live = live.filter((l) => {
-    if (reservoir.has(l.from) && reservoir.has(l.to)) return true;
-    const pocket = pocketOf(l);
-    return driven.has(pocket) || (touches.get(pocket)?.size ?? 0) >= 2;
-  });
-  const used = new Set(live.flatMap((l) => [l.from, l.to]));
-  return {
-    nodes: nodes.filter((n) => reservoir.has(n.id) || used.has(n.id)),
-    links: live,
-  };
+  return pruneNetwork(nodes, links);
 }
 
 /** Solve, lifting any bed washed up at its lift share of its wash flow, and solve again. */
@@ -331,11 +264,14 @@ const RUNS = (() => {
 })();
 
 /**
- * The last answer, kept while nothing that sets it has changed: valves to
+ * Recent answers, kept while nothing that sets them has changed: valves to
  * the hundredth of their travel, pumps, waste and each bed's resistance to
- * a thousandth (the world steps ten times a second, its beds foul slowly).
+ * the hundredth (a 1 % change moves the flow by about half that). Several
+ * are kept, since one world step asks with more than one set of inputs
+ * (its pool's turnover, its gauges, its alarms); the oldest goes first.
  */
-let cache: { key: string; network: LoungeNetwork } | null = null;
+const CACHE_SIZE = 16;
+const cache = new Map<string, LoungeNetwork>();
 const keyOf = (input: LoungeNetworkInput) =>
   [
     input.wasteOpen ? 1 : 0,
@@ -343,15 +279,17 @@ const keyOf = (input: LoungeNetworkInput) =>
     ...input.filters.flatMap((v) =>
       [v.inlet, v.outlet, v.backwash, v.drain].map((x) => x.toFixed(2)),
     ),
-    ...input.beds.map((b) => bedResistanceFactor(LOUNGE_SIZE, b).toFixed(3)),
+    ...input.beds.map((b) => bedResistanceFactor(LOUNGE_SIZE, b).toFixed(2)),
   ].join(',');
 
 /** The Lounge's circulation, solved (#59). */
 export function solveLounge(input: LoungeNetworkInput): LoungeNetwork {
   const key = keyOf(input);
-  if (cache?.key === key) return cache.network;
+  const known = cache.get(key);
+  if (known) return known;
   const network = solveUncached(input);
-  cache = { key, network };
+  cache.set(key, network);
+  if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value!);
   return network;
 }
 

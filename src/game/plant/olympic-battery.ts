@@ -9,7 +9,12 @@ import type {
   IdealFilterSpec,
   IdealFilterState,
 } from './ideal-filter';
-import { BIG_FILTER, VALVES, faceFlows } from './five-valve-filter';
+import {
+  BIG_FILTER,
+  VALVES,
+  batteryFaceFlows,
+  faceFlows,
+} from './five-valve-filter';
 import type { FiveValveFlows, ValveName } from './five-valve-filter';
 import { installedValveByCommandId } from './installed-valves';
 import { circulating } from './pools';
@@ -142,7 +147,29 @@ export function facePorts(f: FiveValveFlows | undefined): FilterPorts {
   };
 }
 
-let cache: { key: string; flows: BatteryFlows } | null = null;
+/** A bed's fissuring as the face's hydraulics take it, to a hundredth. */
+const faceFissuring = (f: number) => Math.round(f * 100) / 100;
+
+/**
+ * The pump pair's curve (#59): a fixed-speed pair whose duty point is the
+ * battery's design, five filters in service on new beds at `OLYMPIC_HEAD`
+ * at its discharge (as each face was solved alone before), its shut-off a
+ * third and more above that.
+ */
+export const OLYMPIC_PUMP = (() => {
+  const service = { v1: 1, v2: 1, v3: 0, v4: 0, v5: 0 };
+  const design = newOlympicBattery().dirt.reduce(
+    (sum, d) =>
+      sum + faceFlows(service, faceDirt(d), true, OLYMPIC_HEAD).valve.v2,
+    0,
+  );
+  const shutoff = 1.35 * OLYMPIC_HEAD;
+  return { shutoff, k: (shutoff - OLYMPIC_HEAD) / (design * design) };
+})();
+
+/** Recent answers by their inputs (#59: several, since a step asks more than once); the oldest goes first. */
+const cache = new Map<string, BatteryFlows>();
+const CACHE_SIZE = 16;
 
 /**
  * The battery's flows: from its valves, its beds' dirt, and whether the
@@ -187,18 +214,28 @@ export function olympicBatteryFlows(
     draining,
     openings.map((o) => VALVES.map((v) => o[v]).join('')).join(','),
     battery.dirt.map(faceDirt).join(','),
+    (battery.fissuring ?? []).map(faceFissuring).join(','),
   ].join('|');
-  if (cache?.key === key) return cache.flows;
-  const filters = openings.map((opening, i) => {
-    const f = faceFlows(
+  const known = cache.get(key);
+  if (known) return known;
+  // The battery solved as one network (#59): the pump pair on its curve,
+  // every face off its discharge, so a fouled filter takes less and the
+  // others more, and the total falls along the curve.
+  const faces = batteryFaceFlows(
+    openings.map((opening, i) => ({
       opening,
-      faceDirt(battery.dirt[i]),
-      pumping,
-      OLYMPIC_HEAD,
-    );
+      dirt: faceDirt(battery.dirt[i]),
+      fissuring: faceFissuring(battery.fissuring?.[i] ?? 0),
+    })),
+    pumping,
+    OLYMPIC_PUMP,
+  );
+  const filters = faces.map((f) => ({
+    ...f,
     // Up the riser: to the return, less what a backwash sends down it.
-    return { ...f, riser: f.valve.v2 - f.valve.v3, ports: facePorts(f) };
-  });
+    riser: f.valve.v2 - f.valve.v3,
+    ports: facePorts(f),
+  }));
   const flows: BatteryFlows = {
     pumping,
     returning,
@@ -212,7 +249,8 @@ export function olympicBatteryFlows(
       ) + (draining ? PUMP_DRAIN_FLOW : 0),
     drain: draining ? PUMP_DRAIN_FLOW : 0,
   };
-  cache = { key, flows };
+  cache.set(key, flows);
+  if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value!);
   return flows;
 }
 

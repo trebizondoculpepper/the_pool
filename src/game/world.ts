@@ -96,6 +96,7 @@ import {
 import type { ChangeoverAction } from '../toolkit/components/plant/logic/booster-changeover';
 import { OLYMPIC_TANK_DRAIN } from './plant/balance-tank';
 import {
+  loungeBed,
   loungePasses,
   newLoungeFilters,
   stepLoungeFilters,
@@ -278,6 +279,7 @@ import {
   actOnSpaFilter,
   filtering,
   newSpaFilters,
+  spaFlowShare,
   spaWashFlow,
   stepSpaFilters,
 } from './plant/spa-filter';
@@ -2048,6 +2050,8 @@ function stepPlant(world: World, delta: number): World {
         running,
         loungePumpsRunning(motors),
         !world.wetHall.inhibit,
+        // Its two beds as they stand: their dirt and fissures share its flow (#59).
+        [loungeBed(world.loungeFilters, 0), loungeBed(world.loungeFilters, 1)],
       ),
     hallHandling(airHandling),
     motors,
@@ -2055,6 +2059,11 @@ function stepPlant(world: World, delta: number): World {
     spaWash,
     ring,
     world.poolTemperatureControls,
+    // Each spa's circulation by its filter's bed against its pump (#59).
+    {
+      pool_03: spaFlowShare(world.spaFilters.pool_03),
+      pool_04: spaFlowShare(world.spaFilters.pool_04),
+    },
   );
   const controlledInstalledValves: Record<string, boolean> = {
     ...world.installedValves,

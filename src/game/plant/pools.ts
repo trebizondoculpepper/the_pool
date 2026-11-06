@@ -513,6 +513,12 @@ export function stepPoolsWater(
    */
   ring?: { flow: number; circulating: boolean },
   temperatureControls?: Partial<Record<PoolId, PoolTemperatureControlState>>,
+  /**
+   * A spa's circulation against its design, as its filter's bed resists it
+   * against its pump (`spaFlowShare`, #59): less as the bed fouls.
+   * Without it, its design flow.
+   */
+  spaShare?: Partial<Record<PoolId, number>>,
 ): {
   pools: PoolsState;
   drawn: number;
@@ -604,7 +610,9 @@ export function stepPoolsWater(
       circulation &&
         !drainDown &&
         (id !== 'pool_04' || !footbath || footbath.returning)
-        ? (battery?.toPool ?? loungeFlows?.toPool ?? POOL_TARGET[id].flow)
+        ? (battery?.toPool ??
+            loungeFlows?.toPool ??
+            POOL_TARGET[id].flow * (spaShare?.[id] ?? 1))
         : 0,
       0.08,
       dt,
