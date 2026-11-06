@@ -44,15 +44,15 @@ A registered machine like a jacuzzi cabinet is one kind (`jacuzzi-pack`) contain
 
 Resolution walks up the hit mesh's parents to the nearest part/component mark, exactly as `useRegistrationOf` does today; the class is read from that part's own mark (definitive), else its kind's class (derived from the kind's traits).
 
-## The gate, in 161's resolver (step 2)
+## The gate, in 161's resolver (step 3)
 
 `resolve-aim.ts` (`resolveAim`) resolves a hit to its registration. The gate lands there:
 
 1. **Non-interactive things still occlude.** A valve is not clicked through a tank or a wall: non-interactive meshes stay in the ray as occluders. The gate is on what a hit **may resolve to**, not on what the ray may hit.
 2. **Ladder and carried-item handlers run first.** 161's click order (mount a ladder; use while carrying; placement targets) is reached before the registered-action gate, so a `functional` ladder is still climbable and carrying still works — the gate is not read as refusing them.
-3. **Early exit** via the room's interactive bounds — but only once step 3's index exists; until then step 2 is purely the correctness gate (refuse non-interactive resolutions) with no performance promise.
+3. **Early exit** via the room's interactive bounds — but only once step 2's index exists; until then step 3 is purely the correctness gate (refuse non-interactive resolutions) with no performance promise.
 4. **Coverage test as a prerequisite.** Before the gate lands, a test lists every usable mark whose owning kind is not interactive (or has no kind). It must be empty, or those things registered, or the gate falls back to today's behaviour for unregistered owners until 165.
-5. **The bigger saving is the mesh index (step 3),** not the gate — one aim lookup costs ~2 ms, nearly all of it walking the room's ~7,230 objects to find the ~7 meshes in reach (measured while closing #7, plant_pool_02). A per-room mesh index (rebuilt when contents change, as derived surfaces are; live world-space bounds rechecked each query so moved doors/carried items/panels invalidate correctly; not just add/remove) is shared by hover, cue and click. Benchmark hover and cue/click together in plant_pool_02.
+5. **The bigger saving is the mesh index (step 2),** not the gate — one aim lookup costs ~2 ms, nearly all of it walking the room's ~7,230 objects to find the ~7 meshes in reach (measured while closing #7, plant_pool_02). A per-room mesh index (rebuilt when contents change, as derived surfaces are; live world-space bounds rechecked each query so moved doors/carried items/panels invalidate correctly; not just add/remove) is shared by hover, cue and click. Benchmark hover and cue/click together in plant_pool_02.
 
 ## What changes (landing order: step 1 — trait, step 2 — index, step 3 — gate)
 
@@ -66,7 +66,7 @@ Resolution walks up the hit mesh's parents to the nearest part/component mark, e
 - A fast classification test: a door, a holdable, a seat, an operable and a local-touchscreen kind are interactive; a sign (or book) is readable; a gauge, a tank and a pipe run are not clickable. No requirement that a `ladder` kind is functional — that is #18's.
 - **No hover behaviour change in this wave** (the reviewers' points): kind-only naming is kept as today; `readable`'s "hover shows the text" is new behaviour, deferred to a later ticket. Step 1 stays a pure classification with no change in behaviour.
 
-**Wave 2 — the kind audit, the minimal set.** Without it, every state-bearing gauge, mimic, board, tank and filter resolves to `readable`/`decorative` and loses its status the moment Wave 1 lands.
+**Wave 2 — the kind audit, the minimal set.** Complete it before interaction classification is enforced anywhere, so state-bearing gauges, mimics, boards, tanks and filters retain their status when later consumers use the new classes. (Wave 1 changes no hover behaviour; this is preparation for the later classification enforcement.)
 
 - The state-driven composites gain `inspectable` explicitly: `instrument-like` (10 files), `mimic` (12), `board-like` (8) — through the audit command.
 - The state-bearing kinds cezary_cyaattaarji caught in review also gain `inspectable` so they don't fall to decorative: `tank-like` (`balance-tank`, `break-tank`, `backwash-tank`, `contact-tank`, `acid-ibc`), `filter-like` (`sand-filter`, `cartridge-filter`), and the standalone vessels (`hypo-tank`, `chem-bulk`, `chem-day`, `calorifier`, `low-loss-header`, `dosing-pot`, `heat-exchanger`). Fixes `cuboid-tank` in `traits.test.ts`.
