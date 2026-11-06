@@ -83,6 +83,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - Dr Aqualis's advice verification judges each instruction's outcome by the water score averaged over the hour after mixing, not one instant, so the pumps' ripple no longer decides it (#59; the owner, 2026-11-06). The Olympic's dilution for high alkalinity then scores worse than leaving it, open and closed: three known failures, for #74.
 
 - A selector's hover now says where it is set, "set to AUTO", and the temperature controllers' status lines say "mode AUTO, heating valve 50% open" (#62): the valve's output, printed straight after the mode, read as the HAND · OFF · AUTO selector's own value.
+
+- PL2-TC1's control conduit reaches the controller (#63): the Olympic's digital temperature controller was laid out at the old analogue unit's 0.6 × 0.5 m, so its conduit stopped 0.1 m above the 430 × 290 mm body drawn; the plan now uses the body's own size.
 - The raised phone now holds a stable screen-space size and position across field-of-view changes and sits slightly higher on narrow screens; its live display fits inside the handset's bezel without clipping its outer pixels.
 
 - The pool exchangers' LTHW control valves, PL1-HX1-CV1 and PL2-HX1-CV1, are modulating control valves that regulate the flow, no longer "butterfly valves" that "isolate" it (#33): a new `modulating` trait (a valve positioned between shut and open by its controller) and a registered `control-valve` kind carrying it; a room model's regulating fittings take that kind, and a modulating valve's description says it regulates.
