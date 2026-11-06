@@ -1,5 +1,10 @@
 import { NO_PORT_FLOW, portFlows } from './ideal-filter';
-import type { FilterPorts } from './ideal-filter';
+import type { FilterPorts, IdealFilterState } from './ideal-filter';
+import { solveLounge } from './lounge-hydraulics';
+import { loungeBed } from './lounge-filters';
+import type { LoungeFiltersState } from './lounge-filters';
+
+const CLEAN_BED: IdealFilterState = { dirt: 0, fissuring: 0, unsettled: 0 };
 import { INSTALLED_VALVES } from './installed-valves';
 import { MODEL_VALVES } from './model-valves';
 import type { PlantServices } from './services';
@@ -120,27 +125,36 @@ export interface LoungeFlows {
   dumps: readonly [number, number];
   /** Each filter's drain-down through its DV1. */
   drains: readonly [number, number];
+  /** Each bed's pressure difference in service, bar, solved (#59). */
+  dp: readonly [number, number];
 }
 
 /**
  * Two parallel filters, each with an inlet (IV1), an outlet (IV2) to the
  * filtered-water header, a backwash valve (BV1) to waste and a drain
- * (DV1). In service, a filter takes the pumps' water in at its inlet and
- * gives it up its outlet. Backwashed (the owner, 2026-10-25, prompt 066),
- * a filter has its inlet shut and its outlet and backwash valve open: the
+ * (DV1), fed by the duty and standby pumps through their discharge valves.
+ * Every flow comes from the room's one water network (`lounge-hydraulics.ts`,
+ * #59), solved from the valves, the pumps and each bed's own resistance: a
+ * fouled bed takes less and its partner more, and the total falls along the
+ * pump's curve. In service a filter takes the pumps' water in at its inlet
+ * and gives it up its outlet. Backwashed (the owner, 2026-10-25, prompt
+ * 066), it has its inlet shut and its outlet and backwash valve open: the
  * other filter's filtered water comes back along the header, down its
- * outlet, up through its bed and out to waste, so the pool's return drops
- * by what the backwash takes, and with both filters backwashing there is
- * no filtered water to wash either. A filter with its inlet and backwash
- * both open dumps its unfiltered water to waste.
+ * outlet, up through its bed and out to waste, so the pool's return drops by
+ * what the backwash takes. Its inlet and backwash both open, it dumps its
+ * unfiltered water to waste; its inlet and drain open with its outlet shut,
+ * it is rinsed to waste. With no inlet open its drain only drains it down
+ * (3 m³/h, by gravity).
  */
 export function loungeValveFlows(
   positions: Readonly<Record<string, number>>,
   running: boolean,
   /** Which pumps run, where known: each delivers through its own discharge valve. */
-  pumps: { p1: boolean; p2: boolean } = { p1: true, p2: true },
+  pumps: { p1: boolean; p2: boolean } = { p1: true, p2: false },
   /** The waste main open to the backwash pit: shut at its high-high level (`wet-hall.ts`). */
   wasteOpen = true,
+  /** The two beds as they stand (their dirt and fissures set their resistance); clean by default. */
+  beds: readonly [IdealFilterState, IdealFilterState] = [CLEAN_BED, CLEAN_BED],
 ): LoungeFlows {
   const still: LoungeFlows = {
     toPool: 0,
@@ -152,17 +166,13 @@ export function loungeValveFlows(
     backwash: [0, 0],
     dumps: [0, 0],
     drains: [0, 0],
+    dp: [0, 0],
   };
   if (!running) return still;
   const at = (tag: string) => {
     const valve = VALVE_BY_TAG.get(tag)!;
     return positions[valve.assetId] ?? (valve.normal === 'open' ? 1 : 0);
   };
-  // What the running pumps deliver, each through its own discharge valve.
-  const discharge = Math.max(
-    pumps.p1 ? at('PL1-P1-IV1') : 0,
-    pumps.p2 ? at('PL1-P2-IV1') : 0,
-  );
   const filter = (n: 1 | 2) => {
     const v = (letters: string) => at(`PL1-F${n}-${letters}`);
     return {
@@ -173,59 +183,47 @@ export function loungeValveFlows(
     };
   };
   const f = [filter(1), filter(2)] as const;
-  // In service: through inlet and outlet, while the pumps deliver.
-  const service = f.map(
-    (x) => LOUNGE_FILTER_FLOW * Math.min(x.inlet, x.outlet) * discharge,
-  );
-  // Backwashed: as far as its inlet is shut and its outlet and backwash
-  // open, and no more than the other filter gives.
+  const net = solveLounge({
+    pumps: [pumps.p1 ? at('PL1-P1-IV1') : 0, pumps.p2 ? at('PL1-P2-IV1') : 0],
+    filters: f,
+    beds,
+    wasteOpen,
+  });
   const waste = wasteOpen ? 1 : 0;
-  const backwash = f.map((x, i) =>
-    Math.min(
-      LOUNGE_BACKWASH_FLOW *
-        (1 - x.inlet) *
-        Math.min(x.outlet, x.backwash) *
-        waste,
-      service[1 - i],
-    ),
+  const b = net.branches;
+  // Up through a bed from its outlet: its backwash; what leaves its
+  // backwash valve beyond that came straight from its inlet: a dump.
+  const backwash = b.map((x) => Math.max(0, -x.outlet));
+  const dump = b.map((x, i) => Math.max(0, x.backwash - backwash[i]));
+  // Its drain: what the network sends out of it, or at least its gravity drain-down.
+  const drains = b.map((x, i) =>
+    Math.max(Math.max(0, x.drain), 3 * f[i].drain * waste),
   );
-  const dump = f.map((x) => 5 * x.inlet * x.backwash * discharge * waste);
-  // Rinsed (the owner, 2026-10-30): its inlet and drain open and its
-  // outlet shut, the pumps' water runs in at the top, down through the
-  // bed and out of its drain to waste, at up to its service flow. With no
-  // inlet open its drain only drains it down (3 m³/h).
-  const rinse = f.map(
-    (x) =>
-      LOUNGE_FILTER_FLOW *
-      Math.min(x.inlet, x.drain) *
-      (1 - x.outlet) *
-      discharge *
-      waste,
-  );
-  const drains = f.map((x, i) => Math.max(rinse[i], 3 * x.drain * waste));
   const tankDrain = at('PL1-T1-DV1') * 5;
   const toWaste =
     tankDrain +
-    f.reduce((sum, _x, i) => sum + backwash[i] + dump[i] + drains[i], 0);
+    b.reduce((sum, x, i) => sum + Math.max(0, x.backwash) + drains[i], 0);
   // Each filter's ports: the shared model takes it from there.
-  const ports = f.map((_x, i): FilterPorts => ({
-    inlet: service[i] + rinse[i] + dump[i],
-    outlet: service[i],
+  const ports = b.map((x, i): FilterPorts => ({
+    inlet: Math.max(0, x.inlet),
+    outlet: Math.max(0, x.outlet),
     backwashIn: backwash[i],
-    backwashOut: backwash[i] + dump[i],
+    backwashOut: Math.max(0, x.backwash),
     rinse: drains[i],
   }));
   const bed = ports.map((p) => portFlows(p).bed);
   return {
-    toPool: Math.max(0, service[0] + service[1] - backwash[0] - backwash[1]),
+    toPool: net.toPool,
     toWaste,
     tankDrain,
-    filters: [service[0] - backwash[0], service[1] - backwash[1]],
+    filters: [b[0].outlet, b[1].outlet],
     beds: [bed[0], bed[1]],
     ports: [ports[0], ports[1]],
     backwash: [backwash[0], backwash[1]],
     dumps: [dump[0], dump[1]],
     drains: [drains[0], drains[1]],
+    // Its gauges' difference, while water runs down through it.
+    dp: [b[0].bed > 0 ? b[0].dp : 0, b[1].bed > 0 ? b[1].dp : 0],
   };
 }
 
@@ -236,12 +234,16 @@ export function loungeFlowsOf(world: {
   plant: PlantServices;
   motors?: MotorsState;
   wetHall?: { inhibit?: boolean };
+  /** The two beds, whose dirt and fissures set their resistance (#59); clean where not given. */
+  loungeFilters?: LoungeFiltersState;
 }): LoungeFlows {
+  const beds = world.loungeFilters;
   return loungeValveFlows(
     world.loungeValvePositions,
     circulating(world.pools.pool_01, world.plant, 'pool_01', world.motors),
     loungePumpsRunning(world.motors),
     !world.wetHall?.inhibit,
+    beds ? [loungeBed(beds, 0), loungeBed(beds, 1)] : undefined,
   );
 }
 

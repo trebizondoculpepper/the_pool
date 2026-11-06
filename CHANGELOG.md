@@ -77,6 +77,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 - The raised phone now holds a stable screen-space size and position across field-of-view changes; its live display fits inside the handset's bezel without clipping its outer pixels.
 
+- The Lounge plant room's filters share their flow by their resistance (#59, stage 1): PL1-F1 and PL1-F2, the duty and standby pumps on their curves, the return and the waste paths are now one water network, solved from the valves and each bed's own state (`lounge-hydraulics.ts`). A dirty bed takes less and its partner more (about 2:1 at four times the resistance), a pitted bed somewhat more, and the total falls along the pump's curve as the beds foul; each filter's DP gauge reads its solved pressure difference. A backwash runs the other filter's water in series, back up through the washed bed; both set to backwash, nothing washes. A dirty filter no longer carries its full 45 m³/h. FILTER DP HIGH is inhibited during a backwash, as on real plant.
+
 - The pool exchangers' LTHW control valves, PL1-HX1-CV1 and PL2-HX1-CV1, are modulating control valves that regulate the flow, no longer "butterfly valves" that "isolate" it (#33): a new `modulating` trait (a valve positioned between shut and open by its controller) and a registered `control-valve` kind carrying it; a room model's regulating fittings take that kind, and a modulating valve's description says it regulates.
 
 - The dosing pot's valves (BH-DP1-IV1, -IV2, -DV1) report open or shut again (#52, a regression from #48): a valve's status now binds by its kind's description template, so every valve kind has one, the new ball valves and the Olympic tank's penstock included, instead of only the kinds listed by name.

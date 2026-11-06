@@ -56,7 +56,8 @@ describe('the lounge filter mimic', () => {
       'to-pool': 'forward',
       'f1-backwash': 'still',
     });
-    expect(s.readouts['f1-flow'].flow.value).toBe(45);
+    // About its half of the design 90 m³/h, its bed a little loaded (#59).
+    expect(s.readouts['f1-flow'].flow.value).toBeCloseTo(45, 0);
   });
 
   it('shows filter 1 backwashed: its outlet and bed reversed, its waste flowing, its flow negative', () => {
@@ -69,7 +70,8 @@ describe('the lounge filter mimic', () => {
       'f1-inlet': 'still',
       'f2-outlet': 'forward',
     });
-    expect(s.readouts['f1-flow'].flow.value).toBe(-34);
+    // Its wash rate, up its outlet (#59).
+    expect(s.readouts['f1-flow'].flow.value).toBeCloseTo(-34, 0);
   });
 
   it('is still everywhere, its readouts at 0, with both pumps stopped', () => {

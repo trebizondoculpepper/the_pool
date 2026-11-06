@@ -83,9 +83,11 @@ export const loungePasses = (s: LoungeFiltersState, dirt: number) =>
     bedPasses(LOUNGE_SIZE, loungeBed(s, 1), dirt)) /
   2;
 
-/** Each bed's pressure difference in service, bar: its flow's square, and its dirt. */
-export const loungeFilterDp = (s: LoungeFiltersState, flows: LoungeFlows) =>
-  s.dirt.map((d, i) => {
-    const q = Math.max(0, flows.beds[i]) / 45;
-    return LOUNGE_FILTER.cleanDp * q * q * (1 + d / LOUNGE_DIRT_REF);
-  });
+/**
+ * Each bed's pressure difference in service, bar: what its gauges read,
+ * solved with the room's flows (#59, `lounge-hydraulics.ts`) from its own
+ * resistance (its dirt and fissures) and the flow the network gives it.
+ */
+export const loungeFilterDp = (_s: LoungeFiltersState, flows: LoungeFlows) => [
+  ...flows.dp,
+];
