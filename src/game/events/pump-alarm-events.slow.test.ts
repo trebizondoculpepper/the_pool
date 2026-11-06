@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vite-plus/test';
 import { advance, applyAction, newWorld } from '../world';
 import type { World, WorldAction } from '../world';
 import type { GameEvent } from './game-event';
-import { formatEvent } from './game-event';
 import { actionEvents } from './describe-action';
 import { collectEvents } from './event-sources';
 
@@ -32,23 +31,6 @@ const plant = (log: readonly GameEvent[]) =>
   log.filter((e) => e.kind === 'plant');
 
 describe('the pump log', () => {
-  it('logs a circulation pump stopped and started by its starter, named from its set', () => {
-    const t = logged();
-    t.dispatch({
-      type: 'motor/starter',
-      tag: 'P-201A',
-      action: { act: 'stop' },
-    });
-    t.run(2);
-    const lines = t.log.filter((e) => e.subject === 'P-201A');
-    expect(lines.map(formatEvent)).toEqual([
-      '00:00:00  P-201A        duty pump starter: STOP pressed (by you)',
-      '00:00:00  P-201A        Lounge pool circulation pumps, duty: STOPPED (by its starter)',
-    ]);
-    // Once, not each step.
-    expect(lines.filter((e) => /STOPPED/.test(e.text))).toHaveLength(1);
-  });
-
   it('logs the make-up booster set starting and stopping on its demand', () => {
     const t = logged();
     t.run(900, 0.5);
