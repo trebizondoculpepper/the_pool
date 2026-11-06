@@ -18,8 +18,14 @@ Brief: `doc/prompts/161-one-click-handler.md`. The owner, 2026-11-04, urgent, [r
 - The eight empty `use: () => {}` room callbacks removed: `shared-plant-layout`, `plant-fit-room`, `ceiling-lab-room`, `white-corridor-room`, `dry-stair-room`, `pipes-n-dreams-room`, `arched-rooms`, `donut-pool-room`.
 - TODO.md: 161 marked **Incomplete**, this progress recorded.
 
+**Step 2's one resolver, first cut (2026-11-06, sayuri_shantian, reviewed by ahnaa_dmitrieva on #8; on branch `issue-8-one-click-handler`, PR pending):**
+
+- `resolve-aim.ts`: the one first-visible-hit resolution (`resolveAim` + `aimCache`) owns the raycast and reach rule; both the cue (`usableAt`) and the click (`createFirstPerson`'s `use`) call it — no second copy of the ray.
+- `use-marking.ts`: `useRegistrationOf` resolves a hit to its one registration — the nearest `usable`, and the action on that same object (never a separate walk), so cue and click can never pick different things; a child marked usable without an action never runs a parent's.
+- The click acts only where the registration's own answer says possible; the room's `use` still runs, accepted and deprecated, only where nothing is registered. Contract tests beside the resolver (`resolve-aim.test.ts`): actionable mark answers and resolves to the same target for the click, an occluder stops both, a decoration neither, the cache is shared; `use-marking.test.ts` grows `useRegistrationOf` cases.
+- Pending: migrating the rooms' `use`/`aimed` (step 4), then the special rooms, after this resolver's review; #10's interactive gate slots into `resolveAim`.
+
 **Pending:**
 
-- Step 2's resolver in `first-person.ts` (one first-visible-hit click and cue; the hit object's registered action), coordinated with farhad_taphrale (mission 214 holds `first-person.ts`) and after 206/212's placement lands.
 - Step 3 (use while holding on the objects) and the room-by-room migration (shell-room, pool-hall-room, water-room, controls-room, bin-room, repair-room, racks-room, magic-room).
 - The records (`CHANGELOG.md`, `src/toolkit/controls/AGENTS.md`) when the contract ships; a diary entry.
