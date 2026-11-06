@@ -48,6 +48,7 @@ export function markUsable(
 ) {
   object.userData.usable = usable;
   if (action) object.userData.useAction = action;
+  else delete object.userData.useAction;
   return () => {
     if (object.userData.usable === usable) delete object.userData.usable;
     if (object.userData.useAction === action) delete object.userData.useAction;

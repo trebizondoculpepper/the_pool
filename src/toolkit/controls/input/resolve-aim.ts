@@ -35,6 +35,7 @@ export interface AimCache {
   reach: number;
   since: number;
   eye: Matrix4;
+  projection: Matrix4;
   found: AimResolution | null;
   /** How long a hit is kept while the aim stands still, ms. */
   keptFor: number;
@@ -48,6 +49,7 @@ export function aimCache(keptFor = 500): AimCache {
     reach: 0,
     since: -Infinity,
     eye: new Matrix4(),
+    projection: new Matrix4(),
     found: null,
     keptFor,
   };
@@ -90,7 +92,8 @@ export function resolveAim(options: AimOptions): AimResolution | null {
     cache.y === y &&
     cache.reach === reach &&
     now - cache.since < cache.keptFor &&
-    cache.eye.equals(camera.matrixWorld);
+    cache.eye.equals(camera.matrixWorld) &&
+    cache.projection.equals(camera.projectionMatrix);
   if (!still) {
     ray.setFromCamera(pointer.set(x, y), camera);
     ray.far = reach * metre;
@@ -98,6 +101,7 @@ export function resolveAim(options: AimOptions): AimResolution | null {
       .intersectObject(scene, true)
       .find((h) => (h.object as Mesh).isMesh && visibleAll(h.object));
     cache.eye.copy(camera.matrixWorld);
+    cache.projection.copy(camera.projectionMatrix);
     cache.x = x;
     cache.y = y;
     cache.reach = reach;
@@ -113,6 +117,19 @@ export function resolveAim(options: AimOptions): AimResolution | null {
   }
   const found = cache.found;
   if (!found || !visibleAll(found.registration.object)) return null;
+  // A seen-but-unregistered thing (a mark removed, a decoration moved over)
+  // is not the aim's: the registration is asked afresh each probe, so it is
+  // refreshed here too rather than answered from a stale cache entry. The
+  // cache is updated so the next probe does not re-walk.
+  const registration = useRegistrationOf(found.hit);
+  if (!registration) {
+    cache.found = null;
+    return null;
+  }
+  if (registration !== found.registration) {
+    cache.found = { hit: found.hit, registration, point: found.point.clone() };
+    return cache.found;
+  }
   return found;
 }
 
@@ -121,8 +138,8 @@ export function resolveAim(options: AimOptions): AimResolution | null {
  * click runs the registration's action ('run'), runs the room's own `use`
  * ('room' — nothing is registered; accepted, deprecated, during migration),
  * or does nothing ('nothing' — the registration's answer says the use is
- * not possible now, and the cue showed it red). Pure, and the one gate cue
- * and click share.
+ * not possible now, and the cue showed it red). Pure; the click is its only
+ * caller (the cue draws the registration's answer directly).
  */
 export type ClickOutcome = 'run' | 'room' | 'nothing';
 

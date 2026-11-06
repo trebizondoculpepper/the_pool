@@ -103,4 +103,27 @@ describe('one registration with a cue and an action (mission 161)', () => {
     markUsable(knob, turnable); // answer only, no action
     expect(useRegistrationOf(knob)?.action).toBeUndefined();
   });
+
+  it('replacing an action-bearing mark with an answer-only one clears the action', () => {
+    const knob = new Group();
+    const fired: string[] = [];
+    markUsable(knob, turnable, () => {
+      fired.push('old');
+    });
+    expect(useRegistrationOf(knob)?.action).toBeTruthy();
+    // Re-marked with an answer only: the old action must not survive.
+    markUsable(knob, turnable);
+    const registration = useRegistrationOf(knob)!;
+    expect(registration.action).toBeUndefined();
+    registration.usable(at(knob));
+    expect(fired).toEqual([]);
+    // And an answer-only mark cannot resurrect a later action's disposer.
+    const unmark = markUsable(knob, turnable, () => {
+      fired.push('new');
+    });
+    useRegistrationOf(knob)!.action!(at(knob));
+    expect(fired).toEqual(['new']);
+    unmark();
+    expect(useRegistrationOf(knob)).toBeNull();
+  });
 });

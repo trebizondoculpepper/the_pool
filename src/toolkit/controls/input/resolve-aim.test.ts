@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vite-plus/test';
+import { describe, expect, it, vi } from 'vite-plus/test';
 import {
   BoxGeometry,
   Group,
@@ -106,6 +106,7 @@ describe('the one aim resolution (mission 161)', () => {
     const knob = inFrontOf();
     markUsable(knob, turnable, () => {});
     const ray = new Raycaster();
+    const cast = vi.spyOn(ray, 'intersectObject');
     const point = new Vector2();
     const cache = aimCache();
     const options = {
@@ -122,16 +123,21 @@ describe('the one aim resolution (mission 161)', () => {
     } as const;
     const a = resolveAim(options);
     expect(a?.registration.object).toBe(knob);
+    // A second probe within the window casts no new ray: the same hit.
+    expect(resolveAim(options)?.registration.object).toBe(knob);
+    expect(cast).toHaveBeenCalledTimes(1);
     // Move the thing out of the way: within the window, the still aim still
-    // reports the cached registration (no new raycast); a fresh resolution
-    // casts again and sees it gone.
+    // reports the cached registration; a fresh resolution casts again and
+    // sees it gone.
     scene.remove(knob);
     scene.updateMatrixWorld(true);
     camera.updateMatrixWorld();
     const cached = resolveAim(options);
     expect(cached?.registration.object).toBe(knob);
+    expect(cast).toHaveBeenCalledTimes(1);
     const fresh = resolveAim({ ...options, fresh: true });
     expect(fresh).toBeNull();
+    expect(cast).toHaveBeenCalledTimes(2);
   });
 
   it('the click gate: run when possible, nothing when refused, the room when unregistered', () => {
