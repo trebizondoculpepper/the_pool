@@ -4,28 +4,32 @@ Issue #10; the owner, 2026-11-06. Status: proposal for review (revised after two
 
 ## The interaction model (settled with the owner; precedence, not a ladder)
 
-Four classes. They are resolved by **precedence**, not built as a strict ladder: only `interactive ⇒ inspectable` is a true implication; `functional` and `inspectable` are **siblings** and may coexist (a lift is functional — you ride it — and inspectable — its floor display).
+Five classes. They are resolved by **precedence**, not built as a strict ladder: only `interactive ⇒ inspectable` is a true implication; `functional`, `readable` and `inspectable` are **siblings** and may coexist (a lift is functional — you ride it — and inspectable — its floor display; a mimic is readable — its labels — and inspectable — its lamps).
 
-| Class           | Trait                   | What it is                                                                                            | Gated                                                                                                               |
-| --------------- | ----------------------- | ----------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **decorative**  | `decorative` (existing) | truly inert, seen and nothing else (the trait already rejects pairing with a use facet)               | never cued, never clicked                                                                                           |
-| **functional**  | `functional` (new)      | does stuff — a real role in the world (a ladder, a mobility aid), neither interactive nor inspectable | not cued or clicked as a control; but the hands' and ladder resolvers still act on it (161's order reaches ladders) |
-| **inspectable** | `inspectable` (new)     | read-only status/display + hover / target-over context                                                | hover context (160), **not** cued or clicked                                                                        |
-| **interactive** | `interactive` (new)     | inspectable **and** reacts to a use                                                                   | all of inspectable's, plus cued + clicked (161)                                                                     |
+| Class           | Trait                   | What it is                                                                                                                                                               | Gated                                                                                                               |
+| --------------- | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **decorative**  | `decorative` (existing) | truly inert, seen and nothing else (the trait already rejects pairing with a use facet)                                                                                  | never cued, never clicked                                                                                           |
+| **functional**  | `functional` (new)      | does stuff — a real role in the world (a ladder, a mobility aid), neither interactive nor inspectable                                                                    | not cued or clicked as a control; but the hands' and ladder resolvers still act on it (161's order reaches ladders) |
+| **readable**    | `readable` (existing)   | its read-out is **constant**: a sign, a book, a plate always say the same thing, whatever the object's condition                                                         | hover shows its text / target-over, **not** cued or clicked                                                         |
+| **inspectable** | `inspectable` (new)     | its read-out **reflects its internal state** — a gauge's needle with the pressure, a display's live value, a tank's level; what you glean changes with the thing's state | hover context (160) / target-over, **not** cued or clicked                                                          |
+| **interactive** | `interactive` (new)     | inspectable **and** reacts to a use                                                                                                                                      | all of inspectable's, plus cued + clicked (161)                                                                     |
 
-Precedence when classes overlap: **interactive > inspectable > functional > decorative**. "Non-interactive" is the umbrella term for everything below interactive. **`interactive` implies `inspectable`**; nothing else implies anything.
+The key distinction between `readable` and `inspectable` (the owner, 2026-11-06): a readable thing always says the same thing; an inspectable thing's read-out is affected by its internal state or condition. They can coexist on one object (a mimic's labels are readable, its lamps inspectable).
+
+Precedence when classes overlap: **interactive > inspectable > readable > functional > decorative**. "Non-interactive" is the umbrella term for everything below interactive. **`interactive` implies `inspectable`** — the only implication; `interactive` does **not** imply `readable` (a button is operated, not read).
 
 Owner rulings, 2026-11-06:
 
 - The top tier is **`interactive`**, not "interactible".
 - **`functional` is a machine that is neither interactive nor inspectable but does stuff** — a ladder, a mobility aid: part of the world's function, climbed or used by the player's movement, yet no status to read and no use target.
+- **`readable` is its own class, constant content** — not a shadow of `inspectable`; a sign always says the same thing, an inspectable readout changes with state.
 - **"decorative" is reserved for truly inert things**, _not_ used as an umbrella; the umbrella is **non-interactive**. (`decorative` as a class is derived for unmarked kinds; `decorative` as a trait is explicit and excludes any use facet.)
 - **`passive` is avoided** for the umbrella: it has a specific meaning in this codebase (a component with no internal state that changes its role in the simulation).
 - **Inspectable is not a free default** for kind-only naming — but see the hover effect below.
 
-**Open for the owner (questioned by the reviewers):**
+**Open for the owner (one item left; `readable` is settled):**
 
-- **`readable` versus `inspectable`.** `readable` ("primary purpose is to be read") is on six kinds directly (alarm-printer, earthing-terminal, operator-desk, pc-monitor, pump-panel, **sign**) and in four composites (instrument-like on 10 files, mimic on 12, board-like on 8, floppy-disk on 3) — it reaches every gauge, mimic and board, and is semantically the one thing `inspectable` would be. Neither implication nor replacement is safe as written: imply makes signs show status (against the ruling); replace throws away the sign/gauge distinction and touches four composites. Options (a) readable implies inspectable, signs lose `readable`; (b) keep `readable` = "has text worth reading" (hover shows text, no status) and give instrument-like/mimic/board-like `inspectable` explicitly; (c) retire it. Owner's call — the reviewer leans (a).
+- **`readable` is kept as its own class** (constant content); the composites whose readouts are state-driven (`instrument-like`, `mimic`, `board-like`) gain `inspectable` explicitly. `sign` stays readable where its words matter — its hover shows the text, no status; a set-dressing poster stays decorative.
 - **`functional` needs gameplay of its own or to be implied.** As written it only _disables_ (no cue, no click, no status); the ladder's climbing comes from ladder zones, not the trait. Give it a job (e.g. hover names it by kind but shows no status; or it is what 165 checks every ladder/stair/lift is), or have it implied by the specific traits that do the work, rather than set by hand.
 
 ## Hover effect of "inspectable is not a default"
@@ -55,10 +59,11 @@ Resolution walks up the hit mesh's parents to the nearest part/component mark, e
 **Step 1 — the trait (this PR's eventual scope, self-contained and pure).**
 
 - `traits.ts`: add `functional` (use facet, new), `inspectable` (use facet, new) and `interactive` (use facet, new, `implies: ['inspectable']`). Make `operable`, `openable`, `holdable`, `sittable` imply `interactive` (the issue's rule).
-- `equipment-kinds.ts`: `InteractionClass` becomes `decorative | functional | inspectable | interactive` (replacing `decorative | inspect-only | usable`); `affordancesFromTraits` derives the class by precedence (interactive > inspectable > functional > decorative) from the traits; the existing `operable`/`sittable`/etc. now resolve to interactive via their implication.
+- `equipment-kinds.ts`: `InteractionClass` becomes `decorative | functional | readable | inspectable | interactive` (replacing `decorative | inspect-only | usable`); `affordancesFromTraits` derives the class by precedence (interactive > inspectable > readable > functional > decorative) from the traits; the existing `operable`/`sittable`/etc. now resolve to interactive via their implication; `readable` stays a class of its own (constant content).
 - Update consumers of `InteractionClass` (`audit-data-section.ts`, `room-audit-page.ts`, the `equipment-kinds.test.ts` expectations) and grep string literals (`usable`, `inspect-only`) beyond those three, including audit JSON snapshots.
 - Migrate explicit `affordances.interaction` values through the audit command (`sign.ts` sets `'inspect-only'`), map the kind-class fallback (`resolveKindAffordances`: `decorative` → decorative, else the new default), and reconcile the class-vs-trait `decorative` distinction (class derived for unmarked kinds; trait explicit and never added to every unmarked kind).
-- A fast classification test: a door, a holdable, a seat, an operable and a local-touchscreen kind are interactive; a ladder's kind is functional; a gauge, a tank and a pipe run are not clickable. Plus the `readable`/`functional` answers (owner) land here.
+- The composites whose readouts are state-driven gain `inspectable` explicitly: `instrument-like` (10 files), `mimic` (12), `board-like` (8) — through the audit command. `readable` stays on the constant-content kinds that keep it.
+- A fast classification test: a door, a holdable, a seat, an operable and a local-touchscreen kind are interactive; a ladder's kind is functional; a sign (or book) is readable; a gauge, a tank and a pipe run are not clickable. Plus `functional`'s gameplay answer (owner) lands here.
 
 **Step 3 — the mesh index (separate branch, before the gate).**
 
@@ -75,7 +80,7 @@ Resolution walks up the hit mesh's parents to the nearest part/component mark, e
 
 ## What waits on what
 
-- Step 1 (the trait) can start once the two owner answers (`readable`; `functional`'s gameplay) land.
+- Step 1 (the trait) can start once `functional`'s gameplay is settled (the owner); `readable` is resolved — it stays its own class, and the state-driven composites gain `inspectable`.
 - Step 3 (the index) is independent of both and has the biggest payoff; do it before the gate.
 - Step 2 (the gate) lands on #8's resolver, now merged (`3308e64e`), gated by the coverage test.
 
