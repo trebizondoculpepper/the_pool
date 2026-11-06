@@ -2,6 +2,8 @@ import { Vector3 } from 'three';
 import type { Camera, Object3D } from 'three';
 import { knobAnswer } from '../logic/use-cue';
 import type { Turnable, UseAnswer } from '../logic/use-cue';
+import { touchingAt } from './touch-point';
+import { knobDirection } from './knob-turning';
 
 /**
  * Things that say what a use on them would do (prompt 115, part two,
@@ -17,6 +19,8 @@ import type { Turnable, UseAnswer } from '../logic/use-cue';
 export interface UseQuery {
   /** The marked object (a knob's shaft, a button's cap). */
   object: Object3D;
+  /** The mesh the ray actually met, for a touch surface's `touchPoint` walk. */
+  hit: Object3D;
   /** The world point the aim met. */
   point: Vector3;
   camera: Camera;
@@ -24,6 +28,8 @@ export interface UseQuery {
   x: number;
   /** A gamepad's use: no pointer side. */
   pad: boolean;
+  /** The texture coordinates of the hit, for a touch surface's own questions. */
+  uv?: { x: number; y: number } | null;
 }
 
 /**
@@ -120,4 +126,31 @@ const centre = new Vector3();
 export function turnAt(at: UseQuery, knob: Turnable): UseAnswer {
   const x = at.object.getWorldPosition(centre).project(at.camera).x;
   return knobAnswer(knob, at.x, x);
+}
+
+/**
+ * Register a component's use as the shared registration (mission 161, the
+ * one click handler): `object` (where a use lands) answers `usable` for the
+ * cue, and on a click runs `work` — the direction-taking use of a part or
+ * machine — with the hit known (`UseQuery.hit`, `point`, `uv`), so a knob
+ * turns by which half of it is clicked and a touch surface asks where it
+ * was touched. One adapter for every part and machine, never per room:
+ * this is what replaces the rooms' own `use`/`aimed` walks over
+ * `parts.uses` and `machines.useOf`.
+ */
+export function registerPartUse(
+  object: Object3D,
+  usable: Usable,
+  work: (direction?: number) => void,
+) {
+  return markUsable(object, usable, (at) => {
+    touchingAt(
+      {
+        object: at.hit,
+        uv: at.uv,
+        point: { x: at.point.x, y: at.point.y, z: at.point.z },
+      },
+      () => work(knobDirection(object, at.point, at.camera)),
+    );
+  });
 }

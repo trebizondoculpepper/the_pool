@@ -26,6 +26,8 @@ export interface AimResolution {
   registration: UseRegistration;
   /** The world point the ray met (the click gets its own copy). */
   point: Vector3;
+  /** The texture coordinates at the hit, for a touch surface's own questions. */
+  uv?: { x: number; y: number } | null;
 }
 
 /** A resolution's cached state, kept while the aim stands still. */
@@ -111,7 +113,12 @@ export function resolveAim(options: AimOptions): AimResolution | null {
     } else {
       const registration = useRegistrationOf(first.object);
       cache.found = registration
-        ? { hit: first.object, registration, point: first.point.clone() }
+        ? {
+            hit: first.object,
+            registration,
+            point: first.point.clone(),
+            uv: first.uv,
+          }
         : null;
     }
   }
@@ -127,7 +134,12 @@ export function resolveAim(options: AimOptions): AimResolution | null {
     return null;
   }
   if (registration !== found.registration) {
-    cache.found = { hit: found.hit, registration, point: found.point.clone() };
+    cache.found = {
+      hit: found.hit,
+      registration,
+      point: found.point.clone(),
+      uv: found.uv,
+    };
     return cache.found;
   }
   return found;

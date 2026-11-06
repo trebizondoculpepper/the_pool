@@ -77,6 +77,7 @@ describe('the one aim resolution (mission 161)', () => {
     // runs that registration's action on the same query.
     const at: UseQuery = {
       object: found.registration.object,
+      hit: found.hit,
       point: found.point,
       camera,
       x: 0,

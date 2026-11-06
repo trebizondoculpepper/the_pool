@@ -3,8 +3,12 @@ import type { PartDescription } from '../../../../game/plant/part-inspection';
 import { createElectrolyticCapacitorView } from '../../industrial-control/views/electrolytic-capacitor';
 import type { Attachment } from '../../../controls/logic/drop-profile';
 import { markTurnable } from '../../../controls/input/knob-turning';
-import { markUsable } from '../../../controls/input/use-marking';
+import {
+  markUsable,
+  registerPartUse,
+} from '../../../controls/input/use-marking';
 import type { Usable } from '../../../controls/input/use-marking';
+import { PLAIN_USE } from '../../../controls/logic/use-cue';
 import { computed, effect, signal } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
 import { BoxGeometry, CylinderGeometry, Group, Mesh } from 'three';
@@ -153,6 +157,35 @@ export function beginPart(kit: PanelKit, name: string) {
   const listeners = new Set<(event: PartEvent, name: string) => void>();
   const disposers: (() => void)[] = [];
   const audible = signal(true);
+  /**
+   * Register a use on `on` as the shared registration (mission 161): the
+   * object runs `work` on a click, with hit-point direction and touch
+   * preserved (`registerPartUse`), and answers `usable` when one is given.
+   * Every `uses.set` registers this way, so a use works through the one
+   * resolver even where a room no longer passes `use`; a part's `cue` then
+   * upgrades the plain answer to the real one on the same object.
+   */
+  const register = (
+    on: Object3D,
+    usable: Usable,
+    work?: (d?: number) => void,
+  ) =>
+    disposers.push(
+      work ? registerPartUse(on, usable, work) : markUsable(on, usable),
+    );
+  /**
+   * Every `uses.set` also registers the use (mission 161) with a plain
+   * answer, so it works through the one resolver even where a room no
+   * longer passes `use`; the part's `cue` then upgrades the answer on the
+   * same object (it re-registers with `uses.get(on)`).
+   */
+  const plain: Usable = () => PLAIN_USE;
+  const setUse = uses.set.bind(uses);
+  uses.set = (on: Object3D, work: (direction?: number) => void) => {
+    setUse(on, work);
+    register(on, plain, work);
+    return uses;
+  };
   return {
     object,
     uses,
@@ -197,10 +230,12 @@ export function beginPart(kit: PanelKit, name: string) {
     /**
      * What a use on `on` (one of its `uses`) would do now, for the
      * crosshair's cue (prompt 115): its gesture, and whether it will have
-     * a consequence. Unmarked, a use shows the plain ring.
+     * a consequence. Unmarked, a use shows the plain ring. Registered with
+     * the use's action (mission 161): a click runs `uses.get(on)` with the
+     * hit known.
      */
     cue(on: Object3D, usable: Usable) {
-      disposers.push(markUsable(on, usable));
+      register(on, usable, uses.get(on));
     },
     /** What can be seen of it now, for the information overlay (prompt 068). */
     shows(what: () => string | undefined) {

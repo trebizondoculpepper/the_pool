@@ -514,10 +514,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
       } else {
         const at: UseQuery = {
           object: registered.object,
+          hit: found!.hit,
           point: found!.point.clone(),
           camera,
           x: aim.x,
           pad: aim.pad,
+          uv: found!.uv,
         };
         const answer = registered.usable(at);
         if (clickOutcome(registered, answer) === 'run') registered.action(at);
@@ -743,6 +745,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     if (!found) return null;
     return found.registration.usable({
       object: found.registration.object,
+      hit: found.hit,
       point: found.point,
       camera,
       x,
