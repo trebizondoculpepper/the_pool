@@ -283,6 +283,15 @@ export const PRIMITIVES = {
     words:
       'does stuff — a real role in the world, neither interactive nor inspectable (a ladder, a mobility aid); no status readout, no use target, but the ladder and carried-item resolvers still act on it',
   },
+  // #18 (the owner, 2026-11-06): a ladder's own primitive, given by the
+  // `ladder` composite. Gameplay: the player steps into it at either end
+  // and climbs between two floors (the room factory finds it by this); it
+  // is not solid, since its body is where the climber stands.
+  climbable: {
+    facet: 'use',
+    words:
+      'climbed: mounted at either end, it carries the player between two floors; not solid, since the climber stands inside it',
+  },
   inspectable: {
     facet: 'use',
     words:

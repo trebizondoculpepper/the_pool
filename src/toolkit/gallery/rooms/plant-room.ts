@@ -74,7 +74,6 @@ import { doorActor } from '../../components/architectural/logic/door-proximity';
 import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
-  humanLadderZones,
 } from '../../components/architectural/views/human-ladder';
 import { useOnHit } from '../../controls/input/touch-point';
 import {
@@ -715,7 +714,6 @@ export function startEquipmentRoom(
           : 0);
       return standing * m;
     },
-    ladders: () => humanLadderZones(room),
     // What a dropped thing rests on: every supportable object's derived top (mission 181).
     supports: () => surfaceSupports(roomSurfaces(room, m)),
     // Up the stair or on the gantry, its rails; on the floor, the machines too.

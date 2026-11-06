@@ -22,7 +22,6 @@ import {
 } from '../../components/core/parts/render-style';
 import { METRE } from '../../components/core/logic/units';
 import { createRoomController } from '../../controls/input/room-controller';
-import { humanLadderZones } from '../../components/architectural/views/human-ladder';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
 import {
   createDonutPool,
@@ -119,11 +118,8 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
       yaw: Math.PI / 4,
     },
     floorAt: (x, z) => donutPoolFloorAt(x / metre, z / metre) * metre,
-    ladders: () =>
-      humanLadderZones(
-        rooms,
-        (x, z) => donutPoolFloorAt(x / metre, z / metre) * metre,
-      ),
+    // The factory's ladders (#18) stand on the donut pool's sloping floor.
+    ladderFloorAt: (x, z) => donutPoolFloorAt(x / metre, z / metre) * metre,
     solids: () => walls,
   });
   const resize = () => {

@@ -215,6 +215,7 @@ export function affordancesFromTraits(
     !has('decorative') &&
     !has('run-like') &&
     !has('open-frame') &&
+    !has('climbable') &&
     !(has('water-body') && !ps.some((p) => PRIMITIVES[p].facet === 'form'));
   // Interaction resolves by precedence (mission 10): interactive >
   // inspectable > readable > functional > decorative. These four are

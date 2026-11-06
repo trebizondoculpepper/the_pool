@@ -23,6 +23,7 @@ import type {
 import { surfaceSupports } from '../logic/derived-surface';
 import { forgetSurfaces, roomSolids, roomSurfaces } from './derived-surfaces';
 import { registerRacks } from './rack-placement';
+import { humanLadderZones } from '../../components/architectural/views/human-ladder';
 
 /**
  * The registry's traits as the rooms' carrying behaviour (missions 189 and
@@ -36,6 +37,39 @@ import { registerRacks } from './rack-placement';
 
 const holdableKinds = new Map<string, boolean>();
 const binKinds = new Map<string, boolean>();
+
+const ladderKinds = new Map<string, boolean>();
+
+/**
+ * Whether a registered kind is climbed (#18): its traits reach the
+ * `climbable` primitive (the `ladder` composite gives it).
+ */
+export function kindIsLadder(kind: string): boolean {
+  if (!isKindId(kind)) return false;
+  const known = ladderKinds.get(kind);
+  if (known !== undefined) return known;
+  const traits = EQUIPMENT_KINDS[kind].traits ?? [];
+  const ladder = (
+    expand(traits, compositeTraits()).primitives as readonly string[]
+  ).includes('climbable');
+  ladderKinds.set(kind, ladder);
+  return ladder;
+}
+
+/**
+ * A room's ladders (#18): every placed object of a `ladder` kind, climbable
+ * from either end. `floorAt` puts a pool ladder's foot on the floor it
+ * stands on (a sloping pool floor), in scene units.
+ */
+export function roomLadders(
+  root: Object3D,
+  floorAt?: (x: number, z: number) => number,
+) {
+  return humanLadderZones(root, floorAt, (ladder) => {
+    const kind = ladder.userData[EQUIPMENT_KIND] as string | undefined;
+    return kind !== undefined && kindIsLadder(kind);
+  });
+}
 
 /** Whether a registered kind is bin-like (mission 205), by its expanded traits. */
 export function kindIsBinLike(kind: string): boolean {
@@ -219,6 +253,8 @@ export const roomTraits: RoomTraits = {
   // Mission 206: every `rack`-kind object's shared racking placement target.
   racks: (root) => registerRacks(root),
   bins: roomBins,
+  // #18: every `ladder`-kind object is climbed, in every room.
+  ladders: (root, _metre, floorAt) => roomLadders(root, floorAt),
   holdables: (root, metre) => {
     makeHoldablesPortable(root, metre);
   },

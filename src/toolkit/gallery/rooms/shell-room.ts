@@ -64,7 +64,6 @@ import { seatDeclared, seatOf } from '../../controls/input/seating';
 import {
   humanLadderLandingAt,
   humanLadderLandingSolids,
-  humanLadderZones,
 } from '../../components/architectural/views/human-ladder';
 import { isHeldPortableHit } from '../../controls/input/object-handling';
 import { DEFAULT_POOL_LOOK, POOL_LOOKS } from '../logic/pool-looks';
@@ -792,7 +791,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
           : landing / metre;
       return standing * metre;
     },
-    ladders: () => humanLadderZones(rooms),
     // Each doorway: its leaves while shut, but never where the walker
     // stands; a stop just beyond until the room there is seen.
     solids: () => [
