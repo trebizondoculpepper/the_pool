@@ -48,7 +48,14 @@ describe('expansion', () => {
 
   test('addition only: a kind’s traits are the union of what it names', () => {
     expect(expand(['software-box', 'readable'], composites).primitives).toEqual(
-      ['box-like', 'floor-standing', 'holdable', 'readable'],
+      [
+        'box-like',
+        'floor-standing',
+        'holdable',
+        'inspectable',
+        'interactive',
+        'readable',
+      ],
     );
   });
 
@@ -161,12 +168,39 @@ describe('the resolver: traits drive affordances', () => {
     expect(
       affordancesFromTraits(['cuboid-tank'], {}, composites),
     ).toMatchObject({
-      interaction: 'inspect-only',
+      interaction: 'decorative',
       portable: false,
       solid: true,
       surface: true,
       seat: null,
     });
+  });
+
+  test('interaction resolves by precedence, interactive implying inspectable (mission 10)', () => {
+    const interaction = (traits: string[]) =>
+      affordancesFromTraits(traits, {}, composites).interaction;
+    // The use classes, by precedence.
+    expect(interaction(['operable', 'panel-like', 'fixed'])).toBe(
+      'interactive',
+    );
+    expect(interaction(['sittable', 'box-like', 'fixed'])).toBe('interactive');
+    // interactive implies inspectable; readable and functional are separate.
+    expect(
+      affordancesFromTraits(['operable'], {}, composites).interaction,
+    ).toBe('interactive');
+    expect(
+      affordancesFromTraits(['readable', 'panel-like', 'fixed'], {}, composites)
+        .interaction,
+    ).toBe('readable');
+    expect(
+      affordancesFromTraits(
+        ['functional', 'panel-like', 'wall-mounted'],
+        {},
+        composites,
+      ).interaction,
+    ).toBe('functional');
+    // An imperative is not implied by any of the above (the default).
+    expect(interaction(['decorative'])).toBe('decorative');
   });
 
   test('an office chair seats, at its composite’s height; a software box is portable', () => {

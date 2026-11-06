@@ -211,7 +211,13 @@ export const PRIMITIVES = {
     words: 'ends a run: an outlet, a sink, a source',
   },
   fixed: { facet: 'handling', words: 'not moved by the player' },
-  holdable: { facet: 'handling', words: 'picked up and carried' },
+  holdable: {
+    facet: 'handling',
+    words: 'picked up and carried',
+    // An interactive-implication from the handling facet: a thing that can
+    // be picked up is interactive (mission 10). `needs` a form, as before.
+    implies: ['interactive'],
+  },
   luggable: {
     facet: 'handling',
     words: 'large or heavy, shifted rather than carried',
@@ -233,10 +239,12 @@ export const PRIMITIVES = {
     facet: 'use',
     words:
       'has a control whose action changes something else in the simulation (a valve, a pump starter)',
+    implies: ['interactive'],
   },
   sittable: {
     facet: 'use',
     words: 'something to sit on',
+    implies: ['interactive'],
     meta: {
       seatHeight: {
         type: 'number',
@@ -253,12 +261,38 @@ export const PRIMITIVES = {
   },
   readable: {
     facet: 'use',
-    words: 'hover context: a sign, gauge or display to read',
+    words:
+      'its text is constant, to be read: a sign, a book, a plate always say the same thing, whatever the object’s condition',
+  },
+  // Mission 10 (the owner, 2026-11-06; `doc/plans/10-interactive-trait.md`).
+  // Interaction is a ladder of classes by precedence (interactive >
+  // inspectable > readable > functional > decorative), resolved in
+  // `affordancesFromTraits`. Only `interactive` implies `inspectable`;
+  // the other classes are siblings that may coexist. Gameplay reason:
+  // only interactive things are cued and clicked; a gauge is inspectable
+  // (its read-out reflects its state), a ladder is functional (does stuff,
+  // neither interactive nor inspectable).
+  functional: {
+    facet: 'use',
+    words:
+      'does stuff — a real role in the world, neither interactive nor inspectable (a ladder, a mobility aid); no status readout, no use target, but the ladder and carried-item resolvers still act on it',
+  },
+  inspectable: {
+    facet: 'use',
+    words:
+      'its read-out reflects its internal state — a gauge’s needle with the pressure, a display’s live value, a tank’s level; what you glean changes with the thing’s state',
+  },
+  interactive: {
+    facet: 'use',
+    words:
+      'inspectable and reacts to a use — a button, a switch, a knob; only an interactive thing is cued and clicked',
+    implies: ['inspectable'],
   },
   openable: {
     facet: 'use',
     words:
       'a door, lid or drawer gives access to what is inside; a local state that does not drive the plant',
+    implies: ['interactive'],
   },
   container: {
     facet: 'role',
