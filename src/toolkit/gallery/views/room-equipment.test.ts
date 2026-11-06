@@ -18,7 +18,7 @@ import {
 } from './room-equipment';
 import { bindRoomPower } from './room-power';
 import { humanLadderZones } from '../../components/architectural/views/human-ladder';
-import { roomSurfaces } from './derived-surfaces';
+import { roomSolids, roomSurfaces } from './derived-surfaces';
 import { edgeSolids, surfaceAt } from '../logic/derived-surface';
 
 beforeEach(() => {
@@ -336,5 +336,30 @@ it('takes the engineer’s desk’s top from its bounds model: the whole board, 
   expect(spans[0]).toBeCloseTo(0.8, 2);
   expect(spans[1]).toBeCloseTo(1.6, 2);
   expect(top.walkable).toBe(false);
+  built.dispose();
+});
+
+it('makes the engineer’s desk solid from its bounds model: its board blocks the walker (mission 208, stage 2)', () => {
+  const built = createRoomEquipment(createPanelKit(), 'engineers_office');
+  built.group.updateMatrixWorld(true);
+  let desk: Object3D | undefined;
+  built.group.traverse((o) => {
+    if (o.name === 'Engineer’s desk') desk = o;
+  });
+  const at = new Vector3().setFromMatrixPosition(desk!.matrixWorld);
+  const solids = roomSolids(built.group, 1).filter(
+    (s) => at.x > s.minX && at.x < s.maxX && at.z > s.minZ && at.z < s.maxZ,
+  );
+  expect(solids.length).toBe(1);
+  // The board's own footprint, 1.6 by 0.8 m, turned a quarter or not.
+  const spans = [
+    solids[0].maxX - solids[0].minX,
+    solids[0].maxZ - solids[0].minZ,
+  ].sort((a, b) => a - b);
+  expect(spans[0]).toBeCloseTo(0.8, 2);
+  expect(spans[1]).toBeCloseTo(1.6, 2);
+  // Nothing else in the office is solid by a bounds model yet: only the
+  // desk's kind has the trait.
+  expect(roomSolids(built.group, 1)).toHaveLength(1);
   built.dispose();
 });

@@ -105,6 +105,30 @@ export function primitiveTop(p: BoundsPrimitive): PrimitiveTop {
       };
 }
 
+/** One shape's extent in the object's frame: the box that holds it. */
+export function primitiveExtent(p: BoundsPrimitive): { min: Vec3; max: Vec3 } {
+  const half =
+    p.type === 'box'
+      ? { x: p.size.w / 2, y: p.size.h / 2, z: p.size.d / 2 }
+      : {
+          x: p.axis === 'x' ? p.length / 2 : p.radius,
+          y: p.axis === 'y' ? p.length / 2 : p.radius,
+          z: p.axis === 'z' ? p.length / 2 : p.radius,
+        };
+  return {
+    min: {
+      x: p.centre.x - half.x,
+      y: p.centre.y - half.y,
+      z: p.centre.z - half.z,
+    },
+    max: {
+      x: p.centre.x + half.x,
+      y: p.centre.y + half.y,
+      z: p.centre.z + half.z,
+    },
+  };
+}
+
 /** A model's extent in the object's frame, or null when it is empty. */
 export function modelExtent(
   model: BoundsModel,
@@ -113,18 +137,87 @@ export function modelExtent(
   const min = { x: Infinity, y: Infinity, z: Infinity };
   const max = { x: -Infinity, y: -Infinity, z: -Infinity };
   for (const p of model) {
-    const half =
-      p.type === 'box'
-        ? { x: p.size.w / 2, y: p.size.h / 2, z: p.size.d / 2 }
-        : {
-            x: p.axis === 'x' ? p.length / 2 : p.radius,
-            y: p.axis === 'y' ? p.length / 2 : p.radius,
-            z: p.axis === 'z' ? p.length / 2 : p.radius,
-          };
+    const e = primitiveExtent(p);
     for (const k of ['x', 'y', 'z'] as const) {
-      min[k] = Math.min(min[k], p.centre[k] - half[k]);
-      max[k] = Math.max(max[k], p.centre[k] + half[k]);
+      min[k] = Math.min(min[k], e.min[k]);
+      max[k] = Math.max(max[k], e.max[k]);
     }
   }
   return { min, max };
+}
+
+/** A solid shape's mark on the floor plan, and the heights it spans (world units). */
+export interface SolidFootprint {
+  readonly minX: number;
+  readonly maxX: number;
+  readonly minZ: number;
+  readonly maxZ: number;
+  readonly bottom: number;
+  readonly top: number;
+}
+
+/**
+ * Where a shape stands in the room (mission 208, stage 2): its eight
+ * corners carried by `toWorld` (the object's world matrix, as a function so
+ * this stays pure), boxed on the floor plan, with the heights it spans. A
+ * turned object's footprint is the axis-aligned box round its corners,
+ * a little larger than the shape, never smaller.
+ */
+export function primitiveFootprint(
+  p: BoundsPrimitive,
+  toWorld: (v: Vec3) => Vec3,
+): SolidFootprint {
+  const { min, max } = primitiveExtent(p);
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minZ = Infinity;
+  let maxZ = -Infinity;
+  let bottom = Infinity;
+  let top = -Infinity;
+  for (const x of [min.x, max.x])
+    for (const y of [min.y, max.y])
+      for (const z of [min.z, max.z]) {
+        const w = toWorld({ x, y, z });
+        minX = Math.min(minX, w.x);
+        maxX = Math.max(maxX, w.x);
+        minZ = Math.min(minZ, w.z);
+        maxZ = Math.max(maxZ, w.z);
+        bottom = Math.min(bottom, w.y);
+        top = Math.max(top, w.y);
+      }
+  return { minX, maxX, minZ, maxZ, bottom, top };
+}
+
+/**
+ * Whether a solid shape stands in the walker's way (mission 208, stage 2):
+ * it reaches below `headroom` above the floor it stands over and is not
+ * wholly under it. Overhead shapes (a duct above head height) let the
+ * walker pass beneath. `floor` and `headroom` are in the same world units.
+ */
+export const blocksWalker = (
+  f: SolidFootprint,
+  floor: number,
+  headroom: number,
+) => f.bottom < floor + headroom && f.top > floor;
+
+/**
+ * Whether a declared bounds model still fits its drawn object (mission 208,
+ * stage 2): every shape lies inside the drawn object's extent, give or take
+ * `tolerance` metres, and the model reaches the drawn top, so things are
+ * put on the top the player sees. Both in the object's frame, metres.
+ */
+export function modelFits(
+  model: BoundsModel,
+  drawn: { min: Vec3; max: Vec3 },
+  tolerance = 0.02,
+): boolean {
+  const e = modelExtent(model);
+  if (!e) return false;
+  for (const k of ['x', 'y', 'z'] as const)
+    if (
+      e.min[k] < drawn.min[k] - tolerance ||
+      e.max[k] > drawn.max[k] + tolerance
+    )
+      return false;
+  return Math.abs(e.max.y - drawn.max.y) <= tolerance;
 }

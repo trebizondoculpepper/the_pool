@@ -21,7 +21,7 @@ import type {
   RoomTraits,
 } from '../../controls/input/room-controller';
 import { surfaceSupports } from '../logic/derived-surface';
-import { forgetSurfaces, roomSurfaces } from './derived-surfaces';
+import { forgetSurfaces, roomSolids, roomSurfaces } from './derived-surfaces';
 
 /**
  * The registry's traits as the rooms' carrying behaviour (missions 189 and
@@ -149,6 +149,14 @@ function bodySignature(root: Object3D): string {
 }
 
 const signatures = new WeakMap<Object3D, string>();
+/** Forget a room's derived tops and solids when its bodies have changed. */
+function refresh(root: Object3D) {
+  const signature = bodySignature(root);
+  if (signatures.get(root) !== signature) {
+    forgetSurfaces(root);
+    signatures.set(root, signature);
+  }
+}
 const holdableSignatures = new WeakMap<Object3D, string>();
 
 /**
@@ -191,11 +199,7 @@ export const roomTraits: RoomTraits = {
     return kind ? kindIsHoldable(kind) : null;
   },
   supports(root, metre) {
-    const signature = bodySignature(root);
-    if (signatures.get(root) !== signature) {
-      forgetSurfaces(root);
-      signatures.set(root, signature);
-    }
+    refresh(root);
     // The derived surfaces are in scene units; carrying's supports are metres.
     return surfaceSupports(roomSurfaces(root, metre)).map((s) => ({
       minX: s.minX / metre,
@@ -204,6 +208,12 @@ export const roomTraits: RoomTraits = {
       maxZ: s.maxZ / metre,
       top: s.top / metre,
     }));
+  },
+  // Mission 208, stage 2: solid, bounds-modelled things block the walker,
+  // and so what is thrown (211's rebounds), in scene units.
+  solids(root, metre) {
+    refresh(root);
+    return roomSolids(root, metre);
   },
   bins: roomBins,
   holdables: (root, metre) => {

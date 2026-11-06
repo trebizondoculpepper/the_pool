@@ -132,6 +132,19 @@ export const PRIMITIVES = {
     implies: ['supportable'],
     needs: 'form',
   },
+  // Mission 208, stage 2 (the owner, 2026-11-05): things are solid by
+  // default (their bounds block the walker and what is carried or thrown);
+  // a kind opts out by a named trait with its own gameplay reason. Gameplay:
+  // a slab on pole legs can be crawled under and passed at its sides, and
+  // still holds what is put on it.
+  'open-frame': {
+    facet: 'surface',
+    words:
+      'not solid: an open frame (a slab on pole legs) the player passes under and beside; its top still holds things',
+    implies: ['supportable'],
+    conflicts: ['walkable'],
+    needs: 'form',
+  },
   walkable: {
     facet: 'surface',
     words: 'its top bears the player',

@@ -6,6 +6,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- Things are solid by their traits (mission 208, stage 2): every kind is solid unless it opts out (`open-frame`, a new trait for a slab on pole legs the player can pass under, or `run-like`, or decoration). A solid kind with a bounds model blocks the walker, and what is thrown, from its declared shapes in every room, through the room factory; the engineer's desk is the first. The magic panel has a BOUNDS knob to show an item's bounds model, and a test checks a declared model still fits its drawn object.
+
 - The landing page's email sign-up works: it subscribes to the game's Kit list, which sends a confirmation email.
 
 - The site is served at https://thepoolsimulation.xyz/ (mission 217): the landing page at the root and the game at `/game/`, over HTTPS, with DNS at Cloudflare.
@@ -40,6 +42,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 - A thing of a holdable kind can be picked up by its trait alone: the stores' spill kits and the control room's water test kit can now be carried (mission 189).
 
 ### Changed
+
+- The object registry is compiled once, when it loads, and never again (the owner, 2026-11-05): `kindFiles()` returns one frozen record shared by every caller, where it rebuilt and sorted the whole registry on every call.
 
 - The resolution switch in Settings starts at Viewport (the window's size), then runs from 640 × 480 upwards; Viewport was the last position.
 

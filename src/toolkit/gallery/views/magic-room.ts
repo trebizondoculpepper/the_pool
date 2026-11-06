@@ -28,6 +28,11 @@ import {
 } from '../../components/core/parts/render-style';
 import { createRoomController } from '../../controls/input/room-controller';
 import { installRoomTraits } from './room-traits';
+import { boundsModelFor } from './derived-surfaces';
+import {
+  boundsModelOf,
+  createBoundsView,
+} from '../../components/core/views/bounds-model';
 import { installRoomInspector } from './inspect-pick';
 import { useOnHit } from '../../controls/input/touch-point';
 import type { Footprint } from '../../controls/logic/walk-collision';
@@ -319,6 +324,29 @@ export function runMagicRoom(root: HTMLElement) {
   let look = 0;
   let page = 0;
   let poly = 0;
+  // BOUNDS (mission 208, stage 2): its bounds model drawn over it, orange
+  // where its builder declared one, grey where a fitted box stands in.
+  let showing = 0;
+  let boundsView: ReturnType<typeof createBoundsView> | null = null;
+  const showBounds = () => {
+    if (showing && !boundsView) {
+      holder.updateMatrixWorld(true);
+      const found = boundsModelFor(item.object);
+      if (found) {
+        boundsView = createBoundsView(found.model, {
+          fitted: !boundsModelOf(found.holder),
+        });
+        // In the holder's frame, wherever in the item the model is declared.
+        boundsView.object.matrixAutoUpdate = false;
+        boundsView.object.matrix
+          .copy(holder.matrixWorld)
+          .invert()
+          .multiply(found.holder.matrixWorld);
+        holder.add(boundsView.object);
+      }
+    }
+    if (boundsView) boundsView.object.visible = showing === 1;
+  };
   const costs: Partial<Record<PolyVariant, VisualCost>> = {};
   let measuring = true;
   let readout: ReturnType<typeof t.printed> | null = null;
@@ -360,6 +388,7 @@ export function runMagicRoom(root: HTMLElement) {
     const high = variant() === 'high';
     item.object.visible = high;
     low.object.visible = !high;
+    showBounds();
     say();
   };
   let panelGroup: Group | null = null;
@@ -418,14 +447,14 @@ export function runMagicRoom(root: HTMLElement) {
     knob(
       looks,
       'LOOK',
-      -0.16,
+      -0.18,
       () => look,
       (k) => (look = k),
     );
     knob(
       pages,
       'PAGE',
-      0,
+      -0.06,
       () => page,
       (k) => (page = k),
     );
@@ -437,9 +466,20 @@ export function runMagicRoom(root: HTMLElement) {
         words: `${VARIANT_LABEL[v]} poly version`,
       })),
       'POLY',
-      0.16,
+      0.06,
       () => poly,
       (k) => (poly = k),
+    );
+    // OFF · ON: its bounds model over it (mission 208, stage 2).
+    knob(
+      [
+        { id: 'off', label: 'OFF', words: 'bounds model hidden' },
+        { id: 'on', label: 'ON', words: 'bounds model shown' },
+      ],
+      'BOUNDS',
+      0.18,
+      () => showing,
+      (k) => (showing = k),
     );
     // Beside it, the shown version's visual cost: a small green readout.
     readout = t.printed(W - 0.04, 0.05, drawReadout, 512, true);

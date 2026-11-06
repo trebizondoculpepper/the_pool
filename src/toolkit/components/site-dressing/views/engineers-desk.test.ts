@@ -5,10 +5,13 @@ import { createPanelKit } from '../../core/views/eighties-controls';
 import {
   DESK,
   SHELF,
+  createDesk,
   createDeskCarton,
   createEngineersDesk,
   deskCartonFootprint,
 } from './engineers-desk';
+import { boundsModelOf } from '../../core/views/bounds-model';
+import { modelFits } from '../../core/logic/bounds-model';
 import { WALL_SHELF } from './office-wall-shelf';
 import { createOfficeChair } from './office-chair';
 import { bootSequenceScreen, createPeriodPc } from './period-pc';
@@ -181,4 +184,18 @@ it('keeps every piece of the PC above the plane it stands on, and its leads on t
       low,
       `a lead dips ${DESK.h - low} m into the desk`,
     ).toBeGreaterThanOrEqual(DESK.h - 1e-6);
+});
+
+it('declares a bounds model that fits the drawn desk (mission 208, stage 2)', () => {
+  // The drawn desk is its library model fitted to DESK's size, its origin
+  // the middle of its footprint on the floor (`createDesk`).
+  const { object } = createDesk(createPanelKit());
+  const model = boundsModelOf(object)!;
+  expect(model).toBeTruthy();
+  expect(
+    modelFits(model, {
+      min: { x: -DESK.w / 2, y: 0, z: -DESK.d / 2 },
+      max: { x: DESK.w / 2, y: DESK.h, z: DESK.d / 2 },
+    }),
+  ).toBe(true);
 });

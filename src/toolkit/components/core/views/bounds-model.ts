@@ -56,6 +56,11 @@ export function createBoundsView(
     transparent: true,
     opacity: 0.45,
     depthWrite: false,
+    // Drawn a hair towards the eye, so a shape flush with the drawn top
+    // (the desk's board) does not flicker through it.
+    polygonOffset: true,
+    polygonOffsetFactor: -1,
+    polygonOffsetUnits: -4,
   });
   const edge = new LineBasicMaterial({ color: fitted ? 0x3b4045 : 0x8a3b00 });
   const geometries: BufferGeometry[] = [];

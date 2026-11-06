@@ -1,6 +1,10 @@
 import { Box3, Mesh, Raycaster, Vector3 } from 'three';
 import type { Object3D } from 'three';
-import { EQUIPMENT_KINDS, isKindId } from '../../../game/plant/equipment-kinds';
+import {
+  EQUIPMENT_KINDS,
+  isKindId,
+  kindAffordances,
+} from '../../../game/plant/equipment-kinds';
 import {
   compositeTraits,
   expand,
@@ -9,9 +13,12 @@ import {
 import { isNonBody } from '../../components/core/views/non-body';
 import { boundsModelOf } from '../../components/core/views/bounds-model';
 import {
+  blocksWalker,
   boxBetween,
+  primitiveFootprint,
   primitiveTop,
 } from '../../components/core/logic/bounds-model';
+import type { Footprint } from '../../controls/logic/walk-collision';
 import type { BoundsModel } from '../../components/core/logic/bounds-model';
 import { deriveSurface, planeSurface } from '../logic/derived-surface';
 import type { DerivedSurface, SurfaceSample } from '../logic/derived-surface';
@@ -68,6 +75,36 @@ function bodyMeshes(object: Object3D): Mesh[] {
 }
 
 /**
+ * An object's bounds model and the object it is declared on (mission 208):
+ * declared on the object, or on the built item a room has wrapped; else
+ * one box fitted to its body, in its own frame. Null when it has no body.
+ */
+export function boundsModelFor(
+  object: Object3D,
+): { holder: Object3D; model: BoundsModel } | null {
+  object.updateWorldMatrix(true, true);
+  let holder: Object3D = object;
+  let model: BoundsModel | undefined;
+  object.traverse((o) => {
+    if (model) return;
+    model = boundsModelOf(o);
+    if (model) holder = o;
+  });
+  if (model) return { holder, model };
+  const meshes = bodyMeshes(object);
+  if (!meshes.length) return null;
+  const inverse = object.matrixWorld.clone().invert();
+  const box = new Box3();
+  for (const m of meshes) {
+    m.geometry.computeBoundingBox();
+    const b = m.geometry.boundingBox!.clone();
+    b.applyMatrix4(m.matrixWorld).applyMatrix4(inverse);
+    box.union(b);
+  }
+  return { holder: object, model: [boxBetween(box.min, box.max)] };
+}
+
+/**
  * A bounds-modelled object's surfaces (mission 208): each shape's flat top,
  * carried into the room by the object's world matrix (its scale, turn and
  * the room's metre), as the axis-aligned footprint of its four corners. A
@@ -78,28 +115,9 @@ export function boundedSurfaces(
   object: Object3D,
   walkable: boolean,
 ): DerivedSurface[] {
-  object.updateWorldMatrix(true, true);
-  // Declared on the object, or on the built item a room has wrapped.
-  let holder: Object3D = object;
-  let model: BoundsModel | undefined;
-  object.traverse((o) => {
-    if (model) return;
-    model = boundsModelOf(o);
-    if (model) holder = o;
-  });
-  if (!model) {
-    const meshes = bodyMeshes(object);
-    if (!meshes.length) return [];
-    const inverse = object.matrixWorld.clone().invert();
-    const box = new Box3();
-    for (const m of meshes) {
-      m.geometry.computeBoundingBox();
-      const b = m.geometry.boundingBox!.clone();
-      b.applyMatrix4(m.matrixWorld).applyMatrix4(inverse);
-      box.union(b);
-    }
-    model = [boxBetween(box.min, box.max)];
-  }
+  const found = boundsModelFor(object);
+  if (!found) return [];
+  const { holder, model } = found;
   const surfaces: DerivedSurface[] = [];
   const corner = new Vector3();
   for (const p of model) {
@@ -221,4 +239,82 @@ export function roomSurfaces(root: Object3D, metre: number): DerivedSurface[] {
 }
 
 /** Forget a room's surfaces, so they are derived afresh (after something has moved). */
-export const forgetSurfaces = (root: Object3D) => cache.delete(root);
+export const forgetSurfaces = (root: Object3D) => {
+  cache.delete(root);
+  solidCache.delete(root);
+};
+
+/** How high above the floor a shape must reach to let the walker pass under, metres. */
+export const SOLID_HEADROOM = 2;
+
+/**
+ * Whether a kind blocks the walker by its bounds model (mission 208, stage
+ * 2): it is solid (the default; `open-frame`, `run-like` and decoration
+ * opt out), it has the `bounds-model` trait, and it is not walkable (a
+ * walkable top's edges are its drop rule's, 182). Resolved once per kind.
+ */
+const solidKinds = new Map<string, boolean>();
+function blocksByBounds(kind: string): boolean {
+  let known = solidKinds.get(kind);
+  if (known === undefined) {
+    known = false;
+    if (isKindId(kind)) {
+      const k = EQUIPMENT_KINDS[kind];
+      if (k.traits?.length) {
+        const ps = expand(k.traits, compositeTraits()).primitives as string[];
+        known =
+          ps.includes('bounds-model') &&
+          !ps.includes('walkable') &&
+          kindAffordances(kind).solid;
+      }
+    }
+    solidKinds.set(kind, known);
+  }
+  return known;
+}
+
+/** One object's solid footprints, from its bounds model, in world units. */
+export function boundedSolids(object: Object3D, metre: number): Footprint[] {
+  const found = boundsModelFor(object);
+  if (!found) return [];
+  const { holder, model } = found;
+  const at = new Vector3();
+  const toWorld = (v: { x: number; y: number; z: number }) => {
+    at.set(v.x, v.y, v.z).applyMatrix4(holder.matrixWorld);
+    return { x: at.x, y: at.y, z: at.z };
+  };
+  // The floor it stands on: its own foot (the object's origin).
+  const floor = object.getWorldPosition(new Vector3()).y;
+  const out: Footprint[] = [];
+  for (const p of model) {
+    const f = primitiveFootprint(p, toWorld);
+    if (!blocksWalker(f, floor, SOLID_HEADROOM * metre)) continue;
+    out.push({ minX: f.minX, maxX: f.maxX, minZ: f.minZ, maxZ: f.maxZ });
+  }
+  return out;
+}
+
+const solidCache = new WeakMap<
+  Object3D,
+  { signature: string; solids: Footprint[] }
+>();
+
+/**
+ * A room's solids from its objects' bounds models (mission 208, stage 2):
+ * every placed object of a solid, bounds-modelled kind blocks the walker,
+ * what is carried, and what is thrown (211's rebounds use the same
+ * footprints), from its declared shapes. Cached like the surfaces, and
+ * forgotten with them.
+ */
+export function roomSolids(root: Object3D, metre: number): Footprint[] {
+  const signature = signatureOf(root);
+  const known = solidCache.get(root);
+  if (known && known.signature === signature) return known.solids;
+  const solids: Footprint[] = [];
+  root.traverse((o) => {
+    const kind = o.userData.equipmentKind as string | undefined;
+    if (kind && blocksByBounds(kind)) solids.push(...boundedSolids(o, metre));
+  });
+  solidCache.set(root, { signature, solids });
+  return solids;
+}

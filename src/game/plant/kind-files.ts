@@ -387,13 +387,24 @@ export const isProblem = (x: KindFile | Problem): x is Problem =>
  * (`node_modules/.vitest-cache` keys modules by their text) can hold a
  * stale list of files.
  */
-export function kindFiles(): Record<string, KindFile> {
-  return Object.fromEntries(
+export function kindFiles(): Readonly<Record<string, KindFile>> {
+  return COMPILED;
+}
+
+/**
+ * Compiled once, when this module loads, and never again (the owner,
+ * 2026-11-05: "the registry should be compiled once, and never recompiled
+ * again"): the kind files are fixed at build, so every caller shares this
+ * one frozen record. Changing a kind file in the dev server reloads this
+ * module, and the audit command is a fresh process each run.
+ */
+const COMPILED: Readonly<Record<string, KindFile>> = Object.freeze(
+  Object.fromEntries(
     Object.entries(KIND_FILES as Record<string, KindFile>)
       .map(
         ([path, f]) =>
           [path.replace(/^.*\//, '').replace(/\.(json|ts)$/, ''), f] as const,
       )
       .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)),
-  );
-}
+  ),
+);

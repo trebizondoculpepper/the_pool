@@ -1,6 +1,6 @@
 # Mission 208: declared bounds and the solid trait
 
-Status: stage 1 (bounds models for tops, the desk, the CAD BOUNDS toggle) done 2026-11-05; stage 2 (the solid trait and its opt-outs) open.
+Status: stage 1 (bounds models for tops, the desk, the CAD BOUNDS toggle) done 2026-11-05; stage 2 (solidity by trait, the `open-frame` opt-out, collision from bounds models, the magic room's BOUNDS knob, a fit test) done 2026-11-06 (nicole_buruaah; see "Stage 2, done"). Collision for every other solid kind is mission 162.
 
 ## Why
 
@@ -35,14 +35,18 @@ The owner's refinement: the bounds live in a **bounds model**, a third version o
 - The desk (`engineers-desk.ts`) declares its board, 1.6 × 0.8 m at 0.73 m; the `desk` composite carries `bounds-model` (set through `npm run audit -- trait edit`). Test in `room-equipment.test.ts`.
 - The item audit page's CAD views have a BOUNDS toggle over HIGH or LOW: orange where declared, grey where a fitted box stands in.
 
-## Stage 2, open
+## Stage 2, done (2026-11-06, nicole_buruaah)
 
-- The `solid` trait (opt-out, implies supportable), and its named opt-outs (`open-frame`, perhaps `hollow`); the walker's collision from the bounds model's solid shapes.
-- A BOUNDS toggle in the magic room, beside its POLY knob.
-- A test that a declared model still fits its drawn object.
-- The desk's own model is loaded asynchronously and is missing from its CAD views (only its PC, shelf, chair and carton show): a CAD fault from before this mission.
+- **Solid by default:** the resolver (`affordancesFromTraits`, `equipment-kinds.ts`) makes every kind solid unless it is decorative, `run-like` or the new `open-frame`. There is no `solid` trait to name: solid is what every kind is, and a kind opts out by a named trait with its own gameplay reason (rulings 4, 7).
+- **`open-frame`** (surface facet, implies supportable, conflicts with walkable, needs a form): a slab on pole legs, passed under and beside, still holding what is put on it. No kind has it yet; the first non-solid kind takes it with `npm run -s audit -- set <kind> traits+=open-frame`.
+- **Collision from bounds models:** `roomSolids` (`gallery/views/derived-surfaces.ts`) gives each placed object of a solid kind with `bounds-model` (and not walkable, whose edges are 182's drop rule) a floor-plan footprint per shape (`primitiveFootprint`, `blocksWalker` in `core/logic/bounds-model.ts`, pure, tested): the box round its turned corners, skipped where it is wholly overhead (above `SOLID_HEADROOM`, 2 m) or under the floor. The room factory merges them into every room's walker solids through `RoomTraits.solids` (`room-controller.ts`), so 211's throws rebound off them too. The engineer's desk's board is the first (test in `room-equipment.test.ts`).
+- **The magic room's BOUNDS knob** (OFF · ON) beside POLY: the item's declared model in orange, or a fitted box in grey.
+- **A fit test:** `modelFits` (pure) checks a declared model lies within its drawn object and reaches its top; the desk's is checked against the size its library model is fitted to (`engineers-desk.test.ts`).
+- **Not done here:** every other solid kind's collision (fitted boxes, height bands, rooms' own footprints removed) is mission 162; carried things stopped by solids (`carrySolids`) are 162 too.
 
 ## Open questions
+
+Settled for stage 2 by taking the recommendations or the simplest choice (nicole_buruaah, 2026-11-06; the owner may overrule): the `form` facet is unchanged, and the opt-out is a surface trait; `run-like` stays walk-through (not solid); `supportable`'s `plane` meta stays.
 
 - Extend the `form` facet (give `box-like` and `cylindrical` sizes) or add a separate bounds facet? Recommendation: extend `form`, since it already says "its bounding box is its shape"; a separate facet would duplicate it.
 - Does `run-like` stay walk-through as now, i.e. is it simply not solid?

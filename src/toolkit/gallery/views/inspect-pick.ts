@@ -139,10 +139,9 @@ function kindTarget(kind: string, object: Object3D): InspectionTarget | null {
 }
 
 /**
- * The registry's bound things, once per kind (mission 160): the kind
- * files' `bindings` are static and shared, so they are gathered once, not
- * on every hit; `kindFiles()` rebuilding the whole record every call is
- * why this cache exists.
+ * The registry's bound things, as a set per kind (mission 160), made the
+ * first time a kind is aimed at from the one compiled registry
+ * (`kindFiles()`, compiled once when it loads), so a hover is a lookup.
  */
 const boundThings = new Map<string, Set<string>>();
 function boundThingsOf(kind: string): Set<string> {

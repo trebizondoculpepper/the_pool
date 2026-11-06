@@ -197,9 +197,12 @@ export function affordancesFromTraits(
   const ps = expand(traits, composites).primitives;
   const has = (p: string) => (ps as readonly string[]).includes(p);
   const meta = resolveMeta(traits, own, composites).values;
+  // Solid by default (mission 208, stage 2): its bounds block the walker
+  // and what is carried or thrown; opted out by a named trait.
   const solid =
     !has('decorative') &&
     !has('run-like') &&
+    !has('open-frame') &&
     !(has('water-body') && !ps.some((p) => PRIMITIVES[p].facet === 'form'));
   return {
     interaction: has('decorative')

@@ -2,6 +2,7 @@ import type { Camera, Object3D } from 'three';
 import { createFirstPerson, firstPersonOn } from './first-person';
 import type { FirstPersonOptions } from './first-person';
 import type { PortableObject, SupportSurface } from './object-handling';
+import type { Footprint } from '../logic/walk-collision';
 import type { InspectionTarget } from '../logic/inspection';
 
 /** A named room style may be approved later; every room uses the standard style now. */
@@ -28,6 +29,12 @@ export interface RoomTraits {
    * asked every frame.
    */
   holdables?(root: Object3D, metre: number): void;
+  /**
+   * What blocks the walker besides the room's own solids (mission 208,
+   * stage 2): its solid, bounds-modelled things, in scene units. What is
+   * thrown rebounds off the same footprints (211).
+   */
+  solids?(root: Object3D, metre: number): readonly Footprint[];
 }
 
 /** Throwing into a room's bin-like objects, as the walker sees it. */
@@ -150,6 +157,7 @@ export function createRoomController(options: RoomControllerOptions) {
     });
   const scene = options.scene ?? root;
   const roomSupports = options.supports;
+  const roomSolids = options.solids;
   const bins = traits.bins?.(scene, options.metre);
   traits.holdables?.(scene, options.metre);
   const walker = createFirstPerson({
@@ -165,6 +173,12 @@ export function createRoomController(options: RoomControllerOptions) {
       ...(roomSupports?.() ?? []),
       ...traits.supports(scene, options.metre),
     ],
+    solids: traits.solids
+      ? () => [
+          ...(roomSolids?.() ?? []),
+          ...(traits.solids?.(scene, options.metre) ?? []),
+        ]
+      : roomSolids,
   });
   const step = walker.update.bind(walker);
   walker.update = (delta: number) => {
