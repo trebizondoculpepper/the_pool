@@ -10,8 +10,8 @@ Before faults rely on the phone, the player should be able to hear a message arr
 
 ## Scope settled with the owner
 
-- Add one special-purpose development room, taking the next free `dev` number at implementation time. It may otherwise remain the usual blank room with its title card. The owner explicitly approved this room-specific scripted behaviour as an exception to the normal shared-system rule. Mark the script's implementation with `One-off (the owner, 2026-11-05):` and the reason.
-- From the start of a visit to that dev room, deliver message one at **20 seconds** and message two at **two minutes**. The second timer does not depend on reading the first. Deliver exactly two messages, with simple test text. Restarting the dev room replays the sequence.
+- Add `dev71`, the next free development-room number at implementation, as a blank room with its title card. The owner explicitly approved this room-specific scripted behaviour as an exception to the normal shared-system rule. Mark the script's implementation with `One-off (the owner, 2026-11-05):` and the reason.
+- From the start of a visit to that dev room, deliver message one at **20 seconds** and message two at **two minutes** of that room's simulation time. The second timer does not depend on reading the first. Deliver exactly two messages, with simple test text. Leaving the room cancels its pending deliveries; restarting or revisiting the dev room replays the sequence. Use elapsed-time threshold crossings with one-shot flags so an uneven frame cannot duplicate or skip either message.
 - Each arrival makes a short phone beep and adds an unread message to the shared inbox. The phone stays down; the player raises it and navigates Main Menu → Messages → Inbox to read. Newest messages appear first. No real-world network, account, send function, or scenario logic is involved.
 - The timing and test text are the one-off room script; the phone's transport, unread state, inbox order and display remain shared systems usable by future authored scenarios. No other room gets a private message implementation.
 
@@ -21,4 +21,4 @@ With the phone closed, the first beep and message occur once after 20 seconds, a
 
 ## Dependencies and records
 
-213 provides the handset, 214 the inbox and message-entry API. Use the room creation and inspection tools in `doc/agent-tooling.md`; update that guide if a new tool is added. Keep `TODO.md` and `CHANGELOG.md` current when implementing, record the one-off justification in code, and run the required checks.
+213 provides the handset, 214 and 222 the inbox and reliable Messages path, and 223 the shared arrival alert. `dev71` is reserved for this work in `dev-room-links.ts`; reconcile it with any new room added before this branch merges. Use the room creation and inspection tools in `doc/agent-tooling.md`; update that guide if a new tool is added. Keep `TODO.md` and `CHANGELOG.md` current when implementing, record the one-off justification in code, and run the required checks.

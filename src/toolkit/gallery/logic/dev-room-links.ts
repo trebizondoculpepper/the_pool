@@ -80,6 +80,7 @@ export type GalleryRoomId =
   | 'dev57'
   | 'dev58'
   | 'dev70'
+  | 'dev71'
   | 'retired0'
   | 'retired1'
   | 'dev59';
@@ -195,6 +196,7 @@ export const DEV_ROOMS: readonly DevRoomId[] = [
   'dev19',
   'dev59',
   ...EQUIPMENT_ROOMS,
+  'dev71',
 ];
 
 /** The rooms whose way out is a door to dev59. */
@@ -527,6 +529,7 @@ export const DEV_ROOM_NAMES: Record<RoomId, string> = {
   dev68: 'DEV68 · CONTROL CENTRE',
   dev69: 'DEV69 · OZONE',
   dev70: 'DEV70 · KITCHEN',
+  dev71: 'DEV71 · PHONE INTERACTION',
   museum0: hallName('museum0'),
   museum1: hallName('museum1'),
   museum2: hallName('museum2'),
@@ -665,6 +668,7 @@ export const DEV_ROOM_COLOURS: Record<RoomId, string> = {
   dev68: '#5c6f86',
   dev69: '#4b5fc1',
   dev70: '#c8102e',
+  dev71: '#6688a8',
   museum0: '#2a9d96',
   museum1: '#2a9d96',
   museum2: '#2a9d96',

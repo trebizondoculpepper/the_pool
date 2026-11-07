@@ -135,7 +135,8 @@ export type ExhibitRoomId =
   | 'dev49'
   | 'dev51'
   | 'dev52'
-  | 'dev70';
+  | 'dev70'
+  | 'dev71';
 
 /** A room's own finish (`FINISH` in its module). */
 export interface RoomFinish {
@@ -171,6 +172,12 @@ export const EXHIBITS: Record<
     FINISH?: RoomFinish;
     /** Where the walker starts, metres, when it does not come through the door. */
     START?: { x: number; z: number; yaw: number };
+    /** Optional one-visit behaviour, stepped only while this room is visible. */
+    createRoomScript?: () => {
+      step(delta: number): void;
+      reset?(): void;
+      dispose?(): void;
+    };
   }>
 > = {
   dev61: () => import('./plant/pumps'),
@@ -219,6 +226,7 @@ export const EXHIBITS: Record<
   dev51: () => import('./plant/ideal-pool-plant'),
   dev52: () => import('./plant/museum-stuff'),
   dev70: () => import('./plant/kitchen'),
+  dev71: () => import('./plant/phone-trial'),
 };
 
 /**
@@ -767,6 +775,11 @@ export function startEquipmentRoom(
   };
 
   // A look link (mission 125) waits until the exhibits are in the scene.
+  let roomScript: {
+    step(delta: number): void;
+    reset?(): void;
+    dispose?(): void;
+  } | null = null;
   const settled = EXHIBITS[id]().then(
     ({
       EXHIBITS: exhibits,
@@ -776,8 +789,9 @@ export function startEquipmentRoom(
       layoutRoom,
       FINISH,
       START,
+      createRoomScript,
     }) => {
-      if (!disposed)
+      if (!disposed) {
         build(
           exhibits,
           PURPOSE,
@@ -787,6 +801,8 @@ export function startEquipmentRoom(
           FINISH,
           START,
         );
+        roomScript = createRoomScript?.() ?? null;
+      }
     },
   );
 
@@ -814,6 +830,7 @@ export function startEquipmentRoom(
     last = time;
     ps1Uniforms.time.value = time / 1000;
     walk.update(delta);
+    roomScript?.step(delta);
     partAudio.listen(camera, m, scene);
     portals?.update(delta, walk.walker.x, walk.walker.z, !walk.following);
     // Near an exhibit's doors, they wait: told before they move.
@@ -831,6 +848,7 @@ export function startEquipmentRoom(
     renderer.setAnimationLoop(null);
     observer.disconnect();
     walk.dispose();
+    roomScript?.dispose?.();
     portals?.dispose();
     for (const exhibit of live) {
       exhibit.parts?.dispose();
@@ -844,6 +862,7 @@ export function startEquipmentRoom(
   return Object.assign(dispose, {
     look: { settled },
     enter(previous: string | null) {
+      roomScript?.reset?.();
       const pose = portals?.arrival(previous);
       if (pose) walk.place(pose.x, pose.z, pose.yaw, pose.pitch);
     },
