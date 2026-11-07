@@ -11,7 +11,11 @@ import type { Material, Object3D, PerspectiveCamera, Texture } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { PhoneFrame } from '../logic/phone-menu';
 import { phoneFraming } from '../logic/phone-framing';
-import { phoneDisplayTouch, phoneKeyTouch } from '../logic/phone-input';
+import {
+  PHONE_TEXTURE_SIZE,
+  phoneDisplayTouch,
+  phoneKeyTouch,
+} from '../logic/phone-input';
 import type { PhoneTouch } from '../logic/phone-input';
 import { PLAIN_USE } from '../logic/use-cue';
 import { markUsable } from './use-marking';
@@ -20,6 +24,7 @@ import { createPhoneDisplay } from './phone-display';
 
 const handsetUrl = `${import.meta.env.BASE_URL}models/phone/scene.gltf`;
 const offset = new Vector3();
+const PHONE_REACH_METRES = 4;
 
 /** Draw the small, licensed handset over the room, with a replaceable black screen. */
 export function createPhoneView(
@@ -40,6 +45,7 @@ export function createPhoneView(
   let raised = false;
   let lift = 0;
   let buttons: Object3D | null = null;
+  let screen: Mesh<PlaneGeometry> | null = null;
   let shownFrame: PhoneFrame | null = null;
   const owned: Material[] = [];
   const textures = new Set<Texture>();
@@ -49,13 +55,20 @@ export function createPhoneView(
   const cache = aimCache(0);
   const pointTouch = (point: Vector3): PhoneTouch | null => {
     if (!raised || !buttons || !shownFrame) return null;
+    if (screen) {
+      const displayPoint = screen.worldToLocal(point.clone());
+      const { width, height } = screen.geometry.parameters;
+      if (
+        Math.abs(displayPoint.x) <= width / 2 &&
+        Math.abs(displayPoint.y) <= height / 2
+      )
+        return phoneDisplayTouch(
+          shownFrame,
+          ((displayPoint.x + width / 2) / width) * PHONE_TEXTURE_SIZE,
+          ((height / 2 - displayPoint.y) / height) * PHONE_TEXTURE_SIZE,
+        );
+    }
     const local = buttons.worldToLocal(point.clone());
-    if (Math.abs(local.x) <= 0.265 && local.y >= 0.062 && local.y <= 0.612)
-      return phoneDisplayTouch(
-        shownFrame,
-        ((local.x + 0.265) / 0.53) * 512,
-        ((0.612 - local.y) / 0.55) * 512,
-      );
     return phoneKeyTouch(local.x, local.y);
   };
   const unmark = markUsable(
@@ -117,7 +130,7 @@ export function createPhoneView(
         // the raised bezel so its outer pixels cannot disappear under it.
         const screenGeometry = new PlaneGeometry(0.53, 0.55);
         const base = new MeshBasicMaterial({ map: display.texture });
-        const screen = new Mesh(screenGeometry, foreground(base));
+        screen = new Mesh(screenGeometry, foreground(base));
         base.dispose();
         screen.name = 'Phone display';
         screen.position.set(0, 0.337, 0.161);
@@ -154,7 +167,7 @@ export function createPhoneView(
         metre,
         x,
         y,
-        reach: 4,
+        reach: PHONE_REACH_METRES * metre,
         now: performance.now(),
         ray,
         pointer,

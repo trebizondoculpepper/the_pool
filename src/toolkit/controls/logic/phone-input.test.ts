@@ -32,11 +32,12 @@ describe('raised phone input', () => {
 
   it('assigns the handset Navi, C and scroll regions', () => {
     expect(phoneKeyTouch(0, -0.04)).toEqual({ action: 'select' });
-    expect(phoneKeyTouch(-0.2, -0.04)).toEqual({ action: 'back' });
-    expect(phoneKeyTouch(0, -0.11)).toEqual({ action: 'up' });
-    expect(phoneKeyTouch(0, -0.22)).toEqual({ action: 'down' });
-    expect(phoneKeyTouch(-0.12, -0.14)).toEqual({ action: 'left' });
-    expect(phoneKeyTouch(0.12, -0.14)).toEqual({ action: 'right' });
-    expect(phoneKeyTouch(0, -0.5)).toBeNull();
+    expect(phoneKeyTouch(-0.29, -0.21)).toEqual({ action: 'back' });
+    expect(phoneKeyTouch(0, -0.16)).toEqual({ action: 'up' });
+    expect(phoneKeyTouch(-0.11, -0.23)).toEqual({ action: 'left' });
+    expect(phoneKeyTouch(0.11, -0.23)).toEqual({ action: 'right' });
+    expect(phoneKeyTouch(0, -0.29)).toEqual({ action: 'down' });
+    expect(phoneKeyTouch(0.28, -0.21)).toBeNull();
+    expect(phoneKeyTouch(0, -0.7)).toBeNull();
   });
 });

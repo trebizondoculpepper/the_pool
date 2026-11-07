@@ -92,7 +92,7 @@ const POINTER_SCHEME: Record<
     gamepad: 'D-pad Up: raise phone',
   },
   phoneNavigate: {
-    mouse: 'in the phone, arrows: move, Enter: open, Esc: back',
+    mouse: 'in the phone, arrows: move, Enter: open, Backspace: back',
     touch: 'tap phone icons and keys; arrows remain available',
     gamepad: 'in the phone, D-pad: move, A: open, B: back',
   },

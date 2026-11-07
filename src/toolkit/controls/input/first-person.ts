@@ -1198,14 +1198,25 @@ export function createFirstPerson(options: FirstPersonOptions) {
     handling?.inspect(false);
     concealHeld();
   };
-  const phoneEscape = (event: KeyboardEvent) => {
-    if (event.key !== 'Escape' || !phoneRaised || !current()) return;
+  let phoneEscapeUnlock = false;
+  const phoneBack = (event: KeyboardEvent) => {
+    if (
+      (event.key !== 'Escape' && event.code !== 'Backspace') ||
+      !phoneRaised ||
+      !current()
+    )
+      return;
     event.preventDefault();
     event.stopImmediatePropagation();
+    if (event.repeat) return;
+    if (event.key === 'Escape' && locked()) {
+      phoneEscapeUnlock = true;
+      setTimeout(() => (phoneEscapeUnlock = false), 500);
+    }
     setInput('keyboard');
     phoneAction('back');
   };
-  window.addEventListener('keydown', phoneEscape, true);
+  window.addEventListener('keydown', phoneBack, true);
   const look = (event: MouseEvent) => {
     if (!locked() || motionHeld()) return;
     setInput('mouse');
@@ -1235,7 +1246,10 @@ export function createFirstPerson(options: FirstPersonOptions) {
       handling?.holding()
     );
     if (!locked()) {
-      forget();
+      if (phoneEscapeUnlock) {
+        phoneEscapeUnlock = false;
+        holds.releaseAll();
+      } else forget();
       releasedAt = performance.now();
     }
   };
@@ -1340,6 +1354,16 @@ export function createFirstPerson(options: FirstPersonOptions) {
       if (event.button !== 0) return;
       if (locked()) heldUse('mouse', 0, 0);
       else {
+        if (phoneRaised) {
+          // The first click after load must work the handset, even before the
+          // browser grants pointer lock. A drag elsewhere can still look around.
+          const [x, y] = screenPoint(event.clientX, event.clientY);
+          const found = phoneView.resolveAt(x, y);
+          if (found && phoneView.targetAt(found.point)) {
+            use(x, y);
+            return;
+          }
+        }
         // Asked for and not granted soon after is refused too: then this
         // click and the rest drag to look and use where they land.
         const ask = lockTarget.requestPointerLock as
@@ -2362,7 +2386,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       if (phoneRaised) phoneOpen.value = false;
       phoneView.dispose();
       phoneNav.remove();
-      window.removeEventListener('keydown', phoneEscape, true);
+      window.removeEventListener('keydown', phoneBack, true);
       altitude.remove();
       flightReadout.remove();
       handling?.dispose();

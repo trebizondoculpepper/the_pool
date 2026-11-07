@@ -1,6 +1,7 @@
 import type { PhoneAction, PhoneFrame } from './phone-menu';
 
 export type PhoneTouch = { action: PhoneAction } | { index: number };
+export const PHONE_TEXTURE_SIZE = 512;
 
 export function phoneKeyAction(code: string): PhoneAction | null {
   if (code === 'ArrowUp') return 'up';
@@ -17,7 +18,8 @@ export function phoneDisplayTouch(
   x: number,
   y: number,
 ): PhoneTouch | null {
-  if (x < 0 || x >= 512 || y < 0 || y >= 512) return null;
+  if (x < 0 || x >= PHONE_TEXTURE_SIZE || y < 0 || y >= PHONE_TEXTURE_SIZE)
+    return null;
   if (y >= 449) return { action: x < 256 ? 'back' : 'select' };
   if (frame.page === 'main' && y >= 125 && y < 428) {
     const col = x < 256 ? 0 : 1;
@@ -42,13 +44,18 @@ export function phoneDisplayTouch(
 
 /** Model-local coordinates on the combined handset button mesh. */
 export function phoneKeyTouch(x: number, y: number): PhoneTouch | null {
-  if (y > -0.01 || y < -0.25 || Math.abs(x) > 0.33) return null;
-  if (y > -0.085) {
-    if (x < -0.13) return { action: 'back' };
-    if (Math.abs(x) < 0.13) return { action: 'select' };
-    return null;
-  }
-  if (x < -0.08) return { action: 'left' };
-  if (x > 0.08) return { action: 'right' };
-  return { action: y > -0.17 ? 'up' : 'down' };
+  // The blue Navi key sits above the scroll pad; C and Power flank its middle.
+  // Regions follow the measured centres of the supplied handset model. The
+  // number pad below the scroll pad has no menu action.
+  if (Math.abs(x) < 0.09 && y >= -0.105 && y <= 0.02)
+    return { action: 'select' };
+  if (x >= -0.33 && x <= -0.19 && y >= -0.27 && y <= -0.15)
+    return { action: 'back' };
+  if (Math.abs(x) < 0.075 && y >= -0.21 && y < -0.105) return { action: 'up' };
+  if (x >= -0.18 && x < -0.055 && y >= -0.28 && y <= -0.18)
+    return { action: 'left' };
+  if (x > 0.055 && x <= 0.18 && y >= -0.28 && y <= -0.18)
+    return { action: 'right' };
+  if (Math.abs(x) < 0.075 && y >= -0.35 && y < -0.21) return { action: 'down' };
+  return null;
 }
