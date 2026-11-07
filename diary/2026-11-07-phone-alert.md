@@ -1,0 +1,3 @@
+# 2026-11-07 · Phone alert
+
+Issue #80 adds an original, brief square-wave arrival motif through `partAudio`. The shared inbox now publishes live `receive` events; the app plays the cue and leaves initial sample messages silent because they are created before subscription. This gives the scripted dev room in #79 a reusable delivery path without room-specific sound playback. The controls branch #76 merged before this branch's final rebase. Ahnaa's review identified simultaneous receipts and hot-reload lifetime, so the app now coalesces arrivals within one second and disposes its subscription on hot reload. A pre-unlock browser may silently drop the alert; message delivery still occurs.

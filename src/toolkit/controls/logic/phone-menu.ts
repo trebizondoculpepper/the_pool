@@ -12,14 +12,20 @@ export function createPhoneInbox(
 ) {
   let nextId = 1;
   const messages: PhoneMessage[] = [];
+  const listeners = new Set<(message: PhoneMessage) => void>();
   const receive = (from: string, text: string) => {
     const message = { id: nextId++, from, text, read: false };
     messages.unshift(message);
+    for (const listener of listeners) listener(message);
     return message;
   };
   for (const sample of samples) receive(sample.from, sample.text);
   return {
     receive,
+    subscribe(listener: (message: PhoneMessage) => void) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
     list: () => messages as readonly PhoneMessage[],
     unread: () => messages.filter((message) => !message.read).length,
     read(id: number) {

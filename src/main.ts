@@ -87,6 +87,8 @@ import { GEAR_ICON, createPauseMenu } from './toolkit/settings/pause-menu';
 import { settings } from './toolkit/settings/settings-store';
 import { effect } from '@preact/signals-core';
 import { partAudio } from './toolkit/components/core/audio/part-audio';
+import { PHONE_MESSAGE_ALERT } from './toolkit/components/sound/audio/phone-tones';
+import { phoneInbox } from './toolkit/controls/logic/phone-menu';
 import { renderPlantManual } from './toolkit/manual/plant-manual';
 import { startWeatherFeed } from './toolkit/weather/weather-feed';
 import {
@@ -303,6 +305,13 @@ effect(() => {
     String(s.overlayScale),
   );
   layOutFrame();
+});
+let lastPhoneAlertAt = -Infinity;
+const unsubscribePhoneAlert = phoneInbox.subscribe(() => {
+  const now = performance.now();
+  if (now - lastPhoneAlertAt < 1000) return;
+  lastPhoneAlertAt = now;
+  partAudio.play(PHONE_MESSAGE_ALERT);
 });
 // The pause menu: Esc once the mouse is free, a gamepad's Start, or the
 // gear among each room's view tools. The world saves itself as it runs
@@ -2586,6 +2595,7 @@ void openRoom().catch(showError);
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
     revision++;
+    unsubscribePhoneAlert();
     window.clearInterval(positionSaveTimer);
     window.removeEventListener('pagehide', rememberPlayer);
     document.removeEventListener('visibilitychange', saveHiddenPosition);
