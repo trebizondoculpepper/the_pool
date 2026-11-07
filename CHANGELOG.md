@@ -73,7 +73,9 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
-- The raised phone now holds a stable screen-space size and position across field-of-view changes and sits slightly higher on narrow screens; its live display fits inside the handset's bezel without clipping its outer pixels.
+- The raised phone is twice as large on screen and centred in the game view so its larger body fits on desktop and portrait screens.
+
+- The raised phone now holds a stable screen-space size and position across field-of-view changes; its live display fits inside the handset's bezel without clipping its outer pixels.
 
 - The pool exchangers' LTHW control valves, PL1-HX1-CV1 and PL2-HX1-CV1, are modulating control valves that regulate the flow, no longer "butterfly valves" that "isolate" it (#33): a new `modulating` trait (a valve positioned between shut and open by its controller) and a registered `control-valve` kind carrying it; a room model's regulating fittings take that kind, and a modulating valve's description says it regulates.
 

@@ -19,9 +19,9 @@ export function phoneFraming(
   const halfHeight = (depth * Math.tan(radians)) / (zoom > 0 ? zoom : 1);
   const baseline = depth * Math.tan((68 * Math.PI) / 360);
   return {
-    scale: (3.2 * halfHeight) / baseline,
+    scale: (6.4 * halfHeight) / baseline,
     x: (narrow ? 0.37 : 0.36) * halfHeight * cameraAspect,
-    y: (-1.7 + (narrow ? 1.34 : 1.24) * lift) * halfHeight,
+    y: (-1.7 + 1.7 * lift) * halfHeight,
     z: -depth,
   };
 }

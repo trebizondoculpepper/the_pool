@@ -30,6 +30,8 @@ describe('held phone framing', () => {
   it('uses the viewport shape when a portrait game canvas is letterboxed', () => {
     const portrait = phoneFraming(68, 1, 4 / 3, 390 / 844, 1);
     const landscape = phoneFraming(68, 1, 4 / 3, 16 / 9, 1);
-    expect(portrait.y).toBeGreaterThan(landscape.y);
+    expect(portrait.x).toBeGreaterThan(landscape.x);
+    expect(portrait.y).toBeCloseTo(0);
+    expect(landscape.y).toBeCloseTo(0);
   });
 });
