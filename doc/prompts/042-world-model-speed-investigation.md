@@ -1,6 +1,14 @@
 # 042: How to make the world model faster — an investigation
 
-Status: not started (checked 2026-10-26): no benchmark harness, experiments or report yet.
+Status: research first pass complete (2026-11-07); the original full experiment set remains open. See [current measurements and recommendations](../research/042-world-model-speed.md).
+
+## Review checkpoint — 2026-11-07
+
+**Delivered:** A scratch benchmark and CPU profile of the current world, an indexed/precompiled valve-lookup experiment with sampled state-equivalence checks, catch-up step-size comparisons, a five-independent-world proxy, a structured-clone measurement, a ranked report and a diary entry. The scratch files were removed after the measurements.
+
+**Still outstanding:** Whole-world before/after timing after a production lookup change; a faithful connected 4–5× plant test; fault/event equivalence for faster catch-up; and experimental compiled-world and browser-worker measurements. The report explains why the first pass does not claim these are complete.
+
+**Evidence:** [Report](../research/042-world-model-speed.md) and [diary](../../diary/2026-11-07-research-042-43-44.md). The 2026-10-24 measurements below are historical, not the current baseline.
 
 ## Review checkpoint — 2026-10-26
 

@@ -4,6 +4,10 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+### Added
+
+- Research reports for world-model speed (mission 042), explicit trait-facet coverage (#43), and ordered, provenanced object descriptions (#44), with measured current-model costs and concrete follow-ups.
+
 ## [0.15.0] - 2026-11-07
 
 ### Added
