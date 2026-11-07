@@ -1,5 +1,7 @@
 # 215: scripted phone messages in a dev room
 
+Tracked in #79; status lives there.
+
 The owner, 2026-11-05. This follows [213](213-phone-model-and-raise.md) and [214](214-phone-menus-and-inbox.md). It proves that the game can deliver messages without building authored fault scenarios yet.
 
 ## Gameplay reason
