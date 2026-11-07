@@ -71,7 +71,7 @@ export const OLYMPIC_ROOM = { w: 22, d: 14 } as const;
 const hx = OLYMPIC_ROOM.w / 2;
 const hz = OLYMPIC_ROOM.d / 2;
 
-/** Each machine's size, as the room's equipment has it (`retired0`). */
+/** Each machine's size, as the room's equipment had it before its redo. */
 const SIZE = {
   filter: { w: 3.6, d: 3.8, h: 3.55 },
   pumps: { w: 3.2, d: 2.4, h: 1.9 },

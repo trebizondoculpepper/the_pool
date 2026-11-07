@@ -136,7 +136,6 @@ export const ROOM_IDS = [
   'pool_02_gallery',
   'pool_03',
   'pool_04',
-  'retired0',
   'retired1',
   'shared_plant_layout',
   'switch_room',
