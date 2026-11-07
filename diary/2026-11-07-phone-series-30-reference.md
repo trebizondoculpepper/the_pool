@@ -1,0 +1,5 @@
+# Phone reference session, 2026-11-07
+
+The owner split the phone work into independent missions: moving while using the phone, reliable Messages navigation, the scripted 20-second and two-minute dev-room messages, period phone sounds, single-key Series 30 design, a colour matrix effect and subtle motion of the held handset. Issues #75–#81 track the set; mission 215 and mission 219 already had briefs when this session began.
+
+The original Nokia 2600 user and service manuals identify an unusually close match to the game's licensed Ilia_S handset. The reference has one context-sensitive Navi key, a separate C/exit key, four scroll directions and a 128 × 128 colour display supporting 4,096 colours. The source links, visual inference, provenance caveat and proposed control/display mapping are in `doc/research/phone-series-30.md`; #75 holds the review discussion. The reference issue has its own worktree and branch, opened with the owner's explicit permission. The other phone issues await this reference and their own implementation PRs.
