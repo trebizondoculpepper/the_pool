@@ -167,7 +167,7 @@ export function createPhoneView(
         metre,
         x,
         y,
-        reach: PHONE_REACH_METRES * metre,
+        reach: PHONE_REACH_METRES,
         now: performance.now(),
         ray,
         pointer,

@@ -1203,7 +1203,8 @@ export function createFirstPerson(options: FirstPersonOptions) {
     if (
       (event.key !== 'Escape' && event.code !== 'Backspace') ||
       !phoneRaised ||
-      !current()
+      !current() ||
+      typing(event)
     )
       return;
     event.preventDefault();
