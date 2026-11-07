@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A research brief for composable room traits, covering development-room exceptions, a proposed trait catalogue and a migration map (#96).
 - Live phone inbox deliveries now play an original three-note handset alert through the existing master-volume audio bus; seeded sample texts stay silent (#80).
 - Subtle six-axis drift and walking sway for the raised phone, with a steady pose when reduced motion is preferred (#81).
 - The phone's Messages route now uses a single highlighted vertical list, restores selection on back, and scrolls long texts at the colour-matrix display's true line width (#78).
