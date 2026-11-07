@@ -1,0 +1,3 @@
+# 2026-11-07 · Phone interaction trial room
+
+Issue #79 uses dev71, the next number after dev70, as a blank shell with its title card. A one-off script belongs to that room's module; the generic exhibit-room runner accepts a per-visit step/reset hook and calls it only while the room is visible. The helper crosses 20-second and 120-second thresholds once per visit, including on uneven frames, and calls the shared `phoneInbox.receive` API. The room itself plays no sound; issue #80's app-level subscription supplies the beep. Focused timing, room-link and shared-inbox integration tests pass. The branch now includes #78's Messages path and #80's sound while awaiting their merge and final review.
