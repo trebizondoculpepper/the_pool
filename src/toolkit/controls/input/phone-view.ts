@@ -1,9 +1,11 @@
 import {
   Group,
+  Euler,
   Mesh,
   MeshBasicMaterial,
   PlaneGeometry,
   Raycaster,
+  Quaternion,
   Vector2,
   Vector3,
 } from 'three';
@@ -11,6 +13,7 @@ import type { Material, Object3D, PerspectiveCamera, Texture } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { PhoneFrame } from '../logic/phone-menu';
 import { phoneFraming } from '../logic/phone-framing';
+import { phoneHandMotion, phoneWalkActivity } from '../logic/phone-hand-motion';
 import {
   PHONE_TEXTURE_SIZE,
   phoneDisplayTouch,
@@ -24,6 +27,8 @@ import { createPhoneDisplay } from './phone-display';
 
 const handsetUrl = `${import.meta.env.BASE_URL}models/phone/scene.gltf`;
 const offset = new Vector3();
+const swayRotation = new Quaternion();
+const swayEuler = new Euler();
 const PHONE_REACH_METRES = 4;
 
 /** Draw the small, licensed handset over the room, with a replaceable black screen. */
@@ -44,6 +49,8 @@ export function createPhoneView(
   let disposed = false;
   let raised = false;
   let lift = 0;
+  let motionSeconds = 0;
+  let walking = 0;
   let buttons: Object3D | null = null;
   let screen: Mesh<PlaneGeometry> | null = null;
   let shownFrame: PhoneFrame | null = null;
@@ -181,11 +188,17 @@ export function createPhoneView(
     activate(touch: PhoneTouch) {
       if (raised) onTouch(touch);
     },
-    update(delta: number) {
+    update(delta: number, walkRate = 0, reducedMotion = false) {
       const target = raised ? 1 : 0;
       lift += Math.max(-delta * 5, Math.min(delta * 5, target - lift));
       anchor.visible = lift > 0.001;
-      if (!anchor.visible) return;
+      if (!anchor.visible) {
+        walking = 0;
+        return;
+      }
+      motionSeconds += delta;
+      walking = phoneWalkActivity(walking, walkRate, delta);
+      const motion = phoneHandMotion(motionSeconds, walking, reducedMotion);
       // Model +Z is its face. The camera looks down -Z, so +Z faces the eye.
       const frame = phoneFraming(
         camera.fov,
@@ -195,11 +208,17 @@ export function createPhoneView(
         lift,
       );
       anchor.scale.setScalar(frame.scale * metre);
-      offset.set(frame.x * metre, frame.y * metre, frame.z * metre);
+      offset.set(
+        (frame.x + motion.x) * metre,
+        (frame.y + motion.y) * metre,
+        (frame.z + motion.z) * metre,
+      );
       anchor.position
         .copy(camera.position)
         .add(offset.applyQuaternion(camera.quaternion));
       anchor.quaternion.copy(camera.quaternion);
+      swayEuler.set(motion.pitch, motion.yaw, motion.roll);
+      anchor.quaternion.multiply(swayRotation.setFromEuler(swayEuler));
     },
     dispose() {
       disposed = true;
