@@ -9,7 +9,7 @@ import {
   Scene,
   Vector2,
 } from 'three';
-import { markUsable, useRegistrationOf } from './use-marking';
+import { markReach, markUsable, useRegistrationOf } from './use-marking';
 import { aimCache, clickOutcome, resolveAim } from './resolve-aim';
 import type { UseQuery } from './use-marking';
 import type { UseAnswer } from '../logic/use-cue';
@@ -192,5 +192,27 @@ describe('the one aim resolution (mission 161)', () => {
     const answerOnly = new Group();
     markUsable(answerOnly, turnable); // no action
     expect(clickOutcome(useRegistrationOf(answerOnly), TURN)).toBe('room');
+  });
+});
+
+describe('a use’s own reach (mission 161; the owner, 2026-11-06)', () => {
+  it('within its reach it resolves; beyond, nothing does, for the cue and the click', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    // The camera is 3 m from a thing at z = −1.
+    const knob = inFrontOf();
+    markUsable(knob, turnable, () => {});
+    expect(resolve(scene, camera)?.registration?.object).toBe(knob);
+    markReach(knob, 2);
+    expect(resolve(scene, camera)).toBeNull();
+    markReach(knob, 3.5);
+    expect(resolve(scene, camera)?.registration?.reach).toBe(3.5);
+  });
+
+  it('a use with no reach of its own takes the aim’s', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    const knob = inFrontOf();
+    markUsable(knob, turnable, () => {});
+    expect(useRegistrationOf(knob)?.reach).toBeUndefined();
+    expect(resolve(scene, camera)?.registration?.object).toBe(knob);
   });
 });

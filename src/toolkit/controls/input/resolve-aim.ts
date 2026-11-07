@@ -82,6 +82,8 @@ export interface AimOptions {
   fresh?: boolean;
 }
 
+const eye = new Vector3();
+
 /**
  * Resolve a use aim to the first visible thing and its registration, or null
  * when nothing is met. A thing met but registered nowhere (a seat, say)
@@ -137,6 +139,14 @@ export function resolveAim(options: AimOptions): AimResolution | null {
   // stays registered nowhere keeps its null registration (a seat, say):
   // the click may still act on it.
   const registration = useRegistrationOf(found.hit);
+  // A use with its own reach (`markReach`): beyond it, nothing is in reach
+  // there, for the cue and the click alike (the owner, 2026-11-06).
+  if (
+    registration?.reach !== undefined &&
+    found.point.distanceTo(eye.setFromMatrixPosition(camera.matrixWorld)) >
+      registration.reach * metre
+  )
+    return null;
   if (!registration) {
     cache.found = {
       hit: found.hit,

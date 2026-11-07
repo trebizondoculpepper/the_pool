@@ -95,6 +95,12 @@ export interface UseRegistration {
   usable: Usable;
   /** The action a click runs, when the registration carries one. */
   action?: UseAction;
+  /**
+   * How far a use of it reaches, metres, from the eye to the point touched
+   * (`markReach`; mission 161, the owner, 2026-11-06: reach depends on the
+   * action). Left out, the aim's own reach applies.
+   */
+  reach?: number;
 }
 
 /**
@@ -110,7 +116,25 @@ export function useRegistrationOf(object: Object3D): UseRegistration | null {
   const found = usableOf(object);
   if (!found) return null;
   const action = found.object.userData.useAction as UseAction | undefined;
-  return action ? { ...found, action } : found;
+  const reach = found.object.userData.useReach as number | undefined;
+  return {
+    ...found,
+    ...(action ? { action } : {}),
+    ...(reach !== undefined ? { reach } : {}),
+  };
+}
+
+/**
+ * Give `object`'s use its own reach, metres from the eye to the point
+ * touched (mission 161; the owner, 2026-11-06): beyond it the aim finds
+ * nothing there, for the cue and the click alike. A use with none takes
+ * the aim's own reach. Returns the undoing.
+ */
+export function markReach(object: Object3D, metres: number) {
+  object.userData.useReach = metres;
+  return () => {
+    if (object.userData.useReach === metres) delete object.userData.useReach;
+  };
 }
 
 /** Whether neither `object` nor anything above it is hidden. */
