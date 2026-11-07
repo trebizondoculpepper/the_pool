@@ -5,6 +5,7 @@ import type {
 import {
   bedPasses,
   filterActivity,
+  bedResistanceFactor,
   filterSizing,
   glassModeOf,
   newIdealFilter,
@@ -231,6 +232,21 @@ export function spaFilterLine(f: SpaFilter): string {
     } ${clock(PROGRAMME[f.phase] - f.phaseTime)}`;
   if (f.schedule === 'off') return 'WASH OFF';
   return `WASH ${f.schedule.toUpperCase()} IN ${clock(EVERY[f.schedule] - f.sinceWash)}`;
+}
+
+/**
+ * A spa's circulation against its design, as its filter's bed resists
+ * (#59): one filter in series with its cabinet's fixed-speed pump, so its
+ * flow is where the pump's curve (shut-off 1.35 times its duty head) meets
+ * the circuit's, its bed about two-fifths of the circuit's loss when
+ * clean. A fouled bed resists more and the flow falls; a fissured one
+ * resists less. 1 on a clean, sound bed.
+ */
+export function spaFlowShare(f: SpaFilter): number {
+  const BED_SHARE = 0.4;
+  const circuit =
+    1 - BED_SHARE + BED_SHARE * bedResistanceFactor(f.spec, f.bed);
+  return Math.sqrt(1.35 / (0.35 + circuit));
 }
 
 /** A filter's design flow, m³/h, for its cabinet's sizing. */

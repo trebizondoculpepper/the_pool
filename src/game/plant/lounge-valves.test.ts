@@ -17,13 +17,20 @@ describe('lounge pool solenoid valves', () => {
 
   it('travels to shut, blocks its filter path, and springs shut without power, not air', () => {
     let w = newWorld();
-    expect(loungeValveFlows(w.loungeValvePositions, true).toPool).toBe(90);
+    expect(loungeValveFlows(w.loungeValvePositions, true).toPool).toBeCloseTo(
+      90,
+      0,
+    );
     w = applyAction(w, { type: 'plant/valve', id: 'valve-0003', open: false });
     w = stepWorld(w, 2);
     expect(w.loungeValvePositions['valve-0003']).toBeCloseTo(0.5);
     w = stepWorld(w, 2);
     expect(w.loungeValvePositions['valve-0003']).toBe(0);
-    expect(loungeValveFlows(w.loungeValvePositions, true).toPool).toBe(45);
+    // One filter's path shut: the other takes more than its half, along
+    // the pump's curve, but not the whole (#59).
+    const one = loungeValveFlows(w.loungeValvePositions, true).toPool;
+    expect(one).toBeGreaterThan(55);
+    expect(one).toBeLessThan(75);
     // Electric actuators: losing the compressed air leaves them be.
     w = applyAction(w, { type: 'plant/source', utility: 'air', on: false });
     w = stepWorld(w, 4);
@@ -48,12 +55,16 @@ describe('lounge pool solenoid valves', () => {
   });
   it('needs at least one pump discharge valve open to return water', () => {
     let w = newWorld();
+    // Both pumps running: either's discharge valve open returns water.
+    const both = { p1: true, p2: true };
     w = applyAction(w, { type: 'plant/valve', id: 'valve-0097', open: false });
     w = stepWorld(w, 4);
-    expect(loungeValveFlows(w.loungeValvePositions, true).toPool).toBe(90);
+    expect(
+      loungeValveFlows(w.loungeValvePositions, true, both).toPool,
+    ).toBeCloseTo(90, 0);
     w = applyAction(w, { type: 'plant/valve', id: 'valve-0098', open: false });
     w = stepWorld(w, 4);
-    expect(loungeValveFlows(w.loungeValvePositions, true).toPool).toBe(0);
+    expect(loungeValveFlows(w.loungeValvePositions, true, both).toPool).toBe(0);
     for (let i = 0; i < 10; i++) w = stepWorld(w, 10);
     expect(w.pools.pool_01.flow).toBeLessThan(1);
   });
@@ -62,16 +73,24 @@ describe('lounge pool solenoid valves', () => {
     const positions = newWorld().loungeValvePositions;
     const tag = (t: string) => LOUNGE_VALVES.find((v) => v.tag === t)!.assetId;
     const set = (t: string, open: number) => (positions[tag(t)] = open);
-    expect(loungeValveFlows(positions, true).filters).toEqual([45, 45]);
+    const service = loungeValveFlows(positions, true).filters;
+    expect(service[0]).toBeCloseTo(45, 0);
+    expect(service[1]).toBeCloseTo(45, 0);
     // F1 backwashed: inlet shut, outlet and backwash open.
     set('PL1-F1-IV1', 0);
     set('PL1-F1-BV1', 1);
     const washing = loungeValveFlows(positions, true);
-    expect(washing.filters).toEqual([-34, 45]);
-    expect(washing.backwash).toEqual([34, 0]);
-    expect(washing.toPool).toBe(11);
-    // What the pumps deliver goes to the pool or to waste.
-    expect(washing.toPool + washing.backwash[0]).toBe(45);
+    // At its wash rate (30 m/h over its 1.13 m²), up its outlet; F2, the
+    // only filter now taking the pumps' water, carries more (#59).
+    expect(washing.filters[0]).toBeCloseTo(-34, 0);
+    expect(washing.backwash[0]).toBeCloseTo(34, 0);
+    expect(washing.backwash[1]).toBe(0);
+    expect(washing.filters[1]).toBeGreaterThan(55);
+    // What F2 filters goes to the pool or back down F1 to waste.
+    expect(washing.toPool + washing.backwash[0]).toBeCloseTo(
+      washing.filters[1],
+      0,
+    );
     // Both backwashing: no filtered water to wash either.
     set('PL1-F2-IV1', 0);
     set('PL1-F2-BV1', 1);
@@ -91,10 +110,13 @@ describe('lounge pool solenoid valves', () => {
     const rinsing = loungeValveFlows(positions, true);
     // Down through its bed, but nothing up its shut outlet, so its
     // flowmeter on the outlet reads none (as the Olympic's riser does).
-    expect(rinsing.beds).toEqual([45, 45]);
-    expect(rinsing.filters).toEqual([45, 0]);
-    expect(rinsing.drains[1]).toBe(45);
-    expect(rinsing.toPool).toBe(45);
+    // Its rinse at about its service flow; F1 then takes the pumps' water
+    // alone, a little more than its half (#59).
+    expect(rinsing.beds[1]).toBeCloseTo(45, 0);
+    expect(rinsing.filters[1]).toBe(0);
+    expect(rinsing.drains[1]).toBeCloseTo(45, 0);
+    expect(rinsing.filters[0]).toBeGreaterThan(45);
+    expect(rinsing.toPool).toBeCloseTo(rinsing.filters[0], 0);
     // Its inlet shut too: only drained down, standing.
     set('PL1-F2-IV1', 0);
     const draining = loungeValveFlows(positions, true);
@@ -105,17 +127,20 @@ describe('lounge pool solenoid valves', () => {
 
   it('gives the lounge’s two flowmeters each filter’s signed flow, as the world runs', () => {
     let w = stepWorld(newWorld(), 5);
-    expect(loungeMeterReadings(loungeFlowsOf(w))).toEqual({
-      'filter-1': 45,
-      'filter-2': 45,
-    });
+    const meters = loungeMeterReadings(loungeFlowsOf(w));
+    expect(meters['filter-1']).toBeCloseTo(45, 0);
+    expect(meters['filter-2']).toBeCloseTo(45, 0);
     for (const [id, open] of [
       [LOUNGE_VALVES.find((v) => v.tag === 'PL1-F1-IV1')!.assetId, false],
       [LOUNGE_VALVES.find((v) => v.tag === 'PL1-F1-BV1')!.assetId, true],
     ] as const)
       w = applyAction(w, { type: 'plant/valve', id, open });
     w = stepWorld(w, 5);
-    expect(loungeMeterReadings(loungeFlowsOf(w))['filter-1']).toBe(-34);
+    // Backwashed: about its wash rate, up its outlet (#59).
+    expect(loungeMeterReadings(loungeFlowsOf(w))['filter-1']).toBeCloseTo(
+      -34,
+      -0.5,
+    );
   });
 });
 

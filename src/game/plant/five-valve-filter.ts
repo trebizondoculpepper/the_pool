@@ -1,4 +1,5 @@
-import { solveNetwork } from '../sim/hydraulics';
+import { pruneNetwork, solveNetwork } from '../sim/hydraulics';
+import { FISSURE_RELIEF } from './ideal-filter';
 import type { NetLink, NetNode } from '../sim/hydraulics';
 
 /**
@@ -237,6 +238,133 @@ export function faceFlows(
         ? BIG_FILTER.waterDirt
         : 0,
   };
+}
+
+/** One face of a battery, as `batteryFaceFlows` takes it. */
+export interface BatteryFace {
+  opening: Readonly<Record<ValveName, number>>;
+  /** Its bed's dirt, in this model's kilograms (`BIG_FILTER.dirtRef` its reference). */
+  dirt: number;
+  /** How fissured its bed is, 0 to 1: a fissured bed resists less (#59). */
+  fissuring: number;
+}
+
+/**
+ * A battery of faces solved together (#59): its pumps on their curve
+ * (`pump`: shut-off head and its fall, H = shutoff − k·Q²) from the tank
+ * into one discharge, and every face off it, as `faceFlows` builds one,
+ * all to the one return and the one waste. So a fouled face takes less and
+ * the others more, the discharge head rises as the battery resists more
+ * and the total falls along the pumps' curve; a face washed with another's
+ * water and a face washed from the pumps (V3) both come out of the same
+ * solution. With the pumps off nothing moves.
+ */
+export function batteryFaceFlows(
+  faces: readonly BatteryFace[],
+  on: boolean,
+  pump: { shutoff: number; k: number },
+): FiveValveFlows[] {
+  const still = (): FiveValveFlows => ({
+    valve: { v1: 0, v2: 0, v3: 0, v4: 0, v5: 0 },
+    bed: 0,
+    supply: 0,
+    topBar: 0,
+    bottomBar: 0,
+    bedBar: 0,
+    wasteDirt: 0,
+  });
+  if (!on) return faces.map(still);
+  const lifted = faces.map((f) => f.opening.v3 > 0.5 && f.opening.v4 > 0.5);
+  const nodes: NetNode[] = [
+    { id: 'tank', head: 0 },
+    { id: 'pump' },
+    { id: 'return', head: BIG_FILTER.returnHead },
+    { id: 'waste', head: BIG_FILTER.wasteHead },
+  ];
+  const links: NetLink[] = [
+    { id: 'pumps', kind: 'pump', from: 'tank', to: 'pump', ...pump },
+  ];
+  faces.forEach((f, i) => {
+    const n = (id: string) => `${id}${i}`;
+    // Raised by its dirt, lowered by its fissures; lifted, its dirt counts little.
+    const bedR = lifted[i]
+      ? BIG_FILTER.bed * (1 + 0.2 * (f.dirt / BIG_FILTER.dirtRef))
+      : BIG_FILTER.bed *
+        (1 + f.dirt / BIG_FILTER.dirtRef) *
+        (1 - FISSURE_RELIEF * f.fissuring);
+    nodes.push({ id: n('supply') }, { id: n('top') }, { id: n('bottom') });
+    links.push(
+      {
+        id: n('main'),
+        kind: 'resistance',
+        from: 'pump',
+        to: n('supply'),
+        r: BIG_FILTER.supply,
+      },
+      valveLink(n('v1'), n('supply'), n('top'), f.opening.v1),
+      valveLink(n('v3'), n('supply'), n('bottom'), f.opening.v3),
+      valveLink(
+        n('v2'),
+        n('bottom'),
+        'return',
+        f.opening.v2,
+        BIG_FILTER.returnRun,
+      ),
+      valveLink(n('v4'), n('top'), 'waste', f.opening.v4, BIG_FILTER.wasteRun),
+      valveLink(
+        n('v5'),
+        n('bottom'),
+        'waste',
+        f.opening.v5,
+        BIG_FILTER.wasteRun,
+      ),
+      {
+        id: n('bed'),
+        kind: 'resistance',
+        from: n('top'),
+        to: n('bottom'),
+        r: bedR,
+      },
+    );
+  });
+  const net = pruneNetwork(nodes, links);
+  const sol = solveNetwork(net.nodes, net.links);
+  return faces.map((f, i) => {
+    const n = (id: string) => `${id}${i}`;
+    const q = (id: string) => {
+      const v = sol.flows[n(id)] ?? 0;
+      return Math.abs(v) < 0.05 ? 0 : v;
+    };
+    const valve = {
+      v1: q('v1'),
+      v2: q('v2'),
+      v3: q('v3'),
+      v4: q('v4'),
+      v5: q('v5'),
+    };
+    const toWaste = Math.max(0, valve.v4) + Math.max(0, valve.v5);
+    const washing = lifted[i] && valve.v4 > 0;
+    const head = (id: string) => sol.heads[n(id)];
+    const top = head('top');
+    const bottom = head('bottom');
+    const bed = q('bed');
+    return {
+      valve,
+      bed,
+      supply: q('main'),
+      topBar: top === undefined ? 0 : top * BAR,
+      bottomBar: bottom === undefined ? 0 : bottom * BAR,
+      bedBar:
+        top === undefined || bottom === undefined || bed === 0
+          ? 0
+          : Math.abs(top - bottom) * BAR,
+      wasteDirt: washing
+        ? (f.dirt * 1000) / BIG_FILTER.washTime / (toWaste / 3600)
+        : toWaste > 0
+          ? BIG_FILTER.waterDirt
+          : 0,
+    };
+  });
 }
 
 /**

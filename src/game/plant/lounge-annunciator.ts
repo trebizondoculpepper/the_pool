@@ -142,8 +142,13 @@ export function loungeAlarms(world: World): LoungeAlarmId[] {
   if (water.flow < FLOW_LOW) alarms.push('flow-low');
   if (!inService(world, 0)) alarms.push('f1-offline');
   if (!inService(world, 1)) alarms.push('f2-offline');
-  const dp = loungeFilterDp(world.loungeFilters, loungeFlowsOf(world));
-  if (Math.max(...dp) > DP_HIGH) alarms.push('filter-dp');
+  // Each bed's solved pressure difference (#59). Inhibited while either
+  // filter is backwashed, as real plant inhibits it: the other then
+  // carries the pumps' whole flow and its gauges rise for the wash alone.
+  const flows = loungeFlowsOf(world);
+  const dp = loungeFilterDp(world.loungeFilters, flows);
+  const washing = flows.backwash.some((q) => q > 0);
+  if (!washing && Math.max(...dp) > DP_HIGH) alarms.push('filter-dp');
   if (
     world.wetHall.inhibit ||
     world.wetHall.backwashTank > WET_HALL_PLANT.backwashTank * 0.95

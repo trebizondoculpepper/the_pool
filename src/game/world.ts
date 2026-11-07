@@ -96,6 +96,7 @@ import {
 import type { ChangeoverAction } from '../toolkit/components/plant/logic/booster-changeover';
 import { OLYMPIC_TANK_DRAIN } from './plant/balance-tank';
 import {
+  loungeBed,
   loungePasses,
   newLoungeFilters,
   stepLoungeFilters,
@@ -278,6 +279,7 @@ import {
   actOnSpaFilter,
   filtering,
   newSpaFilters,
+  spaFlowShare,
   spaWashFlow,
   stepSpaFilters,
 } from './plant/spa-filter';
@@ -1923,15 +1925,53 @@ function stepPlant(world: World, delta: number): World {
       ? makeUpShare(world.wetHall, world.plant, demand)
       : 0;
   let battery: BatteryFlows | null = null;
+  // Where a pool's pumps can send their water, m³/h, with the waste main to
+  // the backwash pit open or shut: to the pool, and to waste (a backwash, a
+  // drain), as its battery's valves give it. None where it has no model.
+  const outlet = (pool: PoolId, wasteOpen: boolean): number | null => {
+    const open =
+      pool === 'pool_02'
+        ? olympicBatteryFlows(
+            world.installedValves,
+            world.olympic,
+            true,
+            wasteOpen,
+          )
+        : pool === 'pool_01'
+          ? loungeValveFlows(
+              world.loungeValvePositions,
+              true,
+              undefined,
+              wasteOpen,
+            )
+          : null;
+    return open ? open.toPool + open.toWaste : null;
+  };
+  const somewhere = (q: number | null, pool: PoolId) =>
+    q === null || q > 0.05 * POOL_TARGET[pool].flow;
   // The motors' starters: each on its room's power and local isolator,
-  // and held off while its pool's tank is at its low-low level.
+  // and held off while its pool's tank is at its low-low level; and held
+  // off while the backwash pit holds the waste main shut, if the waste was
+  // their only way out (a tank pumped down to drain), so they do not run
+  // against shut valves and trip, and run again when it lets go (#59; the
+  // owner, 2026-11-06: an interlock, as the low-low level's).
   const motors = stepMotors(
     world.motors,
     {
-      permitted: (tag) =>
-        serviceAvailable(world.plant, `plant_${MOTORS[tag].pool}`, 'power') &&
-        world.plant.isolators[MOTORS[tag].isolator] &&
-        !world.pools[MOTORS[tag].pool].tripped,
+      permitted: (tag) => {
+        const pool = MOTORS[tag].pool;
+        return (
+          serviceAvailable(world.plant, `plant_${pool}`, 'power') &&
+          world.plant.isolators[MOTORS[tag].isolator] &&
+          !world.pools[pool].tripped &&
+          !(
+            world.wetHall.inhibit &&
+            !world.pools[pool].drainDown &&
+            !somewhere(outlet(pool, false), pool) &&
+            somewhere(outlet(pool, true), pool)
+          )
+        );
+      },
       demand: () => true,
       // Whether its valves give it somewhere to pump: to the pool, to
       // waste (a backwash), or to the sewer (a drain-down).
@@ -1944,20 +1984,7 @@ function stepPlant(world: World, delta: number): World {
           !loungeDischargeOpen(world.loungeValvePositions, tag)
         )
           return false;
-        const open =
-          pool === 'pool_02'
-            ? olympicBatteryFlows(
-                world.installedValves,
-                world.olympic,
-                true,
-                !world.wetHall.inhibit,
-              )
-            : pool === 'pool_01'
-              ? loungeValveFlows(world.loungeValvePositions, true)
-              : null;
-        return (
-          !open || open.toPool + open.toWaste > 0.05 * POOL_TARGET[pool].flow
-        );
+        return somewhere(outlet(pool, !world.wetHall.inhibit), pool);
       },
     },
     delta,
@@ -2048,6 +2075,8 @@ function stepPlant(world: World, delta: number): World {
         running,
         loungePumpsRunning(motors),
         !world.wetHall.inhibit,
+        // Its two beds as they stand: their dirt and fissures share its flow (#59).
+        [loungeBed(world.loungeFilters, 0), loungeBed(world.loungeFilters, 1)],
       ),
     hallHandling(airHandling),
     motors,
@@ -2055,6 +2084,11 @@ function stepPlant(world: World, delta: number): World {
     spaWash,
     ring,
     world.poolTemperatureControls,
+    // Each spa's circulation by its filter's bed against its pump (#59).
+    {
+      pool_03: spaFlowShare(world.spaFilters.pool_03),
+      pool_04: spaFlowShare(world.spaFilters.pool_04),
+    },
   );
   const controlledInstalledValves: Record<string, boolean> = {
     ...world.installedValves,

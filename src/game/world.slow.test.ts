@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { advance, appealOf, applyAction, newWorld } from './world';
-import { POOL_IDS, POOL_TARGET } from './plant/pools';
+import { POOL_IDS } from './plant/pools';
 import { serviceAvailable } from './plant/services';
 import { runOut } from './world.test-support';
 
@@ -68,6 +68,8 @@ describe('the mains water off', () => {
       action: { act: 'run' },
     });
     expect(w.washOTron.running).toBe(false);
+    // Its circulation on clean beds, to measure its fall against (#59).
+    const cleanFlow = advance(w, 3600, 10).pools.pool_02.flow;
     w = advance(w, 36 * 3600, 10);
     expect(w.wetHall.boosterTripped).toBe(false);
     expect(w.wetHall.meter).toBeGreaterThan(2);
@@ -97,7 +99,7 @@ describe('the mains water off', () => {
     // their capacity and break through (the ideal filter): its circulation
     // falls, and its water clouds with the dirt they no longer keep.
     expect(pumpsAt.pool_02).toBeUndefined();
-    expect(w.pools.pool_02.flow).toBeLessThan(POOL_TARGET.pool_02.flow * 0.95);
+    expect(w.pools.pool_02.flow).toBeLessThan(cleanFlow * 0.95);
     expect(w.pools.pool_02.solids).toBeGreaterThan(20);
     // The main back, the booster set stays tripped until it is reset.
     w = applyAction(w, { type: 'plant/source', utility: 'water', on: true });

@@ -244,6 +244,28 @@ export interface RigFlows {
   waste: WaterCondition;
 }
 
+/**
+ * How much a fully fissured bed's resistance falls (#59; the owner,
+ * 2026-11-06): its channels let water round the sand, but a neglected
+ * filter still clearly loses flow, so a quarter, not more.
+ */
+export const FISSURE_RELIEF = 0.25;
+
+/**
+ * How a bed resists, against itself clean and sound (#59): raised by its
+ * dirt (doubled at its dirt reference) and lowered by its fissures (water
+ * channels round the sand). Every filter takes its own clean resistance
+ * and multiplies it by this, so dirt and pitting move its flow and its
+ * pressure difference wherever it is plumbed in.
+ */
+export function bedResistanceFactor(
+  spec: IdealFilterSpec,
+  bed: IdealFilterState,
+): number {
+  const z = bedSizing(spec, bed);
+  return (1 + bed.dirt / z.dirtRef) * (1 - FISSURE_RELIEF * bed.fissuring);
+}
+
 const BAR = 1 / 10.2;
 
 /** The rig's network and its flows, as its valves stand. */
@@ -254,8 +276,7 @@ export function rigFlows(rig: FilterRig): RigFlows {
   const r = (loss: number, flow = q) => loss / (flow * flow);
   // A sound bed's resistance, raised by its dirt, lowered by its fissures;
   // lifted, about its depth of head whatever its dirt.
-  const bedR =
-    r(z.cleanHead) * (1 + f.dirt / z.dirtRef) * (1 - 0.6 * f.fissuring);
+  const bedR = r(z.cleanHead) * bedResistanceFactor(rig.spec, f);
   const liftR = r(z.bedDepth, z.washFlow);
   // The runs sized so a clean filter takes its design flow in service and
   // its wash flow in a backwash, every valve open.

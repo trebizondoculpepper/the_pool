@@ -7,4 +7,12 @@ import { verificationSuite } from './aqualis-verification-suite.test-support';
  * suite beside it stays the baseline; differences are recorded in
  * `doc/plans/co2-system.md`.
  */
-verificationSuite('pool_02', false, {}, true);
+verificationSuite(
+  'pool_02',
+  false,
+  {
+    'twin:alkalinity-high':
+      'diluting the Olympic scores worse at mixing: its pump-held free chlorine and pH, disturbed by the fresh water, outweigh the alkalinity and TDS gained (#74)',
+  },
+  true,
+);

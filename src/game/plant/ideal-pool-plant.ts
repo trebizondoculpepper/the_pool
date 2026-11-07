@@ -8,6 +8,7 @@ import type {
 import type { SchematicNode } from './schematics';
 import { effectiveness } from './pool-heating';
 import {
+  FISSURE_RELIEF,
   bedLifted,
   bedPasses,
   filterSizing,
@@ -932,7 +933,7 @@ function bedResistance(bed: IdealFilterState, lifted: boolean) {
   return (
     (z.cleanHead / (z.designFlow * z.designFlow)) *
     (1 + dirtStep(bed) / z.dirtRef) *
-    (1 - 0.6 * bed.fissuring)
+    (1 - FISSURE_RELIEF * bed.fissuring)
   );
 }
 

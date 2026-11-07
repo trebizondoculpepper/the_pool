@@ -35,11 +35,16 @@ describe('the lounge’s filter cycle, from its panel', () => {
       w = press(press(w, `PL1-F${n}-IV1`, 'shut'), `PL1-F${n}-BV1`, 'open');
       w = advance(w, 300, 1);
       // Backwashing: the bed washed up through it, the other in service.
-      expect(loungeFlowsOf(w).filters[n - 1]).toBe(-34);
+      // About its wash rate (34 m³/h), solved from the pump and the other
+      // filter, which feeds it (#59).
+      const washed = loungeFlowsOf(w).filters[n - 1];
+      expect(washed).toBeLessThan(-30);
+      expect(washed).toBeGreaterThan(-37);
       w = press(press(w, `PL1-F${n}-BV1`, 'shut'), `PL1-F${n}-IV1`, 'open');
       w = advance(w, 60, 1);
     }
-    expect(loungeFlowsOf(w).filters).toEqual([45, 45]);
+    // Both clean again: about their design 45 each.
+    for (const q of loungeFlowsOf(w).filters) expect(q).toBeCloseTo(45, 0);
     w.loungeFilters.dirt.forEach((d, i) => {
       expect(d).toBeLessThan(before[i] * 0.05);
       expect(dp(w)[i]).toBeLessThan(dpBefore[i]);
