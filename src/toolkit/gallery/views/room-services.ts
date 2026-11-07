@@ -56,7 +56,7 @@ export function createRoomServices(
   // Registered with the one resolver as they are set (mission 161, #107):
   // their switch-fuses' handles, doors and carriers, and the rest, click
   // without any room walking this map by hand.
-  registerUses(uses);
+  const unregisterUses = registerUses(uses);
   const lift = ([x, y, z]: readonly [number, number, number]) =>
     [x, floorY + y, z] as const;
 
@@ -242,5 +242,10 @@ export function createRoomServices(
     }
   };
   update();
-  return { group, uses, update };
+  return {
+    group,
+    uses,
+    update,
+    dispose: unregisterUses,
+  };
 }

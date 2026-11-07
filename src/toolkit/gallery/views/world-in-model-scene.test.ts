@@ -1,4 +1,5 @@
 import { BoxGeometry, Mesh, Vector3 } from 'three';
+import type { Object3D } from 'three';
 import { componentOf } from '../../components/core/views/component-identity';
 import {
   afterEach,
@@ -19,6 +20,7 @@ import { buildPoolHallContents } from '../rooms/pool-hall-room';
 import { buildPlantRoomContents } from '../rooms/plant-room-shell-room';
 import { shellPlan } from '../logic/shell-plan';
 import { POOL_HALLS } from '../logic/pool-halls';
+import { useRegistrationOf } from '../../controls/input/use-marking';
 
 beforeEach(() => {
   // Enough of a browser for the rooms' builders: canvases to paint labels
@@ -118,6 +120,42 @@ describe('everything the scene draws is in the model (prompt 064)', () => {
     expect(unboundInScene('plant_pool_03', room.rooms)).toEqual(
       AWAITING_RULING,
     );
+  });
+
+  it('registers every Jacuzzi plant-room control with the shared aim resolver', () => {
+    const size = POOL_HALLS.pool_03.plantDoor!.size;
+    const room = buildPlantRoomContents(
+      shellPlan(size),
+      1,
+      size,
+      'pool_03',
+      {},
+    );
+    const registeredUses: Object3D[] = [];
+    const checkUses = (uses: Map<Object3D, (direction?: number) => void>) => {
+      for (const object of uses.keys()) registeredUses.push(object);
+    };
+    checkUses(room.parts.uses);
+    checkUses(room.fibreControl!.parts.uses);
+    checkUses(room.jacuzziMimic!.parts.uses);
+    room.rooms.traverse((object) => {
+      if (room.machines?.useOf(object)) registeredUses.push(object);
+      if (room.services?.uses.has(object)) registeredUses.push(object);
+    });
+
+    expect(registeredUses.length).toBeGreaterThan(0);
+    for (const object of registeredUses)
+      expect(useRegistrationOf(object)?.action, object.name).toBeTypeOf(
+        'function',
+      );
+
+    room.parts.dispose();
+    room.fibreControl!.parts.dispose();
+    room.jacuzziMimic!.parts.dispose();
+    room.machines?.dispose();
+    room.services?.dispose();
+    for (const object of registeredUses)
+      expect(object.userData.useAction, object.name).toBeUndefined();
   });
 
   // Every room in the model: those built from a schematic, and the Olympic's

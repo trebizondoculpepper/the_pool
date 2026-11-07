@@ -2244,6 +2244,7 @@ export function createRoomEquipment(kit: PanelKit, room: string, floorY = 0) {
         live.parts?.dispose();
         live.dispose?.();
       }
+      services?.dispose();
       pipework.dispose();
     },
   };

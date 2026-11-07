@@ -16,7 +16,6 @@ import {
   HalfFloatType,
   Mesh,
   PerspectiveCamera,
-  Raycaster,
   Scene,
   Vector2,
   WebGLRenderTarget,
@@ -76,7 +75,6 @@ import {
 } from '../../components/core/views/eighties-controls';
 import { createPartSet } from '../../components/core/parts/parts';
 import { partAudio } from '../../components/core/audio/part-audio';
-import { useOnHit } from '../../controls/input/touch-point';
 import { createRoomEquipment } from '../views/room-equipment';
 import { cabinetServices } from '../views/cabinet-services';
 import { roomWorld } from '../../save/world-store';
@@ -190,25 +188,6 @@ export function startPlantRoomShell(
     ? roomPowered((retiredFrom(equipmentRoom) ?? equipmentRoom) as ServiceRoom)
     : () => true;
   const mimicStore = jacuzziMimic ? roomWorld() : null;
-  const raycaster = new Raycaster();
-  const pointer = new Vector2();
-  const usableAt = (x: number, y: number) => {
-    raycaster.setFromCamera(pointer.set(x, y), camera);
-    const hit = raycaster.intersectObject(rooms, true)[0];
-    if (!hit || hit.distance > 3 * metre) return null;
-    for (let o: Object3D | null = hit.object; o; o = o.parent) {
-      const work =
-        parts.uses.get(o) ??
-        machines?.useOf(o) ??
-        services?.uses.get(o) ??
-        fibreControl?.parts.uses.get(o) ??
-        jacuzziMimic?.parts.uses.get(o);
-      // With the hit known, so a touch screen (the Trio's) can ask where
-      // it was touched (`touch-point.ts`).
-      if (work) return useOnHit(hit, o, work, camera);
-    }
-    return null;
-  };
 
   const composer = createComposer(
     renderer,
@@ -420,8 +399,6 @@ gl_FragColor = vec4(colour, sampleColour.a); }`,
         : []),
       ...stops().map(toMetre),
     ],
-    use: (x, y) => usableAt(x, y)?.(),
-    aimed: () => Boolean(usableAt(0, 0)),
     // The overlay is the factory's (mission 160); the room gives it its world.
     world: () => roomWorld().world.value,
   });

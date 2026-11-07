@@ -12,9 +12,9 @@ import {
   JACUZZI_VALVE_PANEL_REF,
 } from '../../../game/descriptors/jacuzzi-room';
 import type { Object3D } from 'three';
-import { registerUses } from '../../components/core/parts/parts';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createMicroLabel } from '../../components/core/views/eighties-controls';
+import { registerUses } from '../../components/core/parts/parts';
 import { createPipe, PIPE_KINDS } from '../../components/core/views/pipe-kinds';
 import { markPipe } from '../../components/plant/views/pipe-markers';
 import type { PipeService } from '../../components/plant/views/pipe-markers';
@@ -122,7 +122,7 @@ export function cabinetServices(
   // Registered with the one resolver as they are set (mission 161, #107):
   // their switch-fuses' handles, doors and carriers, and the rest, click
   // without any room walking this map by hand.
-  registerUses(uses);
+  const unregisterUses = registerUses(uses);
   const store = typeof window === 'undefined' ? null : roomWorld();
   const valveParts: ReturnType<typeof createWaterButterflyValve>[] = [];
   // The motorised valves: each one's lamp, and its row on the room's panel.
@@ -630,6 +630,7 @@ export function cabinetServices(
     },
     /** Silence any valve motor still running, and the drain. */
     dispose() {
+      unregisterUses();
       for (const stop of motorStops) stop();
       if (drainMouth) partAudio.hold(drainMouth, null);
       drainFall?.dispose();
