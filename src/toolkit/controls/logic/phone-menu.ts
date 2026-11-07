@@ -61,6 +61,8 @@ export interface PhoneFrame {
   body: readonly string[];
   unread: number;
   scroll: number;
+  canScrollUp: boolean;
+  canScrollDown: boolean;
 }
 
 /** Wrap the compact message display into lines, without splitting words. */
@@ -87,11 +89,17 @@ export function createPhoneMenu(inbox = phoneInbox) {
   let page: PhonePage = 'main';
   let selected = 0;
   let messageId: number | null = null;
+  let inboxSelectionId: number | null = null;
   let placeholder = '';
   let scroll = 0;
   const main = ['Phone', 'Messages', 'Media', 'Radio'];
   const currentMessage = () =>
     inbox.list().find((message) => message.id === messageId) ?? null;
+  const inboxIndex = () =>
+    Math.max(
+      0,
+      inbox.list().findIndex((message) => message.id === inboxSelectionId),
+    );
   const rows = () =>
     page === 'main'
       ? main
@@ -109,13 +117,14 @@ export function createPhoneMenu(inbox = phoneInbox) {
     if (page === 'main') return false;
     if (page === 'message') {
       page = 'inbox';
-      selected = Math.max(
-        0,
-        inbox.list().findIndex((item) => item.id === messageId),
-      );
-    } else {
-      page = page === 'inbox' ? 'messages' : 'main';
+      inboxSelectionId = messageId;
+      selected = inboxIndex();
+    } else if (page === 'inbox') {
+      page = 'messages';
       selected = 0;
+    } else {
+      selected = page === 'placeholder' ? main.indexOf(placeholder) : 1;
+      page = 'main';
     }
     scroll = 0;
     return true;
@@ -128,9 +137,11 @@ export function createPhoneMenu(inbox = phoneInbox) {
         placeholder = choice;
         page = 'placeholder';
       }
-    } else if (page === 'messages') page = 'inbox';
-    else if (page === 'inbox') {
-      const message = inbox.list()[selected];
+    } else if (page === 'messages') {
+      page = 'inbox';
+      inboxSelectionId = inbox.list()[0]?.id ?? null;
+    } else if (page === 'inbox') {
+      const message = inbox.list()[inboxIndex()];
       if (message) {
         messageId = message.id;
         inbox.read(message.id);
@@ -144,6 +155,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
     open() {
       page = 'main';
       selected = 0;
+      inboxSelectionId = null;
       scroll = 0;
     },
     action(action: PhoneAction): 'lower' | 'changed' {
@@ -158,20 +170,17 @@ export function createPhoneMenu(inbox = phoneInbox) {
             scroll + (action === 'down' || action === 'right' ? 1 : -1),
           ),
         );
-      } else if (page === 'main') {
-        if (action === 'up' || action === 'down')
-          selected = (selected + 2) % main.length;
-        else
-          selected =
-            Math.floor(selected / 2) * 2 + (action === 'right' ? 1 : 0);
       } else {
         const count = rows().length;
-        if (count)
+        if (count) {
           selected =
-            (selected +
+            ((page === 'inbox' ? inboxIndex() : selected) +
               (action === 'down' || action === 'right' ? 1 : -1) +
               count) %
             count;
+          if (page === 'inbox')
+            inboxSelectionId = inbox.list()[selected]?.id ?? null;
+        }
       }
       return 'changed';
     },
@@ -179,6 +188,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
       if (!Number.isInteger(index) || index < 0 || index >= rows().length)
         return false;
       selected = index;
+      if (page === 'inbox') inboxSelectionId = inbox.list()[index]?.id ?? null;
       select();
       return true;
     },
@@ -197,7 +207,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
                   ? 'Inbox'
                   : 'Messages',
         rows: rows(),
-        selected,
+        selected: page === 'inbox' ? inboxIndex() : selected,
         body:
           page === 'message'
             ? phoneLines(message?.text ?? '').slice(scroll, scroll + 8)
@@ -206,6 +216,10 @@ export function createPhoneMenu(inbox = phoneInbox) {
               : [],
         unread: inbox.unread(),
         scroll,
+        canScrollUp: page === 'message' && scroll > 0,
+        canScrollDown:
+          page === 'message' &&
+          scroll + 8 < phoneLines(message?.text ?? '').length,
       };
     },
   };

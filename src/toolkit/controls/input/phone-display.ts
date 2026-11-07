@@ -13,7 +13,7 @@ import {
   PHONE_LIST_TOP,
   PHONE_LIST_VISIBLE_ROWS,
   PHONE_LOGICAL_SIZE as LOGICAL,
-  PHONE_MAIN_TILES,
+  PHONE_MAIN_ROWS,
   PHONE_TEXTURE_SIZE as TEXTURE,
   phoneListStart,
 } from '../logic/phone-layout';
@@ -124,17 +124,17 @@ export function createPhoneDisplay() {
 
     if (frame.page === 'main') {
       frame.rows.forEach((row, index) => {
-        const { x, y } = PHONE_MAIN_TILES[index];
+        const { x, y, w, h } = PHONE_MAIN_ROWS[index];
         lcd.fillStyle = index === frame.selected ? HIGHLIGHT : LIGHT;
-        lcd.fillRect(x, y, 60, 37);
+        lcd.fillRect(x, y, w, h);
         lcd.strokeStyle = index === frame.selected ? INK : BLUE;
-        lcd.strokeRect(x + 0.5, y + 0.5, 59, 36);
+        lcd.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
         lcd.fillStyle = INK;
-        menuIcon(lcd, row, x + 20, y + 4);
-        bitmapText(lcd, row, x + 6, y + 27, 8);
+        menuIcon(lcd, row, x + 5, y + 1);
+        bitmapText(lcd, row, x + 30, y + 6, 14);
         if (row === 'Messages' && frame.unread) {
           lcd.fillStyle = '#b33b36';
-          lcd.fillRect(x + 51, y + 4, 5, 5);
+          lcd.fillRect(x + w - 10, y + 6, 5, 5);
         }
       });
     } else if (frame.page === 'message' || frame.page === 'placeholder') {
@@ -144,8 +144,14 @@ export function createPhoneDisplay() {
         .forEach((line, index) =>
           bitmapText(lcd, line, 5, 33 + index * 10, 19),
         );
-      if (frame.page === 'message' && frame.scroll)
-        bitmapText(lcd, '▲', 118, 103, 1);
+      if (frame.page === 'message') {
+        if (frame.canScrollUp) bitmapText(lcd, '▲', 121, 33, 1);
+        if (frame.canScrollDown) {
+          lcd.fillRect(123, 108, 1, 1);
+          lcd.fillRect(122, 109, 3, 1);
+          lcd.fillRect(121, 110, 5, 1);
+        }
+      }
     } else {
       const start = phoneListStart(frame.selected, frame.rows.length);
       frame.rows

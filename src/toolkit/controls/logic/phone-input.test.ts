@@ -15,12 +15,13 @@ describe('raised phone input', () => {
       expect(phoneKeyAction(key)).toBeNull();
   });
 
-  it('maps the visible Messages icon and inbox row to their own items', () => {
+  it('maps each drawn main row and an inbox row to its own item', () => {
     const menu = createPhoneMenu(
       createPhoneInbox([{ from: 'Plant', text: 'Pump report' }]),
     );
-    expect(phoneDisplayTouch(menu.frame(), 380, 190)).toEqual({ index: 1 });
-    expect(phoneDisplayTouch(menu.frame(), 256, 190)).toBeNull();
+    for (const [index, y] of [164, 244, 324, 404].entries())
+      expect(phoneDisplayTouch(menu.frame(), 200, y)).toEqual({ index });
+    expect(phoneDisplayTouch(menu.frame(), 200, 204)).toBeNull();
     menu.tap(1);
     expect(phoneDisplayTouch(menu.frame(), 200, 150)).toEqual({ index: 0 });
     menu.tap(0);
@@ -28,7 +29,21 @@ describe('raised phone input', () => {
     expect(phoneDisplayTouch(menu.frame(), 200, 470)).toEqual({
       action: 'select',
     });
+    menu.tap(0);
+    expect(phoneDisplayTouch(menu.frame(), 200, 60)).toBeNull();
+    expect(phoneDisplayTouch(menu.frame(), 200, 150)).toEqual({
+      action: 'up',
+    });
+    expect(phoneDisplayTouch(menu.frame(), 200, 400)).toEqual({
+      action: 'down',
+    });
+    expect(phoneDisplayTouch(menu.frame(), 200, 470)).toBeNull();
     expect(phoneDisplayTouch(menu.frame(), 600, 150)).toBeNull();
+    menu.action('back');
+    menu.action('back');
+    menu.action('back');
+    menu.tap(2);
+    expect(phoneDisplayTouch(menu.frame(), 200, 470)).toBeNull();
   });
 
   it('assigns the handset Navi, C and scroll regions', () => {

@@ -23,16 +23,21 @@ describe('the phone inbox', () => {
     expect(menu.frame().page).toBe('main');
   });
 
-  it('moves around the two-by-two main menu by the arrow direction', () => {
+  it('uses one vertical selection and restores its parent item on back', () => {
     const menu = createPhoneMenu(createPhoneInbox());
-    menu.action('right');
-    expect(menu.frame().selected).toBe(1);
     menu.action('down');
-    expect(menu.frame().selected).toBe(3);
-    menu.action('left');
+    expect(menu.frame().selected).toBe(1);
+    menu.action('select');
+    expect(menu.frame().page).toBe('messages');
+    menu.action('back');
+    expect(menu.frame().page).toBe('main');
+    expect(menu.frame().selected).toBe(1);
+    menu.action('right');
     expect(menu.frame().selected).toBe(2);
-    menu.action('up');
-    expect(menu.frame().selected).toBe(0);
+    menu.action('select');
+    expect(menu.frame().title).toBe('Media');
+    menu.action('back');
+    expect(menu.frame().selected).toBe(2);
   });
 
   it('keeps new messages first and marks only the opened one read', () => {
@@ -41,7 +46,7 @@ describe('the phone inbox', () => {
       { from: 'Plant', text: 'Second' },
     ]);
     const menu = createPhoneMenu(inbox);
-    menu.action('right'); // Messages
+    menu.action('down'); // Messages
     menu.action('select');
     menu.action('select'); // Inbox
     expect(menu.frame().rows[0]).toContain('Second');
@@ -52,6 +57,26 @@ describe('the phone inbox', () => {
     expect(menu.frame().rows[0]).toMatch(/^ {2}Plant/);
     inbox.receive('Plant', 'Third');
     expect(menu.frame().rows[0]).toContain('Third');
+  });
+
+  it('keeps the highlighted inbox message when a new one arrives above it', () => {
+    const inbox = createPhoneInbox([
+      { from: 'Plant', text: 'First' },
+      { from: 'Plant', text: 'Second' },
+    ]);
+    const menu = createPhoneMenu(inbox);
+    menu.action('down');
+    menu.action('select');
+    menu.action('select');
+    menu.action('down'); // First
+    expect(menu.frame().rows[menu.frame().selected]).toContain('First');
+    inbox.receive('Plant', 'Third');
+    expect(menu.frame().selected).toBe(2);
+    expect(menu.frame().rows[menu.frame().selected]).toContain('First');
+    menu.action('select');
+    expect(menu.frame().body).toEqual(['First']);
+    menu.action('back');
+    expect(menu.frame().rows[menu.frame().selected]).toContain('First');
   });
 
   it('opens the touched icon and inbox row without acting on empty space', () => {
@@ -77,7 +102,7 @@ describe('the phone inbox', () => {
       },
     ]);
     const menu = createPhoneMenu(inbox);
-    menu.action('right');
+    menu.action('down');
     menu.action('select');
     menu.action('select');
     menu.action('select');
@@ -85,6 +110,9 @@ describe('the phone inbox', () => {
     for (let i = 0; i < 10; i++) menu.action('down');
     expect(menu.frame().body).toHaveLength(8);
     expect(menu.frame().scroll).toBeGreaterThan(0);
+    expect(menu.frame().canScrollUp).toBe(true);
+    for (let i = 0; i < 100; i++) menu.action('down');
+    expect(menu.frame().canScrollDown).toBe(false);
     expect(menu.action('back')).toBe('changed');
     expect(menu.action('back')).toBe('changed');
     expect(menu.action('back')).toBe('changed');

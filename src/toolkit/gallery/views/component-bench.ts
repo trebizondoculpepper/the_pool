@@ -234,6 +234,8 @@ async function candidates(usage: Map<string, Usage>): Promise<Candidate[]> {
         body: [],
         unread: 2,
         scroll: 0,
+        canScrollUp: false,
+        canScrollDown: false,
       });
       display.show(frame());
       return {

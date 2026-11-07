@@ -6,11 +6,11 @@ export const PHONE_FOOTER_TOP = 113;
 export const PHONE_LIST_TOP = 32;
 export const PHONE_LIST_ROW_HEIGHT = 16;
 export const PHONE_LIST_VISIBLE_ROWS = 5;
-export const PHONE_MAIN_TILES = [
-  { x: 3, y: 32, w: 60, h: 37 },
-  { x: 65, y: 32, w: 60, h: 37 },
-  { x: 3, y: 73, w: 60, h: 37 },
-  { x: 65, y: 73, w: 60, h: 37 },
+export const PHONE_MAIN_ROWS = [
+  { x: 3, y: 32, w: 122, h: 18 },
+  { x: 3, y: 52, w: 122, h: 18 },
+  { x: 3, y: 72, w: 122, h: 18 },
+  { x: 3, y: 92, w: 122, h: 18 },
 ] as const;
 
 export function phoneListStart(selected: number, count: number) {
