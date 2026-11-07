@@ -4,6 +4,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-07
+
 ### Added
 
 - The audit command keeps the room registry (#103): `room list`, `room show`, `room register`, `room unregister`, `room trait add|remove` and `room-trait list|show|define|remove` write the room and room-trait files and their indexes; `room <id>` is still the room's audit.
@@ -1400,7 +1402,8 @@ The first release. It has no operator's manual yet: that comes in a later releas
 - Walking from one room to the next no longer recompiles every shader of the room arrived in.
 - The corridor posters load on the published site.
 
-[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.14.0...HEAD
+[Unreleased]: https://github.com/trebizondoculpepper/the_pool/compare/v0.15.0...HEAD
+[0.15.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.14.0...v0.15.0
 [0.14.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.13.0...v0.14.0
 [0.13.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.12.0...v0.13.0
 [0.12.0]: https://github.com/trebizondoculpepper/the_pool/compare/v0.11.0...v0.12.0
