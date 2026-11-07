@@ -82,7 +82,7 @@ import { paused } from '../logic/paused';
 import { consoleOpen } from '../logic/console-open';
 import { menuOpen } from '../logic/menu-open';
 import { phoneOpen } from '../logic/phone-open';
-import { createPhoneMenu } from '../logic/phone-menu';
+import { createPhoneMenu, phoneInbox } from '../logic/phone-menu';
 import type { PhoneAction } from '../logic/phone-menu';
 import { phoneKeyAction } from '../logic/phone-input';
 import { createPhoneView } from './phone-view';
@@ -376,6 +376,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
       else if (phoneMenu.tap(target.index)) phoneView.show(phoneMenu.frame());
     },
   );
+  const stopPhoneInbox = phoneInbox.subscribe(() => {
+    if (phoneRaised) phoneView.show(phoneMenu.frame());
+  });
   let concealed: { object: Object3D; visible: boolean } | null = null;
   // The torch's light, in this room's scene, lit while the torch is on.
   const torchLight = createTorchLight(metre);
@@ -2395,6 +2398,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     dispose() {
       if (concealed) concealed.object.visible = concealed.visible;
       if (phoneRaised) phoneOpen.value = false;
+      stopPhoneInbox();
       phoneView.dispose();
       phoneNav.remove();
       window.removeEventListener('keydown', phoneBack, true);

@@ -5,7 +5,7 @@ import {
   PHONE_LIST_TOP,
   PHONE_LIST_VISIBLE_ROWS,
   PHONE_LOGICAL_SIZE,
-  PHONE_MAIN_TILES,
+  PHONE_MAIN_ROWS,
   PHONE_PIXEL_SCALE,
   PHONE_TEXTURE_SIZE,
   phoneListStart,
@@ -33,9 +33,12 @@ export function phoneDisplayTouch(
     return null;
   const logicalX = x / PHONE_PIXEL_SCALE;
   const logicalY = y / PHONE_PIXEL_SCALE;
-  if (logicalY >= PHONE_FOOTER_TOP) return { action: 'select' };
+  if (logicalY >= PHONE_FOOTER_TOP)
+    return frame.page === 'message' || frame.page === 'placeholder'
+      ? null
+      : { action: 'select' };
   if (frame.page === 'main') {
-    const index = PHONE_MAIN_TILES.findIndex(
+    const index = PHONE_MAIN_ROWS.findIndex(
       ({ x: left, y: top, w, h }) =>
         logicalX >= left &&
         logicalX < left + w &&
@@ -54,7 +57,11 @@ export function phoneDisplayTouch(
       start + Math.floor((logicalY - PHONE_LIST_TOP) / PHONE_LIST_ROW_HEIGHT);
     return index < frame.rows.length ? { index } : null;
   }
-  if (frame.page === 'message')
+  if (
+    frame.page === 'message' &&
+    logicalY >= PHONE_LIST_TOP &&
+    logicalY < PHONE_FOOTER_TOP
+  )
     return { action: logicalY < PHONE_LOGICAL_SIZE / 2 ? 'up' : 'down' };
   return null;
 }

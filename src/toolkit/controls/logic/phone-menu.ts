@@ -61,6 +61,8 @@ export interface PhoneFrame {
   body: readonly string[];
   unread: number;
   scroll: number;
+  canScrollUp: boolean;
+  canScrollDown: boolean;
 }
 
 /** Wrap the compact message display into lines, without splitting words. */
@@ -113,9 +115,12 @@ export function createPhoneMenu(inbox = phoneInbox) {
         0,
         inbox.list().findIndex((item) => item.id === messageId),
       );
-    } else {
-      page = page === 'inbox' ? 'messages' : 'main';
+    } else if (page === 'inbox') {
+      page = 'messages';
       selected = 0;
+    } else {
+      selected = page === 'placeholder' ? main.indexOf(placeholder) : 1;
+      page = 'main';
     }
     scroll = 0;
     return true;
@@ -158,12 +163,6 @@ export function createPhoneMenu(inbox = phoneInbox) {
             scroll + (action === 'down' || action === 'right' ? 1 : -1),
           ),
         );
-      } else if (page === 'main') {
-        if (action === 'up' || action === 'down')
-          selected = (selected + 2) % main.length;
-        else
-          selected =
-            Math.floor(selected / 2) * 2 + (action === 'right' ? 1 : 0);
       } else {
         const count = rows().length;
         if (count)
@@ -206,6 +205,10 @@ export function createPhoneMenu(inbox = phoneInbox) {
               : [],
         unread: inbox.unread(),
         scroll,
+        canScrollUp: page === 'message' && scroll > 0,
+        canScrollDown:
+          page === 'message' &&
+          scroll + 8 < phoneLines(message?.text ?? '').length,
       };
     },
   };
