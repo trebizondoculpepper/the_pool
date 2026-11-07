@@ -22,10 +22,16 @@ import type { UseRegistration } from './use-marking';
 export interface AimResolution {
   /** The first visible mesh the ray met (an occluder in front hides the rest). */
   hit: Object3D;
-  /** The thing under the aim: how it answers, and what a click does. */
-  registration: UseRegistration;
+  /**
+   * The thing under the aim: how it answers, and what a click does. Null
+   * when nothing there is registered (a seat, or an unmarked thing): the
+   * hit is kept, so the click can still act on it (a seat's own use).
+   */
+  registration: UseRegistration | null;
   /** The world point the ray met (the click gets its own copy). */
   point: Vector3;
+  /** The texture coordinates at the hit, for a touch surface's own questions. */
+  uv?: { x: number; y: number } | null;
 }
 
 /** A resolution's cached state, kept while the aim stands still. */
@@ -76,9 +82,13 @@ export interface AimOptions {
   fresh?: boolean;
 }
 
+const eye = new Vector3();
+
 /**
  * Resolve a use aim to the first visible thing and its registration, or null
- * when nothing is met or nothing is registered there. Asking changes nothing.
+ * when nothing is met. A thing met but registered nowhere (a seat, say)
+ * keeps its hit with a null registration, so the click can still act on it.
+ * Asking changes nothing.
  * A resolution's `point` is the cache's own object: ask for a copy with the
  * same `fresh` reset (a click) before the answer is reused.
  */
@@ -109,25 +119,53 @@ export function resolveAim(options: AimOptions): AimResolution | null {
     if (!first) {
       cache.found = null;
     } else {
-      const registration = useRegistrationOf(first.object);
-      cache.found = registration
-        ? { hit: first.object, registration, point: first.point.clone() }
-        : null;
+      // The hit is kept even where nothing is registered (a seat, say):
+      // the registration is asked afresh on every probe either way, so a
+      // later mark is picked up from the same cached hit.
+      cache.found = {
+        hit: first.object,
+        registration: useRegistrationOf(first.object),
+        point: first.point.clone(),
+        uv: first.uv,
+      };
     }
   }
   const found = cache.found;
-  if (!found || !visibleAll(found.registration.object)) return null;
-  // A seen-but-unregistered thing (a mark removed, a decoration moved over)
-  // is not the aim's: the registration is asked afresh each probe, so it is
-  // refreshed here too rather than answered from a stale cache entry. The
-  // cache is updated so the next probe does not re-walk.
+  if (!found) return null;
+  if (found.registration && !visibleAll(found.registration.object)) return null;
+  // A registration is asked afresh each probe, so a mark added or removed
+  // since the cast is answered now rather than from a stale cache entry;
+  // the cache is updated so the next probe does not re-walk. A hit that
+  // stays registered nowhere keeps its null registration (a seat, say):
+  // the click may still act on it.
   const registration = useRegistrationOf(found.hit);
-  if (!registration) {
-    cache.found = null;
+  // A use with its own reach (`markReach`): beyond it, nothing is in reach
+  // there, for the cue and the click alike (the owner, 2026-11-06).
+  if (
+    registration?.reach !== undefined &&
+    found.point.distanceTo(eye.setFromMatrixPosition(camera.matrixWorld)) >
+      registration.reach * metre
+  )
     return null;
+  if (!registration) {
+    // Still registered nowhere (a wall, a seat): the cached entry stands,
+    // with no allocation on every probe.
+    if (found.registration === null) return found;
+    cache.found = {
+      hit: found.hit,
+      registration: null,
+      point: found.point.clone(),
+      uv: found.uv,
+    };
+    return cache.found;
   }
   if (registration !== found.registration) {
-    cache.found = { hit: found.hit, registration, point: found.point.clone() };
+    cache.found = {
+      hit: found.hit,
+      registration,
+      point: found.point.clone(),
+      uv: found.uv,
+    };
     return cache.found;
   }
   return found;

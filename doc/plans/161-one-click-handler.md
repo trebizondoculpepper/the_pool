@@ -31,3 +31,32 @@ Brief: `doc/prompts/161-one-click-handler.md`. The owner, 2026-11-04, urgent, [r
 
 - Step 3 (use while holding on the objects) and the room-by-room migration (shell-room, pool-hall-room, water-room, controls-room, bin-room, repair-room, racks-room, magic-room).
 - The records (`CHANGELOG.md`, `src/toolkit/controls/AGENTS.md`) when the contract ships; a diary entry.
+
+## Progress (2026-11-07, nicole_buruaah; the owner reassigned #8 from sayuri_shantian)
+
+PR #46 carries step 4's first batch (shell-room off its own walk) and the fixes its reviews asked for, rebased onto main after the phone missions (#75–#81):
+
+- sayuri_shantian's uncommitted seat work, kept: the resolver keeps a hit with a null registration where nothing is marked, so a click on a declared seat sits the walker through one shared `sitDown` (`seatOfHit`, `seating.test.ts`).
+- The phone's click path (#76) takes the resolver's `hit`/`uv` and its null registration (the merged tree did not typecheck otherwise).
+- Registration order no longer decides the answer (the owner, 2026-11-06): `plainUsable` is the one plain answer; `registerPartUse` with it keeps an answer the object already has, and `markAnswer` (a part's cue, a knob's turn via `markTurnable`) sets an answer keeping the action. Tested in both orders, with a knob marked before its use.
+- A room's part set registers the uses set on it directly (the engineer's desk, pipework valve chains, isolator handles, room services), which shell-room's removed walk used to reach through `machines.useOf`; deleting or disposing unregisters them. Checked in play: the engineer's chair seats, the PC's mouse opens its Open-Meteo window.
+- The CM6 jog dial's cap pushes, its rim turns, and LB/RB turn it aimed at either (tests).
+- Reach (the owner, 2026-11-06/07): a use may carry its own reach (`markReach`, metres from the eye to the point touched), honoured by the one resolution for the cue and the click; uses with none keep the aim's 3–4 m. The ~0.8 m direct-use default and the longer reaches it needs are #94.
+
+Left: batches 2–8 of the inventory below (35 rooms), step 3's carrying hooks and #10's interactive gate. The first click after a shell room loads can still be taken by the pointer lock before it reaches the resolver (seen in the engineer's office).
+
+## Step 4 inventory (checked 2026-11-06 at `02fbfa57`, branch `issue-8-one-click-handler`)
+
+36 controllers still pass `use`/`aimed` (the deprecated fallback: `clickOutcome === 'room'` runs the room's own `use`). The resolver, registration and holding all exist on main; the migration is per-room: read the room's `use`, register its clicks on the objects (`markUsable` with an action), delete `use`/`aimed`. Batch order from the brief (biggest first):
+
+1. **shell-room** (use=2, aimed=1) — the biggest, combines parts/machines/seats in one `usableAt`.
+2. **pool-hall-room** (use=1) — the pool halls' equipment, not just the spa/level panels.
+3. **water-room** (use=1, aimed=1) — the ripple as the water's registered use.
+4. **controls-room** (aimed=1) — dev0's boards; useWhileHolding/At to the objects.
+5. **bin-room, repair-room** (use=1 each) — their useWhileHolding/At to the objects.
+6. **racks-room** (use=1) — heldAction/targetFeedback to the objects.
+7. **magic-room** (use=2, aimed=1).
+8. The remaining 29 simple rooms (most are one `usableAt` over the parts).
+9. Step 3: the carrying hooks and the interactive gate (#10) in `resolveAim`.
+
+Each batch: register the room's special clicks as object actions, delete the room's `use`/`aimed`, run the affected fast suites, commit and push; the draft PR (`issue-8-one-click-handler`) shows it all.

@@ -13,6 +13,7 @@ import type { UseAnswer } from '../logic/use-cue';
 
 const at = (object: Group): UseQuery => ({
   object,
+  hit: object,
   point: new Vector3(),
   camera: new PerspectiveCamera(),
   x: 0,

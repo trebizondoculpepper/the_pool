@@ -10,7 +10,10 @@ import { signal } from '@preact/signals-core';
 import { PerspectiveCamera, Vector3 } from 'three';
 import type { Object3D } from 'three';
 import { createPanelKit } from '../views/eighties-controls';
-import { usableOf } from '../../../controls/input/use-marking';
+import {
+  useRegistrationOf,
+  usableOf,
+} from '../../../controls/input/use-marking';
 import {
   mushroomStop,
   overloadRelay,
@@ -43,6 +46,7 @@ const cueOf = (object: Object3D) => {
   const found = usableOf(object);
   return found?.usable({
     object: found.object,
+    hit: found.object,
     point: new Vector3(),
     camera,
     x: 0,
@@ -114,5 +118,64 @@ describe('the kit marks its pushes and pulls', () => {
     expect(cueOf(test)?.possible).toBe(false);
     expect(cueOf(reset)?.possible).toBe(true);
     expect(cueOf(dial)?.gesture).toBe('turn');
+  });
+
+  it('a registered use is the one resolution: the cue answers, the click runs the work with the hit known (mission 161)', () => {
+    let pressed = 0;
+    const part = pushButton(createPanelKit(), {
+      colour: 'green',
+      action: () => pressed++,
+    });
+    const [cap] = usesOf(part);
+    const registration = useRegistrationOf(cap);
+    expect(registration).toBeTruthy();
+    // The pure answer, asked by the cue.
+    expect(
+      registration?.usable({
+        object: cap,
+        hit: cap,
+        point: new Vector3(),
+        camera,
+        x: 0,
+        pad: false,
+      })?.possible,
+    ).toBe(true);
+    // The click's action runs the part's work, with the hit kept.
+    registration?.action?.({
+      object: cap,
+      hit: cap,
+      point: new Vector3(0, 0, -1),
+      camera,
+      x: 0,
+      pad: false,
+      uv: null,
+    });
+    expect(pressed).toBe(1);
+    // Disposing the part unmarks it: a stale registration never runs twice.
+    part.dispose();
+    expect(useRegistrationOf(cap)).toBeNull();
+  });
+
+  it('a knob’s registration carries an action (turnable parts register too)', () => {
+    const relay = overloadRelay(createPanelKit(), { current: signal(0) });
+    let dial: Object3D | null = null;
+    relay.object.traverse((o) => {
+      if (dial) return;
+      const registration = useRegistrationOf(o);
+      if (
+        registration?.usable({
+          object: o,
+          hit: o,
+          point: new Vector3(),
+          camera,
+          x: 0,
+          pad: false,
+        })?.gesture === 'turn'
+      )
+        dial = o;
+    });
+    expect(dial).not.toBeNull();
+    expect(useRegistrationOf(dial!)?.action).toBeTypeOf('function');
+    relay.dispose();
   });
 });

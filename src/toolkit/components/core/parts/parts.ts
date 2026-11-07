@@ -3,7 +3,11 @@ import type { PartDescription } from '../../../../game/plant/part-inspection';
 import { createElectrolyticCapacitorView } from '../../industrial-control/views/electrolytic-capacitor';
 import type { Attachment } from '../../../controls/logic/drop-profile';
 import { markTurnable } from '../../../controls/input/knob-turning';
-import { markUsable } from '../../../controls/input/use-marking';
+import {
+  markAnswer,
+  plainUsable,
+  registerPartUse,
+} from '../../../controls/input/use-marking';
 import type { Usable } from '../../../controls/input/use-marking';
 import { computed, effect, signal } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
@@ -134,6 +138,37 @@ interface Common {
 }
 
 /**
+ * Register every use in `uses` with the one resolver (mission 161): `set`
+ * registers it with the plain answer, which keeps any specific answer the
+ * object has (a part's cue, a knob's turn), whichever came first; setting
+ * it again replaces the registration; `delete` unregisters it. Returns the
+ * undoing of all of them, for a dispose. One rule for a part's uses and a
+ * room's part set alike.
+ */
+export function registerUses(
+  uses: Map<Object3D, (direction?: number) => void>,
+) {
+  const registered = new Map<Object3D, () => void>();
+  const setUse = uses.set.bind(uses);
+  const deleteUse = uses.delete.bind(uses);
+  uses.set = (on: Object3D, work: (direction?: number) => void) => {
+    setUse(on, work);
+    registered.get(on)?.();
+    registered.set(on, registerPartUse(on, plainUsable, work));
+    return uses;
+  };
+  uses.delete = (on: Object3D) => {
+    registered.get(on)?.();
+    registered.delete(on);
+    return deleteUse(on);
+  };
+  return () => {
+    for (const undo of registered.values()) undo();
+    registered.clear();
+  };
+}
+
+/**
  * A part's plumbing: its group, uses, updates, and its sounds. Parts in
  * other files (`building-parts.ts`) are built on it too.
  */
@@ -153,6 +188,9 @@ export function beginPart(kit: PanelKit, name: string) {
   const listeners = new Set<(event: PartEvent, name: string) => void>();
   const disposers: (() => void)[] = [];
   const audible = signal(true);
+  // Every use set on the part is registered with the one resolver
+  // (mission 161), undone when it is set again, deleted or disposed.
+  disposers.push(registerUses(uses));
   return {
     object,
     uses,
@@ -197,10 +235,12 @@ export function beginPart(kit: PanelKit, name: string) {
     /**
      * What a use on `on` (one of its `uses`) would do now, for the
      * crosshair's cue (prompt 115): its gesture, and whether it will have
-     * a consequence. Unmarked, a use shows the plain ring.
+     * a consequence. Unmarked, a use shows the plain ring. Registered with
+     * the use's action (mission 161): a click runs `uses.get(on)` with the
+     * hit known.
      */
     cue(on: Object3D, usable: Usable) {
-      disposers.push(markUsable(on, usable));
+      disposers.push(markAnswer(on, usable));
     },
     /** What can be seen of it now, for the information overlay (prompt 068). */
     shows(what: () => string | undefined) {
@@ -1528,6 +1568,10 @@ export function createPartSet() {
   const parts: Part[] = [];
   const uses = new Map<Object3D, (direction?: number) => void>();
   const listeners = new Set<(event: PartEvent, name: string) => void>();
+  // Every use in the set is registered with the one resolver (mission 161),
+  // those a room or a machine sets on the set directly too (a desk's PC,
+  // a pipework valve's chain, an isolator's handle), not only a part's.
+  const unregister = registerUses(uses);
   return {
     uses,
     add<P extends Part>(part: P): P {
@@ -1558,6 +1602,7 @@ export function createPartSet() {
       return () => listeners.delete(listener);
     },
     dispose() {
+      unregister();
       for (const part of parts) part.dispose();
       listeners.clear();
     },

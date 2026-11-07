@@ -37,6 +37,7 @@ function arrowFrom(valve: Object3D, eye: Vector3) {
   const found = usableOf(handle!)!;
   const answer = found.usable({
     object: found.object,
+    hit: found.object,
     point: new Vector3(),
     camera,
     x: 0,

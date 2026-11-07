@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import type { Camera, Object3D } from 'three';
 import { turnSense, turnSide } from '../logic/use-cue';
 import type { Turnable } from '../logic/use-cue';
-import { markUsable, turnAt } from './use-marking';
+import { markAnswer, turnAt } from './use-marking';
 
 /**
  * The control scheme's part of turning a knob: which way a use turns the
@@ -65,7 +65,10 @@ export function turnSeen(
  * Mark a knob that says whether it would turn (prompt 115), for the
  * crosshair's cue: `object` is the object a use lands on, which is also
  * its shaft for `knobDirection`. Returns the unmarking, for its disposal.
+ * Where the knob's use is already registered (`markUsable` gave it an
+ * action, mission 161), that action is kept: the turn answer and the
+ * click it runs live on the same object as one registration.
  */
 export function markTurnable(object: Object3D, turnable: Turnable) {
-  return markUsable(object, (at) => turnAt(at, turnable));
+  return markAnswer(object, (at) => turnAt(at, turnable));
 }

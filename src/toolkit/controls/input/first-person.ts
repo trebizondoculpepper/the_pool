@@ -60,6 +60,7 @@ import {
   resolveAim as sharedResolveAim,
   clickOutcome,
 } from './resolve-aim';
+import { seatOf, seatOfHit } from './seating';
 import {
   PLAIN_USE,
   cuePlace,
@@ -402,24 +403,51 @@ export function createFirstPerson(options: FirstPersonOptions) {
         options.onLetGo,
       )
     : null;
+  /**
+   * Sit down (a chair's use, `logic/seat.ts`): the eye at `pose`, in scene
+   * units, until a change of stance or a step stands the walker up again
+   * where it stood. Looking about and using things in reach keep it
+   * seated; nothing pushes it out of the chair meanwhile. The click's seat
+   * step (`seating.ts`) and the controller's `sit` both come here.
+   */
+  const sitDown = (pose: SeatPose) => {
+    if (flying || holding) return;
+    if (!seated) seated = { from: { x: walker.x, z: walker.z } };
+    attachedLadder = null;
+    mounting = null;
+    walker.x = pose.x;
+    walker.z = pose.z;
+    walker.yaw = pose.yaw;
+    walker.pitch = clampPitch(pose.pitch);
+    currentFloorY = options.floorAt?.(pose.x, pose.z, currentFloorY) ?? floorY;
+    smoothedFloorY = currentFloorY;
+    walker.eyeOffset = pose.eyeY - eyeY();
+    walker.crouched = walker.lowCrouched = false;
+    walker.crouch = 0;
+    nudge.forward = nudge.right = 0;
+    sticks?.reset();
+  };
   const use = (x: number, y: number) => {
     if (phoneRaised) {
       const found = phoneView.resolveAt(x, y);
+      const registration = found?.registration;
       if (
         !found ||
-        !phoneView.owns(found.registration.object) ||
+        !registration ||
+        !phoneView.owns(registration.object) ||
         !phoneView.targetAt(found.point)
       )
         return;
       const at: UseQuery = {
-        object: found.registration.object,
+        object: registration.object,
+        hit: found.hit,
         point: found.point.clone(),
         camera,
         x,
         pad: false,
+        uv: found.uv,
       };
-      if (found.registration.usable(at)?.possible)
-        found.registration.action?.(at);
+      if (registration.usable(at)?.possible) registration.action?.(at);
       return;
     }
     if (noclip.value || inputHeld()) return;
@@ -510,14 +538,25 @@ export function createFirstPerson(options: FirstPersonOptions) {
       );
       const registered = found?.registration;
       if (!registered || !registered.action) {
+        // No registered action: a hit on a declared seat sits the walker
+        // there (the seating system's own use, `seating.ts`); a hit
+        // registered nowhere else falls to the room's own `use` (still
+        // accepted, deprecated, while the rooms migrate).
+        const seat = found?.hit ? seatOfHit(found.hit) : null;
+        if (seat) {
+          sitDown(seatOf(seat.chair, seat.seat));
+          return;
+        }
         options.use?.(x, y);
       } else {
         const at: UseQuery = {
           object: registered.object,
+          hit: found!.hit,
           point: found!.point.clone(),
           camera,
           x: aim.x,
           pad: aim.pad,
+          uv: found!.uv,
         };
         const answer = registered.usable(at);
         if (clickOutcome(registered, answer) === 'run') registered.action(at);
@@ -741,8 +780,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
   ) => {
     const found = resolveAim(x, y, reach, now);
     if (!found) return null;
+    // A declared seat answers as a use, as its click sits the walker (the
+    // same `seatOfHit` test as the click's).
+    if (!found.registration) return seatOfHit(found.hit) ? PLAIN_USE : null;
     return found.registration.usable({
       object: found.registration.object,
+      hit: found.hit,
       point: found.point,
       camera,
       x,
@@ -1329,7 +1372,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       const [x, y] = screenPoint(event.clientX, event.clientY);
       const found = phoneView.resolveAt(x, y);
       const target =
-        found && phoneView.owns(found.registration.object)
+        found?.registration && phoneView.owns(found.registration.object)
           ? phoneView.targetAt(found.point)
           : null;
       if (target) {
@@ -1655,6 +1698,9 @@ export function createFirstPerson(options: FirstPersonOptions) {
   const controller = {
     walker,
     metre,
+    /** Use what the aim meets (mission 161): the click's one shared path,
+     * exposed for a room's own dev handle to drive it directly. */
+    use,
     /**
      * The hands of the shared pick-up and carry (`objects` given), for a
      * room that hands things over (`give`) or resets them (`forget`).
@@ -1801,22 +1847,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
      * keep it seated; nothing pushes it out of the chair meanwhile.
      */
     sit(pose: SeatPose) {
-      if (flying || holding) return;
-      if (!seated) seated = { from: { x: walker.x, z: walker.z } };
-      attachedLadder = null;
-      mounting = null;
-      walker.x = pose.x;
-      walker.z = pose.z;
-      walker.yaw = pose.yaw;
-      walker.pitch = clampPitch(pose.pitch);
-      currentFloorY =
-        options.floorAt?.(pose.x, pose.z, currentFloorY) ?? floorY;
-      smoothedFloorY = currentFloorY;
-      walker.eyeOffset = pose.eyeY - eyeY();
-      walker.crouched = walker.lowCrouched = false;
-      walker.crouch = 0;
-      nudge.forward = nudge.right = 0;
-      sticks?.reset();
+      sitDown(pose);
     },
     /** Stand up from a chair, where the walker sat down from. */
     stand,
