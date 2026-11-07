@@ -230,9 +230,9 @@ export function worldStore(slot: string): WorldStore {
  * room built for the attract sequence reads and acts on the attract
  * sequence's world, and the player's never sees it.
  */
-let roomOverride: WorldStore | null = null;
+const roomOverride = signal<WorldStore | null>(null);
 export function roomWorld(): WorldStore {
-  return roomOverride ?? worldStore(devSlot() ?? 'dev');
+  return roomOverride.value ?? worldStore(devSlot() ?? 'dev');
 }
 
 /**
@@ -255,7 +255,7 @@ if (typeof window !== 'undefined' && import.meta.env?.DEV)
   };
 /** Rooms' world from now on: `store`, or, with null, the player's again. */
 export function setRoomWorld(store: WorldStore | null) {
-  roomOverride = store;
+  roomOverride.value = store;
 }
 
 /**

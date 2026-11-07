@@ -39,7 +39,10 @@ import {
   roomDeclaration,
   worldRoomOf,
 } from './game/rooms/registry';
-import { createRoomTraitHost } from './game/rooms/room-trait';
+import {
+  createRoomTraitClock,
+  createRoomTraitHost,
+} from './game/rooms/room-trait';
 import { roomStarter } from './toolkit/gallery/rooms/room-starter';
 import { createConsole } from './toolkit/console/console-view';
 import { consoleOpen } from './toolkit/controls/logic/console-open';
@@ -969,13 +972,17 @@ const keyOf = (room: RoomId) => worldRoomOf(room);
  * the world's clock does), and torn down on leaving.
  */
 const roomVisitTraits = createRoomTraitHost(ROOM_TRAITS);
-const enterRoomTraits = (room: RoomId) =>
+const roomTraitClock = createRoomTraitClock();
+const enterRoomTraits = (room: RoomId) => {
+  roomTraitClock.reset();
   roomVisitTraits.enter(room, roomDeclaration(room)?.traits);
-let roomTraitTime: number | null = null;
+};
+// roomWorld() reads a signal, so a room installing its own world re-runs
+// this and the clock re-anchors to it (#118).
 effect(() => {
-  const time = roomWorld().world.value.time;
-  if (roomTraitTime !== null) roomVisitTraits.step(time - roomTraitTime);
-  roomTraitTime = time;
+  const store = roomWorld();
+  const dt = roomTraitClock.read(store, store.world.value.time);
+  if (dt > 0) roomVisitTraits.step(dt);
 });
 /** Build `room` on a canvas of its own, hidden, if it is not built yet. */
 const mount = (

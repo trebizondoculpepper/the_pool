@@ -85,6 +85,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- Room traits now follow the room's own world: when a room swaps in its own world, its traits' clock re-anchors to it instead of reading the old one, and no jump between the two worlds' times fires every pending event at once (#118).
 - The shell rooms' switch-fuses (the boiler house, stores, loading bay, switch room, air plant, control room and engineer's office) respond to clicks again (#107, a regression from #46): a room's services and a cabinet's services register their uses with the one click resolver, as part sets do, instead of relying on a room's own walk.
 - Plant-room controls now use their shared aim registrations for both cue and click. Cabinet-service valves and isolators, plus room-service feeder fuses, register their actions with cleanup on disposal; the Jacuzzi shell's room-local hit test and `machines.useOf` walk are gone (#95, mission 161).
 - The shell rooms (the boiler house, control room, offices and the rest) click through the one shared resolver, with no walk of their own (#8, mission 161, step 4's first batch): their parts, the engineer's desk, pipework valves, isolators and room services register their uses themselves, chairs seat the walker through the shared seating, and a part's specific cue (a knob's turn, a push's state) holds whichever order it was registered in. A use may now carry its own reach (`markReach`), honoured alike by the cue and the click; the ~0.8 m direct-use default is #94.
