@@ -12,6 +12,7 @@ import {
   Vector3,
 } from 'three';
 import type { Object3D } from 'three';
+import { registerUses } from '../../components/core/parts/parts';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createPipe } from '../../components/core/views/pipe-kinds';
 import { newWorld } from '../../../game/world';
@@ -52,6 +53,10 @@ export function createRoomServices(
   const store = typeof window === 'undefined' ? null : roomWorld();
   const fallback = newWorld();
   const uses = new Map<Object3D, () => void>();
+  // Registered with the one resolver as they are set (mission 161, #107):
+  // their switch-fuses' handles, doors and carriers, and the rest, click
+  // without any room walking this map by hand.
+  registerUses(uses);
   const lift = ([x, y, z]: readonly [number, number, number]) =>
     [x, floorY + y, z] as const;
 
