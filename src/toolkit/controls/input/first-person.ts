@@ -360,6 +360,10 @@ export function carriedName(object: Object3D) {
 
 export function createFirstPerson(options: FirstPersonOptions) {
   const { canvas, camera, metre, floorY } = options;
+  const systemReducedMotion =
+    typeof matchMedia === 'function'
+      ? matchMedia('(prefers-reduced-motion: reduce)')
+      : null;
   const phoneMenu = createPhoneMenu();
   let phoneRaised = false;
   const phoneView = createPhoneView(
@@ -2201,7 +2205,8 @@ export function createFirstPerson(options: FirstPersonOptions) {
           metre,
         );
       const moved = canMove ? kept : { x: walker.x, z: walker.z };
-      walker.stride += Math.hypot(moved.x - walker.x, moved.z - walker.z);
+      const strideDistance = Math.hypot(moved.x - walker.x, moved.z - walker.z);
+      walker.stride += strideDistance;
       walker.x = moved.x;
       walker.z = moved.z;
       // The ladder owns height until the walker leaves an end.
@@ -2278,7 +2283,12 @@ export function createFirstPerson(options: FirstPersonOptions) {
       );
       if (!flying) handling?.update(delta);
       concealHeld();
-      phoneView.update(delta);
+      phoneView.update(
+        delta,
+        strideDistance / (Math.max(delta, 0.001) * metre * 2),
+        Boolean(options.reducedMotion?.()) ||
+          Boolean(systemReducedMotion?.matches),
+      );
       const cursorAim =
         (input === 'mouse' || input === 'keyboard') && !locked();
       crosshair.hidden =

@@ -44,4 +44,4 @@ How inputs work. This is the one control scheme every room in every game built o
 - `input/touch-sticks.ts`: the on-screen thumbsticks and CROUCH button for touch.
 - `logic/menu-navigation.ts`, `input/menu-input.ts`: menus on every input: what keys and pad buttons mean to a menu, spatial focus movement, and the one reader that hands them to whichever menu takes them (mission 096). No menu reads a key or polls a pad of its own.
 - `logic/menu-open.ts`: whether a menu panel has the controls, which holds the walker still without pausing the world.
-- `logic/phone-open.ts`, `logic/phone-menu.ts`, `input/phone-view.ts`, `input/phone-display.ts`: the shared raised-phone state, menu and inbox, plus the foreground 3D model and its screen texture. The texture uploads only when the visible menu changes.
+- `logic/phone-open.ts`, `logic/phone-menu.ts`, `logic/phone-hand-motion.ts`, `input/phone-view.ts`, `input/phone-display.ts`: the shared raised-phone state, menu and inbox, deterministic handheld pose, foreground 3D model and screen texture. The texture uploads only when the visible menu changes.
