@@ -1,5 +1,7 @@
 # 219: Phone controls while moving
 
+Tracked in #76; status lives there.
+
 The owner, 2026-11-06. This follows the handset and menu work in [213](213-phone-model-and-raise.md) and [214](214-phone-menus-and-inbox.md). The phone now has a larger, FOV-stable presentation. This mission concerns input behaviour; [issue #67](https://github.com/trebizondoculpepper/the_pool/issues/67) separately tracks its visual fit and overlay framing.
 
 ## Aim
