@@ -102,3 +102,29 @@ export function createRoomTraitHost(
     room: () => current,
   };
 }
+
+/**
+ * The clock that steps a visit's room traits from world time (#118). It
+ * is anchored to one world: when the room's world is swapped (a magic
+ * room installs its own) or a new visit begins, the first reading only
+ * re-anchors, so no time is lost to the wrong clock and no difference
+ * between two worlds' times arrives as one burst.
+ */
+export function createRoomTraitClock() {
+  let world: unknown = null;
+  let last: number | null = null;
+  return {
+    /** The seconds to step since the last reading of the same world, or 0. */
+    read(of: unknown, time: number): number {
+      const dt = of === world && last !== null ? Math.max(0, time - last) : 0;
+      world = of;
+      last = time;
+      return dt;
+    },
+    /** Forget the anchor (a new visit starts). */
+    reset() {
+      world = null;
+      last = null;
+    },
+  };
+}
