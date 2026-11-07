@@ -11,13 +11,25 @@ describe('the phone inbox', () => {
     expect(menu.frame().page).toBe('main');
   });
 
+  it('moves around the two-by-two main menu by the arrow direction', () => {
+    const menu = createPhoneMenu(createPhoneInbox());
+    menu.action('right');
+    expect(menu.frame().selected).toBe(1);
+    menu.action('down');
+    expect(menu.frame().selected).toBe(3);
+    menu.action('left');
+    expect(menu.frame().selected).toBe(2);
+    menu.action('up');
+    expect(menu.frame().selected).toBe(0);
+  });
+
   it('keeps new messages first and marks only the opened one read', () => {
     const inbox = createPhoneInbox([
       { from: 'Plant', text: 'First' },
       { from: 'Plant', text: 'Second' },
     ]);
     const menu = createPhoneMenu(inbox);
-    menu.action('down'); // Messages
+    menu.action('right'); // Messages
     menu.action('select');
     menu.action('select'); // Inbox
     expect(menu.frame().rows[0]).toContain('Second');
@@ -30,6 +42,19 @@ describe('the phone inbox', () => {
     expect(menu.frame().rows[0]).toContain('Third');
   });
 
+  it('opens the touched icon and inbox row without acting on empty space', () => {
+    const menu = createPhoneMenu(
+      createPhoneInbox([{ from: 'Plant', text: 'Pump report' }]),
+    );
+    expect(menu.tap(4)).toBe(false);
+    expect(menu.tap(1)).toBe(true);
+    expect(menu.frame().page).toBe('messages');
+    expect(menu.tap(0)).toBe(true);
+    expect(menu.frame().page).toBe('inbox');
+    expect(menu.tap(0)).toBe(true);
+    expect(menu.frame().body).toEqual(['Pump report']);
+  });
+
   it('scrolls a long message four lines at a time and backs out level by level', () => {
     const inbox = createPhoneInbox([
       {
@@ -40,7 +65,7 @@ describe('the phone inbox', () => {
       },
     ]);
     const menu = createPhoneMenu(inbox);
-    menu.action('down');
+    menu.action('right');
     menu.action('select');
     menu.action('select');
     menu.action('select');

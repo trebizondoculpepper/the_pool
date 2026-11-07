@@ -50,6 +50,8 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The raised phone now leaves walking and looking active while blocking world use. Arrow keys, Enter and Backspace navigate it on keyboard, gamepad sticks keep moving and looking while the D-pad and A/B navigate, and touch taps on the handset's projected screen and keys open its menus (#76).
+
 - Every registered kind is now on its honest interaction class (mission 19): the reclassification sweep is complete — 124 kinds across `interactive`, `functional`, `readable`, `inspectable` and `decorative`, none left without a class. Tanks, filters and vessels gained `inspectable`; desks, shelves, bins, pools and pipework gained `functional`; `tanker-stand` was marked `decorative` as true set-dressing. Kinds changed only through the audit command; the result is locked by the classification tests.
 - CI runs faster (#24, batch 1): nine test files that simulate long stretches of game time (the chemical distribution end to end, the Olympic balance tank and its draining, the Olympic main drain, the lounge filters, pump alarm events, the sewer outfall, the backwash pit and the ideal backwash) are now local-only `*.slow.test.ts`, as the project's rule for tests over about 1.5 s asks. They still run with `npm test` before every commit; GitHub skips them.
 - A box-like thing's top is its own bounding box, wherever its meshes sit (issue #11): the PC tower and monitor on the engineer's desk are their own `box-like`, `supportable` kinds now, their tops derived from their fitted box rather than the desk's (the desk's `markNonBody` overrides are gone), and they are bound in the engineer's office.
