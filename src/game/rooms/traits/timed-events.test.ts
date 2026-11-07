@@ -43,7 +43,13 @@ describe('timed-events room trait (#105)', () => {
     host.step(20);
     expect(messages).toHaveLength(1);
     host.enter('dev71', dev71.traits);
-    host.step(120);
+    host.step(19);
+    expect(messages).toHaveLength(1);
+    host.step(1);
+    expect(messages).toHaveLength(2);
+    host.step(99);
+    expect(messages).toHaveLength(2);
+    host.step(1);
     expect(messages).toHaveLength(3);
   });
 
