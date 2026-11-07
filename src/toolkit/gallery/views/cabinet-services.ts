@@ -12,6 +12,7 @@ import {
   JACUZZI_VALVE_PANEL_REF,
 } from '../../../game/descriptors/jacuzzi-room';
 import type { Object3D } from 'three';
+import { registerUses } from '../../components/core/parts/parts';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { createMicroLabel } from '../../components/core/views/eighties-controls';
 import { createPipe, PIPE_KINDS } from '../../components/core/views/pipe-kinds';
@@ -118,6 +119,10 @@ export function cabinetServices(
   const group = new Group();
   group.name = 'cabinet services';
   const uses = new Map<Object3D, () => void>();
+  // Registered with the one resolver as they are set (mission 161, #107):
+  // their switch-fuses' handles, doors and carriers, and the rest, click
+  // without any room walking this map by hand.
+  registerUses(uses);
   const store = typeof window === 'undefined' ? null : roomWorld();
   const valveParts: ReturnType<typeof createWaterButterflyValve>[] = [];
   // The motorised valves: each one's lamp, and its row on the room's panel.

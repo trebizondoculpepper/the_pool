@@ -81,6 +81,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Fixed
 
+- The shell rooms' switch-fuses (the boiler house, stores, loading bay, switch room, air plant, control room and engineer's office) respond to clicks again (#107, a regression from #46): a room's services and a cabinet's services register their uses with the one click resolver, as part sets do, instead of relying on a room's own walk.
 - The shell rooms (the boiler house, control room, offices and the rest) click through the one shared resolver, with no walk of their own (#8, mission 161, step 4's first batch): their parts, the engineer's desk, pipework valves, isolators and room services register their uses themselves, chairs seat the walker through the shared seating, and a part's specific cue (a knob's turn, a push's state) holds whichever order it was registered in. A use may now carry its own reach (`markReach`), honoured alike by the cue and the click; the ~0.8 m direct-use default is #94.
 - The raised phone is twice as large on screen and centred in the game view so its larger body fits on desktop and portrait screens.
 
