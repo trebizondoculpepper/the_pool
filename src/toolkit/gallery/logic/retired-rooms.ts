@@ -1,5 +1,4 @@
 import retired1 from './retired/retired1.json';
-import retired0 from './retired/retired0.json';
 import type { PipeRun } from './room-pipes';
 import type { CabinetRun } from './cabinet-pipes';
 import type { layoutRoomLive } from './room-equipment';
@@ -12,7 +11,6 @@ import type { layoutRoomLive } from './room-equipment';
  * retired, kept in `retired/<id>.json`, and drawn as its own room
  * (`?room=<id>`): no later change to the generators moves it.
  *
- * - `retired0`: the Olympic pool's plant room (`plant_pool_02`), 2026-10-23.
  * - `retired1`: the jacuzzi's plant room (`plant_pool_03`), 2026-10-25,
  *   before its re-plumbing by the plumber (prompt 064): its cabinet's runs
  *   (`cabinetPipes`) frozen with its layout. Written by
@@ -34,7 +32,6 @@ interface RetiredRoom {
 }
 
 export const RETIRED_ROOMS: Readonly<Record<string, RetiredRoom>> = {
-  retired0: retired0 as unknown as RetiredRoom,
   retired1: retired1 as unknown as RetiredRoom,
 };
 

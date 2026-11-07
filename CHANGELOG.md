@@ -231,6 +231,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Removed
 
+- The retired0 reference room (the Olympic plant room of 2026-10-23), which no longer built, with its snapshot and the before-and-after Olympic comparison (#112).
 - The control room's BMS outstation, CR-CP5, which did nothing (bound to nothing in the world), and the bridge's unused parody page of it (the owner, 2026-11-01).
 - CR-CP3, the control room's chart recorders; the bridge's Water Science Officer console now shows the Lounge's Dr Aqualis Trio (PL1-CP2) in their place.
 

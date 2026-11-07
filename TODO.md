@@ -663,7 +663,6 @@ Sorted by kind (the owner, 2026-10-23): gameplay, architecture, lighting, and th
   - [ ] Stage 3: view-held state lifted where text mode needs it (cabinet doors, display pages); 127's part marks carrying the descriptors' keys, and a test that they match.
   - [ ] Stage 4: museum halls, the bridge's touch screens, architectural fittings (doors, light switches, `architectural` class), every remaining kind (no-view kinds too), and a report of kinds with no descriptor.
 - [x] **Everything lookable** ([127](doc/prompts/127-everything-lookable.md), [plan](doc/plans/127-everything-lookable.md); the owner, 2026-11-02; done 2026-11-02, 4623d755): the look audit's screens (`bench.html?bench=lookables`, one room or all) and `npm run look:audit` (`doc/look-audit.json`, `doc/look-audit.md`), built on one shared scanner, record and room-build adapter for 129; the shared classification (`object-class.ts`) making signs, fire fittings and doors `architectural`. Checked on plant_pool_03 and museum1; the full run is 132's.
-  - [ ] `retired0` does not build: `Unregistered valve plant_pool_02/Filter 1 inlet drop/F1 inlet valve` (found by the audit).
   - [ ] `KNOWN_UNLOOKABLE` is empty; 132 fixes the findings room by room or lists each with its reason here.
   - [ ] The dev panel's catalogue (126) to show each room's unlabelled count from `doc/look-audit.json`.
   - [ ] The audit in CI (after 132).

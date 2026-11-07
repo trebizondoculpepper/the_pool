@@ -81,7 +81,6 @@ export type GalleryRoomId =
   | 'dev58'
   | 'dev70'
   | 'dev71'
-  | 'retired0'
   | 'retired1'
   | 'dev59';
 /** One development room per pool plant room, each showing its equipment. */
@@ -306,8 +305,7 @@ export const ROOMS: readonly RoomId[] = [
   // By its URL only: kitchen things, the pizza oven first (the owner,
   // 2026-11-02).
   'dev70',
-  // By its URL only: the Olympic plant room, frozen as a reference.
-  'retired0',
+  // By its URL only: the jacuzzi plant room, frozen as a reference.
   'retired1',
   // The single playable pool room.
   'PR_A',
@@ -515,7 +513,6 @@ export const DEV_ROOM_NAMES: Record<RoomId, string> = {
   dev56: 'DEV56 · BAKED AMBIENT OCCLUSION',
   dev57: 'DEV57 · THE DOSING CONSOLE',
   dev58: 'DEV58 · DOSING: THE AQUALIS CONTROLLER',
-  retired0: 'RETIRED0 · OLYMPIC PLANT ROOM, 2026-10-23',
   retired1: 'RETIRED1 · JACUZZI PLANT ROOM, 2026-10-25',
   dev59: 'DEV59 · DEV CORRIDOR',
   dev60: 'DEV60 · COURTYARD',
@@ -654,7 +651,6 @@ export const DEV_ROOM_COLOURS: Record<RoomId, string> = {
   dev56: '#5f6f4b',
   dev57: '#2b9ad6',
   dev58: '#1f7fd6',
-  retired0: '#6d7a6f',
   retired1: '#6d7a6f',
   dev59: '#2d9ca0',
   dev60: '#7fa36a',

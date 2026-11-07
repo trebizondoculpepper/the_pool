@@ -902,8 +902,8 @@ export function roomEquipment(
     case 'plant_pool_02':
       // Olympic: cleared for its redo (the owner, 2026-10-23,
       // `doc/prompts/done/033-olympic-plant-redo.md`): an empty large hall, its
-      // balance tank now in a hall of its own through its west doors. The
-      // room as it was is kept as `retired0`.
+      // balance tank now in a hall of its own through its west doors.
+      // The room as it was (retired0) was removed (#112).
       // Laid out by the owner's plan (`olympic-plan.ts`), plumbed by the
       // pipeline (`olympic-plumbing.ts`): 22 × 14 m.
       return {
@@ -1874,7 +1874,7 @@ export const TANK_SURROUND = 0.8;
  * than packing does.
  *
  * (The Olympic pool's plant room was laid out here by hand until its redo,
- * 2026-10-23; that room is kept as `retired0`.)
+ * 2026-10-23; its frozen copy, retired0, was removed in #112.)
  */
 const FIXED: Record<string, (box: RoomBox, items: Item[]) => Placed[]> = {
   // The loading bay: its fill cabinet and generator cabinet where they
