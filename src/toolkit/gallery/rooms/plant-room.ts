@@ -68,7 +68,6 @@ import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { SANS, tools } from '../../components/core/views/fitting-tools';
 import { mergeTree } from '../../components/core/views/merge-static';
 import { partAudio } from '../../components/core/audio/part-audio';
-import { roomWorld } from '../../save/world-store';
 import { createRoomController } from '../../controls/input/room-controller';
 import { WALKER_RADIUS_METRES } from '../../controls/input/first-person';
 import { doorActor } from '../../components/architectural/logic/door-proximity';
@@ -173,12 +172,6 @@ export const EXHIBITS: Record<
     FINISH?: RoomFinish;
     /** Where the walker starts, metres, when it does not come through the door. */
     START?: { x: number; z: number; yaw: number };
-    /** Optional one-visit behaviour, stepped in world time while this room is visible. */
-    createRoomScript?: () => {
-      step(delta: number): void;
-      reset?(): void;
-      dispose?(): void;
-    };
   }>
 > = {
   dev61: () => import('./plant/pumps'),
@@ -227,7 +220,10 @@ export const EXHIBITS: Record<
   dev51: () => import('./plant/ideal-pool-plant'),
   dev52: () => import('./plant/museum-stuff'),
   dev70: () => import('./plant/kitchen'),
-  dev71: () => import('./plant/phone-trial'),
+  dev71: async () => ({
+    EXHIBITS: [],
+    PURPOSE: 'Phone interaction: two incoming test messages',
+  }),
 };
 
 /**
@@ -776,12 +772,6 @@ export function startEquipmentRoom(
   };
 
   // A look link (mission 125) waits until the exhibits are in the scene.
-  let roomScript: {
-    step(delta: number): void;
-    reset?(): void;
-    dispose?(): void;
-  } | null = null;
-  let scriptWorldTime = 0;
   const settled = EXHIBITS[id]().then(
     ({
       EXHIBITS: exhibits,
@@ -791,7 +781,6 @@ export function startEquipmentRoom(
       layoutRoom,
       FINISH,
       START,
-      createRoomScript,
     }) => {
       if (!disposed) {
         build(
@@ -803,8 +792,6 @@ export function startEquipmentRoom(
           FINISH,
           START,
         );
-        roomScript = createRoomScript?.() ?? null;
-        if (roomScript) scriptWorldTime = roomWorld().world.value.time;
       }
     },
   );
@@ -833,12 +820,6 @@ export function startEquipmentRoom(
     last = time;
     ps1Uniforms.time.value = time / 1000;
     walk.update(delta);
-    if (roomScript) {
-      // The world clock stops behind the menu and on console pause; frame time does not.
-      const now = roomWorld().world.value.time;
-      roomScript.step(Math.max(0, now - scriptWorldTime));
-      scriptWorldTime = now;
-    }
     partAudio.listen(camera, m, scene);
     portals?.update(delta, walk.walker.x, walk.walker.z, !walk.following);
     // Near an exhibit's doors, they wait: told before they move.
@@ -856,7 +837,6 @@ export function startEquipmentRoom(
     renderer.setAnimationLoop(null);
     observer.disconnect();
     walk.dispose();
-    roomScript?.dispose?.();
     portals?.dispose();
     for (const exhibit of live) {
       exhibit.parts?.dispose();
@@ -870,8 +850,6 @@ export function startEquipmentRoom(
   return Object.assign(dispose, {
     look: { settled },
     enter(previous: string | null) {
-      roomScript?.reset?.();
-      if (roomScript) scriptWorldTime = roomWorld().world.value.time;
       const pose = portals?.arrival(previous);
       if (pose) walk.place(pose.x, pose.z, pose.yaw, pose.pitch);
     },

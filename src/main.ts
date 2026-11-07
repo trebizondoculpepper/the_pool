@@ -968,10 +968,17 @@ const keyOf = (room: RoomId) => worldRoomOf(room);
  * simulation time (so they stop behind the menu and on console pause, as
  * the world's clock does), and torn down on leaving.
  */
-const roomVisitTraits = createRoomTraitHost(ROOM_TRAITS);
-const enterRoomTraits = (room: RoomId) =>
-  roomVisitTraits.enter(room, roomDeclaration(room)?.traits);
+const roomVisitTraits = createRoomTraitHost(ROOM_TRAITS, {
+  emit(event) {
+    if (event.type === 'phone-message')
+      phoneInbox.receive(event.sender, event.text);
+  },
+});
 let roomTraitTime: number | null = null;
+const enterRoomTraits = (room: RoomId) => {
+  roomVisitTraits.enter(room, roomDeclaration(room)?.traits);
+  roomTraitTime = roomWorld().world.value.time;
+};
 effect(() => {
   const time = roomWorld().world.value.time;
   if (roomTraitTime !== null) roomVisitTraits.step(time - roomTraitTime);

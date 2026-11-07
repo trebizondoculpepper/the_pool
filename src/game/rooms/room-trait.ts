@@ -16,10 +16,29 @@ import type { ROOM_TRAIT_IDS } from './traits/index';
  * simulation time (so pausing stops it), and torn down on leaving. Pure.
  */
 
-/** A room trait's configuration: plain data. */
-export type RoomTraitConfig = Readonly<
-  Record<string, string | number | boolean | readonly (string | number)[]>
->;
+/** A room trait's configuration: serializable data. */
+export interface RoomTraitObject {
+  readonly [key: string]: RoomTraitValue;
+}
+export type RoomTraitValue =
+  | string
+  | number
+  | boolean
+  | null
+  | readonly RoomTraitValue[]
+  | RoomTraitObject;
+export type RoomTraitConfig = RoomTraitObject;
+
+/** Effects stay at the room boundary; traits themselves remain pure logic. */
+export type RoomTraitEvent = {
+  type: 'phone-message';
+  sender: string;
+  text: string;
+};
+
+export interface RoomTraitEffects {
+  emit(event: RoomTraitEvent): void;
+}
 
 /** The name of a registered room trait. */
 export type RoomTraitId = (typeof ROOM_TRAIT_IDS)[number];
@@ -31,7 +50,7 @@ export interface RoomTraitUse<Id extends string = RoomTraitId> {
 }
 
 /** What a trait is given for a visit. */
-export interface RoomTraitContext {
+export interface RoomTraitContext extends RoomTraitEffects {
   /** The room visited. */
   room: RoomId;
 }
@@ -71,6 +90,7 @@ export function defineRoomTrait<const Id extends string>(
  */
 export function createRoomTraitHost(
   definitions: Readonly<Record<string, RoomTraitDefinition>>,
+  effects: RoomTraitEffects,
 ) {
   let visits: RoomTraitVisit[] = [];
   let current: RoomId | null = null;
@@ -89,7 +109,7 @@ export function createRoomTraitHost(
           throw new Error(`Room ${room}: unknown room trait ${use.trait}`);
         return definition.visit(
           { ...definition.defaults, ...use.config },
-          { room },
+          { room, emit: effects.emit },
         );
       });
     },

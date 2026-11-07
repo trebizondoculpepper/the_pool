@@ -6,7 +6,7 @@ import type { RoomTraitDefinition } from '../room-trait';
  * test fails if it and the directory disagree. None yet: the first is the
  * timed-events work (#104, #105).
  */
-export const ROOM_TRAIT_IDS = [] as const;
+export const ROOM_TRAIT_IDS = ['timed-events'] as const;
 
 /** Each trait file's default export, by path. */
 export const ROOM_TRAIT_FILES: Record<
