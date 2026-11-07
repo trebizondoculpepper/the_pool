@@ -2,6 +2,18 @@ import { describe, expect, it } from 'vite-plus/test';
 import { createPhoneInbox, createPhoneMenu } from './phone-menu';
 
 describe('the phone inbox', () => {
+  it('announces only live deliveries to current subscribers', () => {
+    const inbox = createPhoneInbox([{ from: 'Plant', text: 'Sample' }]);
+    const heard: string[] = [];
+    const unsubscribe = inbox.subscribe((message) => heard.push(message.text));
+    expect(heard).toEqual([]);
+    inbox.receive('Plant', 'First live report');
+    expect(heard).toEqual(['First live report']);
+    unsubscribe();
+    inbox.receive('Plant', 'Later report');
+    expect(heard).toEqual(['First live report']);
+  });
+
   it('shows the four main sections and resets there on each raise', () => {
     const menu = createPhoneMenu(createPhoneInbox());
     expect(menu.frame().rows).toEqual(['Phone', 'Messages', 'Media', 'Radio']);
