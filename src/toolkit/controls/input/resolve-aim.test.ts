@@ -216,3 +216,29 @@ describe('a use’s own reach (mission 161; the owner, 2026-11-06)', () => {
     expect(resolve(scene, camera)?.registration?.object).toBe(knob);
   });
 });
+
+describe('an unregistered hit (ahnaa_dmitrieva’s review of PR #46)', () => {
+  it('keeps its cached entry from probe to probe, with no new allocation', () => {
+    const { scene, camera, inFrontOf } = fixture();
+    inFrontOf(); // a wall: registered nowhere
+    const ray = new Raycaster();
+    const pointer = new Vector2();
+    const cache = aimCache();
+    const probe = () =>
+      resolveAim({
+        scene,
+        camera,
+        metre: 1,
+        x: 0,
+        y: 0,
+        reach: 4,
+        now: 0,
+        ray,
+        pointer,
+        cache,
+      });
+    const first = probe();
+    expect(first?.registration).toBeNull();
+    expect(probe()).toBe(first);
+  });
+});

@@ -779,7 +779,10 @@ export function createFirstPerson(options: FirstPersonOptions) {
     now: number,
   ) => {
     const found = resolveAim(x, y, reach, now);
-    if (!found || !found.registration) return null;
+    if (!found) return null;
+    // A declared seat answers as a use, as its click sits the walker (the
+    // same `seatOfHit` test as the click's).
+    if (!found.registration) return seatOfHit(found.hit) ? PLAIN_USE : null;
     return found.registration.usable({
       object: found.registration.object,
       hit: found.hit,

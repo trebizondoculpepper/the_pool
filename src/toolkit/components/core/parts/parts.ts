@@ -138,6 +138,37 @@ interface Common {
 }
 
 /**
+ * Register every use in `uses` with the one resolver (mission 161): `set`
+ * registers it with the plain answer, which keeps any specific answer the
+ * object has (a part's cue, a knob's turn), whichever came first; setting
+ * it again replaces the registration; `delete` unregisters it. Returns the
+ * undoing of all of them, for a dispose. One rule for a part's uses and a
+ * room's part set alike.
+ */
+export function registerUses(
+  uses: Map<Object3D, (direction?: number) => void>,
+) {
+  const registered = new Map<Object3D, () => void>();
+  const setUse = uses.set.bind(uses);
+  const deleteUse = uses.delete.bind(uses);
+  uses.set = (on: Object3D, work: (direction?: number) => void) => {
+    setUse(on, work);
+    registered.get(on)?.();
+    registered.set(on, registerPartUse(on, plainUsable, work));
+    return uses;
+  };
+  uses.delete = (on: Object3D) => {
+    registered.get(on)?.();
+    registered.delete(on);
+    return deleteUse(on);
+  };
+  return () => {
+    for (const undo of registered.values()) undo();
+    registered.clear();
+  };
+}
+
+/**
  * A part's plumbing: its group, uses, updates, and its sounds. Parts in
  * other files (`building-parts.ts`) are built on it too.
  */
@@ -157,34 +188,9 @@ export function beginPart(kit: PanelKit, name: string) {
   const listeners = new Set<(event: PartEvent, name: string) => void>();
   const disposers: (() => void)[] = [];
   const audible = signal(true);
-  /**
-   * Register a use on `on` as the shared registration (mission 161): the
-   * object runs `work` on a click, with hit-point direction and touch
-   * preserved (`registerPartUse`), and answers `usable` when one is given.
-   * Every `uses.set` registers this way, so a use works through the one
-   * resolver even where a room no longer passes `use`; a part's `cue` then
-   * upgrades the plain answer to the real one on the same object.
-   */
-  const register = (
-    on: Object3D,
-    usable: Usable,
-    work?: (d?: number) => void,
-  ) =>
-    disposers.push(
-      work ? registerPartUse(on, usable, work) : markAnswer(on, usable),
-    );
-  /**
-   * Every `uses.set` also registers the use (mission 161) with a plain
-   * answer, so it works through the one resolver even where a room no
-   * longer passes `use`; the part's `cue` then upgrades the answer on the
-   * same object (it re-registers with `uses.get(on)`).
-   */
-  const setUse = uses.set.bind(uses);
-  uses.set = (on: Object3D, work: (direction?: number) => void) => {
-    setUse(on, work);
-    register(on, plainUsable, work);
-    return uses;
-  };
+  // Every use set on the part is registered with the one resolver
+  // (mission 161), undone when it is set again, deleted or disposed.
+  disposers.push(registerUses(uses));
   return {
     object,
     uses,
@@ -234,7 +240,7 @@ export function beginPart(kit: PanelKit, name: string) {
      * hit known.
      */
     cue(on: Object3D, usable: Usable) {
-      register(on, usable, uses.get(on));
+      disposers.push(markAnswer(on, usable));
     },
     /** What can be seen of it now, for the information overlay (prompt 068). */
     shows(what: () => string | undefined) {
@@ -1564,23 +1570,8 @@ export function createPartSet() {
   const listeners = new Set<(event: PartEvent, name: string) => void>();
   // Every use in the set is registered with the one resolver (mission 161),
   // those a room or a machine sets on the set directly too (a desk's PC,
-  // a pipework valve's chain, an isolator's handle), not only a part's:
-  // with the plain answer, which keeps a part's own cue whichever came
-  // first. Each registration is undone when its use is taken away.
-  const registered = new Map<Object3D, () => void>();
-  const setUse = uses.set.bind(uses);
-  const deleteUse = uses.delete.bind(uses);
-  uses.set = (on: Object3D, work: (direction?: number) => void) => {
-    setUse(on, work);
-    registered.get(on)?.();
-    registered.set(on, registerPartUse(on, plainUsable, work));
-    return uses;
-  };
-  uses.delete = (on: Object3D) => {
-    registered.get(on)?.();
-    registered.delete(on);
-    return deleteUse(on);
-  };
+  // a pipework valve's chain, an isolator's handle), not only a part's.
+  const unregister = registerUses(uses);
   return {
     uses,
     add<P extends Part>(part: P): P {
@@ -1611,8 +1602,7 @@ export function createPartSet() {
       return () => listeners.delete(listener);
     },
     dispose() {
-      for (const undo of registered.values()) undo();
-      registered.clear();
+      unregister();
       for (const part of parts) part.dispose();
       listeners.clear();
     },

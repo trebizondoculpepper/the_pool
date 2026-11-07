@@ -182,3 +182,29 @@ describe('the CM6 jog dial: cap pushes, rim turns, LB/RB turn it anywhere', () =
     expect(events).toEqual(['turn -1', 'turn 1']);
   });
 });
+
+describe('undoing registrations (ahnaa_dmitrieva’s review of PR #46)', () => {
+  it('unmarking an answer over a registered use leaves the plain answer, and the use working', () => {
+    const part = beginPart(createPanelKit(), 'test');
+    const on = new Group();
+    let ran = 0;
+    part.uses.set(on, () => ran++);
+    const unmark = markAnswer(on, () => SPECIFIC);
+    unmark();
+    expect(answerOf(on)?.gesture).toBe('use');
+    click(on);
+    expect(ran).toBe(1);
+  });
+
+  it('a part’s use set again replaces the old one; deleted, it is no longer clickable', () => {
+    const part = beginPart(createPanelKit(), 'test');
+    const on = new Group();
+    const ran: string[] = [];
+    part.uses.set(on, () => ran.push('old'));
+    part.uses.set(on, () => ran.push('new'));
+    click(on);
+    expect(ran).toEqual(['new']);
+    part.uses.delete(on);
+    expect(useRegistrationOf(on)).toBeNull();
+  });
+});

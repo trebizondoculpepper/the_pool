@@ -163,12 +163,16 @@ export const plainUsable: Usable = () => PLAIN_USE;
  * Mark what a use on `object` would do (its cue's answer), keeping the
  * action it already has (mission 161; the owner, 2026-11-06: a specific
  * answer beats the plain one whichever is registered first). Returns the
- * unmarking, which takes away only this answer.
+ * unmarking, which takes away only this answer: a use still registered
+ * there falls back to the plain answer, never to none.
  */
 export function markAnswer(object: Object3D, usable: Usable) {
   object.userData.usable = usable;
   return () => {
-    if (object.userData.usable === usable) delete object.userData.usable;
+    if (object.userData.usable !== usable) return;
+    // A use still registered there keeps working, with the plain answer.
+    if (object.userData.useAction) object.userData.usable = plainUsable;
+    else delete object.userData.usable;
   };
 }
 

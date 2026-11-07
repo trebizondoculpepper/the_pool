@@ -148,6 +148,9 @@ export function resolveAim(options: AimOptions): AimResolution | null {
   )
     return null;
   if (!registration) {
+    // Still registered nowhere (a wall, a seat): the cached entry stands,
+    // with no allocation on every probe.
+    if (found.registration === null) return found;
     cache.found = {
       hit: found.hit,
       registration: null,
