@@ -10,15 +10,15 @@ Every registered kind's traits decide, in every room, whether it blocks the walk
 
 ## What is already done (checked 2026-11-05 at `74424dd1`)
 
-- **Tops things rest on** come from traits in every room: `RoomTraits.supports` (`gallery/views/room-traits.ts`), derived from `derived-surfaces.ts` (rays down on the body, or the bounds model's tops, 208 stage 1), merged by `createRoomController` with any room supports.
+- **Tops things rest on** come from traits in every room: `RoomObjectTraits.supports` (`gallery/views/room-object-traits.ts`), derived from `derived-surfaces.ts` (rays down on the body, or the bounds model's tops, 208 stage 1), merged by `createRoomController` with any room supports.
 - **Tops the walker stands on** are derived (walkable kinds) in only two starters, `plant-room.ts` and `plant-room-shell-room.ts`, through `roomSurfaces`; the other rooms with raised floors (`tank-hall-room`, `pool-room`, `shell-room`, `pool-hall-room` and others: 22 sources pass `floorAt`) still give their own. `no-special-surface-rules.test.ts` already forbids marker meshes and named lookups.
 - **What blocks the walker** is still each room's `solids` footprints (`controls/logic/walk-collision.ts`: 2D `Footprint`, `slide`). Nothing derives a solid from a kind yet; that is 208 stage 2.
 - **What stops a carried thing** is the room's `carrySolids` (three rooms), and 211's throw rebounds off the walker's `solids`.
 
 ## Approach
 
-1. **After 208 stage 2:** add `RoomTraits.solids(root, metre)` beside `supports`: each placed solid object's collision shape from its bounds model (or fitted box), cut to the walker's height band (so overhead pipework and a tank top the walker stands on do not block), as walk footprints. The factory merges them with the room's fabric solids, as it does supports.
-2. **Walkable tops everywhere:** move `roomSurfaces`' walkable tops into the factory (`RoomTraits.floors`), so every room's `floorAt` includes them, with the 1 m edge rule at their unladdered edges; remove the two starters' private wiring.
+1. **After 208 stage 2:** add `RoomObjectTraits.solids(root, metre)` beside `supports`: each placed solid object's collision shape from its bounds model (or fitted box), cut to the walker's height band (so overhead pipework and a tank top the walker stands on do not block), as walk footprints. The factory merges them with the room's fabric solids, as it does supports.
+2. **Walkable tops everywhere:** move `roomSurfaces`' walkable tops into the factory (`RoomObjectTraits.floors`), so every room's `floorAt` includes them, with the 1 m edge rule at their unladdered edges; remove the two starters' private wiring.
 3. **Migrate the rooms in batches:** for each room, delete the footprints and floor patches its registered equipment now provides, keeping fabric and doorway cuts; check by walking it (a test per batch comparing the old and new footprints where practical).
 4. **Carried things and throws** take the same derived solids (`carrySolids` and 211's rebounds), so a box cannot be pushed into a boiler's side.
 
@@ -41,7 +41,7 @@ None of its own: the open questions are 208's (extend the `form` facet or add a 
 
 ## Coordination
 
-- Waits for 208 stage 2 (ahnaa_dmitrieva did stage 1; check who takes stage 2). Touches `room-traits.ts`, `room-controller.ts` (sayuri_shantian holds it for 161, 2026-11-05), `walk-collision.ts`, `derived-surfaces.ts` and the room starters: claim on the mailbox, migrate in visible batches.
+- Waits for 208 stage 2 (ahnaa_dmitrieva did stage 1; check who takes stage 2). Touches `room-object-traits.ts`, `room-controller.ts` (sayuri_shantian holds it for 161, 2026-11-05), `walk-collision.ts`, `derived-surfaces.ts` and the room starters: claim on the mailbox, migrate in visible batches.
 - No `WORLD_VERSION` change.
 
 ## Records

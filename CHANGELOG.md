@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- A room registry (#102): every room is one typed declaration in `src/game/rooms/declarations/`, naming how it is built, and the game routes rooms from it, so `main.ts` no longer tests room ids (its 140-line chain is gone). Rooms can declare room traits, set up for each visit and stepped by world time; none exist yet.
 - Live phone inbox deliveries now play an original three-note handset alert through the existing master-volume audio bus; seeded sample texts stay silent (#80).
 - Subtle six-axis drift and walking sway for the raised phone, with a steady pose when reduced motion is preferred (#81).
 - The phone's Messages route now uses a single highlighted vertical list, restores selection on back, and scrolls long texts at the colour-matrix display's true line width (#78).
@@ -54,6 +55,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Changed
 
+- The object-trait projector is renamed `room-object-traits.ts` (`roomObjectTraits`, `RoomObjectTraits`), so room traits and object traits have distinct names (#102).
 - The raised phone now leaves walking and looking active while blocking world use. Arrow keys, Enter and Backspace navigate it on keyboard, gamepad sticks keep moving and looking while the D-pad and A/B navigate, and touch taps on the handset's projected screen and keys open its menus (#76).
 - The handset display now draws a 128 × 128 colour-matrix image with an original bitmap-style alphabet, RGB444 palette, crisp nearest-neighbour enlargement and a faint fixed pixel grid; it uses distinct menu icons, wraps message words to its bitmap line width, keeps one Navi action label and redraws only when the visible phone frame changes (#77).
 

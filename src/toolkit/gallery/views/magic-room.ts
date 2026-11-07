@@ -27,7 +27,7 @@ import {
   useEnvironment,
 } from '../../components/core/parts/render-style';
 import { createRoomController } from '../../controls/input/room-controller';
-import { installRoomTraits } from './room-traits';
+import { installRoomObjectTraits } from './room-object-traits';
 import { boundsModelFor } from './derived-surfaces';
 import {
   boundsModelOf,
@@ -517,7 +517,7 @@ export function runMagicRoom(root: HTMLElement) {
       maxZ: s.maxZ * m,
     })),
   ];
-  installRoomTraits(); // the registry's carrying traits (189, 181)
+  installRoomObjectTraits(); // the registry's carrying traits (189, 181)
   installRoomInspector(); // the information overlay, for every room (160)
   const walk = createRoomController({
     scene,
