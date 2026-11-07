@@ -1,7 +1,14 @@
 import { describe, expect, it } from 'vite-plus/test';
 import { ROOMS } from '../../toolkit/gallery/logic/dev-room-links';
+import type { RoomId } from '../../toolkit/gallery/logic/dev-room-links';
 import { ROOM_IDS } from './declarations/index';
-import { ROOM_REGISTRY, registryProblems, worldRoomOf } from './registry';
+import { createRoomTraitHost } from './room-trait';
+import {
+  ROOM_REGISTRY,
+  ROOM_TRAITS,
+  registryProblems,
+  worldRoomOf,
+} from './registry';
 
 describe('the room registry (#102)', () => {
   it('is sound: index and files agree, ids match, shared worlds resolve', () => {
@@ -49,5 +56,12 @@ describe('the room registry (#102)', () => {
   it('names a builder for every room', () => {
     for (const room of Object.values(ROOM_REGISTRY))
       expect(['module', 'plant-hall-shell']).toContain(room.build.kind);
+  });
+
+  it('can install every room’s declared traits before play', () => {
+    const host = createRoomTraitHost(ROOM_TRAITS, { emit: () => {} });
+    for (const [id, room] of Object.entries(ROOM_REGISTRY))
+      expect(() => host.enter(id as RoomId, room.traits), id).not.toThrow();
+    host.leave();
   });
 });

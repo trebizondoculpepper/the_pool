@@ -9,14 +9,19 @@ function probe() {
     reason: 'test only',
     defaults: { label: 'default', rate: 1 },
     visit(config, { room }) {
-      log.push(`enter ${room} ${String(config.label)} ${String(config.rate)}`);
+      const label = typeof config.label === 'string' ? config.label : '?';
+      const rate = typeof config.rate === 'number' ? config.rate : 0;
+      log.push(`enter ${room} ${label} ${rate}`);
       return {
         step: (dt) => log.push(`step ${room} ${dt}`),
         dispose: () => log.push(`leave ${room}`),
       };
     },
   });
-  return { log, host: createRoomTraitHost({ probe: trait }) };
+  return {
+    log,
+    host: createRoomTraitHost({ probe: trait }, { emit: () => {} }),
+  };
 }
 
 describe('room traits, per visit (#102)', () => {
