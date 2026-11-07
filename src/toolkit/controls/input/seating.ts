@@ -22,6 +22,21 @@ export const seatDeclared = (object: Object3D) =>
   (object.userData.seat as SeatDeclaration | undefined) ?? null;
 
 /**
+ * The chair a thing the aim met belongs to, and its declared seat, or
+ * null (mission 161, step 2's resolver). The click and the cue both walk
+ * the same ancestors, so they can never disagree about what is a seat.
+ */
+export function seatOfHit(
+  object: Object3D,
+): { chair: Object3D; seat: SeatDeclaration } | null {
+  for (let o: Object3D | null = object; o; o = o.parent) {
+    const seat = seatDeclared(o);
+    if (seat) return { chair: o, seat };
+  }
+  return null;
+}
+
+/**
  * Where a walker sits on `chair`, in the scene's units: from its world
  * placement and its declared seat (its console's point, if any, in its
  * parent's frame).

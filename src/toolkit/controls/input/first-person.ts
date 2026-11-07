@@ -60,6 +60,7 @@ import {
   resolveAim as sharedResolveAim,
   clickOutcome,
 } from './resolve-aim';
+import { seatOf, seatOfHit } from './seating';
 import {
   PLAIN_USE,
   cuePlace,
@@ -402,6 +403,30 @@ export function createFirstPerson(options: FirstPersonOptions) {
         options.onLetGo,
       )
     : null;
+  /**
+   * Sit down (a chair's use, `logic/seat.ts`): the eye at `pose`, in scene
+   * units, until a change of stance or a step stands the walker up again
+   * where it stood. Looking about and using things in reach keep it
+   * seated; nothing pushes it out of the chair meanwhile. The click's seat
+   * step (`seating.ts`) and the controller's `sit` both come here.
+   */
+  const sitDown = (pose: SeatPose) => {
+    if (flying || holding) return;
+    if (!seated) seated = { from: { x: walker.x, z: walker.z } };
+    attachedLadder = null;
+    mounting = null;
+    walker.x = pose.x;
+    walker.z = pose.z;
+    walker.yaw = pose.yaw;
+    walker.pitch = clampPitch(pose.pitch);
+    currentFloorY = options.floorAt?.(pose.x, pose.z, currentFloorY) ?? floorY;
+    smoothedFloorY = currentFloorY;
+    walker.eyeOffset = pose.eyeY - eyeY();
+    walker.crouched = walker.lowCrouched = false;
+    walker.crouch = 0;
+    nudge.forward = nudge.right = 0;
+    sticks?.reset();
+  };
   const use = (x: number, y: number) => {
     if (phoneRaised) {
       const found = phoneView.resolveAt(x, y);
@@ -510,6 +535,15 @@ export function createFirstPerson(options: FirstPersonOptions) {
       );
       const registered = found?.registration;
       if (!registered || !registered.action) {
+        // No registered action: a hit on a declared seat sits the walker
+        // there (the seating system's own use, `seating.ts`); a hit
+        // registered nowhere else falls to the room's own `use` (still
+        // accepted, deprecated, while the rooms migrate).
+        const seat = found?.hit ? seatOfHit(found.hit) : null;
+        if (seat) {
+          sitDown(seatOf(seat.chair, seat.seat));
+          return;
+        }
         options.use?.(x, y);
       } else {
         const at: UseQuery = {
@@ -742,7 +776,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
     now: number,
   ) => {
     const found = resolveAim(x, y, reach, now);
-    if (!found) return null;
+    if (!found || !found.registration) return null;
     return found.registration.usable({
       object: found.registration.object,
       hit: found.hit,
@@ -1807,22 +1841,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
      * keep it seated; nothing pushes it out of the chair meanwhile.
      */
     sit(pose: SeatPose) {
-      if (flying || holding) return;
-      if (!seated) seated = { from: { x: walker.x, z: walker.z } };
-      attachedLadder = null;
-      mounting = null;
-      walker.x = pose.x;
-      walker.z = pose.z;
-      walker.yaw = pose.yaw;
-      walker.pitch = clampPitch(pose.pitch);
-      currentFloorY =
-        options.floorAt?.(pose.x, pose.z, currentFloorY) ?? floorY;
-      smoothedFloorY = currentFloorY;
-      walker.eyeOffset = pose.eyeY - eyeY();
-      walker.crouched = walker.lowCrouched = false;
-      walker.crouch = 0;
-      nudge.forward = nudge.right = 0;
-      sticks?.reset();
+      sitDown(pose);
     },
     /** Stand up from a chair, where the walker sat down from. */
     stand,
