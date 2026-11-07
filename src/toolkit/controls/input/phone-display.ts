@@ -1,106 +1,189 @@
-import { CanvasTexture, SRGBColorSpace } from 'three';
+import {
+  CanvasTexture,
+  LinearFilter,
+  NearestFilter,
+  SRGBColorSpace,
+} from 'three';
 import type { PhoneFrame } from '../logic/phone-menu';
+import { phoneGlyph } from '../logic/phone-font';
+import { quantiseRgb444 } from '../logic/phone-colour';
+import {
+  PHONE_FOOTER_TOP,
+  PHONE_LIST_ROW_HEIGHT,
+  PHONE_LIST_TOP,
+  PHONE_LIST_VISIBLE_ROWS,
+  PHONE_LOGICAL_SIZE as LOGICAL,
+  PHONE_MAIN_TILES,
+  PHONE_TEXTURE_SIZE as TEXTURE,
+  phoneListStart,
+} from '../logic/phone-layout';
 
-const SIZE = 512;
-const BLUE = '#174f90';
-const DARK = '#143252';
-const YELLOW = '#f3cc40';
-const PAPER = '#e6ecdc';
+const PAPER = '#c7d3c7';
+const BLUE = '#345a8a';
+const INK = '#172e4b';
+const LIGHT = '#e6e9d8';
+const HIGHLIGHT = '#d8bb68';
 
-/** One texture upload per visible menu change, never one per world frame. */
+function bitmapText(
+  ctx: CanvasRenderingContext2D,
+  value: string,
+  x: number,
+  y: number,
+  maxChars = 20,
+  scale = 1,
+) {
+  const shown =
+    value.length > maxChars ? value.slice(0, maxChars - 2) + '..' : value;
+  for (const [index, char] of [...shown].entries()) {
+    const rows = phoneGlyph(char);
+    for (let row = 0; row < 7; row++)
+      for (let column = 0; column < 5; column++)
+        if (rows[row] & (1 << (4 - column)))
+          ctx.fillRect(
+            x + index * 6 * scale + column * scale,
+            y + row * scale,
+            scale,
+            scale,
+          );
+  }
+}
+
+function menuIcon(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+) {
+  ctx.fillStyle = INK;
+  if (name === 'Phone') {
+    ctx.fillRect(x + 2, y + 2, 4, 5);
+    ctx.fillRect(x + 14, y + 2, 4, 5);
+    ctx.fillRect(x + 4, y + 6, 3, 7);
+    ctx.fillRect(x + 13, y + 6, 3, 7);
+    ctx.fillRect(x + 6, y + 12, 8, 3);
+  } else if (name === 'Messages') {
+    ctx.fillRect(x + 1, y + 2, 18, 2);
+    ctx.fillRect(x + 1, y + 4, 2, 11);
+    ctx.fillRect(x + 17, y + 4, 2, 11);
+    ctx.fillRect(x + 3, y + 15, 14, 2);
+    for (let step = 0; step < 6; step++) {
+      ctx.fillRect(x + 3 + step, y + 4 + step, 1, 1);
+      ctx.fillRect(x + 16 - step, y + 4 + step, 1, 1);
+    }
+  } else if (name === 'Media') {
+    for (let row = 0; row < 15; row++) {
+      const width = 9 - Math.abs(row - 7);
+      ctx.fillRect(x + 5, y + 1 + row, width, 1);
+    }
+  } else {
+    ctx.fillRect(x + 2, y + 6, 17, 11);
+    ctx.fillRect(x + 4, y + 8, 9, 2);
+    ctx.fillRect(x + 4, y + 12, 9, 2);
+    ctx.fillRect(x + 15, y + 10, 2, 2);
+    for (let step = 0; step < 6; step++)
+      ctx.fillRect(x + 2 + step, y + 6 - step, 1, 1);
+  }
+}
+
+/** A 128-square colour STN-style picture, enlarged without filtering. */
 export function createPhoneDisplay() {
   const canvas = document.createElement('canvas');
-  canvas.width = canvas.height = SIZE;
+  canvas.width = canvas.height = TEXTURE;
+  const logical = document.createElement('canvas');
+  logical.width = logical.height = LOGICAL;
   const ctx = canvas.getContext('2d');
+  const lcd = logical.getContext('2d', { willReadFrequently: true });
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
+  texture.magFilter = NearestFilter;
+  // The handset is magnified on desktop but minified inside a narrow canvas.
+  // Linear minification keeps entire bitmap rows from vanishing in portrait.
+  texture.minFilter = LinearFilter;
+  texture.generateMipmaps = false;
   let drawn = '';
 
-  const text = (value: string, x: number, y: number, maxWidth = 450) => {
-    if (!ctx) return;
-    let shown = value;
-    while (shown.length && ctx.measureText(shown).width > maxWidth)
-      shown = `${shown.slice(0, -2)}…`;
-    ctx.fillText(shown, x, y);
-  };
   const show = (frame: PhoneFrame) => {
     const key = JSON.stringify(frame);
     if (key === drawn) return;
     drawn = key;
-    if (!ctx) return;
-    ctx.fillStyle = PAPER;
-    ctx.fillRect(0, 0, SIZE, SIZE);
-    ctx.fillStyle = DARK;
-    ctx.fillRect(0, 0, SIZE, 48);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 29px sans-serif';
-    text('POOL PLANT', 18, 33);
-    ctx.textAlign = 'right';
-    text('▮▮▮', SIZE - 16, 33);
-    ctx.textAlign = 'left';
-    ctx.fillStyle = BLUE;
-    ctx.fillRect(0, 48, SIZE, 61);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 43px sans-serif';
-    text(frame.title, 22, 91);
+    if (!ctx || !lcd) return;
+    lcd.fillStyle = PAPER;
+    lcd.fillRect(0, 0, LOGICAL, LOGICAL);
+
+    lcd.fillStyle = INK;
+    lcd.fillRect(0, 0, LOGICAL, 12);
+    lcd.fillStyle = LIGHT;
+    bitmapText(lcd, 'POOL PLANT', 4, 2, 18);
+    for (let index = 0; index < 3; index++)
+      lcd.fillRect(108 + index * 5, 8 - index * 2, 3, 3 + index * 2);
+
+    lcd.fillStyle = BLUE;
+    lcd.fillRect(0, 12, LOGICAL, 17);
+    lcd.fillStyle = LIGHT;
+    bitmapText(lcd, frame.title, 4, 17, 19);
 
     if (frame.page === 'main') {
-      const icons = ['☎', '✉', '▶', '◉'];
       frame.rows.forEach((row, index) => {
-        const x = 20 + (index % 2) * 244;
-        const y = 125 + Math.floor(index / 2) * 158;
-        ctx.fillStyle = index === frame.selected ? YELLOW : '#f5f6ea';
-        ctx.fillRect(x, y, 228, 145);
-        ctx.strokeStyle = index === frame.selected ? DARK : '#8fa4a8';
-        ctx.lineWidth = index === frame.selected ? 5 : 2;
-        ctx.strokeRect(x + 2, y + 2, 224, 141);
-        ctx.fillStyle = DARK;
-        ctx.textAlign = 'center';
-        ctx.font = 'bold 75px sans-serif';
-        ctx.fillText(icons[index], x + 114, y + 78);
-        ctx.font = 'bold 36px sans-serif';
-        ctx.fillText(row, x + 114, y + 120);
+        const { x, y } = PHONE_MAIN_TILES[index];
+        lcd.fillStyle = index === frame.selected ? HIGHLIGHT : LIGHT;
+        lcd.fillRect(x, y, 60, 37);
+        lcd.strokeStyle = index === frame.selected ? INK : BLUE;
+        lcd.strokeRect(x + 0.5, y + 0.5, 59, 36);
+        lcd.fillStyle = INK;
+        menuIcon(lcd, row, x + 20, y + 4);
+        bitmapText(lcd, row, x + 6, y + 27, 8);
         if (row === 'Messages' && frame.unread) {
-          ctx.fillStyle = '#bc2828';
-          ctx.beginPath();
-          ctx.arc(x + 199, y + 23, 19, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 22px sans-serif';
-          ctx.fillText(String(frame.unread), x + 199, y + 31);
+          lcd.fillStyle = '#b33b36';
+          lcd.fillRect(x + 51, y + 4, 5, 5);
         }
       });
-      ctx.textAlign = 'left';
     } else if (frame.page === 'message' || frame.page === 'placeholder') {
-      ctx.fillStyle = DARK;
-      ctx.font = '38px sans-serif';
-      frame.body.forEach((line, index) => text(line, 25, 164 + index * 66));
+      lcd.fillStyle = INK;
+      frame.body
+        .slice(0, 8)
+        .forEach((line, index) =>
+          bitmapText(lcd, line, 5, 33 + index * 10, 19),
+        );
       if (frame.page === 'message' && frame.scroll)
-        text('▲', SIZE - 55, 452, 30);
+        bitmapText(lcd, '▲', 118, 103, 1);
     } else {
-      const start = Math.max(
-        0,
-        Math.min(frame.selected - 3, frame.rows.length - 4),
-      );
-      frame.rows.slice(start, start + 4).forEach((row, index) => {
-        const y = 123 + index * 79;
-        if (start + index === frame.selected) {
-          ctx.fillStyle = BLUE;
-          ctx.fillRect(14, y, SIZE - 28, 72);
-          ctx.fillStyle = '#ffffff';
-        } else ctx.fillStyle = DARK;
-        ctx.font = 'bold 39px sans-serif';
-        text(row, 27, y + 48, SIZE - 55);
-      });
+      const start = phoneListStart(frame.selected, frame.rows.length);
+      frame.rows
+        .slice(start, start + PHONE_LIST_VISIBLE_ROWS)
+        .forEach((row, index) => {
+          const y = PHONE_LIST_TOP + index * PHONE_LIST_ROW_HEIGHT;
+          if (start + index === frame.selected) {
+            lcd.fillStyle = BLUE;
+            lcd.fillRect(3, y - 2, 122, 14);
+            lcd.fillStyle = LIGHT;
+          } else lcd.fillStyle = INK;
+          bitmapText(lcd, row, 5, y + 1, 19);
+        });
     }
-    ctx.fillStyle = BLUE;
-    ctx.fillRect(0, 449, SIZE, 63);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 34px sans-serif';
-    text('Back', 20, 490, 100);
-    ctx.textAlign = 'right';
-    text(frame.page === 'message' ? 'Scroll' : 'Open', SIZE - 20, 490, 120);
-    ctx.textAlign = 'left';
+
+    lcd.fillStyle = BLUE;
+    lcd.fillRect(0, PHONE_FOOTER_TOP, LOGICAL, LOGICAL - PHONE_FOOTER_TOP);
+    const navi =
+      frame.page === 'message' || frame.page === 'placeholder'
+        ? ''
+        : frame.page === 'main'
+          ? 'SELECT'
+          : 'OPEN';
+    lcd.fillStyle = LIGHT;
+    bitmapText(lcd, navi, (LOGICAL - navi.length * 6) / 2, 117, 12);
+
+    const pixels = lcd.getImageData(0, 0, LOGICAL, LOGICAL);
+    quantiseRgb444(pixels.data);
+    lcd.putImageData(pixels, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(logical, 0, 0, TEXTURE, TEXTURE);
+    ctx.fillStyle = 'rgba(20, 34, 50, 0.035)';
+    for (let at = 0; at < TEXTURE; at += 4) {
+      ctx.fillRect(at, 0, 1, TEXTURE);
+      ctx.fillRect(0, at, TEXTURE, 1);
+    }
+    ctx.fillStyle = 'rgba(197, 218, 194, 0.045)';
+    ctx.fillRect(0, 0, TEXTURE, TEXTURE);
     texture.needsUpdate = true;
   };
   return { texture, show, dispose: () => texture.dispose() };

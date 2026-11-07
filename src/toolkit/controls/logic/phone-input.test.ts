@@ -20,12 +20,13 @@ describe('raised phone input', () => {
       createPhoneInbox([{ from: 'Plant', text: 'Pump report' }]),
     );
     expect(phoneDisplayTouch(menu.frame(), 380, 190)).toEqual({ index: 1 });
+    expect(phoneDisplayTouch(menu.frame(), 256, 190)).toBeNull();
     menu.tap(1);
     expect(phoneDisplayTouch(menu.frame(), 200, 150)).toEqual({ index: 0 });
     menu.tap(0);
     expect(phoneDisplayTouch(menu.frame(), 200, 150)).toEqual({ index: 0 });
     expect(phoneDisplayTouch(menu.frame(), 200, 470)).toEqual({
-      action: 'back',
+      action: 'select',
     });
     expect(phoneDisplayTouch(menu.frame(), 600, 150)).toBeNull();
   });

@@ -1,7 +1,18 @@
 import type { PhoneAction, PhoneFrame } from './phone-menu';
+import {
+  PHONE_FOOTER_TOP,
+  PHONE_LIST_ROW_HEIGHT,
+  PHONE_LIST_TOP,
+  PHONE_LIST_VISIBLE_ROWS,
+  PHONE_LOGICAL_SIZE,
+  PHONE_MAIN_TILES,
+  PHONE_PIXEL_SCALE,
+  PHONE_TEXTURE_SIZE,
+  phoneListStart,
+} from './phone-layout';
 
 export type PhoneTouch = { action: PhoneAction } | { index: number };
-export const PHONE_TEXTURE_SIZE = 512;
+export { PHONE_TEXTURE_SIZE } from './phone-layout';
 
 export function phoneKeyAction(code: string): PhoneAction | null {
   if (code === 'ArrowUp') return 'up';
@@ -12,7 +23,7 @@ export function phoneKeyAction(code: string): PhoneAction | null {
   return null;
 }
 
-/** The live display is drawn in a 512-square texture. */
+/** Resolve a texture pixel against the same 128-square layout the LCD draws. */
 export function phoneDisplayTouch(
   frame: PhoneFrame,
   x: number,
@@ -20,25 +31,31 @@ export function phoneDisplayTouch(
 ): PhoneTouch | null {
   if (x < 0 || x >= PHONE_TEXTURE_SIZE || y < 0 || y >= PHONE_TEXTURE_SIZE)
     return null;
-  if (y >= 449) return { action: x < 256 ? 'back' : 'select' };
-  if (frame.page === 'main' && y >= 125 && y < 428) {
-    const col = x < 256 ? 0 : 1;
-    const row = y < 278 ? 0 : 1;
-    return { index: row * 2 + col };
+  const logicalX = x / PHONE_PIXEL_SCALE;
+  const logicalY = y / PHONE_PIXEL_SCALE;
+  if (logicalY >= PHONE_FOOTER_TOP) return { action: 'select' };
+  if (frame.page === 'main') {
+    const index = PHONE_MAIN_TILES.findIndex(
+      ({ x: left, y: top, w, h }) =>
+        logicalX >= left &&
+        logicalX < left + w &&
+        logicalY >= top &&
+        logicalY < top + h,
+    );
+    return index >= 0 ? { index } : null;
   }
   if (
     (frame.page === 'messages' || frame.page === 'inbox') &&
-    y >= 123 &&
-    y < 439
+    logicalY >= PHONE_LIST_TOP &&
+    logicalY < PHONE_LIST_TOP + PHONE_LIST_ROW_HEIGHT * PHONE_LIST_VISIBLE_ROWS
   ) {
-    const start = Math.max(
-      0,
-      Math.min(frame.selected - 3, frame.rows.length - 4),
-    );
-    const index = start + Math.floor((y - 123) / 79);
+    const start = phoneListStart(frame.selected, frame.rows.length);
+    const index =
+      start + Math.floor((logicalY - PHONE_LIST_TOP) / PHONE_LIST_ROW_HEIGHT);
     return index < frame.rows.length ? { index } : null;
   }
-  if (frame.page === 'message') return { action: y < 278 ? 'up' : 'down' };
+  if (frame.page === 'message')
+    return { action: logicalY < PHONE_LOGICAL_SIZE / 2 ? 'up' : 'down' };
   return null;
 }
 

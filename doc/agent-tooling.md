@@ -19,6 +19,8 @@ A practical guide for agents (and humans) designing or debugging The Pool. The o
 
 ## The bench index
 
+The held phone's colour-matrix texture has a component benchmark candidate at `bench.html?bench=components&only=phone-display`. Its frozen phase should upload nothing; its active phase changes the selected icon every two seconds, exercising the 128 × 128 raster and the 512 × 512 texture upload.
+
 Open `bench.html` on the development server for a searchable tree of every room, thing, brand, simulation node and registered development page (mission 137; [brief](prompts/137-bench-index.md), [plan](plans/137-bench-index.md)). Expand Rooms for a room's enter, audit and look-audit pages and its named contents; Things for item audits (including CAD views), magic rooms, magic pages and placements; Brands for each brand's audit, its kinds and unbranded goods; Simulation for the graph list, each node page and known architectural-object pages. Tools holds the component benchmark, whole look audit and `?dev`.
 
 Search matches tags, names, refs, kinds, asset ids, brands and rooms across the tree. Up and Down move, Right opens a branch or steps through a leaf's extra links (alternate looks, audit rows, "in Things"), Left closes or returns to the row, Home and End jump, and Enter follows the focused link. Open a branch directly with `bench.html#rooms/plant/boiler_house` or the short `#rooms/boiler_house`; `?open=rooms/plant/boiler_house` works too. Open branches and search are remembered locally.
