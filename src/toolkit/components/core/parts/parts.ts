@@ -4,11 +4,11 @@ import { createElectrolyticCapacitorView } from '../../industrial-control/views/
 import type { Attachment } from '../../../controls/logic/drop-profile';
 import { markTurnable } from '../../../controls/input/knob-turning';
 import {
-  markUsable,
+  markAnswer,
+  plainUsable,
   registerPartUse,
 } from '../../../controls/input/use-marking';
 import type { Usable } from '../../../controls/input/use-marking';
-import { PLAIN_USE } from '../../../controls/logic/use-cue';
 import { computed, effect, signal } from '@preact/signals-core';
 import type { ReadonlySignal } from '@preact/signals-core';
 import { BoxGeometry, CylinderGeometry, Group, Mesh } from 'three';
@@ -171,7 +171,7 @@ export function beginPart(kit: PanelKit, name: string) {
     work?: (d?: number) => void,
   ) =>
     disposers.push(
-      work ? registerPartUse(on, usable, work) : markUsable(on, usable),
+      work ? registerPartUse(on, usable, work) : markAnswer(on, usable),
     );
   /**
    * Every `uses.set` also registers the use (mission 161) with a plain
@@ -179,11 +179,10 @@ export function beginPart(kit: PanelKit, name: string) {
    * longer passes `use`; the part's `cue` then upgrades the answer on the
    * same object (it re-registers with `uses.get(on)`).
    */
-  const plain: Usable = () => PLAIN_USE;
   const setUse = uses.set.bind(uses);
   uses.set = (on: Object3D, work: (direction?: number) => void) => {
     setUse(on, work);
-    register(on, plain, work);
+    register(on, plainUsable, work);
     return uses;
   };
   return {
@@ -1563,6 +1562,25 @@ export function createPartSet() {
   const parts: Part[] = [];
   const uses = new Map<Object3D, (direction?: number) => void>();
   const listeners = new Set<(event: PartEvent, name: string) => void>();
+  // Every use in the set is registered with the one resolver (mission 161),
+  // those a room or a machine sets on the set directly too (a desk's PC,
+  // a pipework valve's chain, an isolator's handle), not only a part's:
+  // with the plain answer, which keeps a part's own cue whichever came
+  // first. Each registration is undone when its use is taken away.
+  const registered = new Map<Object3D, () => void>();
+  const setUse = uses.set.bind(uses);
+  const deleteUse = uses.delete.bind(uses);
+  uses.set = (on: Object3D, work: (direction?: number) => void) => {
+    setUse(on, work);
+    registered.get(on)?.();
+    registered.set(on, registerPartUse(on, plainUsable, work));
+    return uses;
+  };
+  uses.delete = (on: Object3D) => {
+    registered.get(on)?.();
+    registered.delete(on);
+    return deleteUse(on);
+  };
   return {
     uses,
     add<P extends Part>(part: P): P {
@@ -1593,6 +1611,8 @@ export function createPartSet() {
       return () => listeners.delete(listener);
     },
     dispose() {
+      for (const undo of registered.values()) undo();
+      registered.clear();
       for (const part of parts) part.dispose();
       listeners.clear();
     },

@@ -2,7 +2,7 @@ import { Vector3 } from 'three';
 import type { Camera, Object3D } from 'three';
 import { turnSense, turnSide } from '../logic/use-cue';
 import type { Turnable } from '../logic/use-cue';
-import { markUsable, turnAt, useActionOf } from './use-marking';
+import { markAnswer, turnAt } from './use-marking';
 
 /**
  * The control scheme's part of turning a knob: which way a use turns the
@@ -70,6 +70,5 @@ export function turnSeen(
  * click it runs live on the same object as one registration.
  */
 export function markTurnable(object: Object3D, turnable: Turnable) {
-  const action = useActionOf(object)?.action;
-  return markUsable(object, (at) => turnAt(at, turnable), action);
+  return markAnswer(object, (at) => turnAt(at, turnable));
 }

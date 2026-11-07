@@ -1,6 +1,6 @@
 import { Vector3 } from 'three';
 import type { Camera, Object3D } from 'three';
-import { knobAnswer } from '../logic/use-cue';
+import { PLAIN_USE, knobAnswer } from '../logic/use-cue';
 import type { Turnable, UseAnswer } from '../logic/use-cue';
 import { touchingAt } from './touch-point';
 import { knobDirection } from './knob-turning';
@@ -129,21 +129,50 @@ export function turnAt(at: UseQuery, knob: Turnable): UseAnswer {
 }
 
 /**
+ * The plain answer (mission 161): a use that says no more than that it
+ * works. A registration with it is a default, never a choice: it keeps any
+ * specific answer the object already has (`registerPartUse`).
+ */
+export const plainUsable: Usable = () => PLAIN_USE;
+
+/**
+ * Mark what a use on `object` would do (its cue's answer), keeping the
+ * action it already has (mission 161; the owner, 2026-11-06: a specific
+ * answer beats the plain one whichever is registered first). Returns the
+ * unmarking, which takes away only this answer.
+ */
+export function markAnswer(object: Object3D, usable: Usable) {
+  object.userData.usable = usable;
+  return () => {
+    if (object.userData.usable === usable) delete object.userData.usable;
+  };
+}
+
+/**
  * Register a component's use as the shared registration (mission 161, the
  * one click handler): `object` (where a use lands) answers `usable` for the
- * cue, and on a click runs `work` — the direction-taking use of a part or
- * machine — with the hit known (`UseQuery.hit`, `point`, `uv`), so a knob
+ * cue, and on a click runs `work`, the direction-taking use of a part or
+ * machine, with the hit known (`UseQuery.hit`, `point`, `uv`), so a knob
  * turns by which half of it is clicked and a touch surface asks where it
- * was touched. One adapter for every part and machine, never per room:
- * this is what replaces the rooms' own `use`/`aimed` walks over
- * `parts.uses` and `machines.useOf`.
+ * was touched. One adapter for every part and machine, never per room.
+ *
+ * The order of registration does not matter (the owner, 2026-11-06): with
+ * `plainUsable` it keeps a specific answer the object already has (a
+ * part's cue, a knob's turn, `markAnswer`), and a specific answer given
+ * later replaces the plain one while keeping this action. Returns the
+ * unregistering, which takes away only what this call put there.
  */
 export function registerPartUse(
   object: Object3D,
   usable: Usable,
   work: (direction?: number) => void,
 ) {
-  return markUsable(object, usable, (at) => {
+  const existing = object.userData.usable as Usable | undefined;
+  const answer =
+    usable === plainUsable && existing && existing !== plainUsable
+      ? existing
+      : usable;
+  const action: UseAction = (at) => {
     touchingAt(
       {
         object: at.hit,
@@ -152,5 +181,12 @@ export function registerPartUse(
       },
       () => work(knobDirection(object, at.point, at.camera)),
     );
-  });
+  };
+  object.userData.usable = answer;
+  object.userData.useAction = action;
+  return () => {
+    if (object.userData.useAction === action) delete object.userData.useAction;
+    if (answer === usable && object.userData.usable === usable)
+      delete object.userData.usable;
+  };
 }
