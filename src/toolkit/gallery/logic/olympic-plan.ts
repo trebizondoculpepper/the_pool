@@ -88,7 +88,8 @@ const SIZE = {
   // Its wall port above it and its detector beside it (mission 118).
   'co2-wall-port': CO2_WALL_PORT_SIZE,
   'co2-detector': CO2_DETECTOR_SIZE,
-  temperatureController: { w: 0.6, d: 0.2, h: 0.5 },
+  // The digital controller's body as drawn (mission 146's placeholder, 430 × 290 × 150 mm), so its conduit meets its top (#63).
+  temperatureController: { w: 0.43, d: 0.15, h: 0.29 },
   // Dev28's Penfold balance tank panel (`BALANCE_PANEL`).
   tankPanel: { w: 0.8, d: 0.25, h: 0.9 },
   // PL2's annunciator (mission 099), the twin of the control room's.
