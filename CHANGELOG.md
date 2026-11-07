@@ -7,6 +7,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 ### Added
 
 - A room registry (#102): every room is one typed declaration in `src/game/rooms/declarations/`, naming how it is built, and the game routes rooms from it, so `main.ts` no longer tests room ids (its 140-line chain is gone). Rooms can declare room traits, set up for each visit and stepped by world time; none exist yet.
+- Game and room timers and a trigger component for scenarios (mission 230, #104): `src/game/triggers/` keeps a game clock and a room clock in simulation seconds (pausing stops both; room entry restarts the room clock) and fires rules on clock conditions, room entry and `all`/`any`/`not` combinations, once or recurring (`every`, `max`, `until`), edge-triggered and reporting only which rules fired.
 - Live phone inbox deliveries now play an original three-note handset alert through the existing master-volume audio bus; seeded sample texts stay silent (#80).
 - Subtle six-axis drift and walking sway for the raised phone, with a steady pose when reduced motion is preferred (#81).
 - The phone's Messages route now uses a single highlighted vertical list, restores selection on back, and scrolls long texts at the colour-matrix display's true line width (#78).
