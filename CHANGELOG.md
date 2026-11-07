@@ -6,6 +6,7 @@ All notable changes to Pool Plant are recorded here. The format follows [Keep a 
 
 ### Added
 
+- The audit command keeps the room registry (#103): `room list`, `room show`, `room register`, `room unregister`, `room trait add|remove` and `room-trait list|show|define|remove` write the room and room-trait files and their indexes; `room <id>` is still the room's audit.
 - A room registry (#102): every room is one typed declaration in `src/game/rooms/declarations/`, naming how it is built, and the game routes rooms from it, so `main.ts` no longer tests room ids (its 140-line chain is gone). Rooms can declare room traits, set up for each visit and stepped by world time; none exist yet.
 - Live phone inbox deliveries now play an original three-note handset alert through the existing master-volume audio bus; seeded sample texts stay silent (#80).
 - Subtle six-axis drift and walking sway for the raised phone, with a steady pose when reduced motion is preferred (#81).
