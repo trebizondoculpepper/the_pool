@@ -10,6 +10,7 @@ An arriving report must be noticeable while the player is walking or working, so
 
 1. Compose an original short alert in code from square-wave tones through the existing `partAudio` sound bus. No recording, generated asset, external licence or MP3 file is needed. Keep the motif distinct from Nokia's melodies and Morse rhythm.
 2. Trigger the alert from the shared phone-inbox receive event. Sample messages that seed the inbox during initialisation are silent. Any later delivery, including mission 215's scripted test messages, invokes the same cue. The room owns only the delivery timing and text.
+   Deliveries within one second share one alert so a batch does not overlap its cues. In development, the app removes its subscription during hot reload. A message received before the browser has unlocked audio may be silent; the inbox still receives it.
 3. Use the existing master volume and mute state in `partAudio`, with no separate phone volume setting. The phone cue plays front-centre from the carried handset, not as a spatial machine sound. No sound logic belongs in `src/toolkit/controls/`.
 4. Keep menu/key feedback optional. If later included, it is a different soft cue driven through an app-layer callback from the shared phone actions; avoid a sound on every directional repeat.
 

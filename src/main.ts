@@ -306,7 +306,11 @@ effect(() => {
   );
   layOutFrame();
 });
-phoneInbox.subscribe(() => {
+let lastPhoneAlertAt = -Infinity;
+const unsubscribePhoneAlert = phoneInbox.subscribe(() => {
+  const now = performance.now();
+  if (now - lastPhoneAlertAt < 1000) return;
+  lastPhoneAlertAt = now;
   partAudio.play(PHONE_MESSAGE_ALERT);
 });
 // The pause menu: Esc once the mouse is free, a gamepad's Start, or the
@@ -2591,6 +2595,7 @@ void openRoom().catch(showError);
 if (import.meta.hot)
   import.meta.hot.dispose(() => {
     revision++;
+    unsubscribePhoneAlert();
     window.clearInterval(positionSaveTimer);
     window.removeEventListener('pagehide', rememberPlayer);
     document.removeEventListener('visibilitychange', saveHiddenPosition);
