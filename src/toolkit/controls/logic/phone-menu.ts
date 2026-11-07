@@ -89,11 +89,17 @@ export function createPhoneMenu(inbox = phoneInbox) {
   let page: PhonePage = 'main';
   let selected = 0;
   let messageId: number | null = null;
+  let inboxSelectionId: number | null = null;
   let placeholder = '';
   let scroll = 0;
   const main = ['Phone', 'Messages', 'Media', 'Radio'];
   const currentMessage = () =>
     inbox.list().find((message) => message.id === messageId) ?? null;
+  const inboxIndex = () =>
+    Math.max(
+      0,
+      inbox.list().findIndex((message) => message.id === inboxSelectionId),
+    );
   const rows = () =>
     page === 'main'
       ? main
@@ -111,10 +117,8 @@ export function createPhoneMenu(inbox = phoneInbox) {
     if (page === 'main') return false;
     if (page === 'message') {
       page = 'inbox';
-      selected = Math.max(
-        0,
-        inbox.list().findIndex((item) => item.id === messageId),
-      );
+      inboxSelectionId = messageId;
+      selected = inboxIndex();
     } else if (page === 'inbox') {
       page = 'messages';
       selected = 0;
@@ -133,9 +137,11 @@ export function createPhoneMenu(inbox = phoneInbox) {
         placeholder = choice;
         page = 'placeholder';
       }
-    } else if (page === 'messages') page = 'inbox';
-    else if (page === 'inbox') {
-      const message = inbox.list()[selected];
+    } else if (page === 'messages') {
+      page = 'inbox';
+      inboxSelectionId = inbox.list()[0]?.id ?? null;
+    } else if (page === 'inbox') {
+      const message = inbox.list()[inboxIndex()];
       if (message) {
         messageId = message.id;
         inbox.read(message.id);
@@ -149,6 +155,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
     open() {
       page = 'main';
       selected = 0;
+      inboxSelectionId = null;
       scroll = 0;
     },
     action(action: PhoneAction): 'lower' | 'changed' {
@@ -165,12 +172,15 @@ export function createPhoneMenu(inbox = phoneInbox) {
         );
       } else {
         const count = rows().length;
-        if (count)
+        if (count) {
           selected =
-            (selected +
+            ((page === 'inbox' ? inboxIndex() : selected) +
               (action === 'down' || action === 'right' ? 1 : -1) +
               count) %
             count;
+          if (page === 'inbox')
+            inboxSelectionId = inbox.list()[selected]?.id ?? null;
+        }
       }
       return 'changed';
     },
@@ -178,6 +188,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
       if (!Number.isInteger(index) || index < 0 || index >= rows().length)
         return false;
       selected = index;
+      if (page === 'inbox') inboxSelectionId = inbox.list()[index]?.id ?? null;
       select();
       return true;
     },
@@ -196,7 +207,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
                   ? 'Inbox'
                   : 'Messages',
         rows: rows(),
-        selected,
+        selected: page === 'inbox' ? inboxIndex() : selected,
         body:
           page === 'message'
             ? phoneLines(message?.text ?? '').slice(scroll, scroll + 8)

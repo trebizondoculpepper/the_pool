@@ -59,6 +59,26 @@ describe('the phone inbox', () => {
     expect(menu.frame().rows[0]).toContain('Third');
   });
 
+  it('keeps the highlighted inbox message when a new one arrives above it', () => {
+    const inbox = createPhoneInbox([
+      { from: 'Plant', text: 'First' },
+      { from: 'Plant', text: 'Second' },
+    ]);
+    const menu = createPhoneMenu(inbox);
+    menu.action('down');
+    menu.action('select');
+    menu.action('select');
+    menu.action('down'); // First
+    expect(menu.frame().rows[menu.frame().selected]).toContain('First');
+    inbox.receive('Plant', 'Third');
+    expect(menu.frame().selected).toBe(2);
+    expect(menu.frame().rows[menu.frame().selected]).toContain('First');
+    menu.action('select');
+    expect(menu.frame().body).toEqual(['First']);
+    menu.action('back');
+    expect(menu.frame().rows[menu.frame().selected]).toContain('First');
+  });
+
   it('opens the touched icon and inbox row without acting on empty space', () => {
     const menu = createPhoneMenu(
       createPhoneInbox([{ from: 'Plant', text: 'Pump report' }]),
