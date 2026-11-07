@@ -10,7 +10,11 @@ import {
   EQUIPMENT_KINDS,
   kindAffordances,
 } from '../../../game/plant/equipment-kinds';
-import { kindIsLadder, roomLadders, roomTraits } from './room-traits';
+import {
+  kindIsLadder,
+  roomLadders,
+  roomObjectTraits,
+} from './room-object-traits';
 import { roomLaddersFor } from '../../controls/input/room-controller';
 
 const ROOM_SOURCES = import.meta.glob<string>(
@@ -65,7 +69,7 @@ describe('the ladder trait (#18)', () => {
     const zones = roomLadders(scene);
     expect(zones).toHaveLength(1);
     expect(zones[0].rung.x).toBeCloseTo(ladder.zone().rung.x);
-    expect(roomTraits.ladders?.(scene, 1)).toHaveLength(1);
+    expect(roomObjectTraits.ladders?.(scene, 1)).toHaveLength(1);
   });
 
   it("stands a pool ladder's foot on the floor it is given", () => {
@@ -79,10 +83,10 @@ describe('the ladder trait (#18)', () => {
     const scene = new Scene();
     scene.add(createHumanLadder('pool', 1.2).group);
     // A room with a scene but no carried things still gets them.
-    const found = roomLaddersFor(roomTraits, { scene, metre: 1 });
+    const found = roomLaddersFor(roomObjectTraits, { scene, metre: 1 });
     expect(found?.()).toHaveLength(1);
     // The floor it is given reaches the factory.
-    const floored = roomLaddersFor(roomTraits, {
+    const floored = roomLaddersFor(roomObjectTraits, {
       scene,
       metre: 1,
       ladderFloorAt: () => -2,
@@ -90,7 +94,7 @@ describe('the ladder trait (#18)', () => {
     expect(floored?.()[0].bottom).toBeCloseTo(-2);
     // A room listing its own keeps them; no traits, no ladders.
     expect(
-      roomLaddersFor(roomTraits, { scene, metre: 1, ladders: () => [] }),
+      roomLaddersFor(roomObjectTraits, { scene, metre: 1, ladders: () => [] }),
     ).toBeUndefined();
     expect(roomLaddersFor(null, { scene, metre: 1 })).toBeUndefined();
   });

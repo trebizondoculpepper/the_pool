@@ -14,16 +14,11 @@ import './styles/main.css';
 import { createRoomModuleCache } from './toolkit/gallery/logic/room-module-cache';
 import { Plane, Vector2, Vector3 } from 'three';
 import {
-  EQUIPMENT_ROOMS,
   DEV_ROOM_NAMES,
   ROOMS,
   resolveRoomId,
 } from './toolkit/gallery/logic/dev-room-links';
-import type {
-  EquipmentRoomId,
-  RoomId,
-} from './toolkit/gallery/logic/dev-room-links';
-import { isMuseumHall } from './toolkit/gallery/logic/museum-plan';
+import type { RoomId } from './toolkit/gallery/logic/dev-room-links';
 import {
   jointOf,
   lazyNeighbours,
@@ -39,6 +34,13 @@ import {
   setNoclipToggle,
 } from './toolkit/controls/input/copy-actions';
 import { clockStopped, paused } from './toolkit/controls/logic/paused';
+import {
+  ROOM_TRAITS,
+  roomDeclaration,
+  worldRoomOf,
+} from './game/rooms/registry';
+import { createRoomTraitHost } from './game/rooms/room-trait';
+import { roomStarter } from './toolkit/gallery/rooms/room-starter';
 import { createConsole } from './toolkit/console/console-view';
 import { consoleOpen } from './toolkit/controls/logic/console-open';
 import { phoneOpen } from './toolkit/controls/logic/phone-open';
@@ -96,13 +98,13 @@ import {
   isLookMode,
   LOOK_MODES,
 } from './toolkit/gallery/logic/look-ref';
-import { installRoomTraits } from './toolkit/gallery/views/room-traits';
+import { installRoomObjectTraits } from './toolkit/gallery/views/room-object-traits';
 import { installRoomInspector } from './toolkit/gallery/views/inspect-pick';
 import { installFullscreenButton } from './toolkit/fullscreen/views/fullscreen-button';
 
 // The registry's traits drive every room's carrying (missions 189, 181),
 // and the information overlay is the factory's for every room (160).
-installRoomTraits();
+installRoomObjectTraits();
 installRoomInspector();
 
 // Which build this is, until the title screen shows it.
@@ -484,6 +486,7 @@ const titleActions: Parameters<typeof createTitleScreen>[0] = {
     const destination = gameSession.start();
     // A fresh page also clears room-local demonstrations and cached camera poses.
     current = undefined;
+    roomVisitTraits.leave();
     location.assign(destination);
   },
   continueGame: () => {
@@ -942,324 +945,38 @@ const resetEffects = async () => {
   ps1Uniforms.pi.value = Math.PI;
   ps1Uniforms.linearTarget.value = 0;
 };
-/** The function that starts `room`, loaded on demand. */
+/**
+ * The function that starts `room`, loaded on demand: from its declaration
+ * in the room registry (mission 228, #102), never a test of its id.
+ */
 const importStarter = async (
   room: RoomId,
 ): Promise<(canvas: HTMLCanvasElement) => RoomHandle> => {
-  if (room === 'CR_A_UP' || room === 'CR_A_ROUND') {
-    return (await import('./toolkit/gallery/rooms/dry-stair-room'))
-      .startDryStairRoom;
-  }
-  if (room === 'white_corridor_1')
-    return (await import('./toolkit/gallery/rooms/white-corridor-room'))
-      .startWhiteCorridorRoom;
-  if (room === 'green_room_1')
-    return (await import('./toolkit/gallery/rooms/white-corridor-room'))
-      .startGreenRoom;
-  if (room === 'CR_GREEN_STAIR')
-    return (await import('./toolkit/gallery/rooms/white-corridor-room'))
-      .startDiamondStairRoom;
-  if (room === 'pipes_n_dreams')
-    return (await import('./toolkit/gallery/rooms/pipes-n-dreams-room'))
-      .startPipesRoom;
-  if (
-    room === 'plant_room_tiny' ||
-    room === 'plant_room_small' ||
-    room === 'plant_room_medium' ||
-    room === 'plant_room_large'
-  ) {
-    const { startPlantRoomShell } =
-      await import('./toolkit/gallery/rooms/plant-room-shell-room');
-    const size = room.replace('plant_room_', '') as
-      | 'tiny'
-      | 'small'
-      | 'medium'
-      | 'large';
-    return (surface) => startPlantRoomShell(surface, size);
-  }
-  if (
-    room === 'plant_pool_01' ||
-    room === 'plant_pool_02' ||
-    room === 'plant_pool_03' ||
-    room === 'plant_pool_04'
-  ) {
-    // Each pool hall's own plant room, of the size its door says.
-    const [{ startPlantRoomShell }, { POOL_HALLS }] = await Promise.all([
-      import('./toolkit/gallery/rooms/plant-room-shell-room'),
-      import('./toolkit/gallery/logic/pool-halls'),
-    ]);
-    const hall = room.replace('plant_', '') as
-      | 'pool_01'
-      | 'pool_02'
-      | 'pool_03'
-      | 'pool_04';
-    const size = POOL_HALLS[hall].plantDoor!.size;
-    // The Olympic's own shell (22 × 14 m, prompt 033): its balance tank in a
-    // hall of its own, through its west doors.
-    const plan =
-      hall === 'pool_02'
-        ? (
-            await import('./toolkit/gallery/logic/olympic-plan')
-          ).olympicShellPlan()
-        : hall === 'pool_01'
-          ? (
-              await import('./toolkit/gallery/logic/lounge-plant-plan')
-            ).loungeShellPlan()
-          : undefined;
-    return (surface) =>
-      startPlantRoomShell(surface, size, hall, plan ? { plan } : {});
-  }
-  if (room === 'tank_hall')
-    // The Olympic's balance tank hall, through its plant room's west doors.
-    return (await import('./toolkit/gallery/rooms/tank-hall-room'))
-      .startTankHall;
-  if (room === 'retired0') {
-    // The Olympic pool's plant room as it was on 2026-10-23, frozen as a
-    // reference: its shell, with its retired layout and pipes.
-    const [{ startPlantRoomShell }, { POOL_HALLS }] = await Promise.all([
-      import('./toolkit/gallery/rooms/plant-room-shell-room'),
-      import('./toolkit/gallery/logic/pool-halls'),
-    ]);
-    const size = POOL_HALLS.pool_02.plantDoor!.size;
-    return (surface) =>
-      startPlantRoomShell(surface, size, 'pool_02', {
-        equipment: 'retired0',
-        title: 'RETIRED0 · RETIRED: THE OLYMPIC POOL PLANT ROOM',
-      });
-  }
-  if (room === 'retired1') {
-    // The jacuzzi's plant room as it was on 2026-10-25, before its
-    // re-plumbing by the plumber (prompt 064), frozen as a reference.
-    const [{ startPlantRoomShell }, { POOL_HALLS }] = await Promise.all([
-      import('./toolkit/gallery/rooms/plant-room-shell-room'),
-      import('./toolkit/gallery/logic/pool-halls'),
-    ]);
-    const size = POOL_HALLS.pool_03.plantDoor!.size;
-    return (surface) =>
-      startPlantRoomShell(surface, size, 'pool_03', {
-        equipment: 'retired1',
-        title: 'RETIRED1 · RETIRED: THE JACUZZI PLANT ROOM',
-      });
-  }
-  if (room === 'wet_hall')
-    return (await import('./toolkit/gallery/rooms/shell-room')).startWetHall;
-  if (
-    room === 'boiler_house' ||
-    room === 'loading_bay' ||
-    room === 'hypo_store' ||
-    room === 'acid_store' ||
-    room === 'switch_room' ||
-    room === 'air_plant' ||
-    room === 'control_room' ||
-    room === 'engineers_office'
-  ) {
-    const { startShellRoom } =
-      await import('./toolkit/gallery/rooms/shell-room');
-    return (surface) => startShellRoom(surface, room);
-  }
-  if (room === 'main_corridor')
-    return (await import('./toolkit/gallery/rooms/main-corridor-room'))
-      .startMainCorridorRoom;
-  if (room === 'corridor_lab')
-    return (await import('./toolkit/gallery/rooms/corridor-lab-room'))
-      .startCorridorLabRoom;
-  if (room === 'ceiling_lab')
-    return (await import('./toolkit/gallery/rooms/ceiling-lab-room'))
-      .startCeilingLabRoom;
-  if (isMuseumHall(room)) {
-    const { startMuseumHallRoom } =
-      await import('./toolkit/gallery/rooms/museum-hall-room');
-    return (surface) => startMuseumHallRoom(surface, room);
-  }
-  if (
-    room === 'pool_01' ||
-    room === 'pool_02' ||
-    room === 'pool_03' ||
-    room === 'pool_04'
-  ) {
-    const { startPoolHallRoom } =
-      await import('./toolkit/gallery/rooms/pool-hall-room');
-    return (surface) => startPoolHallRoom(surface, room);
-  }
-  if (room === 'pool_02_gallery') {
-    const { startPoolHallRoom } =
-      await import('./toolkit/gallery/rooms/pool-hall-room');
-    return (surface) =>
-      startPoolHallRoom(surface, 'pool_02', { inGallery: true });
-  }
-  if (room === 'donut_pool_1')
-    return (await import('./toolkit/gallery/rooms/donut-pool-room'))
-      .startDonutPoolRoom;
-  if (room === 'CR_A_ARCH' || room === 'CR_A_STEPS')
-    return (await import('./toolkit/gallery/rooms/arched-rooms'))
-      .startArchedRooms;
-  if (room === 'PR_A') {
-    const { startPoolRoom } = await import('./toolkit/gallery/rooms/pool-room');
-    return (surface) => startPoolRoom(surface, 'PR_A');
-  }
-  if (room === 'shared_plant_layout')
-    return (await import('./rendering/shared-plant-layout'))
-      .startSharedPlantLayout;
-  if (room.startsWith('plant_fit_')) {
-    const { startPlantFitRoom } = await import('./rendering/plant-fit-room');
-    const side = Number(room.slice('plant_fit_'.length));
-    return (surface) => startPlantFitRoom(surface, side);
-  }
-  if (room === 'plant_corridor') {
-    return (await import('./rendering/plant-corridor-room'))
-      .startPlantCorridorRoom;
-  }
-  if (room === 'dev59' || room === 'dev60')
-    // One world: the courtyard is walked into from the corridor.
-    return (await import('./rendering/dev-corridor-room')).startDevCorridorRoom;
-  if (room === 'dev1')
-    return (await import('./toolkit/gallery/rooms/racks-room')).startRacksRoom;
-  if (room === 'dev33') {
-    // The footbath, on its own, its water's level set by hand.
-    const { startPoolHallRoom } =
-      await import('./toolkit/gallery/rooms/pool-hall-room');
-    return (surface) =>
-      startPoolHallRoom(surface, 'pool_04', { devRoom: 'dev33' });
-  }
-  if (room === 'duty_managers_office')
-    return (await import('./toolkit/gallery/rooms/shell-room'))
-      .startDutyManagersOffice;
-  if (room === 'dev36')
-    return (await import('./toolkit/gallery/rooms/shell-room'))
-      .startMusicEffectsRoom;
-  if (room === 'dev35')
-    return (await import('./toolkit/gallery/rooms/jacuzzi-water-room'))
-      .startJacuzziWaterRoom;
-  if (room === 'dev34')
-    return (await import('./toolkit/gallery/rooms/shell-room'))
-      .startStairTowerRoom;
-  if (room === 'dev54' || room === 'freight_lift') {
-    const { startLiftCarRoom } =
-      await import('./toolkit/gallery/rooms/lift-rooms');
-    return (surface) =>
-      startLiftCarRoom(surface, room === 'dev54' ? 'trial' : 'freight');
-  }
-  if (room.startsWith('dev54_')) {
-    const { startLiftTrialFloor } =
-      await import('./toolkit/gallery/rooms/lift-rooms');
-    return (surface) => startLiftTrialFloor(surface, room.slice(6));
-  }
-  if (room === 'dev58')
-    return (await import('./toolkit/gallery/rooms/aqualis-controller-room'))
-      .startAqualisControllerRoom;
-  if (room === 'dev57')
-    return (await import('./toolkit/gallery/rooms/dosing-console-room'))
-      .startDosingConsoleRoom;
-  if (room === 'dev56')
-    return (await import('./toolkit/gallery/rooms/baked-ao-room'))
-      .startBakedAoRoom;
-  if (room === 'dev55')
-    return (await import('./toolkit/gallery/rooms/co2-cage-room'))
-      .startCo2CageRoom;
-  if (room === 'dev53')
-    return (await import('./toolkit/gallery/rooms/skimmer-reveal-room'))
-      .startSkimmerRevealRoom;
-  if (room === 'dev50')
-    return (await import('./toolkit/gallery/rooms/truck-yard-room'))
-      .startTruckYardRoom;
-  if (room === 'dev45')
-    return (await import('./toolkit/gallery/rooms/control-room-prototype'))
-      .startControlRoomPrototype;
-  if (room === 'dev46')
-    return (await import('./toolkit/gallery/rooms/control-room-prototype'))
-      .startBridgePrototype;
-  if (room === 'bridge')
-    return (await import('./toolkit/gallery/rooms/bridge-room')).startTheBridge;
-  if (room === 'dev31')
-    return (await import('./rendering/effects-playground-room'))
-      .startEffectsPlaygroundRoom;
-  if (room === 'dev2')
-    return (await import('./toolkit/gallery/rooms/fittings-room'))
-      .startFittingsRoom;
-  if (room === 'dev3')
-    return (await import('./toolkit/gallery/rooms/architectural-room'))
-      .startArchitecturalGalleryRoom;
-  if (room === 'dev4')
-    return (await import('./toolkit/gallery/rooms/repair-room'))
-      .startRepairRoom;
-  if (room === 'dev5')
-    return (await import('./toolkit/gallery/rooms/bin-room')).startBinRoom;
-  if (room === 'dev6')
-    return (await import('./toolkit/gallery/rooms/settling-room'))
-      .startSettlingRoom;
-  if (room === 'dev7')
-    return (await import('./toolkit/gallery/rooms/tones-room')).startTonesRoom;
-  if (room === 'dev8')
-    return (await import('./toolkit/gallery/rooms/brands-room'))
-      .startBrandsRoom;
-  if (room === 'dev9')
-    return (await import('./toolkit/gallery/rooms/fires-room')).startFiresRoom;
-  if (room === 'dev16')
-    return (await import('./toolkit/gallery/rooms/water-room')).startWaterRoom;
-  if (room === 'dev11')
-    return (await import('./toolkit/gallery/rooms/pool-room')).startPoolRoom;
-  if (
-    room === 'dev10' ||
-    room === 'dev12' ||
-    room === 'dev13' ||
-    room === 'dev14' ||
-    room === 'dev15' ||
-    room === 'dev17' ||
-    room === 'dev18' ||
-    room === 'dev19' ||
-    room === 'dev19b' ||
-    room === 'dev19c' ||
-    room === 'dev19d' ||
-    room === 'dev20' ||
-    room === 'dev21' ||
-    room === 'dev22' ||
-    room === 'dev23' ||
-    room === 'dev24' ||
-    room === 'dev25' ||
-    room === 'dev26' ||
-    room === 'dev27' ||
-    room === 'dev28' ||
-    room === 'dev29' ||
-    room === 'dev30' ||
-    room === 'dev32' ||
-    room === 'dev37' ||
-    room === 'dev38' ||
-    room === 'dev39' ||
-    room === 'dev40' ||
-    room === 'dev41' ||
-    room === 'dev42' ||
-    room === 'dev43' ||
-    room === 'dev44' ||
-    room === 'dev47' ||
-    room === 'dev48' ||
-    room === 'dev49' ||
-    room === 'dev51' ||
-    room === 'dev52' ||
-    room === 'dev70' ||
-    room === 'dev71'
-  ) {
-    const { startEquipmentRoom } =
-      await import('./toolkit/gallery/rooms/plant-room');
-    return (surface) => startEquipmentRoom(surface, room);
-  }
-  if (EQUIPMENT_ROOMS.includes(room as EquipmentRoomId)) {
-    const { startEquipmentRoom } =
-      await import('./toolkit/gallery/rooms/plant-room');
-    return (surface) => startEquipmentRoom(surface, room as EquipmentRoomId);
-  }
-  return (await import('./toolkit/gallery/rooms/controls-room'))
-    .startControlsRoom;
+  const declaration = roomDeclaration(room);
+  if (!declaration) throw new Error(`Room ${room} is not registered`);
+  return roomStarter<RoomHandle>(declaration.build);
 };
 const starter = createRoomModuleCache(importStarter);
-/** The corridor and the courtyard are one world, kept as one. */
-const keyOf = (room: RoomId) =>
-  room === 'dev60'
-    ? 'dev59'
-    : room === 'CR_A_ROUND'
-      ? 'CR_A_UP'
-      : room === 'CR_A_STEPS'
-        ? 'CR_A_ARCH'
-        : room;
+/**
+ * Rooms that share a world are built as one (the corridor and the
+ * courtyard): the room each is built as, from the registry.
+ */
+const keyOf = (room: RoomId) => worldRoomOf(room);
+/**
+ * The room traits of the room the walker is in (mission 228, #102): set
+ * up for each visit from its registry declaration, stepped by world
+ * simulation time (so they stop behind the menu and on console pause, as
+ * the world's clock does), and torn down on leaving.
+ */
+const roomVisitTraits = createRoomTraitHost(ROOM_TRAITS);
+const enterRoomTraits = (room: RoomId) =>
+  roomVisitTraits.enter(room, roomDeclaration(room)?.traits);
+let roomTraitTime: number | null = null;
+effect(() => {
+  const time = roomWorld().world.value.time;
+  if (roomTraitTime !== null) roomVisitTraits.step(time - roomTraitTime);
+  roomTraitTime = time;
+});
 /** Build `room` on a canvas of its own, hidden, if it is not built yet. */
 const mount = (
   room: RoomId,
@@ -1840,6 +1557,7 @@ const openRoom = async () => {
       if (old) old.root.hidden = true;
     }
     current = undefined;
+    roomVisitTraits.leave();
     app.hidden = true;
     positionOverlay.hidden = true;
     // The developers' panel, the room list, at `?dev` (a tool, not part
@@ -1921,6 +1639,7 @@ const openRoom = async () => {
   showOnTop(key);
   loaded.root.hidden = false;
   loaded.handle.enter?.(params.get('from'), room);
+  enterRoomTraits(room);
   const surface = surfaceOf(key);
   const control = surface ? roomControllerOn(surface) : null;
   const number = (name: string) => {
@@ -2304,6 +2023,7 @@ const handOver = (to: RoomId, from: RoomId) => {
   focusRoom(to);
   showOnTop(keyOf(to));
   entry.handle.enter?.(from, to);
+  enterRoomTraits(to);
   // Where the walker was, as the doorway carries it, the door with it.
   toWalk.place(there.x, there.z, there.yaw, eye.pitch, there.y ?? eye.y);
   toWalk.roll = eye.roll ?? 0;
@@ -2468,18 +2188,7 @@ let zoneTransferPending = false;
 window.addEventListener('pool-plant:room-zone', (event) => {
   if (noclip.value) return;
   const id = (event as CustomEvent<RoomId>).detail;
-  if (
-    (id !== 'PR_A' &&
-      id !== 'CR_A_UP' &&
-      id !== 'CR_A_ROUND' &&
-      id !== 'CR_A_ARCH' &&
-      id !== 'CR_A_STEPS' &&
-      id !== 'white_corridor_1' &&
-      id !== 'green_room_1' &&
-      id !== 'CR_GREEN_STAIR') ||
-    zoneTransferPending
-  )
-    return;
+  if (!roomDeclaration(id)?.zoneWalk || zoneTransferPending) return;
   if (current === keyOf(id)) {
     const url = new URL(location.href);
     if (url.searchParams.get('room') !== id) {
@@ -2528,6 +2237,7 @@ window.addEventListener('pool-plant:room-zone', (event) => {
       showOnTop(current);
       loaded.root.hidden = false;
       loaded.handle.enter?.(null, id);
+      enterRoomTraits(id);
       const nextSurface = surfaceOf(current);
       const next = nextSurface ? roomControllerOn(nextSurface) : null;
       if (next && pose) {

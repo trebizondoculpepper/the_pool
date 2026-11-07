@@ -12,9 +12,9 @@ export type RoomStyle = 'standard';
 /**
  * What the game's object registry says about a room's things, for carrying
  * (missions 189 and 181): this layer imports nothing of ours, so the game
- * registers it once (`useRoomTraits`) and every room's controller asks it.
+ * registers it once (`useRoomObjectTraits`) and every room's controller asks it.
  */
-export interface RoomTraits {
+export interface RoomObjectTraits {
   /** Whether `object` is of a holdable kind; null when it has no kind. */
   holdable(object: Object3D): boolean | null;
   /** The tops (metres) that things let go of in `root` rest on. */
@@ -67,10 +67,10 @@ export interface RoomBins {
   toss(object: Object3D, portable: PortableObject): void;
 }
 
-let registered: RoomTraits | null = null;
+let registered: RoomObjectTraits | null = null;
 
 /** Register the registry's traits for every room controller made after this. */
-export const useRoomTraits = (traits: RoomTraits | null) => {
+export const useRoomObjectTraits = (traits: RoomObjectTraits | null) => {
   registered = traits;
 };
 
@@ -223,7 +223,7 @@ export function createRoomController(options: RoomControllerOptions) {
  * builds nothing.
  */
 export function roomLaddersFor(
-  traits: RoomTraits | null,
+  traits: RoomObjectTraits | null,
   options: Pick<
     RoomControllerOptions,
     'scene' | 'objects' | 'metre' | 'ladders' | 'ladderFloorAt'

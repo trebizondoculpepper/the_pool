@@ -15,10 +15,10 @@ import type {
 import { EQUIPMENT_KINDS, isKindId } from '../../../game/plant/equipment-kinds';
 import { compositeTraits, expand } from '../../../game/plant/traits';
 import { EQUIPMENT_KIND } from '../../components/core/views/equipment-kind';
-import { useRoomTraits } from '../../controls/input/room-controller';
+import { useRoomObjectTraits } from '../../controls/input/room-controller';
 import type {
   RoomBins,
-  RoomTraits,
+  RoomObjectTraits,
 } from '../../controls/input/room-controller';
 import { surfaceSupports } from '../logic/derived-surface';
 import { forgetSurfaces, roomSolids, roomSurfaces } from './derived-surfaces';
@@ -30,7 +30,7 @@ import { humanLadderZones } from '../../components/architectural/views/human-lad
  * 181; the owner, 2026-11-05): a thing of a `holdable` kind may be picked
  * up in any room, a thing of a kind that is not may not, and whatever is
  * let go of rests on the tops of the room's `supportable` objects, derived
- * from their bodies (175). Registered once for the game (`installRoomTraits`)
+ * from their bodies (175). Registered once for the game (`installRoomObjectTraits`)
  * and read by every room's controller (`createRoomController`); no room
  * names a kind or an object.
  */
@@ -226,7 +226,7 @@ export function makeHoldablesPortable(root: Object3D, metre: number): number {
   return made;
 }
 
-export const roomTraits: RoomTraits = {
+export const roomObjectTraits: RoomObjectTraits = {
   holdable(object) {
     // The carried thing's own kind, never one it is fitted in: a fuse in a
     // switch-fuse is the fuse's to answer, not the switch-fuse's.
@@ -261,4 +261,5 @@ export const roomTraits: RoomTraits = {
 };
 
 /** Give every room's controller the registry's carrying behaviour. */
-export const installRoomTraits = () => useRoomTraits(roomTraits);
+export const installRoomObjectTraits = () =>
+  useRoomObjectTraits(roomObjectTraits);

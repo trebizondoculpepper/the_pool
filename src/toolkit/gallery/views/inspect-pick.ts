@@ -174,7 +174,7 @@ function boundTag(kind: string, object: Object3D): string | null {
 
 /**
  * Register the information overlay for every room (mission 160): the game
- * calls this once (`main.ts`, along with `installRoomTraits`), and every
+ * calls this once (`main.ts`, along with `installRoomObjectTraits`), and every
  * room's controller builds its inspector from its own scene, camera and
  * metre plus the room's `world` and `identify` data. Rooms stop passing
  * `inspect` themselves.

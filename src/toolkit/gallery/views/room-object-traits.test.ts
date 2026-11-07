@@ -18,8 +18,8 @@ import {
   kindIsHoldable,
   makeHoldablesPortable,
   roomBins,
-  roomTraits,
-} from './room-traits';
+  roomObjectTraits,
+} from './room-object-traits';
 
 test('a kind is holdable by its expanded traits, composites included', () => {
   // software-box names `holdable-small`, a composite that extends holdable.
@@ -33,10 +33,10 @@ test('a thing answers by its own kind, never one it is fitted in', () => {
   const box = markEquipmentKind(new Group(), 'software-box');
   const loose = new Group();
   desk.add(box, loose);
-  expect(roomTraits.holdable(box)).toBe(true);
-  expect(roomTraits.holdable(desk)).toBe(false);
+  expect(roomObjectTraits.holdable(box)).toBe(true);
+  expect(roomObjectTraits.holdable(desk)).toBe(false);
   // No kind of its own: the room's own rule decides, as before.
-  expect(roomTraits.holdable(loose)).toBeNull();
+  expect(roomObjectTraits.holdable(loose)).toBeNull();
 });
 
 test('a thing of a holdable kind is made carryable by its trait alone (mission 189)', () => {
@@ -119,7 +119,7 @@ test('a rack registers its shared placement target by kind alone (mission 206)',
   rack.name = 'Wall shelf';
   scene.add(rack);
   expect(rack.userData.placementTarget).toBeUndefined();
-  roomTraits.racks?.(scene, 1);
+  roomObjectTraits.racks?.(scene, 1);
   const target = rack.userData.placementTarget as PlacementTarget | undefined;
   expect(target).toBeTruthy();
   // It accepts only rackable things (a software box fits; a floppy disk not).
