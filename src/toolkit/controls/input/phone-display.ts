@@ -1,10 +1,23 @@
-import { CanvasTexture, NearestFilter, SRGBColorSpace } from 'three';
+import {
+  CanvasTexture,
+  LinearFilter,
+  NearestFilter,
+  SRGBColorSpace,
+} from 'three';
 import type { PhoneFrame } from '../logic/phone-menu';
 import { phoneGlyph } from '../logic/phone-font';
 import { quantiseRgb444 } from '../logic/phone-colour';
+import {
+  PHONE_FOOTER_TOP,
+  PHONE_LIST_ROW_HEIGHT,
+  PHONE_LIST_TOP,
+  PHONE_LIST_VISIBLE_ROWS,
+  PHONE_LOGICAL_SIZE as LOGICAL,
+  PHONE_MAIN_TILES,
+  PHONE_TEXTURE_SIZE as TEXTURE,
+  phoneListStart,
+} from '../logic/phone-layout';
 
-const LOGICAL = 128;
-const TEXTURE = 512;
 const PAPER = '#c7d3c7';
 const BLUE = '#345a8a';
 const INK = '#172e4b';
@@ -35,6 +48,43 @@ function bitmapText(
   }
 }
 
+function menuIcon(
+  ctx: CanvasRenderingContext2D,
+  name: string,
+  x: number,
+  y: number,
+) {
+  ctx.fillStyle = INK;
+  if (name === 'Phone') {
+    ctx.fillRect(x + 2, y + 2, 4, 5);
+    ctx.fillRect(x + 14, y + 2, 4, 5);
+    ctx.fillRect(x + 4, y + 6, 3, 7);
+    ctx.fillRect(x + 13, y + 6, 3, 7);
+    ctx.fillRect(x + 6, y + 12, 8, 3);
+  } else if (name === 'Messages') {
+    ctx.fillRect(x + 1, y + 2, 18, 2);
+    ctx.fillRect(x + 1, y + 4, 2, 11);
+    ctx.fillRect(x + 17, y + 4, 2, 11);
+    ctx.fillRect(x + 3, y + 15, 14, 2);
+    for (let step = 0; step < 6; step++) {
+      ctx.fillRect(x + 3 + step, y + 4 + step, 1, 1);
+      ctx.fillRect(x + 16 - step, y + 4 + step, 1, 1);
+    }
+  } else if (name === 'Media') {
+    for (let row = 0; row < 15; row++) {
+      const width = 9 - Math.abs(row - 7);
+      ctx.fillRect(x + 5, y + 1 + row, width, 1);
+    }
+  } else {
+    ctx.fillRect(x + 2, y + 6, 17, 11);
+    ctx.fillRect(x + 4, y + 8, 9, 2);
+    ctx.fillRect(x + 4, y + 12, 9, 2);
+    ctx.fillRect(x + 15, y + 10, 2, 2);
+    for (let step = 0; step < 6; step++)
+      ctx.fillRect(x + 2 + step, y + 6 - step, 1, 1);
+  }
+}
+
 /** A 128-square colour STN-style picture, enlarged without filtering. */
 export function createPhoneDisplay() {
   const canvas = document.createElement('canvas');
@@ -46,7 +96,9 @@ export function createPhoneDisplay() {
   const texture = new CanvasTexture(canvas);
   texture.colorSpace = SRGBColorSpace;
   texture.magFilter = NearestFilter;
-  texture.minFilter = NearestFilter;
+  // The handset is magnified on desktop but minified inside a narrow canvas.
+  // Linear minification keeps entire bitmap rows from vanishing in portrait.
+  texture.minFilter = LinearFilter;
   texture.generateMipmaps = false;
   let drawn = '';
 
@@ -72,14 +124,13 @@ export function createPhoneDisplay() {
 
     if (frame.page === 'main') {
       frame.rows.forEach((row, index) => {
-        const x = index % 2 ? 65 : 3;
-        const y = index < 2 ? 32 : 73;
+        const { x, y } = PHONE_MAIN_TILES[index];
         lcd.fillStyle = index === frame.selected ? HIGHLIGHT : LIGHT;
         lcd.fillRect(x, y, 60, 37);
         lcd.strokeStyle = index === frame.selected ? INK : BLUE;
         lcd.strokeRect(x + 0.5, y + 0.5, 59, 36);
         lcd.fillStyle = INK;
-        bitmapText(lcd, row[0] ?? '?', x + 25, y + 5, 1, 2);
+        menuIcon(lcd, row, x + 20, y + 4);
         bitmapText(lcd, row, x + 6, y + 27, 8);
         if (row === 'Messages' && frame.unread) {
           lcd.fillStyle = '#b33b36';
@@ -88,33 +139,30 @@ export function createPhoneDisplay() {
       });
     } else if (frame.page === 'message' || frame.page === 'placeholder') {
       lcd.fillStyle = INK;
-      let line = 0;
-      for (const original of frame.body) {
-        for (let at = 0; at < original.length && line < 8; at += 19) {
-          bitmapText(lcd, original.slice(at, at + 19), 5, 33 + line * 10, 19);
-          line++;
-        }
-      }
+      frame.body
+        .slice(0, 8)
+        .forEach((line, index) =>
+          bitmapText(lcd, line, 5, 33 + index * 10, 19),
+        );
       if (frame.page === 'message' && frame.scroll)
         bitmapText(lcd, '▲', 118, 103, 1);
     } else {
-      const start = Math.max(
-        0,
-        Math.min(frame.selected - 4, frame.rows.length - 5),
-      );
-      frame.rows.slice(start, start + 5).forEach((row, index) => {
-        const y = 32 + index * 16;
-        if (start + index === frame.selected) {
-          lcd.fillStyle = BLUE;
-          lcd.fillRect(3, y - 2, 122, 14);
-          lcd.fillStyle = LIGHT;
-        } else lcd.fillStyle = INK;
-        bitmapText(lcd, row, 5, y + 1, 19);
-      });
+      const start = phoneListStart(frame.selected, frame.rows.length);
+      frame.rows
+        .slice(start, start + PHONE_LIST_VISIBLE_ROWS)
+        .forEach((row, index) => {
+          const y = PHONE_LIST_TOP + index * PHONE_LIST_ROW_HEIGHT;
+          if (start + index === frame.selected) {
+            lcd.fillStyle = BLUE;
+            lcd.fillRect(3, y - 2, 122, 14);
+            lcd.fillStyle = LIGHT;
+          } else lcd.fillStyle = INK;
+          bitmapText(lcd, row, 5, y + 1, 19);
+        });
     }
 
     lcd.fillStyle = BLUE;
-    lcd.fillRect(0, 113, LOGICAL, 15);
+    lcd.fillRect(0, PHONE_FOOTER_TOP, LOGICAL, LOGICAL - PHONE_FOOTER_TOP);
     const navi =
       frame.page === 'message' || frame.page === 'placeholder'
         ? ''

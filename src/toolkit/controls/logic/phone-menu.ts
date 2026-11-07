@@ -58,7 +58,7 @@ export interface PhoneFrame {
 }
 
 /** Wrap the compact message display into lines, without splitting words. */
-export function phoneLines(text: string, columns = 24): string[] {
+export function phoneLines(text: string, columns = 19): string[] {
   const lines: string[] = [];
   let line = '';
   for (const word of text.split(/\s+/)) {
@@ -148,7 +148,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
         scroll = Math.max(
           0,
           Math.min(
-            Math.max(0, count - 4),
+            Math.max(0, count - 8),
             scroll + (action === 'down' || action === 'right' ? 1 : -1),
           ),
         );
@@ -194,7 +194,7 @@ export function createPhoneMenu(inbox = phoneInbox) {
         selected,
         body:
           page === 'message'
-            ? phoneLines(message?.text ?? '').slice(scroll, scroll + 4)
+            ? phoneLines(message?.text ?? '').slice(scroll, scroll + 8)
             : page === 'placeholder'
               ? ['Not available yet']
               : [],

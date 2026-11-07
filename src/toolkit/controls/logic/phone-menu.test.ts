@@ -55,7 +55,7 @@ describe('the phone inbox', () => {
     expect(menu.frame().body).toEqual(['Pump report']);
   });
 
-  it('scrolls a long message four lines at a time and backs out level by level', () => {
+  it('scrolls a long message eight bitmap lines at a time and backs out level by level', () => {
     const inbox = createPhoneInbox([
       {
         from: 'Plant',
@@ -71,7 +71,7 @@ describe('the phone inbox', () => {
     menu.action('select');
     expect(menu.frame().scroll).toBe(0);
     for (let i = 0; i < 10; i++) menu.action('down');
-    expect(menu.frame().body).toHaveLength(4);
+    expect(menu.frame().body).toHaveLength(8);
     expect(menu.frame().scroll).toBeGreaterThan(0);
     expect(menu.action('back')).toBe('changed');
     expect(menu.action('back')).toBe('changed');

@@ -8,7 +8,7 @@ The phone carries messages the player must read while moving through the plant. 
 
 ## Work
 
-1. Draw the interface at a true 128 × 128 logical resolution and quantise each channel to four bits (at most 4,096 RGB colours). Upscale by nearest neighbour onto the existing phone texture, preserving crisp logical pixels through the 3D view.
+1. Draw the interface at a true 128 × 128 logical resolution and quantise each channel to four bits (at most 4,096 RGB colours). Upscale by nearest neighbour onto the existing phone texture, preserving crisp logical pixels through the 3D view. When the entire handset is minified in a narrow viewport, use filtered downsampling so text rows do not vanish.
 2. Use original bitmap-style glyphs drawn in code, including readable message text and symbols. Do not copy Nokia's fonts, icons, logo or boot animation. Leave the handset's eventual invented maker/model to mission 222, where the app layer can pass registered brand data into the controls layer without breaking its import rule.
 3. Add a subtle fixed pixel-cell grid, a muted palette and an even backlight wash to suggest a colour STN panel. Any smear or response effect must be short, legible and update at no more than 10 Hz. Static treatment should need no per-frame texture upload.
 4. Retain the one context-sensitive Navi label and no second soft-key label from mission 220. C is the physical back control, not an on-screen soft key. Phone, Media and Radio remain placeholders; this mission does not add their content.
@@ -17,7 +17,7 @@ The phone carries messages the player must read while moving through the plant. 
 ## Acceptance
 
 - A screen capture at the held handset's normal size shows distinct pixel cells, a restrained period palette and readable highlighted menu text and messages.
-- The render has 128 × 128 logical pixels, no more than 4,096 quantised colours, and no smoothing when scaled to the 3D display texture.
+- The render has 128 × 128 logical pixels and no more than 4,096 quantised colours. Logical pixels stay crisp when magnified; minification keeps every text row visible.
 - The screen texture uploads only when its visible frame changes; any optional response animation runs at 10 Hz or less. The component benchmark stays within budget.
 - The UI shows one Navi action label and no copied Nokia artwork, fonts or tones.
 
