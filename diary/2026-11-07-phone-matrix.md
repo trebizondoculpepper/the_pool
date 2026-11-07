@@ -1,0 +1,3 @@
+# 2026-11-07 · Phone colour matrix
+
+Mission 221 follows the merged 2004 Nokia 2600 reference without copying its interface art. The phone screen now has a 128 × 128 logical canvas, a hand-drawn Pool Plant bitmap glyph set, per-channel four-bit colour quantisation and crisp 4× enlargement to the existing 3D texture. A faint physical grid and wash sit over that image. The footer has one central Navi label, with C remaining a physical handset key. The renderer retains its frame-key redraw guard; the component benchmark has a phone-display candidate with a frozen frame and a menu selection that changes every two seconds. Browser-side visual and benchmark confirmation is pending because the computer-use browser was unavailable during this session.

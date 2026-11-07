@@ -32,6 +32,8 @@ import { createRenderer } from '../../components/core/parts/render-style';
 import { createPanelKit } from '../../components/core/views/eighties-controls';
 import type { PanelKit } from '../../components/core/views/eighties-controls';
 import { clockStopped, paused } from '../../controls/logic/paused';
+import { createPhoneDisplay } from '../../controls/input/phone-display';
+import type { PhoneFrame } from '../../controls/logic/phone-menu';
 import { roomWorld } from '../../save/world-store';
 import { placedRoomItems } from '../logic/room-usage';
 import type { Item } from '../logic/room-equipment';
@@ -210,6 +212,47 @@ async function candidates(usage: Map<string, Usage>): Promise<Candidate[]> {
         return fromExhibit(built);
       },
     });
+  // The held phone's live texture is a display too, although it belongs to
+  // the shared controls rather than to one room's equipment list.
+  usage.set('part:phone-display', { count: 1, busy: 0, rooms: ['all rooms'] });
+  list.push({
+    id: 'part:phone-display',
+    label: 'Held phone colour matrix',
+    source: 'part',
+    build: () => {
+      const display = createPhoneDisplay();
+      const geometry = new PlaneGeometry(0.53, 0.55);
+      const material = new MeshBasicMaterial({ map: display.texture });
+      const object = new Mesh(geometry, material);
+      let elapsed = 0;
+      let selected = 0;
+      const frame = (): PhoneFrame => ({
+        page: 'main',
+        title: 'Menu',
+        rows: ['Phone', 'Messages', 'Media', 'Radio'],
+        selected,
+        body: [],
+        unread: 2,
+        scroll: 0,
+      });
+      display.show(frame());
+      return {
+        object,
+        update: (delta) => {
+          if (!clockStopped.value) {
+            elapsed += delta;
+            selected = Math.floor(elapsed / 2) % 4;
+          }
+          display.show(frame());
+        },
+        dispose: () => {
+          display.dispose();
+          material.dispose();
+          geometry.dispose();
+        },
+      };
+    },
+  });
   // The Olympic plant room's Wash-O-Tron, built beside its machines.
   usage.set('part:wash-o-tron', {
     count: 1,
