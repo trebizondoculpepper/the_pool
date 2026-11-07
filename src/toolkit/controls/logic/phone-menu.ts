@@ -45,7 +45,7 @@ export type PhonePage =
   | 'inbox'
   | 'message'
   | 'placeholder';
-export type PhoneAction = 'up' | 'down' | 'back' | 'select';
+export type PhoneAction = 'up' | 'down' | 'left' | 'right' | 'back' | 'select';
 
 export interface PhoneFrame {
   page: PhonePage;
@@ -149,15 +149,32 @@ export function createPhoneMenu(inbox = phoneInbox) {
           0,
           Math.min(
             Math.max(0, count - 4),
-            scroll + (action === 'down' ? 1 : -1),
+            scroll + (action === 'down' || action === 'right' ? 1 : -1),
           ),
         );
+      } else if (page === 'main') {
+        if (action === 'up' || action === 'down')
+          selected = (selected + 2) % main.length;
+        else
+          selected =
+            Math.floor(selected / 2) * 2 + (action === 'right' ? 1 : 0);
       } else {
         const count = rows().length;
         if (count)
-          selected = (selected + (action === 'down' ? 1 : -1) + count) % count;
+          selected =
+            (selected +
+              (action === 'down' || action === 'right' ? 1 : -1) +
+              count) %
+            count;
       }
       return 'changed';
+    },
+    tap(index: number) {
+      if (!Number.isInteger(index) || index < 0 || index >= rows().length)
+        return false;
+      selected = index;
+      select();
+      return true;
     },
     frame(): PhoneFrame {
       const message = currentMessage();

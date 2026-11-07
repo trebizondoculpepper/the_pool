@@ -1,8 +1,21 @@
-import { Group, Mesh, MeshBasicMaterial, PlaneGeometry, Vector3 } from 'three';
+import {
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  Raycaster,
+  Vector2,
+  Vector3,
+} from 'three';
 import type { Material, Object3D, PerspectiveCamera, Texture } from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import type { PhoneFrame } from '../logic/phone-menu';
 import { phoneFraming } from '../logic/phone-framing';
+import { phoneDisplayTouch, phoneKeyTouch } from '../logic/phone-input';
+import type { PhoneTouch } from '../logic/phone-input';
+import { PLAIN_USE } from '../logic/use-cue';
+import { markUsable } from './use-marking';
+import { aimCache, resolveAim } from './resolve-aim';
 import { createPhoneDisplay } from './phone-display';
 
 const handsetUrl = `${import.meta.env.BASE_URL}models/phone/scene.gltf`;
@@ -13,6 +26,7 @@ export function createPhoneView(
   scene: Object3D | undefined,
   camera: PerspectiveCamera,
   metre: number,
+  onTouch: (touch: PhoneTouch) => void,
 ) {
   const anchor = new Group();
   anchor.name = 'Held phone';
@@ -25,9 +39,33 @@ export function createPhoneView(
   let disposed = false;
   let raised = false;
   let lift = 0;
+  let buttons: Object3D | null = null;
+  let shownFrame: PhoneFrame | null = null;
   const owned: Material[] = [];
   const textures = new Set<Texture>();
   const display = createPhoneDisplay();
+  const ray = new Raycaster();
+  const pointer = new Vector2();
+  const cache = aimCache(0);
+  const pointTouch = (point: Vector3): PhoneTouch | null => {
+    if (!raised || !buttons || !shownFrame) return null;
+    const local = buttons.worldToLocal(point.clone());
+    if (Math.abs(local.x) <= 0.265 && local.y >= 0.062 && local.y <= 0.612)
+      return phoneDisplayTouch(
+        shownFrame,
+        ((local.x + 0.265) / 0.53) * 512,
+        ((0.612 - local.y) / 0.55) * 512,
+      );
+    return phoneKeyTouch(local.x, local.y);
+  };
+  const unmark = markUsable(
+    anchor,
+    ({ point }) => (pointTouch(point) ? PLAIN_USE : null),
+    ({ point }) => {
+      const touch = pointTouch(point);
+      if (touch) onTouch(touch);
+    },
+  );
 
   // Keep the handset ahead of the world while preserving depth between its parts.
   const foreground = (source: Material) => {
@@ -73,6 +111,7 @@ export function createPhoneView(
         part.frustumCulled = false;
       });
       const glass = loaded.getObjectByName('glassFront_low');
+      buttons = loaded.getObjectByName('buttons_low') ?? null;
       if (glass) {
         // The glass mesh spans 0.575 × 0.604. Inset the live display inside
         // the raised bezel so its outer pixels cannot disappear under it.
@@ -96,11 +135,38 @@ export function createPhoneView(
 
   return {
     show(frame: PhoneFrame) {
+      shownFrame = frame;
       display.show(frame);
     },
     setRaised(on: boolean) {
       raised = on;
       if (on) void load();
+    },
+    owns(object: Object3D) {
+      return object === anchor;
+    },
+    resolveAt(x: number, y: number) {
+      if (!raised || !loaded) return null;
+      anchor.updateMatrixWorld(true);
+      return resolveAim({
+        scene: anchor,
+        camera,
+        metre,
+        x,
+        y,
+        reach: 4,
+        now: performance.now(),
+        ray,
+        pointer,
+        cache,
+        fresh: true,
+      });
+    },
+    targetAt(point: Vector3) {
+      return pointTouch(point);
+    },
+    activate(touch: PhoneTouch) {
+      if (raised) onTouch(touch);
     },
     update(delta: number) {
       const target = raised ? 1 : 0;
@@ -124,6 +190,7 @@ export function createPhoneView(
     },
     dispose() {
       disposed = true;
+      unmark();
       anchor.removeFromParent();
       loaded?.traverse((part) => {
         if (part instanceof Mesh) part.geometry.dispose();
