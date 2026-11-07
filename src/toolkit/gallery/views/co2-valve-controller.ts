@@ -544,7 +544,7 @@ export function createCo2ValveController(
       view.update(first ? 1 : delta);
       first = false;
     });
-    a.shows(() => `at ${names[selector.position.value]}`);
+    a.shows(() => `set to ${names[selector.position.value]}`);
     object.add(a.object);
     parts.add(a.part());
   }

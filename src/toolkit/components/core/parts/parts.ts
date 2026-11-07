@@ -752,8 +752,8 @@ export function selector(
   const names = props.legend?.split(' · ');
   a.shows(() =>
     names?.length === props.positions
-      ? `at ${names[part.position.value]}`
-      : `at position ${part.position.value + 1} of ${props.positions}`,
+      ? `set to ${names[part.position.value]}`
+      : `set to position ${part.position.value + 1} of ${props.positions}`,
   );
   return { ...a.part(), position: part.position };
 }

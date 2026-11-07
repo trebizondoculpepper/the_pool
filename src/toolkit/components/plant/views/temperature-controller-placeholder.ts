@@ -421,7 +421,7 @@ export function createTemperatureControllerPlaceholder(
     /** Show or hide the layout-grid overlay (region outlines + cell labels). */
     setOverlay,
     status: () =>
-      `${tag}: SET ${model().setpoint.toFixed(1)} °C, ACTUAL ${model().measured.toFixed(1)} °C, BAND ${bandFromDial(model().band ?? 2)} K, ${(model().mode ?? 'auto').toUpperCase()}, valve ${Math.round((model().output ?? 0) * 100)}%`,
+      `${tag}: SET ${model().setpoint.toFixed(1)} °C, ACTUAL ${model().measured.toFixed(1)} °C, BAND ${bandFromDial(model().band ?? 2)} K, mode ${(model().mode ?? 'auto').toUpperCase()}, heating valve ${Math.round((model().output ?? 0) * 100)}% open`,
     dispose: () => parts.dispose(),
   };
 }

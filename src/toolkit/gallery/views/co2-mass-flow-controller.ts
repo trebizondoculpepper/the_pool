@@ -710,7 +710,7 @@ export function createMassFlowController(
       view.update(first ? 1 : delta);
       first = false;
     });
-    a.shows(() => `at ${names[selector.position.value]}`);
+    a.shows(() => `set to ${names[selector.position.value]}`);
     shell.add(a.object);
     parts.add(a.part());
   };
