@@ -430,21 +430,24 @@ export function createFirstPerson(options: FirstPersonOptions) {
   const use = (x: number, y: number) => {
     if (phoneRaised) {
       const found = phoneView.resolveAt(x, y);
+      const registration = found?.registration;
       if (
         !found ||
-        !phoneView.owns(found.registration.object) ||
+        !registration ||
+        !phoneView.owns(registration.object) ||
         !phoneView.targetAt(found.point)
       )
         return;
       const at: UseQuery = {
-        object: found.registration.object,
+        object: registration.object,
+        hit: found.hit,
         point: found.point.clone(),
         camera,
         x,
         pad: false,
+        uv: found.uv,
       };
-      if (found.registration.usable(at)?.possible)
-        found.registration.action?.(at);
+      if (registration.usable(at)?.possible) registration.action?.(at);
       return;
     }
     if (noclip.value || inputHeld()) return;
@@ -1366,7 +1369,7 @@ export function createFirstPerson(options: FirstPersonOptions) {
       const [x, y] = screenPoint(event.clientX, event.clientY);
       const found = phoneView.resolveAt(x, y);
       const target =
-        found && phoneView.owns(found.registration.object)
+        found?.registration && phoneView.owns(found.registration.object)
           ? phoneView.targetAt(found.point)
           : null;
       if (target) {
