@@ -12,6 +12,10 @@
  * Options: `--summary` prints counts, coverage and findings as text instead
  * of JSON. JSON goes to stdout; exit status 2 for a bad request.
  *
+ * The room registry (mission 229): `room list | show | register |
+ * unregister | trait add|remove` and `room-trait list | show | define |
+ * remove`, in `scripts/audit-rooms.ts`.
+ *
  * Editing the registry (mission 168): `show`, `register`, `unregister`,
  * `set`, `unset` and `bind`, in `scripts/audit-edit.ts`. Run with no
  * arguments, `help` or `--help` for the full help (`scripts/audit-help.ts`).
@@ -19,6 +23,7 @@
 import { runnerImport } from 'vite-plus';
 import { EDIT_COMMANDS, runEdit } from './audit-edit.ts';
 import { helpText } from './audit-help.ts';
+import { ROOM_COMMANDS, runRooms } from './audit-rooms.ts';
 
 const first = process.argv[2];
 if (!first || first === 'help' || first === '--help' || first === '-h') {
@@ -31,6 +36,17 @@ if (!first || first === 'help' || first === '--help' || first === '-h') {
     logLevel: 'error',
   });
   process.stdout.write(helpText(traits));
+  process.exit(0);
+}
+
+// The room registry (mission 229, #103): `room list | show | register |
+// unregister | trait …` and `room-trait …`; `room <id>` is still its audit.
+if (
+  process.argv[2] === 'room-trait' ||
+  (process.argv[2] === 'room' &&
+    (ROOM_COMMANDS as readonly string[]).includes(process.argv[3] ?? ''))
+) {
+  await runRooms(process.argv.slice(2));
   process.exit(0);
 }
 

@@ -173,5 +173,21 @@ EXAMPLES
   npm run -s audit -- kinds --with powered
   npm run -s audit -- bind engineers_office desk-chair office-chair
   npm run -s audit -- room plant_pool_03 | jq '.findings'
+
+ROOMS (mission 229): every room is src/game/rooms/declarations/<id>.ts
+  room list | show <id>
+      Every room and how it is built; one room's declaration.
+  room register <id> --module <path> --start <fn> [--args '<json array>']
+                [--shares <room>] [--zone-walk]
+  room register <id> --hall pool_0N [--equipment <id>] [--title "…"]
+      Writes its file and index line. The module must export the starter.
+      A new room also needs its id in dev-room-links.ts (RoomId, ROOMS).
+  room unregister <id>
+      Refused while another room shares its world.
+  room trait add <id> <trait> [--config '<json object>'] | remove <id> <trait>
+  room-trait list | show <trait> | remove <trait>
+  room-trait define <trait> --reason "…" [--dev-only]
+      Writes a trait file to fill in (its visit). Every trait has a gameplay
+      reason; remove is refused while a room uses it.
 `;
 }

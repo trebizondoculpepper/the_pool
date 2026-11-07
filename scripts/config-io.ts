@@ -68,7 +68,7 @@ export async function writeConfig(
 
 /** A config file's text with the blank lines inside its object removed (comments kept). */
 export const tidy = (text: string): string => {
-  const open = text.search(/define(?:Kind|Trait)\(\{/);
+  const open = text.search(/define(?:Kind|Trait|Room|RoomTrait)\(\{/);
   const close = text.lastIndexOf('});');
   if (open < 0 || close < open) return text;
   const body = text.slice(open, close).replace(/\n[ \t]*\n/g, '\n');
